@@ -11258,15 +11258,18 @@ function create(table, creates) {
  * Runs func on table record with id.
  * @param {string} table
  * @param {string} id
- * @param {function(Record<TField>): void} func
+ * @param {function(Record<TField>): Promise<void>} func
+ * @return {Promise<void>}
  */
-function find(table, id, func) {
+async function find(table, id, func) {
+  let promise;
   base(table).find(
       id,
       (err, record) => {
         errorIf(err, 'finding', table);
-        func(record);
+        promise = func(record);
       });
+  await promise;
 }
 
 

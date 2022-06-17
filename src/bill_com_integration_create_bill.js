@@ -7,11 +7,11 @@ import * as utils from './utils.js';
 /**
  * @param {string} table
  * @param {string} airtableId
- * @return {string}
+ * @return {Promise<string>}
  */
-function getBillComId(table, airtableId) {
+async function getBillComId(table, airtableId) {
   let billComId;
-  airtable.find(
+  await airtable.find(
       table,
       airtableId,
       (record) => billComId = record.get(airtable.primaryOrgBillComId));
@@ -24,19 +24,19 @@ const NEW_VENDORS_TABLE = 'New Vendors';
 await billCom.primaryOrgLogin();
 
 // Get new Check Requests.
-airtable.select(
+await airtable.select(
     CHECK_REQUESTS_TABLE,
     'New',
-    (newCheckRequest) => {
+    async (newCheckRequest) => {
       
       // Get the Vendor to pay for whom this request was submitted.
       let vendorId;
       if (newCheckRequest.get('New Vendor?')) {
         const newVendorId = newCheckRequest.get('New Vendor')[0];
-        airtable.find(
+        await airtable.find(
             NEW_VENDORS_TABLE,
             newVendorId,
-            (newVendor) => {
+            async (newVendor) => {
               const createVendorResponse =
                   await billCom.commonDataCall(
                       'Crud/Create/Vendor',
@@ -64,13 +64,14 @@ airtable.select(
             }]);
       } else {
         vendorId =
-            getBillComId('Existing Vendors', newCheckRequest.get('Vendor')[0]);
+            await getBillComId(
+                'Existing Vendors', newCheckRequest.get('Vendor')[0]);
       }
 
       // Get the Check Request Line Items.
       const billComLineItems = [];
       for (const itemId of newCheckRequest.get('Line Items')) {
-        airtable.find(
+        await airtable.find(
             'Check Request Line Items',
             itemId,
             (item) => {
@@ -78,14 +79,15 @@ airtable.select(
               let chartOfAccountId;
               if (category != null) {
                 chartOfAccountId =
-                    getBillComId('Chart of Accounts', category[0]);
+                    await getBillComId('Chart of Accounts', category[0]);
               }
               billComLineItems.push({
                 entity: 'BillLineItem',
                 amount: item.get('Amount'),
                 chartOfAccountId: chartOfAccountId,
                 customerId:
-                    getBillComId('Internal Customers', item.get('Project')[0]),
+                  await getBillComId(
+                      'Internal Customers', item.get('Project')[0]),
                 description: item.get('Description'),
               });
             });
@@ -130,7 +132,9 @@ airtable.select(
             {
               objectId: createBillResponse.id,
               entity: 'Bill',
-              approvers: approvers.map((a) => getBillComId('Users', a.id)),
+              approvers:
+                await Promise.all(
+                    approvers.map((a) => getBillComId('Users', a.id))),
             });
       }
 

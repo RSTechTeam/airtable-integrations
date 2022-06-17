@@ -11,10 +11,10 @@ const APPROVER_TABLE = 'New Bill.com Approvers';
 const ecrApproverUserProfileId = utils.getInput('ecr-approver-user-profile-id');
 
 await billCom.primaryOrgLogin();
-airtable.select(
+await airtable.select(
     APPROVER_TABLE,
     'New',
-    (record) => {
+    async (record) => {
       await billCom.commonDataCall(
           'Crud/Create/User',
           {

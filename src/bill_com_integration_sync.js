@@ -30,7 +30,7 @@ async function syncUnpaid(table, entity) {
   
   const billComIds = [];
   const airtableIds = [];
-  airtable.select(
+  await airtable.select(
       table,
       'Unpaid',
       (record) => {
@@ -91,7 +91,7 @@ async function sync(entity, table, syncFunc) {
 
   // Update every existing table record based on the entity data.
   const updates = [];
-  airtable.select(
+  await airtable.select(
       table,
       null,
       (record) => {
@@ -170,7 +170,7 @@ async function syncCustomers(anchorEntity) {
   const airtableUpdateIds = [];
   const airtableUpdates = [];
   const billComUpdates = [];
-  airtable.select(
+  await airtable.select(
       ALL_CUSTOMERS_TABLE,
       null,
       (record) => {
