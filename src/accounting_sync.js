@@ -24,14 +24,14 @@ const updates = [];
 airtable.select(
     LCF_TABLE,
     'Bill.com Sync',
-    (r) => {
-      const id = r.get(airtable.primaryOrgBillComId);
+    async (record) => {
+      const id = record.get(airtable.primaryOrgBillComId);
       const change = {
         obj: {
           entity: 'Customer',
           isActive: '1',
           parentCustomerId: internalCustomerId,
-          name: encodeURIComponent(r.get('Abacus / Bill.com / QBO Code')),
+          name: encodeURIComponent(record.get('Abacus / Bill.com / QBO Code')),
         }
       }
 
@@ -42,10 +42,10 @@ airtable.select(
         airtable.update(
             LCF_TABLE,
             [{
-              id: r.getId(),
+              id: record.getId(),
               fields: {[airtable.primaryOrgBillComId]: response.id},
             }]);
-        continue;
+        return;
       }
 
       // Update in Bill.com other records with a primary org Bill.com ID.
