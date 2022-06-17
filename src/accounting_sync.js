@@ -21,7 +21,7 @@ billComCustomers.forEach(c => billComCustomerIds.add(c.id));
 
 // Upsert every Bill.com Customer from the Bill.com Sync View.
 const updates = [];
-airtable.select(
+await airtable.select(
     LCF_TABLE,
     'Bill.com Sync',
     async (record) => {

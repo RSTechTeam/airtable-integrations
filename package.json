@@ -1,0 +1,24 @@
+{
+  "name": "bill.com-airtable-integration",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RSMvmtTech/Bill.com-Airtable-Integration.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/RSMvmtTech/Bill.com-Airtable-Integration/issues"
+  },
+  "homepage": "https://github.com/RSMvmtTech/Bill.com-Airtable-Integration#readme",
+  "dependencies": {
+    "@actions/core": "^1.9.0",
+    "airtable": "^0.11.4"
+  }
+}

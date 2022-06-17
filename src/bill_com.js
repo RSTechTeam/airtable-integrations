@@ -92,7 +92,7 @@ function filter(field, op, value) {
  * @param {Array<string>=} filters
  * @return {Promise<!Array<Object>>} entity list.
  */
-function list(entity, filters=undefined) {
+async function list(entity, filters=undefined) {
   const MAX = 999;
   let fullList = [];
   for (let start = 0; ; start += MAX) {

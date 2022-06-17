@@ -35,15 +35,18 @@ function errorIf(err, queryType, table) {
  * Runs func for each record from table view.
  * @param {string} table
  * @param {string} view
- * @param {function(Record<TField>): void} func
+ * @param {function(Record<TField>): Promise<void>} func
+ * @return {Promise<void>}
  */
-function select(table, view, func) {
+async function select(table, view, func) {
+  let promises = [];
   base(table).select({view: view}).eachPage(
       function page(records, fetchNextPage) {
-        records.forEach(func);
+        promises = promises.concat(records.map(func));
         fetchNextPage();
       },
       function done(err) { errorIf(err, 'selecting', table); });
+  await Promises.all(promises);
 }
 
 /**
