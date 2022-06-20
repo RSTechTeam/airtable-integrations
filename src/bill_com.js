@@ -46,7 +46,8 @@ function commonCall(endpoint, params) {
   return call(
       endpoint,
       {'Content-Type': 'application/x-www-form-urlencoded'},
-      `devKey=${utils.getInput('dev-key')}&sessionId=${sessionId}&${params}`);
+      `devKey=${utils.getInput('bill-com-dev-key')}` +
+          `&sessionId=${sessionId}&${params}`);
 }
 
 /** 
@@ -57,8 +58,8 @@ async function login(anchorEntity) {
   const loginResponse =
       await commonCall(
           'Login',
-          `userName=${utils.getInput('user-name')}` +
-              `&password=${utils.getInput('password')}` +
+          `userName=${utils.getInput('bill-com-user-name')}` +
+              `&password=${utils.getInput('bill-com-password')}` +
               `&orgId=${orgIds.get(anchorEntity)}`);
   sessionId = loginResponse.sessionId;
 }
