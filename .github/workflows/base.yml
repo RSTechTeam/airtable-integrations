@@ -17,6 +17,7 @@ jobs:
     steps:
       - uses: RSMvmtTech/Bill.com-Airtable-Integration@main
         with:
+          filename: ${{ inputs.filename }}
           primary-org: ${{ secrets.PRIMARY_ORG }}
           airtable-api-key: ${{ secrets.AIRTABLE_API_KEY }}
           airtable-base-id: ${{ inputs.airtable-base-id }}
