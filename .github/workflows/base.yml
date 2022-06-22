@@ -4,29 +4,32 @@ on:
     inputs:
       filename:
         description: 'The Javascript file name (without the extension)'
-        required: true
+        required: false
         default: ${{ github.job }}
         type: string
       use-accounting-base:
         description:
           'true: Accounting Terminology Index Base; false: Bill.com Integration Base'
-        required: true
+        required: false
         default: false
         type: boolean
 jobs:
   main:
     runs-on: ubuntu-latest
     steps:
+      - id: get-airtable-base-id
+        run: |
+          if [ $inputs.use-accounting-base = true] ; then
+          else
+            id=$secrets.BILL_COM_INTEGRATION_BASE_ID
+          fi
+          echo '::set-output name=id::$id'
       - uses: RSMvmtTech/Bill.com-Airtable-Integration@main
         with:
           filename: ${{ inputs.filename }}
           primary-org: ${{ secrets.PRIMARY_ORG }}
           airtable-api-key: ${{ secrets.AIRTABLE_API_KEY }}
-          airtable-base-id:
-            ${{ [
-              secrets.BILL_COM_INTEGRATION_BASE_ID,
-              secrets.ACCOUNTING_TERMINOLOGY_INDEX_BASE_ID,
-            ][inputs.use-accounting-base] }}
+          airtable-base-id: ${{ steps.airtable-base-id.id }}
           bill-com-dev-key: ${{ secrets.BILL_COM_DEV_KEY }}
           bill-com-user-name: ${{ secrets.BILL_COM_USER_NAME }}
           bill-com-password: ${{ secrets.BILL_COM_PASSWORD }}
