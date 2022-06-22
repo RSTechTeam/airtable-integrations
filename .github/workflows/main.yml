@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
 jobs:
   accounting_sync:
-    uses: ./.github/workflow/base.yml
+    uses: ./.github/workflows/base.yml
     with:
       airtable-base-id: ${{ secrets.ACCOUNTING_TERMINOLOGY_INDEX_BASE_ID }}
       internal-customer-id: ${{ secrets.INTERNAL_CUSTOMER_ID }}
