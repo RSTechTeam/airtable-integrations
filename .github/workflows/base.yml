@@ -1,0 +1,25 @@
+name: Base Workflow
+on:
+  workflow_call:
+    inputs:
+      filename:
+        description: 'The Javascript file name (without the extension)'
+        required: true
+        default: ${{ github.job }}
+        type: string
+      airtable-base-id:
+        description: 'The ID of the Airtable Base used in the target file'
+        required: true
+        type: string
+jobs:
+  main:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: RSMvmtTech/Bill.com-Airtable-Integration@main
+        with:
+          primary-org: ${{ secrets.PRIMARY_ORG }}
+          airtable-api-key: ${{ secrets.AIRTABLE_API_KEY }}
+          airtable-base-id: ${{ inputs.airtable-base-id }}
+          bill-com-dev-key: ${{ secrets.BILL_COM_DEV_KEY }}
+          bill-com-user-name: ${{ secrets.BILL_COM_USER_NAME }}
+          bill-com-password: ${{ secrets.BILL_COM_PASSWORD }}

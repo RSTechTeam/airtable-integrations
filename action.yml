@@ -4,31 +4,24 @@ inputs:
   filename:
     description: 'The Javascript file name (without the extension)'
     required: true
-    default: ${{ github.job }}
   primary-org:
     description: 'The primary Bill.com Org'
     required: true
-    default: ${{ env.PRIMARY_ORG }}
   airtable-api-key:
     description: 'The Airtable API key to use for Airtable interactions'
     required: true
-    default: ${{ env.AIRTABLE_API_KEY }}
   airtable-base-id:
     description: 'The ID of the Airtable Base used in the target file'
     required: true
-    default: ${{ env.BILL_COM_INTEGRATION_BASE_ID }}
   bill-com-dev-key:
     description: 'The Bill.com developer key for API access'
     required: true
-    default: ${{ env.BILL_COM_DEV_KEY }}
   bill-com-user-name:
     description: 'The Bill.com email for login'
     required: true
-    default: ${{ env.BILL_COM_USER_NAME }}
-  bill-com-passwork:
+  bill-com-password:
     description: 'The Bill.com password for login'
     required: true
-    default: ${{ env.BILL_COM_PASSWORD }}
 runs:
   using: 'node16'
   main: 'dist/${{ inputs.filename }}/index.js'
