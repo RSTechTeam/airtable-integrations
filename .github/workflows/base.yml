@@ -7,10 +7,12 @@ on:
         required: true
         default: ${{ github.job }}
         type: string
-      airtable-base-id:
-        description: 'The ID of the Airtable Base used in the target file'
+      use-accounting-base:
+        description:
+          'true: Accounting Terminology Index Base; false: Bill.com Integration Base'
         required: true
-        type: string
+        default: false
+        type: boolean
 jobs:
   main:
     runs-on: ubuntu-latest
@@ -20,7 +22,14 @@ jobs:
           filename: ${{ inputs.filename }}
           primary-org: ${{ secrets.PRIMARY_ORG }}
           airtable-api-key: ${{ secrets.AIRTABLE_API_KEY }}
-          airtable-base-id: ${{ inputs.airtable-base-id }}
+          airtable-base-id:
+            ${{ [
+              secrets.BILL_COM_INTEGRATION_BASE_ID,
+              secrets.ACCOUNTING_TERMINOLOGY_INDEX_BASE_ID,
+            ][inputs.use-accounting-base] }}
           bill-com-dev-key: ${{ secrets.BILL_COM_DEV_KEY }}
           bill-com-user-name: ${{ secrets.BILL_COM_USER_NAME }}
           bill-com-password: ${{ secrets.BILL_COM_PASSWORD }}
+          internal-customer-id: ${{ secrets.INTERNAL_CUSTOMER_ID }}
+          ecr-approver-user-profile-id: ${{ secrets.ECR_APPROVER_USER_PROFILE_ID }}
+          integromat-hook-prefix: ${{ secrets.INTEGROMAT_HOOK_PREFIX }}

@@ -22,6 +22,15 @@ inputs:
   bill-com-password:
     description: 'The Bill.com password for login'
     required: true
+  internal-customer-id:
+    description: 'The Parent Bill.com Customer ID for internal Customers'
+    required: false
+  ecr-approver-user-profile-id:
+    description: 'The Bill.com User Profile ID for ECR Approvers'
+    required: false
+  integromat-hook-prefix:
+    description: 'The Integromat Webhook prefix for uploading attachments to Bill.com'
+    required: false
 runs:
   using: 'node16'
   main: 'dist/${{ inputs.filename }}/index.js'
