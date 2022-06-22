@@ -3,7 +3,6 @@ on:
   workflow_dispatch:
 jobs:
   accounting_sync:
-    runs-on: ubuntu-latest
     uses: ./.github/workflow/base.yml
     with:
       airtable-base-id: ${{ secrets.ACCOUNTING_TERMINOLOGY_INDEX_BASE_ID }}
