@@ -1,0 +1,17 @@
+name: Main Workflow
+on:
+  workflow_dispatch:
+env:
+  PRIMARY_ORG: ${{ secrets.PRIMARY_ORG }}
+  AIRTABLE_API_KEY: ${{ secrets.AIRTABLE_API_KEY }}
+  BILL_COM_INTEGRATION_BASE_ID: ${{ secrets.BILL_COM_INTEGRATION_BASE_ID }}
+  BILL_COM_DEV_KEY: ${{ secrets.BILL_COM_DEV_KEY }}
+  BILL_COM_USER_NAME: ${{ secrets.BILL_COM_USER_NAME }}
+  BILL_COM_PASSWORD: ${{ secrets.BILL_COM_PASSWORD }}
+jobs:
+  accounting_sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: RSMvmtTech/Bill.com-Airtable-Integration@main
+        with:
+          internal-customer-id: ${{ secrets.INTERNAL_CUSTOMER_ID }}
