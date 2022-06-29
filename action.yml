@@ -32,5 +32,13 @@ inputs:
     description: 'The Integromat Webhook prefix for uploading attachments to Bill.com'
     required: false
 runs:
-  using: 'node16'
-  main: 'dist/${{ inputs.filename }}/index.js'
+  using: 'composite'
+  steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-node@v3
+      with:
+        node-version: '14'
+    - run: npm ci
+      shell: bash
+    - run: node src/${{ inputs.filename }}.js
+      shell: bash
