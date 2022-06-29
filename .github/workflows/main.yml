@@ -5,5 +5,6 @@ jobs:
   accounting_sync:
     uses: ./.github/workflows/base.yml
     with:
+      filename: 'accounting_sync'
       use-accounting-base: true
     secrets: inherit
