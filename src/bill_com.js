@@ -13,7 +13,10 @@ const orgIds = new Map();
 await new airtable.Base(utils.getInput('airtable-org-ids-base-id')).select(
     'Anchor Entities',
     'Org IDs',
-    (r) => orgIds.set(r.get('Department'), r.get('Bill.com Org ID')));
+    (r) => {
+      utils.log(r.get('Department'));
+      orgIds.set(r.get('Department'), r.get('Bill.com Org ID'));
+    });
 utils.log(orgIds.length);
 
 /** The ID of the Bill.com API session (after successful authentication). */

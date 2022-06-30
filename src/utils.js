@@ -28,7 +28,9 @@ export function log(...message) {
  * @param {string} message
  */
 export function error(code, context, message) {
-  core.error(`Error ${code} (from ${context}): ${message}`);
+  const msg = `Error ${code} (from ${context}): ${message}`;
+  core.setFailed(msg);
+  throw new Error(msg);
 }
 
 /**
