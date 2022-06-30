@@ -18361,7 +18361,7 @@ await new _airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .Base */ .XY(_utils_js__WE
     'Anchor Entities',
     'Org IDs',
     (r) => orgIds.set(r.get('Department'), r.get('Bill.com Org ID')));
-console.log(orgIds.length);
+_utils_js__WEBPACK_IMPORTED_MODULE_1__/* .log */ .cM(orgIds.length);
 
 /** The ID of the Bill.com API session (after successful authentication). */
 let sessionId;
@@ -18378,7 +18378,7 @@ async function call(endpoint, headers, body) {
           `https://api.bill.com/api/v2/${endpoint}.json`,
           {method: 'POST', headers: headers, body: body});
   const json = await response.json();
-  console.log(endpoint, json);
+  _utils_js__WEBPACK_IMPORTED_MODULE_1__/* .log */ .cM(endpoint, json);
   const data = json.response_data;
   if (json.response_status === 1) {
     _utils_js__WEBPACK_IMPORTED_MODULE_1__/* .error */ .vU(data.error_code, endpoint, data.error_message);
@@ -18505,6 +18505,7 @@ __webpack_handle_async_dependencies__();
 /* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
 /* harmony export */   "Np": () => (/* binding */ getInput),
 /* harmony export */   "uP": () => (/* binding */ primaryOrg),
+/* harmony export */   "cM": () => (/* binding */ log),
 /* harmony export */   "vU": () => (/* binding */ error),
 /* harmony export */   "dC": () => (/* binding */ batch)
 /* harmony export */ });
@@ -18528,6 +18529,10 @@ function getInput(input) {
 
 /** The primary Bill.com Org. */
 const primaryOrg = getInput('primary-org');
+
+function log(...message) {
+  _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(message);
+}
 
 /**
  * @param {string|number} code

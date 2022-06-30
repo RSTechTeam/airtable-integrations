@@ -14,7 +14,7 @@ await new airtable.Base(utils.getInput('airtable-org-ids-base-id')).select(
     'Anchor Entities',
     'Org IDs',
     (r) => orgIds.set(r.get('Department'), r.get('Bill.com Org ID')));
-console.log(orgIds.length);
+utils.log(orgIds.length);
 
 /** The ID of the Bill.com API session (after successful authentication). */
 export let sessionId;
@@ -31,7 +31,7 @@ export async function call(endpoint, headers, body) {
           `https://api.bill.com/api/v2/${endpoint}.json`,
           {method: 'POST', headers: headers, body: body});
   const json = await response.json();
-  console.log(endpoint, json);
+  utils.log(endpoint, json);
   const data = json.response_data;
   if (json.response_status === 1) {
     utils.error(data.error_code, endpoint, data.error_message);

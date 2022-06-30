@@ -23,7 +23,7 @@ jobs:
           else
             id=${{ secrets.BILL_COM_INTEGRATION_BASE_ID }}
           fi
-          echo '::set-output name=id::$id'
+          echo "::set-output name=id::$id"
       - uses: RSMvmtTech/Bill.com-Airtable-Integration@main
         with:
           filename: ${{ inputs.filename }}

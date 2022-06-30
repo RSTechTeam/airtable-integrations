@@ -18,6 +18,10 @@ export function getInput(input) {
 /** The primary Bill.com Org. */
 export const primaryOrg = getInput('primary-org');
 
+export function log(...message) {
+  core.info(message);
+}
+
 /**
  * @param {string|number} code
  * @param {string} context
