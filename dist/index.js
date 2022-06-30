@@ -11181,7 +11181,6 @@ __nccwpck_require__.d(__webpack_exports__, {
 
 // EXTERNAL MODULE: ./node_modules/airtable/lib/airtable.js
 var airtable = __nccwpck_require__(5447);
-var airtable_namespaceObject = /*#__PURE__*/__nccwpck_require__.t(airtable, 2);
 // EXTERNAL MODULE: ./src/utils.js
 var utils = __nccwpck_require__(8287);
 ;// CONCATENATED MODULE: ./src/airtable.js
@@ -11194,7 +11193,7 @@ var utils = __nccwpck_require__(8287);
 
 
 
-airtable.configure({apiKey: utils/* getInput */.Np('airtable-api-key')});
+airtable.Airtable.configure({apiKey: utils/* getInput */.Np('airtable-api-key')});
 
 /** The Bill.com ID Field name suffix. */
 const BILL_COM_ID_SUFFIX = 'Bill.com ID';
@@ -11203,7 +11202,7 @@ const BILL_COM_ID_SUFFIX = 'Bill.com ID';
 const primaryOrgBillComId = `${utils/* primaryOrg */.uP} ${BILL_COM_ID_SUFFIX}`;
 
 /** The relevant Airtable Base. */
-const base = new airtable_namespaceObject().base(utils/* getInput */.Np('airtable-base-id'));
+const base = new airtable.Airtable().base(utils/* getInput */.Np('airtable-base-id'));
 
 /**
  * @param {string} err
@@ -11670,36 +11669,6 @@ module.exports = JSON.parse('[[[0,44],"disallowed_STD3_valid"],[[45,46],"valid"]
 /******/ 			return fn.r ? promise : result;
 /******/ 		}).then(outerResolve, reject);
 /******/ 		isEvaluating = false;
-/******/ 	};
-/******/ })();
-/******/ 
-/******/ /* webpack/runtime/create fake namespace object */
-/******/ (() => {
-/******/ 	var getProto = Object.getPrototypeOf ? (obj) => (Object.getPrototypeOf(obj)) : (obj) => (obj.__proto__);
-/******/ 	var leafPrototypes;
-/******/ 	// create a fake namespace object
-/******/ 	// mode & 1: value is a module id, require it
-/******/ 	// mode & 2: merge all properties of value into the ns
-/******/ 	// mode & 4: return value when already ns object
-/******/ 	// mode & 16: return value when it's Promise-like
-/******/ 	// mode & 8|1: behave like require
-/******/ 	__nccwpck_require__.t = function(value, mode) {
-/******/ 		if(mode & 1) value = this(value);
-/******/ 		if(mode & 8) return value;
-/******/ 		if(typeof value === 'object' && value) {
-/******/ 			if((mode & 4) && value.__esModule) return value;
-/******/ 			if((mode & 16) && typeof value.then === 'function') return value;
-/******/ 		}
-/******/ 		var ns = Object.create(null);
-/******/ 		__nccwpck_require__.r(ns);
-/******/ 		var def = {};
-/******/ 		leafPrototypes = leafPrototypes || [null, getProto({}), getProto([]), getProto(getProto)];
-/******/ 		for(var current = mode & 2 && value; typeof current == 'object' && !~leafPrototypes.indexOf(current); current = getProto(current)) {
-/******/ 			Object.getOwnPropertyNames(current).forEach((key) => (def[key] = () => (value[key])));
-/******/ 		}
-/******/ 		def['default'] = () => (value);
-/******/ 		__nccwpck_require__.d(ns, def);
-/******/ 		return ns;
 /******/ 	};
 /******/ })();
 /******/ 
