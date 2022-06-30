@@ -5,6 +5,7 @@
  */
 
 import * as airtable from './airtable.js';
+import fetch from 'node-fetch';
 import * as utils from './utils.js';
 
 /** The organization ID for each Anchor Entity. */
