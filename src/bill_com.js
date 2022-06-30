@@ -17,7 +17,7 @@ await new airtable.Base(utils.getInput('airtable-org-ids-base-id')).select(
       utils.log(r.get('Department'));
       orgIds.set(r.get('Department'), r.get('Bill.com Org ID'));
     });
-utils.log(orgIds.length);
+utils.log(orgIds.size);
 
 /** The ID of the Bill.com API session (after successful authentication). */
 export let sessionId;
