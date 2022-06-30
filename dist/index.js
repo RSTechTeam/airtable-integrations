@@ -11193,16 +11193,17 @@ var utils = __nccwpck_require__(8287);
 
 
 
-airtable.configure({apiKey: utils/* getInput */.Np('airtable-api-key')});
-
 /** The Bill.com ID Field name suffix. */
 const BILL_COM_ID_SUFFIX = 'Bill.com ID';
 
 /** The primary Org Bill.com ID Field name. */
 const primaryOrgBillComId = `${utils/* primaryOrg */.uP} ${BILL_COM_ID_SUFFIX}`;
 
+const apiKey = utils/* getInput */.Np('airtable-api-key');
+const baseId = utils/* getInput */.Np('airtable-base-id');
+
 /** The relevant Airtable Base. */
-const base = new airtable.Airtable().base(utils/* getInput */.Np('airtable-base-id'));
+const base = new airtable({apiKey: apiKey}).base(baseId);
 
 /**
  * @param {string} err
