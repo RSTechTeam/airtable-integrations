@@ -5,7 +5,7 @@
  * registering secrets and exporting variables across actions.
  * https://github.com/actions/toolkit/tree/main/packages/core
  */
-const core = require('@actions/core');
+import * as core from '@actions/core';
 
 /**
  * @param {string} input
