@@ -1,12 +1,11 @@
 /** @fileoverview Utilities for interacting with Airtable. */
 
-import * as utils from './utils.js';
-
 /**
  * The official Airtable JavaScript library.
  * https://github.com/Airtable/airtable.js
  */
 import * as Airtable from 'airtable';
+import * as utils from './utils.js';
 
 Airtable.configure({apiKey: utils.getInput('airtable-api-key')});
 

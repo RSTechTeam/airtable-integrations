@@ -41,4 +41,6 @@ runs:
     - run: npm ci
       shell: bash
     - run: node src/${{ inputs.filename }}.js
+      with:
+        primary-org: ${{ inputs.primary-org }}
       shell: bash

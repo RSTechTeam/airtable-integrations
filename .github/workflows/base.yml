@@ -18,7 +18,7 @@ jobs:
     steps:
       - id: get-airtable-base-id
         run: |
-          if [ $inputs.use-accounting-base = true ] ; then
+          if [ ${{ inputs.use-accounting-base }} = true ] ; then
             id=$secrets.ACCOUNTING_TERMINOLOGY_INDEX_BASE_ID
           else
             id=$secrets.BILL_COM_INTEGRATION_BASE_ID
