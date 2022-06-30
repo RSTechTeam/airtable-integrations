@@ -3,7 +3,7 @@
 import * as accounting_sync from './accounting_sync.js';
 import * as utils from './utils.js';
 
-const filename = util.getInput('filename');
+const filename = utils.getInput('filename');
 let imp;
 switch (filename) {
 	case 'accounting_sync':
