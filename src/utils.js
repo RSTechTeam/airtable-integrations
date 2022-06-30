@@ -11,19 +11,19 @@ import * as core from '@actions/core';
  * @param {string} input
  * @return {string} required input value
  */
-function getInput(input) {
+export function getInput(input) {
   return core.getInput(input, {required: true});
 }
 
 /** The primary Bill.com Org. */
-const primaryOrg = getInput('primary-org');
+export const primaryOrg = getInput('primary-org');
 
 /**
  * @param {string|number} code
  * @param {string} context
  * @param {string} message
  */
-function error(code, context, message) {
+export function error(code, context, message) {
   throw new Error(`Error ${code} (from ${context}): ${message}`);
 }
 
@@ -34,7 +34,7 @@ function error(code, context, message) {
  * @param {number} size
  * @return {Promise<Array>}
  */
-function batch(func, array, size) {
+export function batch(func, array, size) {
   const promises = [];
   while (array.length > 0) {
     promises.push(func(array.splice(0, size)));

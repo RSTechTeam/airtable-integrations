@@ -10,10 +10,10 @@ import * as utils from './utils.js';
 Airtable.configure({apiKey: utils.getInput('airtable-api-key')});
 
 /** The Bill.com ID Field name suffix. */
-const BILL_COM_ID_SUFFIX = 'Bill.com ID';
+export const BILL_COM_ID_SUFFIX = 'Bill.com ID';
 
 /** The primary Org Bill.com ID Field name. */
-const primaryOrgBillComId = `${utils.primaryOrg} ${BILL_COM_ID_SUFFIX}`;
+export const primaryOrgBillComId = `${utils.primaryOrg} ${BILL_COM_ID_SUFFIX}`;
 
 /** The relevant Airtable Base. */
 const base = new Airtable().base(utils.getInput('airtable-base-id'));
@@ -23,7 +23,7 @@ const base = new Airtable().base(utils.getInput('airtable-base-id'));
  * @param {string} queryType
  * @param {string} table
  */
-function errorIf(err, queryType, table) {
+export function errorIf(err, queryType, table) {
   if (err) {
     throw new Error(
         `Error while ${queryType} records in Airtable Table ${table}: ${err}`);
@@ -37,7 +37,7 @@ function errorIf(err, queryType, table) {
  * @param {function(Record<TField>): Promise<void>} func
  * @return {Promise<void>}
  */
-async function select(table, view, func) {
+export async function select(table, view, func) {
   let promises = [];
   base(table).select({view: view}).eachPage(
       function page(records, fetchNextPage) {
@@ -52,7 +52,7 @@ async function select(table, view, func) {
  * @param {string} table
  * @param {Array<Object>} updates
  */
-function update(table, updates) {
+export function update(table, updates) {
   base(table).update(
       updates, (err, records) => errorIf(err, 'updating', table));
 }
@@ -61,7 +61,7 @@ function update(table, updates) {
  * @param {string} table
  * @param {Array<Object>} creates
  */
-function create(table, creates) {
+export function create(table, creates) {
   base(table).create(
       creates, (err, records) => errorIf(err, 'creating', table));
 }
@@ -73,7 +73,7 @@ function create(table, creates) {
  * @param {function(Record<TField>): Promise<void>} func
  * @return {Promise<void>}
  */
-async function find(table, id, func) {
+export async function find(table, id, func) {
   let promise;
   base(table).find(
       id,

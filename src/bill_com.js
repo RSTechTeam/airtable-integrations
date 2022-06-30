@@ -8,14 +8,14 @@ import * as airtable from './airtable.js';
 import * as utils from './utils.js';
 
 /** The organization ID for each Anchor Entity. */
-const orgIds = new Map();
+export const orgIds = new Map();
 airtable.select(
     'Anchor Entities',
     'Org IDs',
     (r) => orgIds.set(r.get('Department'), r.get('Bill.com Org ID')));
 
 /** The ID of the Bill.com API session (after successful authentication). */
-let sessionId;
+export let sessionId;
 
 /**
  * @param {string} endpoint 
@@ -23,7 +23,7 @@ let sessionId;
  * @param {string|FormData} body
  * @return {Promise<Object>} endpoint-specific response_data.
  */
-async function call(endpoint, headers, body) {
+export async function call(endpoint, headers, body) {
   const response =
       await fetch(
           `https://api.bill.com/api/v2/${endpoint}.json`,
@@ -42,7 +42,7 @@ async function call(endpoint, headers, body) {
  * @param {string} params
  * @return {Promise<Object>} endpoint-specific response_data.
  */
-function commonCall(endpoint, params) {
+export function commonCall(endpoint, params) {
   return call(
       endpoint,
       {'Content-Type': 'application/x-www-form-urlencoded'},
@@ -54,7 +54,7 @@ function commonCall(endpoint, params) {
  * Login to access anchorEntity's Bill.com API and receive a session ID.
  * @param {string} anchorEntity
  */
-async function login(anchorEntity) {
+export async function login(anchorEntity) {
   const loginResponse =
       await commonCall(
           'Login',
@@ -65,7 +65,7 @@ async function login(anchorEntity) {
 }
 
 /** Login to access the primaryOrg's Bill.com API and receive a session ID. */
-function primaryOrgLogin() {
+export function primaryOrgLogin() {
     return login(utils.primaryOrg);
 }
 
@@ -74,7 +74,7 @@ function primaryOrgLogin() {
  * @param {Object} data
  * @return {Promise<Object>} endpoint-specific response_data.
  */
-function commonDataCall(endpoint, data) {
+export function commonDataCall(endpoint, data) {
   return commonCall(endpoint, `data=${JSON.stringify(data)}`);
 }
 
@@ -84,7 +84,7 @@ function commonDataCall(endpoint, data) {
  * @param {string} value
  * @return {Object} filter
  */
-function filter(field, op, value) {
+export function filter(field, op, value) {
   return {field: field, op: op, value: value};
 }
 
@@ -93,7 +93,7 @@ function filter(field, op, value) {
  * @param {Array<string>=} filters
  * @return {Promise<!Array<Object>>} entity list.
  */
-async function list(entity, filters=undefined) {
+export async function list(entity, filters=undefined) {
   const MAX = 999;
   let fullList = [];
   for (let start = 0; ; start += MAX) {
@@ -111,7 +111,7 @@ async function list(entity, filters=undefined) {
  * @param {Array} data
  * @return {Promise<Array>}
  */
-function bulkCall(endpoint, data) {
+export function bulkCall(endpoint, data) {
   return utils.batch(
       (arr) => commonDataCall(`Bulk/Crud/${endpoint}`, {bulk: arr}), data, 100);
 }
