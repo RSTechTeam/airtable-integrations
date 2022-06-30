@@ -18540,7 +18540,7 @@ function log(...message) {
  * @param {string} message
  */
 function error(code, context, message) {
-  throw new Error(`Error ${code} (from ${context}): ${message}`);
+  _actions_core__WEBPACK_IMPORTED_MODULE_0__.setFailed(`Error ${code} (from ${context}): ${message}`);
 }
 
 /**

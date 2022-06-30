@@ -28,7 +28,7 @@ export function log(...message) {
  * @param {string} message
  */
 export function error(code, context, message) {
-  throw new Error(`Error ${code} (from ${context}): ${message}`);
+  core.setFailed(`Error ${code} (from ${context}): ${message}`);
 }
 
 /**
