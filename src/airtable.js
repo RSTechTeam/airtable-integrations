@@ -46,7 +46,7 @@ export async function select(table, view, func) {
         fetchNextPage();
       },
       function done(err) { errorIf(err, 'selecting', table); });
-  await Promises.all(promises);
+  await Promise.all(promises);
 }
 
 /**
