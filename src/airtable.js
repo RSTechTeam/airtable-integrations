@@ -4,10 +4,10 @@
  * The official Airtable JavaScript library.
  * https://github.com/Airtable/airtable.js
  */
-import {Airtable} from 'airtable';
+import * as airtable from 'airtable';
 import * as utils from './utils.js';
 
-Airtable.configure({apiKey: utils.getInput('airtable-api-key')});
+airtable.configure({apiKey: utils.getInput('airtable-api-key')});
 
 /** The Bill.com ID Field name suffix. */
 export const BILL_COM_ID_SUFFIX = 'Bill.com ID';
@@ -16,7 +16,7 @@ export const BILL_COM_ID_SUFFIX = 'Bill.com ID';
 export const primaryOrgBillComId = `${utils.primaryOrg} ${BILL_COM_ID_SUFFIX}`;
 
 /** The relevant Airtable Base. */
-const base = new Airtable().base(utils.getInput('airtable-base-id'));
+const base = new airtable.Airtable().base(utils.getInput('airtable-base-id'));
 
 /**
  * @param {string} err

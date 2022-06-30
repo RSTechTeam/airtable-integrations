@@ -11193,7 +11193,7 @@ var utils = __nccwpck_require__(8287);
 
 
 
-airtable.Airtable.configure({apiKey: utils/* getInput */.Np('airtable-api-key')});
+airtable.configure({apiKey: utils/* getInput */.Np('airtable-api-key')});
 
 /** The Bill.com ID Field name suffix. */
 const BILL_COM_ID_SUFFIX = 'Bill.com ID';
