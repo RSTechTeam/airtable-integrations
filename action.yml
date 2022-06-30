@@ -33,4 +33,4 @@ inputs:
     required: false
 runs:
   using: 'node16'
-  main: 'src/accounting_sync.js'
+  main: 'dist/index.js'
