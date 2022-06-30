@@ -18363,6 +18363,7 @@ await new _airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .Base */ .XY(_utils_js__WE
     (r) => {
       _utils_js__WEBPACK_IMPORTED_MODULE_1__/* .log */ .cM(r.get('Department'));
       orgIds.set(r.get('Department'), r.get('Bill.com Org ID'));
+      _utils_js__WEBPACK_IMPORTED_MODULE_1__/* .log */ .cM(orgIds.size);
     });
 _utils_js__WEBPACK_IMPORTED_MODULE_1__/* .log */ .cM(orgIds.size);
 
