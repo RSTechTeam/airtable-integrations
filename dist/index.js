@@ -1,3 +1,4 @@
+import { createRequire as __WEBPACK_EXTERNAL_createRequire } from "module";
 /******/ (() => { // webpackBootstrap
 /******/ 	var __webpack_modules__ = ({
 
@@ -4628,7 +4629,7 @@ var baseTimes = __nccwpck_require__(3349),
     isArray = __nccwpck_require__(5997),
     isBuffer = __nccwpck_require__(3741),
     isIndex = __nccwpck_require__(576),
-    isTypedArray = __nccwpck_require__(9137);
+    isTypedArray = __nccwpck_require__(3837);
 
 /** Used for built-in method references. */
 var objectProto = Object.prototype;
@@ -6737,7 +6738,7 @@ module.exports = isSymbol;
 
 /***/ }),
 
-/***/ 9137:
+/***/ 3837:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 var baseIsTypedArray = __nccwpck_require__(6934),
@@ -8881,7 +8882,7 @@ var http = __nccwpck_require__(3685);
 var https = __nccwpck_require__(5687);
 var events = __nccwpck_require__(2361);
 var assert = __nccwpck_require__(9491);
-var util = __nccwpck_require__(3837);
+var util = __nccwpck_require__(3849);
 
 
 exports.httpOverHttp = httpOverHttp;
@@ -11102,109 +11103,41 @@ module.exports.implForWrapper = function (wrapper) {
 
 /***/ }),
 
-/***/ 8214:
-/***/ ((module, __webpack_exports__, __nccwpck_require__) => {
+/***/ 6261:
+/***/ ((__unused_webpack_module, __webpack_exports__, __nccwpck_require__) => {
 
 "use strict";
-__nccwpck_require__.a(module, async (__webpack_handle_async_dependencies__) => {
+// ESM COMPAT FLAG
 __nccwpck_require__.r(__webpack_exports__);
-/* harmony import */ var _airtable_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(100);
-/* harmony import */ var _bill_com_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(6069);
-/* harmony import */ var _utils_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(5123);
-/* harmony import */ var _utils_js__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__nccwpck_require__.n(_utils_js__WEBPACK_IMPORTED_MODULE_2__);
-/** @fileoverview Syncs Bill.com Customers from Airtable to Bill.com. */
 
+// NAMESPACE OBJECT: ./src/airtable.js
+var src_airtable_namespaceObject = {};
+__nccwpck_require__.r(src_airtable_namespaceObject);
 
-
-
-
-/** The Airtable Table name Labor Charge Fields. */
-const LCF_TABLE = 'Labor Charge Field (LCF) Mapping';
-
-/** The Parent Bill.com Customer ID for internal Customers. */
-const internalCustomerId = _utils_js__WEBPACK_IMPORTED_MODULE_2__.getInput('internal-customer-id');
-
-// Initialize Bill.com Customer collection.
-await _bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .primaryOrgLogin */ .kY();
-const billComCustomers =
-    await _bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .list */ .pb(
-        'Customer',
-        [_bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .filter */ .hX('parentCustomerId', '=', internalCustomerId)]);
-const billComCustomerIds = new Set();
-billComCustomers.forEach(c => billComCustomerIds.add(c.id));
-
-// Upsert every Bill.com Customer from the Bill.com Sync View.
-const updates = [];
-await _airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .select */ .Ys(
-    LCF_TABLE,
-    'Bill.com Sync',
-    async (record) => {
-      const id = record.get(_airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .primaryOrgBillComId */ .Z1);
-      const change = {
-        obj: {
-          entity: 'Customer',
-          isActive: '1',
-          parentCustomerId: internalCustomerId,
-          name: encodeURIComponent(record.get('Abacus / Bill.com / QBO Code')),
-        }
-      }
-
-      // Insert/Create in Bill.com any record with no primary org Bill.com ID.
-      if (id.length === 0) {
-        const response =
-            await _bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .commonDataCall */ .fI('Crud/Create/Customer', change);
-        _airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .update */ .Vx(
-            LCF_TABLE,
-            [{
-              id: record.getId(),
-              fields: {[_airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .primaryOrgBillComId */ .Z1]: response.id},
-            }]);
-        return;
-      }
-
-      // Update in Bill.com other records with a primary org Bill.com ID.
-      change.obj.id = id;
-      updates.push(change);
-      billComCustomerIds.delete(id);
-    });
-
-// Mark internal Bill.com Customers not in the Bill.com Sync View as inactive.
-for (const id of billComCustomerIds) {
-  updates.push({obj: {entity: 'Customer', id: id, isActive: '2'}});
-}
-await _bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .bulkCall */ .Zs('Update/Customer', updates);
-
-__webpack_handle_async_dependencies__();
-}, 1);
-
-/***/ }),
-
-/***/ 100:
-/***/ ((__unused_webpack_module, __unused_webpack___webpack_exports__, __nccwpck_require__) => {
-
-"use strict";
-/* harmony import */ var _utils_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(5123);
-/* harmony import */ var _utils_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__nccwpck_require__.n(_utils_js__WEBPACK_IMPORTED_MODULE_0__);
+// EXTERNAL MODULE: ./node_modules/airtable/lib/airtable.js
+var lib_airtable = __nccwpck_require__(5447);
+// EXTERNAL MODULE: ./src/utils.js
+var src_utils = __nccwpck_require__(5123);
+;// CONCATENATED MODULE: ./src/airtable.js
 /** @fileoverview Utilities for interacting with Airtable. */
-
-
 
 /**
  * The official Airtable JavaScript library.
  * https://github.com/Airtable/airtable.js
  */
-const Airtable = __nccwpck_require__(5447);
 
-Airtable.configure({apiKey: _utils_js__WEBPACK_IMPORTED_MODULE_0__.getInput('airtable-api-key')});
+
+
+lib_airtable.configure({apiKey: src_utils/* getInput */.N('airtable-api-key')});
 
 /** The Bill.com ID Field name suffix. */
 const BILL_COM_ID_SUFFIX = 'Bill.com ID';
 
 /** The primary Org Bill.com ID Field name. */
-const primaryOrgBillComId = `${_utils_js__WEBPACK_IMPORTED_MODULE_0__.primaryOrg} ${BILL_COM_ID_SUFFIX}`;
+const primaryOrgBillComId = `${src_utils/* primaryOrg */.u} ${BILL_COM_ID_SUFFIX}`;
 
 /** The relevant Airtable Base. */
-const base = new Airtable().base(_utils_js__WEBPACK_IMPORTED_MODULE_0__.getInput('airtable-base-id'));
+const base = new lib_airtable().base(src_utils/* getInput */.N('airtable-base-id'));
 
 /**
  * @param {string} err
@@ -11225,7 +11158,7 @@ function errorIf(err, queryType, table) {
  * @param {function(Record<TField>): Promise<void>} func
  * @return {Promise<void>}
  */
-async function select(table, view, func) {
+async function airtable_select(table, view, func) {
   let promises = [];
   base(table).select({view: view}).eachPage(
       function page(records, fetchNextPage) {
@@ -11272,16 +11205,7 @@ async function find(table, id, func) {
   await promise;
 }
 
-
-/***/ }),
-
-/***/ 6069:
-/***/ ((__unused_webpack_module, __unused_webpack___webpack_exports__, __nccwpck_require__) => {
-
-"use strict";
-/* harmony import */ var _airtable_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(100);
-/* harmony import */ var _utils_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(5123);
-/* harmony import */ var _utils_js__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__nccwpck_require__.n(_utils_js__WEBPACK_IMPORTED_MODULE_1__);
+;// CONCATENATED MODULE: ./src/bill_com.js
 /**
  * @fileoverview Shared code for interacting with the Bill.com API.
  * For more information, check out the API documentation:
@@ -11293,7 +11217,7 @@ async function find(table, id, func) {
 
 /** The organization ID for each Anchor Entity. */
 const orgIds = new Map();
-_airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .select */ .Ys(
+src_airtable_namespaceObject.select(
     'Anchor Entities',
     'Org IDs',
     (r) => orgIds.set(r.get('Department'), r.get('Bill.com Org ID')));
@@ -11330,7 +11254,8 @@ function commonCall(endpoint, params) {
   return call(
       endpoint,
       {'Content-Type': 'application/x-www-form-urlencoded'},
-      `devKey=${utils.getInput('dev-key')}&sessionId=${sessionId}&${params}`);
+      `devKey=${utils.getInput('bill-com-dev-key')}` +
+          `&sessionId=${sessionId}&${params}`);
 }
 
 /** 
@@ -11341,8 +11266,8 @@ async function login(anchorEntity) {
   const loginResponse =
       await commonCall(
           'Login',
-          `userName=${utils.getInput('user-name')}` +
-              `&password=${utils.getInput('password')}` +
+          `userName=${utils.getInput('bill-com-user-name')}` +
+              `&password=${utils.getInput('bill-com-password')}` +
               `&orgId=${orgIds.get(anchorEntity)}`);
   sessionId = loginResponse.sessionId;
 }
@@ -11399,12 +11324,109 @@ function bulkCall(endpoint, data) {
       (arr) => commonDataCall(`Bulk/Crud/${endpoint}`, {bulk: arr}), data, 100);
 }
 
+;// CONCATENATED MODULE: ./src/accounting_sync.js
+/** @fileoverview Syncs Bill.com Customers from Airtable to Bill.com. */
+
+
+
+
+
+/** The Airtable Table name Labor Charge Fields. */
+const LCF_TABLE = 'Labor Charge Field (LCF) Mapping';
+
+async function main() {
+
+  // Initialize Bill.com Customer collection.
+  await billCom.primaryOrgLogin();
+  const internalCustomerId = utils.getInput('internal-customer-id');
+  const billComCustomers =
+      await billCom.list(
+          'Customer',
+          [billCom.filter('parentCustomerId', '=', internalCustomerId)]);
+  const billComCustomerIds = new Set();
+  billComCustomers.forEach(c => billComCustomerIds.add(c.id));
+
+  // Upsert every Bill.com Customer from the Bill.com Sync View.
+  const updates = [];
+  await airtable.select(
+      LCF_TABLE,
+      'Bill.com Sync',
+      async (record) => {
+        const id = record.get(airtable.primaryOrgBillComId);
+        const change = {
+          obj: {
+            entity: 'Customer',
+            isActive: '1',
+            parentCustomerId: internalCustomerId,
+            name:
+              encodeURIComponent(record.get('Abacus / Bill.com / QBO Code')),
+          }
+        }
+
+        // Insert/Create in Bill.com any record with no primary org Bill.com ID.
+        if (id.length === 0) {
+          const response =
+              await billCom.commonDataCall('Crud/Create/Customer', change);
+          airtable.update(
+              LCF_TABLE,
+              [{
+                id: record.getId(),
+                fields: {[airtable.primaryOrgBillComId]: response.id},
+              }]);
+          return;
+        }
+
+        // Update in Bill.com other records with a primary org Bill.com ID.
+        change.obj.id = id;
+        updates.push(change);
+        billComCustomerIds.delete(id);
+      });
+
+  // Mark internal Bill.com Customers not in the Bill.com Sync View as inactive.
+  for (const id of billComCustomerIds) {
+    updates.push({obj: {entity: 'Customer', id: id, isActive: '2'}});
+  }
+  await billCom.bulkCall('Update/Customer', updates);
+}
+
+
+/***/ }),
+
+/***/ 168:
+/***/ ((module, __webpack_exports__, __nccwpck_require__) => {
+
+"use strict";
+__nccwpck_require__.a(module, async (__webpack_handle_async_dependencies__) => {
+__nccwpck_require__.r(__webpack_exports__);
+/* harmony import */ var _accounting_sync_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(6261);
+/* harmony import */ var _utils_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(5123);
+/** @fileoverview Entrypoint for choosing which file to run. */
+
+
+
+
+const filename = util.getInput('filename');
+let imp;
+switch (filename) {
+	case 'accounting_sync':
+		imp = _accounting_sync_js__WEBPACK_IMPORTED_MODULE_0__;
+		break;
+	default:
+		throw new Error(`Unknown filename ${filename}`);
+}
+await imp.main();
+
+__webpack_handle_async_dependencies__();
+}, 1);
 
 /***/ }),
 
 /***/ 5123:
-/***/ ((__unused_webpack_module, __unused_webpack_exports, __nccwpck_require__) => {
+/***/ ((__unused_webpack_module, __unused_webpack___webpack_exports__, __nccwpck_require__) => {
 
+"use strict";
+/* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(6024);
+/* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__nccwpck_require__.n(_actions_core__WEBPACK_IMPORTED_MODULE_0__);
 /** @fileoverview Shared code for Bill.com x Airtable Repository. */
 
 /**
@@ -11412,14 +11434,14 @@ function bulkCall(endpoint, data) {
  * registering secrets and exporting variables across actions.
  * https://github.com/actions/toolkit/tree/main/packages/core
  */
-const core = __nccwpck_require__(6024);
+
 
 /**
  * @param {string} input
  * @return {string} required input value
  */
 function getInput(input) {
-  return core.getInput(input, {required: true});
+  return _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput(input, {required: true});
 }
 
 /** The primary Bill.com Org. */
@@ -11464,7 +11486,7 @@ module.exports = eval("require")("encoding");
 /***/ ((module) => {
 
 "use strict";
-module.exports = require("assert");
+module.exports = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("assert");
 
 /***/ }),
 
@@ -11472,7 +11494,7 @@ module.exports = require("assert");
 /***/ ((module) => {
 
 "use strict";
-module.exports = require("events");
+module.exports = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("events");
 
 /***/ }),
 
@@ -11480,7 +11502,7 @@ module.exports = require("events");
 /***/ ((module) => {
 
 "use strict";
-module.exports = require("fs");
+module.exports = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("fs");
 
 /***/ }),
 
@@ -11488,7 +11510,7 @@ module.exports = require("fs");
 /***/ ((module) => {
 
 "use strict";
-module.exports = require("http");
+module.exports = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("http");
 
 /***/ }),
 
@@ -11496,7 +11518,7 @@ module.exports = require("http");
 /***/ ((module) => {
 
 "use strict";
-module.exports = require("https");
+module.exports = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("https");
 
 /***/ }),
 
@@ -11504,7 +11526,7 @@ module.exports = require("https");
 /***/ ((module) => {
 
 "use strict";
-module.exports = require("net");
+module.exports = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("net");
 
 /***/ }),
 
@@ -11512,7 +11534,7 @@ module.exports = require("net");
 /***/ ((module) => {
 
 "use strict";
-module.exports = require("os");
+module.exports = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("os");
 
 /***/ }),
 
@@ -11520,7 +11542,7 @@ module.exports = require("os");
 /***/ ((module) => {
 
 "use strict";
-module.exports = require("path");
+module.exports = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("path");
 
 /***/ }),
 
@@ -11528,7 +11550,7 @@ module.exports = require("path");
 /***/ ((module) => {
 
 "use strict";
-module.exports = require("punycode");
+module.exports = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("punycode");
 
 /***/ }),
 
@@ -11536,7 +11558,7 @@ module.exports = require("punycode");
 /***/ ((module) => {
 
 "use strict";
-module.exports = require("stream");
+module.exports = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("stream");
 
 /***/ }),
 
@@ -11544,7 +11566,7 @@ module.exports = require("stream");
 /***/ ((module) => {
 
 "use strict";
-module.exports = require("tls");
+module.exports = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("tls");
 
 /***/ }),
 
@@ -11552,15 +11574,15 @@ module.exports = require("tls");
 /***/ ((module) => {
 
 "use strict";
-module.exports = require("url");
+module.exports = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("url");
 
 /***/ }),
 
-/***/ 3837:
+/***/ 3849:
 /***/ ((module) => {
 
 "use strict";
-module.exports = require("util");
+module.exports = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("util");
 
 /***/ }),
 
@@ -11568,7 +11590,7 @@ module.exports = require("util");
 /***/ ((module) => {
 
 "use strict";
-module.exports = require("zlib");
+module.exports = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("zlib");
 
 /***/ }),
 
@@ -11764,7 +11786,7 @@ module.exports = JSON.parse('[[[0,44],"disallowed_STD3_valid"],[[45,46],"valid"]
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
 /******/ 	// This entry module used 'module' so it can't be inlined
-/******/ 	var __webpack_exports__ = __nccwpck_require__(8214);
+/******/ 	var __webpack_exports__ = __nccwpck_require__(168);
 /******/ 	module.exports = __webpack_exports__;
 /******/ 	
 /******/ })()
