@@ -9,11 +9,12 @@ import fetch from 'node-fetch';
 import * as utils from './utils.js';
 
 /** The organization ID for each Anchor Entity. */
-export const orgIds = new Map();
-new airtable.Base(utils.getInput('airtable-org-ids-base-id')).select(
+const orgIds = new Map();
+await new airtable.Base(utils.getInput('airtable-org-ids-base-id')).select(
     'Anchor Entities',
     'Org IDs',
     (r) => orgIds.set(r.get('Department'), r.get('Bill.com Org ID')));
+console.log(orgIds.length);
 
 /** The ID of the Bill.com API session (after successful authentication). */
 export let sessionId;
