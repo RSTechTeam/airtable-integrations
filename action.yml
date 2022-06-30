@@ -1,5 +1,5 @@
 name: 'Bill.com x Airtable Action'
-description: 'Run a Javascript file that uses bill_com.js and airtable.js'
+description: 'Run a Javascript program that uses bill_com.js and airtable.js'
 inputs:
   filename:
     description: 'The Javascript file name (without the extension)'
@@ -11,7 +11,10 @@ inputs:
     description: 'The Airtable API key to use for Airtable interactions'
     required: true
   airtable-base-id:
-    description: 'The ID of the Airtable Base used in the target file'
+    description: 'The ID of the Airtable Base used in the target program'
+    required: true
+  airtable-org-ids-base-id:
+    description: 'The ID of the Airtable Base housing the Bill.com Org IDs'
     required: true
   bill-com-dev-key:
     description: 'The Bill.com developer key for API access'

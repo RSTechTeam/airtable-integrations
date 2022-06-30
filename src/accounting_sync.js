@@ -7,7 +7,10 @@ import * as utils from './utils.js';
 /** The Airtable Table name Labor Charge Fields. */
 const LCF_TABLE = 'Labor Charge Field (LCF) Mapping';
 
-export async function main() {
+/**
+ * @param accountingBaseId {string}
+ */
+export async function main(accountingBaseId) {
 
   // Initialize Bill.com Customer collection.
   await billCom.primaryOrgLogin();
@@ -20,8 +23,9 @@ export async function main() {
   billComCustomers.forEach(c => billComCustomerIds.add(c.id));
 
   // Upsert every Bill.com Customer from the Bill.com Sync View.
+  const accountingBase = new airtable.Base(accountingBaseId);
   const updates = [];
-  await airtable.select(
+  await accountingBase.select(
       LCF_TABLE,
       'Bill.com Sync',
       async (record) => {
@@ -40,7 +44,7 @@ export async function main() {
         if (id.length === 0) {
           const response =
               await billCom.commonDataCall('Crud/Create/Customer', change);
-          airtable.update(
+          accountingBase.update(
               LCF_TABLE,
               [{
                 id: record.getId(),

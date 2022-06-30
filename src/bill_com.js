@@ -10,7 +10,7 @@ import * as utils from './utils.js';
 
 /** The organization ID for each Anchor Entity. */
 export const orgIds = new Map();
-airtable.select(
+new airtable.Base(utils.getInput('airtable-org-ids-base-id')).select(
     'Anchor Entities',
     'Org IDs',
     (r) => orgIds.set(r.get('Department'), r.get('Bill.com Org ID')));

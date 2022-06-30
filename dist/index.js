@@ -16034,17 +16034,13 @@ var utils = __nccwpck_require__(8287);
 
 
 
+airtable.configure({apiKey: utils/* getInput */.Np('airtable-api-key')});
+
 /** The Bill.com ID Field name suffix. */
 const BILL_COM_ID_SUFFIX = 'Bill.com ID';
 
 /** The primary Org Bill.com ID Field name. */
 const primaryOrgBillComId = `${utils/* primaryOrg */.uP} ${BILL_COM_ID_SUFFIX}`;
-
-const apiKey = utils/* getInput */.Np('airtable-api-key');
-const baseId = utils/* getInput */.Np('airtable-base-id');
-
-/** The relevant Airtable Base. */
-const base = new airtable({apiKey: apiKey}).base(baseId);
 
 /**
  * @param {string} err
@@ -16058,58 +16054,71 @@ function errorIf(err, queryType, table) {
   }
 }
 
-/**
- * Runs func for each record from table view.
- * @param {string} table
- * @param {string} view
- * @param {function(Record<TField>): Promise<void>} func
- * @return {Promise<void>}
- */
-async function airtable_select(table, view, func) {
-  let promises = [];
-  base(table).select({view: view}).eachPage(
-      function page(records, fetchNextPage) {
-        promises = promises.concat(records.map(func));
-        fetchNextPage();
-      },
-      function done(err) { errorIf(err, 'selecting', table); });
-  await Promise.all(promises);
-}
+/** An Airtable Base to query. */
+class Base {
 
-/**
- * @param {string} table
- * @param {Array<Object>} updates
- */
-function update(table, updates) {
-  base(table).update(
-      updates, (err, records) => errorIf(err, 'updating', table));
-}
+  /**
+   * @param {string} baseId
+   */
+  constructor(baseId) {
 
-/**
- * @param {string} table
- * @param {Array<Object>} creates
- */
-function create(table, creates) {
-  base(table).create(
-      creates, (err, records) => errorIf(err, 'creating', table));
-}
+    /** @private {Base} */
+    this.base_ = new airtable().base(baseId);
+  }
 
-/**
- * Runs func on table record with id.
- * @param {string} table
- * @param {string} id
- * @param {function(Record<TField>): Promise<void>} func
- * @return {Promise<void>}
- */
-async function find(table, id, func) {
-  let promise;
-  base(table).find(
-      id,
-      (err, record) => {
-        errorIf(err, 'finding', table);
-        promise = func(record);
-      });
-  await promise;
+  /**
+   * Runs func for each record from table view.
+   * @param {string} table
+   * @param {string} view
+   * @param {function(Record<TField>): Promise<void>} func
+   * @return {Promise<void>}
+   */
+  async select(table, view, func) {
+    let promises = [];
+    this.base_(table).select({view: view}).eachPage(
+        function page(records, fetchNextPage) {
+          promises = promises.concat(records.map(func));
+          fetchNextPage();
+        },
+        function done(err) { errorIf(err, 'selecting', table); });
+    await Promise.all(promises);
+  }
+
+  /**
+   * @param {string} table
+   * @param {Array<Object>} updates
+   */
+  update(table, updates) {
+    this.base_(table).update(
+        updates, (err, records) => errorIf(err, 'updating', table));
+  }
+
+  /**
+   * @param {string} table
+   * @param {Array<Object>} creates
+   */
+  create(table, creates) {
+    this.base_(table).create(
+        creates, (err, records) => errorIf(err, 'creating', table));
+  }
+
+  /**
+   * Runs func on table record with id.
+   * @param {string} table
+   * @param {string} id
+   * @param {function(Record<TField>): Promise<void>} func
+   * @return {Promise<void>}
+   */
+  async find(table, id, func) {
+    let promise;
+    this.base_(table).find(
+        id,
+        (err, record) => {
+          errorIf(err, 'finding', table);
+          promise = func(record);
+        });
+    await promise;
+  }
 }
 
 ;// CONCATENATED MODULE: external "node:http"
@@ -18238,7 +18247,7 @@ function fixResponseChunkedTransferBadEnding(request, errorCallback) {
 
 /** The organization ID for each Anchor Entity. */
 const orgIds = new Map();
-airtable_select(
+new Base(utils/* getInput */.Np('airtable-org-ids-base-id')).select(
     'Anchor Entities',
     'Org IDs',
     (r) => orgIds.set(r.get('Department'), r.get('Bill.com Org ID')));
@@ -18355,7 +18364,10 @@ function bulkCall(endpoint, data) {
 /** The Airtable Table name Labor Charge Fields. */
 const LCF_TABLE = 'Labor Charge Field (LCF) Mapping';
 
-async function main() {
+/**
+ * @param accountingBaseId {string}
+ */
+async function main(accountingBaseId) {
 
   // Initialize Bill.com Customer collection.
   await primaryOrgLogin();
@@ -18368,8 +18380,9 @@ async function main() {
   billComCustomers.forEach(c => billComCustomerIds.add(c.id));
 
   // Upsert every Bill.com Customer from the Bill.com Sync View.
+  const accountingBase = new Base(accountingBaseId);
   const updates = [];
-  await airtable_select(
+  await accountingBase.select(
       LCF_TABLE,
       'Bill.com Sync',
       async (record) => {
@@ -18388,7 +18401,7 @@ async function main() {
         if (id.length === 0) {
           const response =
               await commonDataCall('Crud/Create/Customer', change);
-          update(
+          accountingBase.update(
               LCF_TABLE,
               [{
                 id: record.getId(),
@@ -18433,7 +18446,7 @@ switch (filename) {
 	default:
 		throw new Error(`Unknown filename ${filename}`);
 }
-await imp.main();
+await imp.main(_utils_js__WEBPACK_IMPORTED_MODULE_1__/* .getInput */ .Np('airtable-base-id'));
 
 __webpack_handle_async_dependencies__();
 }, 1);
