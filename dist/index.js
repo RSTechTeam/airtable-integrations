@@ -18360,7 +18360,10 @@ const orgIds = new Map();
 await new _airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .Base */ .XY(_utils_js__WEBPACK_IMPORTED_MODULE_1__/* .getInput */ .Np('airtable-org-ids-base-id')).select(
     'Anchor Entities',
     'Org IDs',
-    (r) => orgIds.set(r.get('Department'), r.get('Bill.com Org ID')));
+    (r) => {
+      _utils_js__WEBPACK_IMPORTED_MODULE_1__/* .log */ .cM(r.get('Department'));
+      orgIds.set(r.get('Department'), r.get('Bill.com Org ID'));
+    });
 _utils_js__WEBPACK_IMPORTED_MODULE_1__/* .log */ .cM(orgIds.length);
 
 /** The ID of the Bill.com API session (after successful authentication). */
@@ -18540,7 +18543,9 @@ function log(...message) {
  * @param {string} message
  */
 function error(code, context, message) {
-  _actions_core__WEBPACK_IMPORTED_MODULE_0__.error(`Error ${code} (from ${context}): ${message}`);
+  const msg = `Error ${code} (from ${context}): ${message}`;
+  _actions_core__WEBPACK_IMPORTED_MODULE_0__.setFailed(msg);
+  throw new Error(msg);
 }
 
 /**
