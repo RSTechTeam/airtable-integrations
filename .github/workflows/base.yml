@@ -29,7 +29,7 @@ jobs:
           filename: ${{ inputs.filename }}
           primary-org: ${{ secrets.PRIMARY_ORG }}
           airtable-api-key: ${{ secrets.AIRTABLE_API_KEY }}
-          airtable-base-id: ${{ steps.airtable-base-id.id }}
+          airtable-base-id: ${{ steps.airtable-base-id.outputs.id }}
           bill-com-dev-key: ${{ secrets.BILL_COM_DEV_KEY }}
           bill-com-user-name: ${{ secrets.BILL_COM_USER_NAME }}
           bill-com-password: ${{ secrets.BILL_COM_PASSWORD }}
