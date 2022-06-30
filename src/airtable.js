@@ -4,7 +4,7 @@
  * The official Airtable JavaScript library.
  * https://github.com/Airtable/airtable.js
  */
-import * as Airtable from 'airtable';
+import {Airtable} from 'airtable';
 import * as utils from './utils.js';
 
 Airtable.configure({apiKey: utils.getInput('airtable-api-key')});
