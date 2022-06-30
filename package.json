@@ -1,6 +1,7 @@
 {
   "name": "bill.com-airtable-integration",
   "version": "1.0.0",
+  "type": "module",
   "description": "",
   "main": "",
   "scripts": {
