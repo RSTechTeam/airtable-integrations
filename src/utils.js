@@ -19,7 +19,7 @@ export function getInput(input) {
 export const primaryOrg = getInput('primary-org');
 
 export function log(...message) {
-  core.info(message);
+  core.notice(message);
 }
 
 /**
@@ -28,7 +28,7 @@ export function log(...message) {
  * @param {string} message
  */
 export function error(code, context, message) {
-  core.setFailed(`Error ${code} (from ${context}): ${message}`);
+  core.error(`Error ${code} (from ${context}): ${message}`);
 }
 
 /**

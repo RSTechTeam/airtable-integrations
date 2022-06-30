@@ -18447,7 +18447,7 @@ async function list(entity, filters=undefined) {
   let fullList = [];
   for (let start = 0; ; start += MAX) {
     const response =
-        await commonDataBillComApiCall(
+        await commonDataCall(
             `List/${entity}`, {start: start, max: MAX, filters: filters});
     fullList = fullList.concat(response);
     if (response.length < MAX) break;
@@ -18531,7 +18531,7 @@ function getInput(input) {
 const primaryOrg = getInput('primary-org');
 
 function log(...message) {
-  _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(message);
+  _actions_core__WEBPACK_IMPORTED_MODULE_0__.notice(message);
 }
 
 /**
@@ -18540,7 +18540,7 @@ function log(...message) {
  * @param {string} message
  */
 function error(code, context, message) {
-  _actions_core__WEBPACK_IMPORTED_MODULE_0__.setFailed(`Error ${code} (from ${context}): ${message}`);
+  _actions_core__WEBPACK_IMPORTED_MODULE_0__.error(`Error ${code} (from ${context}): ${message}`);
 }
 
 /**

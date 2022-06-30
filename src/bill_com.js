@@ -100,7 +100,7 @@ export async function list(entity, filters=undefined) {
   let fullList = [];
   for (let start = 0; ; start += MAX) {
     const response =
-        await commonDataBillComApiCall(
+        await commonDataCall(
             `List/${entity}`, {start: start, max: MAX, filters: filters});
     fullList = fullList.concat(response);
     if (response.length < MAX) break;
