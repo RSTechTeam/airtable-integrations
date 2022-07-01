@@ -11,6 +11,7 @@ const LCF_TABLE = 'Labor Charge Field (LCF) Mapping';
  * @param accountingBaseId {string}
  */
 export async function main(accountingBaseId) {
+  await billCom.init();
 
   // Initialize Bill.com Customer collection.
   await billCom.primaryOrgLogin();

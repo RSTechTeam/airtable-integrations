@@ -20,11 +20,14 @@ const password = utils.getInput('bill-com-password');
 /** The organization ID for each Anchor Entity. */
 const orgIds = new Map();
 
+/** The ID of the Bill.com API session (after successful authentication). */
+export let sessionId;
+
 /**
  * Initializes orgIds, pulling the data from Airtable.
  * @return {Promise<boolean>}
  */
-async function initOrgIds() {
+export async function init() {
   const orgIdBase =
       new airtable.Base(utils.getInput('airtable-org-ids-base-id'));
   await orgIdBase.select(
@@ -36,14 +39,7 @@ async function initOrgIds() {
         utils.log(orgIds.size);
       });
   utils.log(orgIds.size);
-  return true;
 }
-
-/** Asserts that orgIds is initialized before the module is ready for use. */
-export const isInit = await initOrgIds();
-
-/** The ID of the Bill.com API session (after successful authentication). */
-export let sessionId;
 
 /**
  * @param {string} endpoint 
