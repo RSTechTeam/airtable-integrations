@@ -46,7 +46,7 @@ export class Base {
    */
   async select(table, view, func) {
     let promises = [];
-    this.base_(table).select({view: view}).eachPage(
+    await this.base_(table).select({view: view}).eachPage(
         function page(records, fetchNextPage) {
           promises = promises.concat(records.map(func));
           fetchNextPage();
@@ -60,7 +60,7 @@ export class Base {
    * @param {Array<Object>} updates
    */
   update(table, updates) {
-    this.base_(table).update(
+    return this.base_(table).update(
         updates, (err, records) => errorIf(err, 'updating', table));
   }
 
@@ -69,7 +69,7 @@ export class Base {
    * @param {Array<Object>} creates
    */
   create(table, creates) {
-    this.base_(table).create(
+    return this.base_(table).create(
         creates, (err, records) => errorIf(err, 'creating', table));
   }
 
@@ -82,7 +82,7 @@ export class Base {
    */
   async find(table, id, func) {
     let promise;
-    this.base_(table).find(
+    await this.base_(table).find(
         id,
         (err, record) => {
           errorIf(err, 'finding', table);

@@ -43,7 +43,7 @@ export async function main(accountingBaseId) {
         if (id.length === 0) {
           const response =
               await billCom.commonDataCall('Crud/Create/Customer', change);
-          accountingBase.update(
+          await accountingBase.update(
               LCF_TABLE,
               [{
                 id: record.getId(),

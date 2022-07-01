@@ -16073,7 +16073,7 @@ class Base {
    */
   async select(table, view, func) {
     let promises = [];
-    this.base_(table).select({view: view}).eachPage(
+    await this.base_(table).select({view: view}).eachPage(
         function page(records, fetchNextPage) {
           promises = promises.concat(records.map(func));
           fetchNextPage();
@@ -16087,7 +16087,7 @@ class Base {
    * @param {Array<Object>} updates
    */
   update(table, updates) {
-    this.base_(table).update(
+    return this.base_(table).update(
         updates, (err, records) => errorIf(err, 'updating', table));
   }
 
@@ -16096,7 +16096,7 @@ class Base {
    * @param {Array<Object>} creates
    */
   create(table, creates) {
-    this.base_(table).create(
+    return this.base_(table).create(
         creates, (err, records) => errorIf(err, 'creating', table));
   }
 
@@ -16109,7 +16109,7 @@ class Base {
    */
   async find(table, id, func) {
     let promise;
-    this.base_(table).find(
+    await this.base_(table).find(
         id,
         (err, record) => {
           errorIf(err, 'finding', table);
@@ -18419,7 +18419,7 @@ async function main(accountingBaseId) {
         if (id.length === 0) {
           const response =
               await commonDataCall('Crud/Create/Customer', change);
-          accountingBase.update(
+          await accountingBase.update(
               LCF_TABLE,
               [{
                 id: record.getId(),
