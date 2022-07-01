@@ -18268,7 +18268,7 @@ async function init() {
   await orgIdBase.select(
       'Anchor Entities',
       'Org IDs',
-      (r) => {
+      async (r) => {
         utils/* log */.cM(r.get('Department'));
         orgIds.set(r.get('Department'), r.get('Bill.com Org ID'));
         utils/* log */.cM(orgIds.size);
@@ -18383,9 +18383,7 @@ function bulkCall(endpoint, data) {
 /** The Airtable Table name Labor Charge Fields. */
 const LCF_TABLE = 'Labor Charge Field (LCF) Mapping';
 
-/**
- * @param accountingBaseId {string}
- */
+/** @param accountingBaseId {string} */
 async function main(accountingBaseId) {
   await init();
 

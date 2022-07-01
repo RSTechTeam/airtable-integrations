@@ -7,9 +7,7 @@ import * as utils from './utils.js';
 /** The Airtable Table name Labor Charge Fields. */
 const LCF_TABLE = 'Labor Charge Field (LCF) Mapping';
 
-/**
- * @param accountingBaseId {string}
- */
+/** @param accountingBaseId {string} */
 export async function main(accountingBaseId) {
   await billCom.init();
 
