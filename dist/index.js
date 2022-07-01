@@ -18268,7 +18268,7 @@ async function init() {
   await orgIdBase.select(
       'Anchor Entities',
       'Org IDs',
-      async (r) => {
+      (r) => {
         utils/* log */.cM(r.get('Department'));
         orgIds.set(r.get('Department'), r.get('Bill.com Org ID'));
         utils/* log */.cM(orgIds.size);

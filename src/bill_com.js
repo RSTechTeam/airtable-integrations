@@ -33,7 +33,7 @@ export async function init() {
   await orgIdBase.select(
       'Anchor Entities',
       'Org IDs',
-      async (r) => {
+      (r) => {
         utils.log(r.get('Department'));
         orgIds.set(r.get('Department'), r.get('Bill.com Org ID'));
         utils.log(orgIds.size);
