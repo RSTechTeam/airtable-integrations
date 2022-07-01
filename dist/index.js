@@ -18370,7 +18370,9 @@ const orgIds = new Map();
  * @return {Promise<boolean>}
  */
 async function initOrgIds() {
-  await new _airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .Base */ .XY(_utils_js__WEBPACK_IMPORTED_MODULE_1__/* .getInput */ .Np('airtable-org-ids-base-id')).select(
+  const orgIdBase =
+      new _airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .Base */ .XY(_utils_js__WEBPACK_IMPORTED_MODULE_1__/* .getInput */ .Np('airtable-org-ids-base-id'));
+  await orgIdBase.select(
       'Anchor Entities',
       'Org IDs',
       (r) => {

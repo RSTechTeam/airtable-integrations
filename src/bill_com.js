@@ -25,7 +25,9 @@ const orgIds = new Map();
  * @return {Promise<boolean>}
  */
 async function initOrgIds() {
-  await new airtable.Base(utils.getInput('airtable-org-ids-base-id')).select(
+  const orgIdBase =
+      new airtable.Base(utils.getInput('airtable-org-ids-base-id'));
+  await orgIdBase.select(
       'Anchor Entities',
       'Org IDs',
       (r) => {
