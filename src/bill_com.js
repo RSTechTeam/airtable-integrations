@@ -8,17 +8,37 @@ import * as airtable from './airtable.js';
 import fetch from 'node-fetch';
 import * as utils from './utils.js';
 
+/** The Bill.com developer key for API access. */
+const devKey = utils.getInput('bill-com-dev-key');
+
+/** The Bill.com email for login. */
+const userName = utils.getInput('bill-com-user-name');
+
+/** The Bill.com password for login. */
+const password = utils.getInput('bill-com-password');
+
 /** The organization ID for each Anchor Entity. */
 const orgIds = new Map();
-await new airtable.Base(utils.getInput('airtable-org-ids-base-id')).select(
-    'Anchor Entities',
-    'Org IDs',
-    (r) => {
-      utils.log(r.get('Department'));
-      orgIds.set(r.get('Department'), r.get('Bill.com Org ID'));
-      utils.log(orgIds.size);
-    });
-utils.log(orgIds.size);
+
+/**
+ * Initializes orgIds, pulling the data from Airtable.
+ * @return {Promise<boolean>}
+ */
+async function initOrgIds() {
+  await new airtable.Base(utils.getInput('airtable-org-ids-base-id')).select(
+      'Anchor Entities',
+      'Org IDs',
+      (r) => {
+        utils.log(r.get('Department'));
+        orgIds.set(r.get('Department'), r.get('Bill.com Org ID'));
+        utils.log(orgIds.size);
+      });
+  utils.log(orgIds.size);
+  return true;
+}
+
+/** Asserts that orgIds is initialized before the module is ready for use. */
+export const isInit = await initOrgIds();
 
 /** The ID of the Bill.com API session (after successful authentication). */
 export let sessionId;
@@ -52,8 +72,7 @@ export function commonCall(endpoint, params) {
   return call(
       endpoint,
       {'Content-Type': 'application/x-www-form-urlencoded'},
-      `devKey=${utils.getInput('bill-com-dev-key')}` +
-          `&sessionId=${sessionId}&${params}`);
+      `devKey=${devKey}&sessionId=${sessionId}&${params}`);
 }
 
 /** 
@@ -64,8 +83,7 @@ export async function login(anchorEntity) {
   const loginResponse =
       await commonCall(
           'Login',
-          `userName=${utils.getInput('bill-com-user-name')}` +
-              `&password=${utils.getInput('bill-com-password')}` +
+          `userName=${userName}&password=${password}` +
               `&orgId=${orgIds.get(anchorEntity)}`);
   sessionId = loginResponse.sessionId;
 }

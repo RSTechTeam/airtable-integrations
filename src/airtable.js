@@ -30,9 +30,7 @@ function errorIf(err, queryType, table) {
 /** An Airtable Base to query. */
 export class Base {
 
-  /**
-   * @param {string} baseId
-   */
+  /** @param {string} baseId */
   constructor(baseId) {
 
     /** @private {Base} */

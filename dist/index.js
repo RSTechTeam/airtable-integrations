@@ -18263,9 +18263,7 @@ function errorIf(err, queryType, table) {
 /** An Airtable Base to query. */
 class Base {
 
-  /**
-   * @param {string} baseId
-   */
+  /** @param {string} baseId */
   constructor(baseId) {
 
     /** @private {Base} */
@@ -18341,7 +18339,7 @@ __nccwpck_require__.a(__webpack_module__, async (__webpack_handle_async_dependen
 /* harmony export */   "pb": () => (/* binding */ list),
 /* harmony export */   "Zs": () => (/* binding */ bulkCall)
 /* harmony export */ });
-/* unused harmony exports sessionId, call, commonCall, login */
+/* unused harmony exports isInit, sessionId, call, commonCall, login */
 /* harmony import */ var _airtable_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(7539);
 /* harmony import */ var node_fetch__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(4028);
 /* harmony import */ var _utils_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(8287);
@@ -18355,17 +18353,37 @@ __nccwpck_require__.a(__webpack_module__, async (__webpack_handle_async_dependen
 
 
 
+/** The Bill.com developer key for API access. */
+const devKey = _utils_js__WEBPACK_IMPORTED_MODULE_1__/* .getInput */ .Np('bill-com-dev-key');
+
+/** The Bill.com email for login. */
+const userName = _utils_js__WEBPACK_IMPORTED_MODULE_1__/* .getInput */ .Np('bill-com-user-name');
+
+/** The Bill.com password for login. */
+const password = _utils_js__WEBPACK_IMPORTED_MODULE_1__/* .getInput */ .Np('bill-com-password');
+
 /** The organization ID for each Anchor Entity. */
 const orgIds = new Map();
-await new _airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .Base */ .XY(_utils_js__WEBPACK_IMPORTED_MODULE_1__/* .getInput */ .Np('airtable-org-ids-base-id')).select(
-    'Anchor Entities',
-    'Org IDs',
-    (r) => {
-      _utils_js__WEBPACK_IMPORTED_MODULE_1__/* .log */ .cM(r.get('Department'));
-      orgIds.set(r.get('Department'), r.get('Bill.com Org ID'));
-      _utils_js__WEBPACK_IMPORTED_MODULE_1__/* .log */ .cM(orgIds.size);
-    });
-_utils_js__WEBPACK_IMPORTED_MODULE_1__/* .log */ .cM(orgIds.size);
+
+/**
+ * Initializes orgIds, pulling the data from Airtable.
+ * @return {Promise<boolean>}
+ */
+async function initOrgIds() {
+  await new _airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .Base */ .XY(_utils_js__WEBPACK_IMPORTED_MODULE_1__/* .getInput */ .Np('airtable-org-ids-base-id')).select(
+      'Anchor Entities',
+      'Org IDs',
+      (r) => {
+        _utils_js__WEBPACK_IMPORTED_MODULE_1__/* .log */ .cM(r.get('Department'));
+        orgIds.set(r.get('Department'), r.get('Bill.com Org ID'));
+        _utils_js__WEBPACK_IMPORTED_MODULE_1__/* .log */ .cM(orgIds.size);
+      });
+  _utils_js__WEBPACK_IMPORTED_MODULE_1__/* .log */ .cM(orgIds.size);
+  return true;
+}
+
+/** Asserts that orgIds is initialized before the module is ready for use. */
+const isInit = await initOrgIds();
 
 /** The ID of the Bill.com API session (after successful authentication). */
 let sessionId;
@@ -18399,8 +18417,7 @@ function commonCall(endpoint, params) {
   return call(
       endpoint,
       {'Content-Type': 'application/x-www-form-urlencoded'},
-      `devKey=${_utils_js__WEBPACK_IMPORTED_MODULE_1__/* .getInput */ .Np('bill-com-dev-key')}` +
-          `&sessionId=${sessionId}&${params}`);
+      `devKey=${devKey}&sessionId=${sessionId}&${params}`);
 }
 
 /** 
@@ -18411,8 +18428,7 @@ async function login(anchorEntity) {
   const loginResponse =
       await commonCall(
           'Login',
-          `userName=${_utils_js__WEBPACK_IMPORTED_MODULE_1__/* .getInput */ .Np('bill-com-user-name')}` +
-              `&password=${_utils_js__WEBPACK_IMPORTED_MODULE_1__/* .getInput */ .Np('bill-com-password')}` +
+          `userName=${userName}&password=${password}` +
               `&orgId=${orgIds.get(anchorEntity)}`);
   sessionId = loginResponse.sessionId;
 }
