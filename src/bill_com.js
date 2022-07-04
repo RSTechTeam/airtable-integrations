@@ -19,27 +19,13 @@ const password = utils.getInput('bill-com-password');
 
 /** The organization ID for each Anchor Entity. */
 const orgIds = new Map();
+await new airtable.Base(utils.getInput('airtable-org-ids-base-id')).select(
+    'Anchor Entities',
+    'Org IDs',
+    (r) => orgIds.set(r.get('Department'), r.get('Bill.com Org ID')));
 
 /** The ID of the Bill.com API session (after successful authentication). */
 export let sessionId;
-
-/**
- * Initializes orgIds, pulling the data from Airtable.
- * @return {Promise<boolean>}
- */
-export async function init() {
-  const orgIdBase =
-      new airtable.Base(utils.getInput('airtable-org-ids-base-id'));
-  await orgIdBase.select(
-      'Anchor Entities',
-      'Org IDs',
-      (r) => {
-        utils.log(r.get('Department'));
-        orgIds.set(r.get('Department'), r.get('Bill.com Org ID'));
-        utils.log(orgIds.size);
-      });
-  utils.log(orgIds.size);
-}
 
 /**
  * @param {string} endpoint 
@@ -56,7 +42,7 @@ export async function call(endpoint, headers, body) {
   utils.log(endpoint, json);
   const data = json.response_data;
   if (json.response_status === 1) {
-    utils.error(data.error_code, endpoint, data.error_message);
+    utils.fetchError(data.error_code, endpoint, data.error_message);
   }
   return data;
 }

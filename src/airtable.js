@@ -20,11 +20,9 @@ export const primaryOrgBillComId = `${utils.primaryOrg} ${BILL_COM_ID_SUFFIX}`;
  * @param {string} queryType
  * @param {string} table
  */
-function errorIf(err, queryType, table) {
-  if (err) {
-    throw new Error(
-        `Error while ${queryType} records in Airtable Table ${table}: ${err}`);
-  }
+function error(err, queryType, table) {
+  utils.error(
+      `Error while ${queryType} records in Airtable Table ${table}: ${err}`);
 }
 
 /** An Airtable Base to query. */
@@ -47,7 +45,7 @@ export class Base {
   select(table, view, func) {
     return this.base_(table).select({view: view}).all()
         .then((records) => Promise.all(records.map(func)))
-        .catch((err) => errorIf(err, 'selecting', table));
+        .catch((err) => error(err, 'selecting', table));
   }
 
   /**
@@ -57,7 +55,7 @@ export class Base {
    */
   update(table, updates) {
     return this.base_(table).update(updates).catch(
-        (err) => errorIf(err, 'updating', table));
+        (err) => error(err, 'updating', table));
   }
 
   /**
@@ -67,7 +65,7 @@ export class Base {
    */
   create(table, creates) {
     return this.base_(table).create(creates).catch(
-        (err) => errorIf(err, 'creating', table));
+        (err) => error(err, 'creating', table));
   }
 
   /**
@@ -79,6 +77,6 @@ export class Base {
    */
   find(table, id, func) {
     return this.base_(table).find(id).then(func).catch(
-        (err) => errorIf(err, 'finding', table));
+        (err) => error(err, 'finding', table));
   }
 }

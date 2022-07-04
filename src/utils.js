@@ -23,14 +23,21 @@ export function log(...message) {
 }
 
 /**
+ * Logs message, sets a failing exit code, and throws an error.
+ * @param {string} message
+ */
+export function error(message) {
+  core.setFailed(message);
+  throw new Error(message);
+}
+
+/**
  * @param {string|number} code
  * @param {string} context
  * @param {string} message
  */
-export function error(code, context, message) {
-  const msg = `Error ${code} (from ${context}): ${message}`;
-  core.setFailed(msg);
-  throw new Error(msg);
+export function fetchError(code, context, message) {
+  error(`Error ${code} (from ${context}): ${message}`);
 }
 
 /**
