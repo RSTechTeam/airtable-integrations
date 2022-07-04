@@ -16071,33 +16071,30 @@ class Base {
    * @param {function(Record<TField>): Promise<void>} func
    * @return {Promise<void>}
    */
-  async select(table, view, func) {
-    let promises = [];
-    await this.base_(table).select({view: view}).eachPage(
-        function page(records, fetchNextPage) {
-          promises = promises.concat(records.map(func));
-          fetchNextPage();
-        },
-        function done(err) { errorIf(err, 'selecting', table); });
-    await Promise.all(promises);
+  select(table, view, func) {
+    return this.base_(table).select({view: view}).all()
+        .then((records) => Promise.all(records.map(func)))
+        .catch((err) => errorIf(err, 'selecting', table));
   }
 
   /**
    * @param {string} table
    * @param {Array<Object>} updates
+   * @return {Promise<void>}
    */
   update(table, updates) {
-    return this.base_(table).update(
-        updates, (err, records) => errorIf(err, 'updating', table));
+    return this.base_(table).update(updates).catch(
+        (err) => errorIf(err, 'updating', table));
   }
 
   /**
    * @param {string} table
    * @param {Array<Object>} creates
+   * @return {Promise<void>}
    */
   create(table, creates) {
-    return this.base_(table).create(
-        creates, (err, records) => errorIf(err, 'creating', table));
+    return this.base_(table).create(creates).catch(
+        (err) => errorIf(err, 'creating', table));
   }
 
   /**
@@ -16107,15 +16104,9 @@ class Base {
    * @param {function(Record<TField>): Promise<void>} func
    * @return {Promise<void>}
    */
-  async find(table, id, func) {
-    let promise;
-    await this.base_(table).find(
-        id,
-        (err, record) => {
-          errorIf(err, 'finding', table);
-          promise = func(record);
-        });
-    await promise;
+  find(table, id, func) {
+    return this.base_(table).find(id).then(func).catch(
+        (err) => errorIf(err, 'finding', table));
   }
 }
 
