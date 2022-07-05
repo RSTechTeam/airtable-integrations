@@ -39,7 +39,7 @@ export async function call(endpoint, headers, body) {
           `https://api.bill.com/api/v2/${endpoint}.json`,
           {method: 'POST', headers: headers, body: body});
   const json = await response.json();
-  utils.log(endpoint, json);
+  utils.logJson(endpoint, json);
   const data = json.response_data;
   if (json.response_status === 1) {
     utils.fetchError(data.error_code, endpoint, data.error_message);
@@ -117,7 +117,7 @@ export async function list(entity, filters=undefined) {
 /**
  * @param {string} endpoint
  * @param {Array} data
- * @return {Promise<Array>}
+ * @return {Promise<void>}
  */
 export function bulkCall(endpoint, data) {
   return utils.batch(

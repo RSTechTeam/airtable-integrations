@@ -18,10 +18,6 @@ export function getInput(input) {
 /** The primary Bill.com Org. */
 export const primaryOrg = getInput('primary-org');
 
-export function log(...message) {
-  core.notice(message);
-}
-
 /**
  * Logs message, sets a failing exit code, and throws an error.
  * @param {string} message
@@ -38,6 +34,17 @@ export function error(message) {
  */
 export function fetchError(code, context, message) {
   error(`Error ${code} (from ${context}): ${message}`);
+}
+
+/**
+ * Logs JSON in an exandable group.
+ * @param {string} name
+ * @param {Object} json
+ */
+export function logJson(name, json) {
+  // core.startGroup(name);
+  core.info(name, json);
+  // core.endgroup();
 }
 
 /**

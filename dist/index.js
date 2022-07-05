@@ -18369,7 +18369,7 @@ async function call(endpoint, headers, body) {
           `https://api.bill.com/api/v2/${endpoint}.json`,
           {method: 'POST', headers: headers, body: body});
   const json = await response.json();
-  _utils_js__WEBPACK_IMPORTED_MODULE_1__/* .log */ .cM(endpoint, json);
+  _utils_js__WEBPACK_IMPORTED_MODULE_1__/* .logJson */ .u2(endpoint, json);
   const data = json.response_data;
   if (json.response_status === 1) {
     _utils_js__WEBPACK_IMPORTED_MODULE_1__/* .fetchError */ .Tl(data.error_code, endpoint, data.error_message);
@@ -18447,7 +18447,7 @@ async function list(entity, filters=undefined) {
 /**
  * @param {string} endpoint
  * @param {Array} data
- * @return {Promise<Array>}
+ * @return {Promise<void>}
  */
 function bulkCall(endpoint, data) {
   return _utils_js__WEBPACK_IMPORTED_MODULE_1__/* .batch */ .dC(
@@ -18494,9 +18494,9 @@ __webpack_handle_async_dependencies__();
 /* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
 /* harmony export */   "Np": () => (/* binding */ getInput),
 /* harmony export */   "uP": () => (/* binding */ primaryOrg),
-/* harmony export */   "cM": () => (/* binding */ log),
 /* harmony export */   "vU": () => (/* binding */ error),
 /* harmony export */   "Tl": () => (/* binding */ fetchError),
+/* harmony export */   "u2": () => (/* binding */ logJson),
 /* harmony export */   "dC": () => (/* binding */ batch)
 /* harmony export */ });
 /* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(6024);
@@ -18520,10 +18520,6 @@ function getInput(input) {
 /** The primary Bill.com Org. */
 const primaryOrg = getInput('primary-org');
 
-function log(...message) {
-  _actions_core__WEBPACK_IMPORTED_MODULE_0__.notice(message);
-}
-
 /**
  * Logs message, sets a failing exit code, and throws an error.
  * @param {string} message
@@ -18540,6 +18536,17 @@ function error(message) {
  */
 function fetchError(code, context, message) {
   error(`Error ${code} (from ${context}): ${message}`);
+}
+
+/**
+ * Logs JSON in an exandable group.
+ * @param {string} name
+ * @param {Object} json
+ */
+function logJson(name, json) {
+  // core.startGroup(name);
+  _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(name, json);
+  // core.endgroup();
 }
 
 /**
