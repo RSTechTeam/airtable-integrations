@@ -18544,10 +18544,9 @@ function fetchError(code, context, message) {
  * @param {Object} json
  */
 function logJson(name, json) {
-  // core.startGroup(name);
-  _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(name);
-  _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(JSON.stringify(json));
-  // core.endgroup();
+  _actions_core__WEBPACK_IMPORTED_MODULE_0__.startGroup(name);
+  _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(JSON.stringify(json, null, '\t'));
+  _actions_core__WEBPACK_IMPORTED_MODULE_0__.endgroup();
 }
 
 /**

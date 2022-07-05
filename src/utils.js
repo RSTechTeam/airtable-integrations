@@ -42,10 +42,9 @@ export function fetchError(code, context, message) {
  * @param {Object} json
  */
 export function logJson(name, json) {
-  // core.startGroup(name);
-  core.info(name);
-  core.info(JSON.stringify(json));
-  // core.endgroup();
+  core.startGroup(name);
+  core.info(JSON.stringify(json, null, '\t'));
+  core.endgroup();
 }
 
 /**
