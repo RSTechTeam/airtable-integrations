@@ -18547,14 +18547,12 @@ function fetchError(code, context, message) {
  * @param {function(Array): Promise} func
  * @param {Array} array
  * @param {number} size
- * @return {Promise<Array>}
+ * @return {Promise<void>}
  */
-function batch(func, array, size) {
-  const promises = [];
+async function batch(func, array, size) {
   while (array.length > 0) {
-    promises.push(func(array.splice(0, size)));
+    await func(array.splice(0, size));
   }
-  return Promise.all(promises);
 }
 
 
