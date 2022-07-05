@@ -16,13 +16,14 @@ export const BILL_COM_ID_SUFFIX = 'Bill.com ID';
 export const primaryOrgBillComId = `${utils.primaryOrg} ${BILL_COM_ID_SUFFIX}`;
 
 /**
- * @param {string} err
- * @param {string} queryType
+ * @param {string} querying e.g., selecting, updating, etc
  * @param {string} table
+ * @return {function(Error): void}
  */
-function error(err, queryType, table) {
-  utils.error(
-      `Error while ${queryType} records in Airtable Table ${table}: ${err}`);
+function error(querying, table) {
+  return (err) =>
+      utils.error(
+          `Error while ${querying} records in Airtable Table ${table}: ${err}`);
 }
 
 /** An Airtable Base to query. */
@@ -45,7 +46,7 @@ export class Base {
   select(table, view, func) {
     return this.base_(table).select({view: view}).all()
         .then((records) => Promise.all(records.map(func)))
-        .catch((err) => error(err, 'selecting', table));
+        .catch(error('selecting', table));
   }
 
   /**
@@ -54,8 +55,7 @@ export class Base {
    * @return {Promise<void>}
    */
   update(table, updates) {
-    return this.base_(table).update(updates).catch(
-        (err) => error(err, 'updating', table));
+    return this.base_(table).update(updates).catch(error('updating', table));
   }
 
   /**
@@ -64,8 +64,7 @@ export class Base {
    * @return {Promise<void>}
    */
   create(table, creates) {
-    return this.base_(table).create(creates).catch(
-        (err) => error(err, 'creating', table));
+    return this.base_(table).create(creates).catch(error('creating', table));
   }
 
   /**
@@ -76,7 +75,6 @@ export class Base {
    * @return {Promise<void>}
    */
   find(table, id, func) {
-    return this.base_(table).find(id).then(func).catch(
-        (err) => error(err, 'finding', table));
+    return this.base_(table).find(id).then(func).catch(error('finding', table));
   }
 }

@@ -18247,13 +18247,14 @@ const BILL_COM_ID_SUFFIX = 'Bill.com ID';
 const primaryOrgBillComId = `${_utils_js__WEBPACK_IMPORTED_MODULE_1__/* .primaryOrg */ .uP} ${BILL_COM_ID_SUFFIX}`;
 
 /**
- * @param {string} err
- * @param {string} queryType
+ * @param {string} querying e.g., selecting, updating, etc
  * @param {string} table
+ * @return {function(Error): void}
  */
-function error(err, queryType, table) {
-  _utils_js__WEBPACK_IMPORTED_MODULE_1__/* .error */ .vU(
-      `Error while ${queryType} records in Airtable Table ${table}: ${err}`);
+function error(querying, table) {
+  return (err) =>
+      _utils_js__WEBPACK_IMPORTED_MODULE_1__/* .error */ .vU(
+          `Error while ${querying} records in Airtable Table ${table}: ${err}`);
 }
 
 /** An Airtable Base to query. */
@@ -18276,7 +18277,7 @@ class Base {
   select(table, view, func) {
     return this.base_(table).select({view: view}).all()
         .then((records) => Promise.all(records.map(func)))
-        .catch((err) => error(err, 'selecting', table));
+        .catch(error('selecting', table));
   }
 
   /**
@@ -18285,8 +18286,7 @@ class Base {
    * @return {Promise<void>}
    */
   update(table, updates) {
-    return this.base_(table).update(updates).catch(
-        (err) => error(err, 'updating', table));
+    return this.base_(table).update(updates).catch(error('updating', table));
   }
 
   /**
@@ -18295,8 +18295,7 @@ class Base {
    * @return {Promise<void>}
    */
   create(table, creates) {
-    return this.base_(table).create(creates).catch(
-        (err) => error(err, 'creating', table));
+    return this.base_(table).create(creates).catch(error('creating', table));
   }
 
   /**
@@ -18307,8 +18306,7 @@ class Base {
    * @return {Promise<void>}
    */
   find(table, id, func) {
-    return this.base_(table).find(id).then(func).catch(
-        (err) => error(err, 'finding', table));
+    return this.base_(table).find(id).then(func).catch(error('finding', table));
   }
 }
 
