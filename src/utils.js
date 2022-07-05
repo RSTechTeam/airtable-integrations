@@ -43,7 +43,8 @@ export function fetchError(code, context, message) {
  */
 export function logJson(name, json) {
   // core.startGroup(name);
-  core.info(name, json);
+  core.info(name);
+  core.info(json);
   // core.endgroup();
 }
 

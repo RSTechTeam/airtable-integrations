@@ -18545,7 +18545,8 @@ function fetchError(code, context, message) {
  */
 function logJson(name, json) {
   // core.startGroup(name);
-  _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(name, json);
+  _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(name);
+  _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(json);
   // core.endgroup();
 }
 
