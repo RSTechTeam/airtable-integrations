@@ -1,6 +1,8 @@
 name: Main Workflow
 on:
   workflow_dispatch:
+  schedule:
+    - cron: '0,15,30,45 * * * *'
 jobs:
   accounting_sync:
     uses: ./.github/workflows/base.yml
