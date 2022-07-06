@@ -18545,7 +18545,19 @@ function fetchError(code, context, message) {
  */
 function logJson(name, json) {
   _actions_core__WEBPACK_IMPORTED_MODULE_0__.startGroup(name);
-  _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(JSON.stringify(json, null, '\t'));
+  if (name.startsWith('List')) {
+    _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(JSON.stringify(json, ['response_status', 'response_message']));
+    _actions_core__WEBPACK_IMPORTED_MODULE_0__.startGroup('response_data');
+    json.response_data.forEach(
+        (data, index) => {
+          _actions_core__WEBPACK_IMPORTED_MODULE_0__.startGroup(index);
+          _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(JSON.stringify(data, null, '\t'));
+          _actions_core__WEBPACK_IMPORTED_MODULE_0__.endGroup();
+        });
+    _actions_core__WEBPACK_IMPORTED_MODULE_0__.endGroup();
+  } else {
+    _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(JSON.stringify(json, null, '\t'));
+  }
   _actions_core__WEBPACK_IMPORTED_MODULE_0__.endGroup();
 }
 

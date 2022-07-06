@@ -43,7 +43,19 @@ export function fetchError(code, context, message) {
  */
 export function logJson(name, json) {
   core.startGroup(name);
-  core.info(JSON.stringify(json, null, '\t'));
+  if (name.startsWith('List')) {
+    core.info(JSON.stringify(json, ['response_status', 'response_message']));
+    core.startGroup('response_data');
+    json.response_data.forEach(
+        (data, index) => {
+          core.startGroup(index);
+          core.info(JSON.stringify(data, null, '\t'));
+          core.endGroup();
+        });
+    core.endGroup();
+  } else {
+    core.info(JSON.stringify(json, null, '\t'));
+  }
   core.endGroup();
 }
 
