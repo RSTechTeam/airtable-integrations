@@ -18369,7 +18369,7 @@ async function call(endpoint, headers, body) {
           `https://api.bill.com/api/v2/${endpoint}.json`,
           {method: 'POST', headers: headers, body: body});
   const json = await response.json();
-  _utils_js__WEBPACK_IMPORTED_MODULE_1__/* .logBillComJson */ .SB(endpoint, json);
+  _utils_js__WEBPACK_IMPORTED_MODULE_1__/* .logJson */ .u2(endpoint, json);
   const data = json.response_data;
   if (json.response_status === 1) {
     _utils_js__WEBPACK_IMPORTED_MODULE_1__/* .fetchError */ .Tl(data.error_code, endpoint, data.error_message);
@@ -18496,7 +18496,7 @@ __webpack_handle_async_dependencies__();
 /* harmony export */   "uP": () => (/* binding */ primaryOrg),
 /* harmony export */   "vU": () => (/* binding */ error),
 /* harmony export */   "Tl": () => (/* binding */ fetchError),
-/* harmony export */   "SB": () => (/* binding */ logBillComJson),
+/* harmony export */   "u2": () => (/* binding */ logJson),
 /* harmony export */   "dC": () => (/* binding */ batch)
 /* harmony export */ });
 /* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(6024);
@@ -18539,51 +18539,36 @@ function fetchError(code, context, message) {
 }
 
 /**
- * Log JSON in an expandable group.
  * @param {string} title
  * @param {Object} json
  * @param {function|Array} replacer
  * @see JSON.stringify
  */
-function logJson(title, json, replacer = null) {
+function logJsonGroup(title, json, replacer = null) {
   _actions_core__WEBPACK_IMPORTED_MODULE_0__.startGroup(title);
   _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(JSON.stringify(json, replacer, '\t'));
   _actions_core__WEBPACK_IMPORTED_MODULE_0__.endGroup();
 }
 
 /**
- * Logs JSON in exandable groups based on endpoint.
+ * Logs json, logging individual expandable groups for each element
+ * of the assumed only top-level Array.
  * @param {string} endpoint
  * @param {Object} json
  */
-function logBillComJson(endpoint, json) {
-  if (endpoint.startsWith('List')) {
-    logJson(
-        endpoint,
-        json,
-        (key, value) => {
-          if (key === 'response_data') {
-            return `Array(${value.length}) <see below log groups for data>`;
-          }
-          return value;
-        });
-    json.response_data.forEach((data, index) => logJson(index, data));
-  } else if (endpoint.startsWith('Bulk')) {
-    let array;
-    logJson(
-        endpoint,
-        json,
-        (key, value) => {
-          if (Array.isArray(value)) {
-            array = value;
-            return `Array(${value.length}) <see below log groups for data>`;
-          }
-          return value;
-        });
-    array.forEach((data, index) => logJson(index, data));
-  } else {
-    logJson(endpoint, json);
-  }
+function logJson(endpoint, json) {
+  let firstArray = [];
+  logJsonGroup(
+      endpoint,
+      json,
+      (key, value) => {
+        if (Array.isArray(value)) {
+          firstArray = value;
+          return `Array(${value.length}) <see below log groups for content>`;
+        }
+        return value;
+      });
+  firstArray.forEach((data, index) => logJsonGroup(index, data));
 }
 
 /**

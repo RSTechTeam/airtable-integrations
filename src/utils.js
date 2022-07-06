@@ -37,51 +37,36 @@ export function fetchError(code, context, message) {
 }
 
 /**
- * Log JSON in an expandable group.
  * @param {string} title
  * @param {Object} json
  * @param {function|Array} replacer
  * @see JSON.stringify
  */
-function logJson(title, json, replacer = null) {
+function logJsonGroup(title, json, replacer = null) {
   core.startGroup(title);
   core.info(JSON.stringify(json, replacer, '\t'));
   core.endGroup();
 }
 
 /**
- * Logs JSON in exandable groups based on endpoint.
+ * Logs json, logging individual expandable groups for each element
+ * of the assumed only top-level Array.
  * @param {string} endpoint
  * @param {Object} json
  */
-export function logBillComJson(endpoint, json) {
-  if (endpoint.startsWith('List')) {
-    logJson(
-        endpoint,
-        json,
-        (key, value) => {
-          if (key === 'response_data') {
-            return `Array(${value.length}) <see below log groups for data>`;
-          }
-          return value;
-        });
-    json.response_data.forEach((data, index) => logJson(index, data));
-  } else if (endpoint.startsWith('Bulk')) {
-    let array;
-    logJson(
-        endpoint,
-        json,
-        (key, value) => {
-          if (Array.isArray(value)) {
-            array = value;
-            return `Array(${value.length}) <see below log groups for data>`;
-          }
-          return value;
-        });
-    array.forEach((data, index) => logJson(index, data));
-  } else {
-    logJson(endpoint, json);
-  }
+export function logJson(endpoint, json) {
+  let firstArray = [];
+  logJsonGroup(
+      endpoint,
+      json,
+      (key, value) => {
+        if (Array.isArray(value)) {
+          firstArray = value;
+          return `Array(${value.length}) <see below log groups for content>`;
+        }
+        return value;
+      });
+  firstArray.forEach((data, index) => logJsonGroup(index, data));
 }
 
 /**
