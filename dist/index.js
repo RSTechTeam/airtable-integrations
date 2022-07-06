@@ -18543,12 +18543,11 @@ function fetchError(code, context, message) {
  * @param {string} title
  * @param {Object} json
  * @param {function|Array} replacer
- * @param {string|number} space
  * @see JSON.stringify
  */
-function logJson(title, json, replacer = null, space = '\t') {
+function logJson(title, json, replacer = null) {
   _actions_core__WEBPACK_IMPORTED_MODULE_0__.startGroup(title);
-  _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(JSON.stringify(json, replacer, space));
+  _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(JSON.stringify(json, replacer, '\t'));
   _actions_core__WEBPACK_IMPORTED_MODULE_0__.endGroup();
 }
 
@@ -18569,6 +18568,19 @@ function logBillComJson(endpoint, json) {
           return value;
         });
     json.response_data.forEach((data, index) => logJson(index, data));
+  } else if (endpoint.startsWith('Bulk')) {
+    let array;
+    logJson(
+        endpoint,
+        json,
+        (key, value) => {
+          if (Array.isArray(value)) {
+            array = value;
+            return `Array(${value.length}) <see below log groups for data>`;
+          }
+          return value;
+        });
+    array.forEach((data, index) => logJson(index, data));
   } else {
     logJson(endpoint, json);
   }

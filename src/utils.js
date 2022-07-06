@@ -41,12 +41,11 @@ export function fetchError(code, context, message) {
  * @param {string} title
  * @param {Object} json
  * @param {function|Array} replacer
- * @param {string|number} space
  * @see JSON.stringify
  */
-function logJson(title, json, replacer = null, space = '\t') {
+function logJson(title, json, replacer = null) {
   core.startGroup(title);
-  core.info(JSON.stringify(json, replacer, space));
+  core.info(JSON.stringify(json, replacer, '\t'));
   core.endGroup();
 }
 
@@ -67,6 +66,19 @@ export function logBillComJson(endpoint, json) {
           return value;
         });
     json.response_data.forEach((data, index) => logJson(index, data));
+  } else if (endpoint.startsWith('Bulk')) {
+    let array;
+    logJson(
+        endpoint,
+        json,
+        (key, value) => {
+          if (Array.isArray(value)) {
+            array = value;
+            return `Array(${value.length}) <see below log groups for data>`;
+          }
+          return value;
+        });
+    array.forEach((data, index) => logJson(index, data));
   } else {
     logJson(endpoint, json);
   }
