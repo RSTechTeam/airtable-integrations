@@ -37,26 +37,39 @@ export function fetchError(code, context, message) {
 }
 
 /**
- * Logs JSON in an exandable group.
- * @param {string} name
+ * Log JSON in an expandable group.
+ * @param {string} title
+ * @param {Object} json
+ * @param {function|Array} replacer
+ * @param {string|number} space
+ * @see JSON.stringify
+ */
+function logJson(title, json, replacer = null, space = '\t') {
+  core.startGroup(title);
+  core.info(JSON.stringify(json, replacer, space));
+  core.endGroup();
+}
+
+/**
+ * Logs JSON in exandable groups based on endpoint.
+ * @param {string} endpoint
  * @param {Object} json
  */
-export function logJson(name, json) {
-  core.startGroup(name);
-  if (name.startsWith('List')) {
-    core.info(JSON.stringify(json, ['response_status', 'response_message']));
-    core.startGroup('response_data');
-    json.response_data.forEach(
-        (data, index) => {
-          core.startGroup(index);
-          core.info(JSON.stringify(data, null, '\t'));
-          core.endGroup();
+export function logBillComJson(endpoint, json) {
+  if (endpoint.startsWith('List')) {
+    logJson(
+        endpoint,
+        json,
+        (key, value) => {
+          if (key === 'response_data') {
+            return `Array(${value.length}) <see below log groups for data>`;
+          }
+          return value;
         });
-    core.endGroup();
+    json.response_data.forEach((data, index) => logJson(index, data));
   } else {
-    core.info(JSON.stringify(json, null, '\t'));
+    logJson(endpoint, json);
   }
-  core.endGroup();
 }
 
 /**

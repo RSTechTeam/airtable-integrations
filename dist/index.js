@@ -18369,7 +18369,7 @@ async function call(endpoint, headers, body) {
           `https://api.bill.com/api/v2/${endpoint}.json`,
           {method: 'POST', headers: headers, body: body});
   const json = await response.json();
-  _utils_js__WEBPACK_IMPORTED_MODULE_1__/* .logJson */ .u2(endpoint, json);
+  _utils_js__WEBPACK_IMPORTED_MODULE_1__/* .logBillComJson */ .SB(endpoint, json);
   const data = json.response_data;
   if (json.response_status === 1) {
     _utils_js__WEBPACK_IMPORTED_MODULE_1__/* .fetchError */ .Tl(data.error_code, endpoint, data.error_message);
@@ -18496,7 +18496,7 @@ __webpack_handle_async_dependencies__();
 /* harmony export */   "uP": () => (/* binding */ primaryOrg),
 /* harmony export */   "vU": () => (/* binding */ error),
 /* harmony export */   "Tl": () => (/* binding */ fetchError),
-/* harmony export */   "u2": () => (/* binding */ logJson),
+/* harmony export */   "SB": () => (/* binding */ logBillComJson),
 /* harmony export */   "dC": () => (/* binding */ batch)
 /* harmony export */ });
 /* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(6024);
@@ -18539,26 +18539,39 @@ function fetchError(code, context, message) {
 }
 
 /**
- * Logs JSON in an exandable group.
- * @param {string} name
+ * Log JSON in an expandable group.
+ * @param {string} title
+ * @param {Object} json
+ * @param {function|Array} replacer
+ * @param {string|number} space
+ * @see JSON.stringify
+ */
+function logJson(title, json, replacer = null, space = '\t') {
+  _actions_core__WEBPACK_IMPORTED_MODULE_0__.startGroup(title);
+  _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(JSON.stringify(json, replacer, space));
+  _actions_core__WEBPACK_IMPORTED_MODULE_0__.endGroup();
+}
+
+/**
+ * Logs JSON in exandable groups based on endpoint.
+ * @param {string} endpoint
  * @param {Object} json
  */
-function logJson(name, json) {
-  _actions_core__WEBPACK_IMPORTED_MODULE_0__.startGroup(name);
-  if (name.startsWith('List')) {
-    _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(JSON.stringify(json, ['response_status', 'response_message']));
-    _actions_core__WEBPACK_IMPORTED_MODULE_0__.startGroup('response_data');
-    json.response_data.forEach(
-        (data, index) => {
-          _actions_core__WEBPACK_IMPORTED_MODULE_0__.startGroup(index);
-          _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(JSON.stringify(data, null, '\t'));
-          _actions_core__WEBPACK_IMPORTED_MODULE_0__.endGroup();
+function logBillComJson(endpoint, json) {
+  if (endpoint.startsWith('List')) {
+    logJson(
+        endpoint,
+        json,
+        (key, value) => {
+          if (key === 'response_data') {
+            return `Array(${value.length}) <see below log groups for data>`;
+          }
+          return value;
         });
-    _actions_core__WEBPACK_IMPORTED_MODULE_0__.endGroup();
+    json.response_data.forEach((data, index) => logJson(index, data));
   } else {
-    _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(JSON.stringify(json, null, '\t'));
+    logJson(endpoint, json);
   }
-  _actions_core__WEBPACK_IMPORTED_MODULE_0__.endGroup();
 }
 
 /**
