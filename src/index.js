@@ -6,10 +6,10 @@ import * as utils from './utils.js';
 const filename = utils.getInput('filename');
 let imp;
 switch (filename) {
-	case 'accounting_sync':
-		imp = accounting_sync;
-		break;
-	default:
-		throw new Error(`Unknown filename ${filename}`);
+  case 'accounting_sync':
+    imp = accounting_sync;
+    break;
+  default:
+    throw new Error(`Unknown filename ${filename}`);
 }
 await imp.main(utils.getInput('airtable-base-id'));

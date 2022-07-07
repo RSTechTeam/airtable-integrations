@@ -18475,11 +18475,11 @@ _accounting_sync_js__WEBPACK_IMPORTED_MODULE_0__ = (__webpack_async_dependencies
 const filename = _utils_js__WEBPACK_IMPORTED_MODULE_1__/* .getInput */ .Np('filename');
 let imp;
 switch (filename) {
-	case 'accounting_sync':
-		imp = _accounting_sync_js__WEBPACK_IMPORTED_MODULE_0__;
-		break;
-	default:
-		throw new Error(`Unknown filename ${filename}`);
+  case 'accounting_sync':
+    imp = _accounting_sync_js__WEBPACK_IMPORTED_MODULE_0__;
+    break;
+  default:
+    throw new Error(`Unknown filename ${filename}`);
 }
 await imp.main(_utils_js__WEBPACK_IMPORTED_MODULE_1__/* .getInput */ .Np('airtable-base-id'));
 
