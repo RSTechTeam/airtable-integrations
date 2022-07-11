@@ -15,6 +15,9 @@ export const BILL_COM_ID_SUFFIX = 'Bill.com ID';
 /** The primary Org Bill.com ID Field name. */
 export const primaryOrgBillComId = `${utils.primaryOrg} ${BILL_COM_ID_SUFFIX}`;
 
+/** The input Airtable Base ID. */
+const inputBaseId = utils.getInput('airtable-base-id');
+
 /**
  * @param {string} querying e.g., selecting, updating, etc
  * @param {string} table
@@ -77,4 +80,9 @@ export class Base {
   find(table, id, func) {
     return this.base_(table).find(id).then(func).catch(error('finding', table));
   }
+}
+
+/** @return {Base} */
+export function getInputBase() {
+  return new Base(inputBaseId);
 }

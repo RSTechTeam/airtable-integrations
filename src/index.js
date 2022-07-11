@@ -12,4 +12,4 @@ switch (filename) {
   default:
     throw new Error(`Unknown filename ${filename}`);
 }
-await imp.main(utils.getInput('airtable-base-id'));
+await imp.main();

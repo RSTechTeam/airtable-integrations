@@ -7,8 +7,7 @@ import * as utils from './utils.js';
 /** The Airtable Table name Labor Charge Fields. */
 const LCF_TABLE = 'Labor Charge Field (LCF) Mapping';
 
-/** @param accountingBaseId {string} */
-export async function main(accountingBaseId) {
+export async function main() {
 
   // Initialize Bill.com Customer collection.
   await billCom.primaryOrgLogin();
@@ -21,7 +20,7 @@ export async function main(accountingBaseId) {
   billComCustomers.forEach(c => billComCustomerIds.add(c.id));
 
   // Upsert every Bill.com Customer from the Bill.com Sync View.
-  const accountingBase = new airtable.Base(accountingBaseId);
+  const accountingBase = airtable.getInputBase();
   const updates = [];
   await accountingBase.select(
       LCF_TABLE,

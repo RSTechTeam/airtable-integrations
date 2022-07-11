@@ -18158,8 +18158,7 @@ _bill_com_js__WEBPACK_IMPORTED_MODULE_1__ = (__webpack_async_dependencies__.then
 /** The Airtable Table name Labor Charge Fields. */
 const LCF_TABLE = 'Labor Charge Field (LCF) Mapping';
 
-/** @param accountingBaseId {string} */
-async function main(accountingBaseId) {
+async function main() {
 
   // Initialize Bill.com Customer collection.
   await _bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .primaryOrgLogin */ .kY();
@@ -18172,7 +18171,7 @@ async function main(accountingBaseId) {
   billComCustomers.forEach(c => billComCustomerIds.add(c.id));
 
   // Upsert every Bill.com Customer from the Bill.com Sync View.
-  const accountingBase = new _airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .Base */ .XY(accountingBaseId);
+  const accountingBase = _airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .getInputBase */ .Mn();
   const updates = [];
   await accountingBase.select(
       LCF_TABLE,
@@ -18224,7 +18223,8 @@ async function main(accountingBaseId) {
 
 /* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
 /* harmony export */   "Z1": () => (/* binding */ primaryOrgBillComId),
-/* harmony export */   "XY": () => (/* binding */ Base)
+/* harmony export */   "XY": () => (/* binding */ Base),
+/* harmony export */   "Mn": () => (/* binding */ getInputBase)
 /* harmony export */ });
 /* unused harmony export BILL_COM_ID_SUFFIX */
 /* harmony import */ var airtable__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(5447);
@@ -18245,6 +18245,9 @@ const BILL_COM_ID_SUFFIX = 'Bill.com ID';
 
 /** The primary Org Bill.com ID Field name. */
 const primaryOrgBillComId = `${_utils_js__WEBPACK_IMPORTED_MODULE_1__/* .primaryOrg */ .uP} ${BILL_COM_ID_SUFFIX}`;
+
+/** The input Airtable Base ID. */
+const inputBaseId = _utils_js__WEBPACK_IMPORTED_MODULE_1__/* .getInput */ .Np('airtable-base-id');
 
 /**
  * @param {string} querying e.g., selecting, updating, etc
@@ -18308,6 +18311,11 @@ class Base {
   find(table, id, func) {
     return this.base_(table).find(id).then(func).catch(error('finding', table));
   }
+}
+
+/** @return {Base} */
+function getInputBase() {
+  return new Base(inputBaseId);
 }
 
 
@@ -18481,7 +18489,7 @@ switch (filename) {
   default:
     throw new Error(`Unknown filename ${filename}`);
 }
-await imp.main(_utils_js__WEBPACK_IMPORTED_MODULE_1__/* .getInput */ .Np('airtable-base-id'));
+await imp.main();
 
 __webpack_handle_async_dependencies__();
 }, 1);
