@@ -18893,15 +18893,17 @@ function logJson(endpoint, json) {
 
 /**
  * Calls func with up to size-length portions of array.
- * @param {function(Array): Promise} func
+ * @param {function(Array): any} func
  * @param {Array} array
  * @param {number} size
- * @return {Promise<void>}
+ * @return {Promise<Array<any>>}
  */
 async function batch(func, array, size) {
+  const results = [];
   while (array.length > 0) {
-    await func(array.splice(0, size));
+    await func(array.splice(0, size)).then(results.push);
   }
+  return results;
 }
 
 
