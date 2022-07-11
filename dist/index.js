@@ -18672,7 +18672,7 @@ async function syncCustomers(anchorEntity) {
   const billComUpdates = [];
   await billComIntegrationBase.select(
       ALL_CUSTOMERS_TABLE,
-      null,
+      undefined,
       (record) => {
         const isActive = record.get('Active');
         const id = record.get(billComId);
