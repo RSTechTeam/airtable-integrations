@@ -37,7 +37,7 @@ function error(querying, table) {
  * @return {Promise<Array<any>>}
  */
 function batch10(func, array) {
-  return utils.batch(func, array, 10);
+  return utils.abatch(func, array, 10);
 }
 
 /** An Airtable Base to query. */

@@ -84,3 +84,11 @@ export async function batch(func, array, size) {
   }
   return results;
 }
+
+export async function abatch(func, array, size) {
+  const promises = [];
+  while (array.length > 0) {
+    promises.push(func(array.splice(0, size)));
+  }
+  return Promise.all(promises);
+}

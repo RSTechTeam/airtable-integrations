@@ -18268,7 +18268,7 @@ function error(querying, table) {
  * @return {Promise<Array<any>>}
  */
 function batch10(func, array) {
-  return _utils_js__WEBPACK_IMPORTED_MODULE_1__/* .batch */ .dC(func, array, 10);
+  return _utils_js__WEBPACK_IMPORTED_MODULE_1__/* .abatch */ .ur(func, array, 10);
 }
 
 /** An Airtable Base to query. */
@@ -18837,7 +18837,8 @@ __webpack_handle_async_dependencies__();
 /* harmony export */   "vU": () => (/* binding */ error),
 /* harmony export */   "Tl": () => (/* binding */ fetchError),
 /* harmony export */   "u2": () => (/* binding */ logJson),
-/* harmony export */   "dC": () => (/* binding */ batch)
+/* harmony export */   "dC": () => (/* binding */ batch),
+/* harmony export */   "ur": () => (/* binding */ abatch)
 /* harmony export */ });
 /* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(6024);
 /** @fileoverview Shared code for Bill.com x Airtable Repository. */
@@ -18925,6 +18926,14 @@ async function batch(func, array, size) {
     results.push(result);
   }
   return results;
+}
+
+async function abatch(func, array, size) {
+  const promises = [];
+  while (array.length > 0) {
+    promises.push(func(array.splice(0, size)));
+  }
+  return Promise.all(promises);
 }
 
 
