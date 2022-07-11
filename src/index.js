@@ -1,6 +1,7 @@
 /** @fileoverview Entrypoint for choosing which file to run. */
 
 import * as accountingSync from './accounting_sync.js';
+import * as billComIntegrationCreateBill from './bill_com_integration_create_bill.js';
 import * as billComIntegrationSync from './bill_com_integration_sync.js';
 import * as utils from './utils.js';
 
@@ -10,6 +11,9 @@ switch (filename) {
   case 'accounting_sync':
     imp = accountingSync;
     break;
+  case 'bill_com_integration_create_bill':
+    imp = billComIntegrationCreateBill;
+    break;
   case 'bill_com_integration_sync':
     imp = billComIntegrationSync;
     break;
@@ -17,8 +21,4 @@ switch (filename) {
     utils.error(`Unknown filename ${filename}`);
 }
 
-try {
-  await imp.main();
-} catch (err) {
-  utils.error(err);
-}
+await imp.main().catch(utils.error);

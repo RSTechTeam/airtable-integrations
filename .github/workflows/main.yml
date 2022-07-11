@@ -12,7 +12,11 @@ jobs:
       max-parallel: 1
       fail-fast: false
       matrix:
-        filename: ['accounting_sync', 'bill_com_integration_sync']
+        filename: [
+          'accounting_sync',
+          'bill_com_integration_sync',
+          'bill_com_integration_create_bill',
+        ]
     steps:
       - id: get-airtable-base-id
         run: |
