@@ -18262,13 +18262,15 @@ function error(querying, table) {
 }
 
 /**
- * Calls func with up to length-10 portions of array.
+ * Asynchronously calls func with portions of array that are at most
+ * the max number of records that can be created or updated
+ * via an Airtable API call.
  * @param {function(Array): any} func
  * @param {Array} array
  * @return {Promise<Array<any>>}
  */
-function batch10(func, array) {
-  return _utils_js__WEBPACK_IMPORTED_MODULE_1__/* .abatch */ .ur(func, array, 10);
+function* batch(func, array) {
+  return _utils_js__WEBPACK_IMPORTED_MODULE_1__/* .batchAsync */ .aE(func, array, 10);
 }
 
 /** An Airtable Base to query. */
@@ -18298,10 +18300,10 @@ class Base {
   /**
    * @param {string} table
    * @param {Array<Object>} updates
-   * @return {Promise<Array<any>>}
+   * @return {Promise<Array<Object>>}
    */
   update(table, updates) {
-    return batch10(
+    return batch(
         (arr) => this.base_(table).update(arr).catch(error('updating', table)),
         updates);
   }
@@ -18309,10 +18311,10 @@ class Base {
   /**
    * @param {string} table
    * @param {Array<Object>} creates
-   * @return {Promise<Array<any>>}
+   * @return {Promise<Array<Object>>}
    */
   create(table, creates) {
-    return batch10(
+    return batch(
         (arr) => this.base_(table).create(arr).catch(error('creating', table)),
         creates);
   }
@@ -18471,10 +18473,10 @@ async function list(entity, filters=undefined) {
 /**
  * @param {string} endpoint
  * @param {Array} data
- * @return {Promise<void>}
+ * @return {Promise<Array<Object>>}
  */
 function bulkCall(endpoint, data) {
-  return _utils_js__WEBPACK_IMPORTED_MODULE_1__/* .batch */ .dC(
+  return _utils_js__WEBPACK_IMPORTED_MODULE_1__/* .batchAwait */ .rE(
       (arr) => commonDataCall(`Bulk/Crud/${endpoint}`, {bulk: arr}), data, 100);
 }
 
@@ -18837,8 +18839,8 @@ __webpack_handle_async_dependencies__();
 /* harmony export */   "vU": () => (/* binding */ error),
 /* harmony export */   "Tl": () => (/* binding */ fetchError),
 /* harmony export */   "u2": () => (/* binding */ logJson),
-/* harmony export */   "dC": () => (/* binding */ batch),
-/* harmony export */   "ur": () => (/* binding */ abatch)
+/* harmony export */   "rE": () => (/* binding */ batchAwait),
+/* harmony export */   "aE": () => (/* binding */ batchAsync)
 /* harmony export */ });
 /* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(6024);
 /** @fileoverview Shared code for Bill.com x Airtable Repository. */
@@ -18913,25 +18915,43 @@ function logJson(endpoint, json) {
 }
 
 /**
- * Calls func with up to size-length portions of array.
+ * @param {Array<any>} array
+ * @param {number} size
+ * @return {!Iterator<Array<any>>} size-length portions of array
+ */
+function* batch(array, size) {
+  while (array.length > 0) {
+    yield array.splice(0, size);
+  }
+}
+
+/**
+ * Synchronously calls func with up to size-length portions of array.
  * @param {function(Array): any} func
  * @param {Array} array
  * @param {number} size
  * @return {Promise<Array<any>>}
  */
-async function batch(func, array, size) {
+async function batchAwait(func, array, size) {
   const results = [];
-  while (array.length > 0) {
-    const result = await func(array.splice(0, size));
+  for (const arr of batch(array, size)) {
+    const result = await func(arr);
     results.push(result);
   }
-  return results;
+  return results
 }
 
-async function abatch(func, array, size) {
+/**
+ * Asynchronously calls func with up to size-length portions of array.
+ * @param {function(Array): any} func
+ * @param {Array} array
+ * @param {number} size
+ * @return {Promise<Array<any>>}
+ */
+async function batchAsync(func, array, size) {
   const promises = [];
-  while (array.length > 0) {
-    promises.push(func(array.splice(0, size)));
+  for (const arr of batch(array, size)) {
+    promises.push(func(arr));
   }
   return Promise.all(promises);
 }

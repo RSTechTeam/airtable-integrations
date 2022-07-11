@@ -117,9 +117,9 @@ export async function list(entity, filters=undefined) {
 /**
  * @param {string} endpoint
  * @param {Array} data
- * @return {Promise<void>}
+ * @return {Promise<Array<Object>>}
  */
 export function bulkCall(endpoint, data) {
-  return utils.batch(
+  return utils.batchAwait(
       (arr) => commonDataCall(`Bulk/Crud/${endpoint}`, {bulk: arr}), data, 100);
 }

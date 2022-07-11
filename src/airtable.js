@@ -31,13 +31,15 @@ function error(querying, table) {
 }
 
 /**
- * Calls func with up to length-10 portions of array.
+ * Asynchronously calls func with portions of array that are at most
+ * the max number of records that can be created or updated
+ * via an Airtable API call.
  * @param {function(Array): any} func
  * @param {Array} array
  * @return {Promise<Array<any>>}
  */
-function batch10(func, array) {
-  return utils.abatch(func, array, 10);
+function* batch(func, array) {
+  return utils.batchAsync(func, array, 10);
 }
 
 /** An Airtable Base to query. */
@@ -67,10 +69,10 @@ export class Base {
   /**
    * @param {string} table
    * @param {Array<Object>} updates
-   * @return {Promise<Array<any>>}
+   * @return {Promise<Array<Object>>}
    */
   update(table, updates) {
-    return batch10(
+    return batch(
         (arr) => this.base_(table).update(arr).catch(error('updating', table)),
         updates);
   }
@@ -78,10 +80,10 @@ export class Base {
   /**
    * @param {string} table
    * @param {Array<Object>} creates
-   * @return {Promise<Array<any>>}
+   * @return {Promise<Array<Object>>}
    */
   create(table, creates) {
-    return batch10(
+    return batch(
         (arr) => this.base_(table).create(arr).catch(error('creating', table)),
         creates);
   }

@@ -70,25 +70,43 @@ export function logJson(endpoint, json) {
 }
 
 /**
- * Calls func with up to size-length portions of array.
+ * @param {Array<any>} array
+ * @param {number} size
+ * @return {!Iterator<Array<any>>} size-length portions of array
+ */
+function* batch(array, size) {
+  while (array.length > 0) {
+    yield array.splice(0, size);
+  }
+}
+
+/**
+ * Synchronously calls func with up to size-length portions of array.
  * @param {function(Array): any} func
  * @param {Array} array
  * @param {number} size
  * @return {Promise<Array<any>>}
  */
-export async function batch(func, array, size) {
+export async function batchAwait(func, array, size) {
   const results = [];
-  while (array.length > 0) {
-    const result = await func(array.splice(0, size));
+  for (const arr of batch(array, size)) {
+    const result = await func(arr);
     results.push(result);
   }
-  return results;
+  return results
 }
 
-export async function abatch(func, array, size) {
+/**
+ * Asynchronously calls func with up to size-length portions of array.
+ * @param {function(Array): any} func
+ * @param {Array} array
+ * @param {number} size
+ * @return {Promise<Array<any>>}
+ */
+export async function batchAsync(func, array, size) {
   const promises = [];
-  while (array.length > 0) {
-    promises.push(func(array.splice(0, size)));
+  for (const arr of batch(array, size)) {
+    promises.push(func(arr));
   }
   return Promise.all(promises);
 }
