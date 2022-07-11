@@ -19,12 +19,12 @@ export function getInput(input) {
 export const primaryOrg = getInput('primary-org');
 
 /**
- * Logs message, sets a failing exit code, and throws an error.
- * @param {string} message
+ * Logs err, sets a failing exit code, and throws err.
+ * @param {Error} err
  */
-export function error(message) {
-  core.setFailed(message);
-  throw new Error(message);
+export function error(err) {
+  core.setFailed(err);
+  throw err;
 }
 
 /**
@@ -33,7 +33,7 @@ export function error(message) {
  * @param {string} message
  */
 export function fetchError(code, context, message) {
-  error(`Error ${code} (from ${context}): ${message}`);
+  throw new Error(`Error ${code} (from ${context}): ${message}`);
 }
 
 /**

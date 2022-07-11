@@ -24,9 +24,10 @@ const inputBaseId = utils.getInput('airtable-base-id');
  * @return {function(Error): void}
  */
 function error(querying, table) {
-  return (err) =>
-      utils.error(
-          `Error while ${querying} records in Airtable Table ${table}: ${err}`);
+  return (err) => {
+    throw new Error(
+        `Error while ${querying} records in Airtable Table ${table}: ${err}`)
+  };
 }
 
 /** An Airtable Base to query. */

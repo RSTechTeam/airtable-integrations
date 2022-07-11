@@ -18255,9 +18255,10 @@ const inputBaseId = _utils_js__WEBPACK_IMPORTED_MODULE_1__/* .getInput */ .Np('a
  * @return {function(Error): void}
  */
 function error(querying, table) {
-  return (err) =>
-      _utils_js__WEBPACK_IMPORTED_MODULE_1__/* .error */ .vU(
-          `Error while ${querying} records in Airtable Table ${table}: ${err}`);
+  return (err) => {
+    throw new Error(
+        `Error while ${querying} records in Airtable Table ${table}: ${err}`)
+  };
 }
 
 /** An Airtable Base to query. */
@@ -18846,12 +18847,12 @@ function getInput(input) {
 const primaryOrg = getInput('primary-org');
 
 /**
- * Logs message, sets a failing exit code, and throws an error.
- * @param {string} message
+ * Logs err, sets a failing exit code, and throws err.
+ * @param {Error} err
  */
-function error(message) {
-  _actions_core__WEBPACK_IMPORTED_MODULE_0__.setFailed(message);
-  throw new Error(message);
+function error(err) {
+  _actions_core__WEBPACK_IMPORTED_MODULE_0__.setFailed(err);
+  throw err;
 }
 
 /**
@@ -18860,7 +18861,7 @@ function error(message) {
  * @param {string} message
  */
 function fetchError(code, context, message) {
-  error(`Error ${code} (from ${context}): ${message}`);
+  throw new Error(`Error ${code} (from ${context}): ${message}`);
 }
 
 /**
