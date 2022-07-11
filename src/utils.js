@@ -79,7 +79,8 @@ export function logJson(endpoint, json) {
 export async function batch(func, array, size) {
   const results = [];
   while (array.length > 0) {
-    await func(array.splice(0, size)).then(results.push);
+    const result = await func(array.splice(0, size));
+    results.push(result);
   }
   return results;
 }
