@@ -14,6 +14,11 @@ switch (filename) {
     imp = billComIntegrationSync;
     break;
   default:
-    throw new Error(`Unknown filename ${filename}`);
+    utils.error(`Unknown filename ${filename}`);
 }
-await imp.main();
+
+try {
+  await imp.main();
+} catch (err) {
+  utils.error(err);
+}

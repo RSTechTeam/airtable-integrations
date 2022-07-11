@@ -18799,9 +18799,14 @@ switch (filename) {
     imp = _bill_com_integration_sync_js__WEBPACK_IMPORTED_MODULE_1__;
     break;
   default:
-    throw new Error(`Unknown filename ${filename}`);
+    _utils_js__WEBPACK_IMPORTED_MODULE_2__/* .error */ .vU(`Unknown filename ${filename}`);
 }
-await imp.main();
+
+try {
+  await imp.main();
+} catch (err) {
+  _utils_js__WEBPACK_IMPORTED_MODULE_2__/* .error */ .vU(err);
+}
 
 __webpack_handle_async_dependencies__();
 }, 1);
