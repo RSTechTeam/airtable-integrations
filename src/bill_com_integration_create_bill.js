@@ -2,6 +2,7 @@
 
 import * as airtable from './airtable.js';
 import * as billCom from './bill_com.js';
+import fetch from 'node-fetch';
 import * as utils from './utils.js';
 
 /** The Airtable Table name for Check Requests. */
@@ -147,9 +148,33 @@ export async function main() {
         }
 
         // Upload the Supporting Documents (via Integromat).
-        if (newCheckRequest.get('Supporting Documents') != null) {
-          await fetch(`${utils.getInput('integromat-hook-prefix')}${newCheckRequest.getId()}`);
-        }
+
+        // if (newCheckRequest.get('Supporting Documents') != null) {
+        //   await fetch(`${utils.getInput('integromat-hook-prefix')}${newCheckRequest.getId()}`);
+        // }
+
+        const data = new FormData();
+        data.set('devKey', billCom.devKey);
+        data.set('sessionId', billCom.sessionId);
+        for (const doc of thisRequest.getCellValue('Supporting Documents')) {
+            
+          // Fetch the document.
+          const response = await fetch(doc.url);
+          utils.logJson(doc.filename, response);
+          if (!response.ok) {
+            utils.fetchError(
+                response.status, doc.filename, response.statusText);
+          }
+
+          // Download it.
+          const file = await response.blob();
+
+          // Upload it.
+          data.set('file', file, doc.filename);
+          data.set('data', {id: createBillResponse.id, fileName: doc.filename});
+
+           await billCom.call('UploadAttachment', undefined, data);
+         }
       });
 }
 

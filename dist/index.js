@@ -18344,14 +18344,16 @@ function getInputBase() {
 
 __nccwpck_require__.a(__webpack_module__, async (__webpack_handle_async_dependencies__) => {
 /* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
+/* harmony export */   "Xg": () => (/* binding */ devKey),
 /* harmony export */   "W4": () => (/* binding */ sessionId),
+/* harmony export */   "RE": () => (/* binding */ call),
 /* harmony export */   "kY": () => (/* binding */ primaryOrgLogin),
 /* harmony export */   "fI": () => (/* binding */ commonDataCall),
 /* harmony export */   "hX": () => (/* binding */ filter),
 /* harmony export */   "pb": () => (/* binding */ list),
 /* harmony export */   "Zs": () => (/* binding */ bulkCall)
 /* harmony export */ });
-/* unused harmony exports call, commonCall, login */
+/* unused harmony exports commonCall, login */
 /* harmony import */ var _airtable_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(7539);
 /* harmony import */ var node_fetch__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(4028);
 /* harmony import */ var _utils_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(8287);
@@ -18496,10 +18498,12 @@ __nccwpck_require__.r(__webpack_exports__);
 /* harmony export */ });
 /* harmony import */ var _airtable_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(7539);
 /* harmony import */ var _bill_com_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(6496);
+/* harmony import */ var node_fetch__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(4028);
 /* harmony import */ var _utils_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(8287);
 var __webpack_async_dependencies__ = __webpack_handle_async_dependencies__([_bill_com_js__WEBPACK_IMPORTED_MODULE_1__]);
 _bill_com_js__WEBPACK_IMPORTED_MODULE_1__ = (__webpack_async_dependencies__.then ? await __webpack_async_dependencies__ : __webpack_async_dependencies__)[0];
 /** @fileoverview Creates a Bill.com Bill based on a new Check Request. */
+
 
 
 
@@ -18648,9 +18652,33 @@ async function main() {
         }
 
         // Upload the Supporting Documents (via Integromat).
-        if (newCheckRequest.get('Supporting Documents') != null) {
-          await fetch(`${_utils_js__WEBPACK_IMPORTED_MODULE_2__/* .getInput */ .Np('integromat-hook-prefix')}${newCheckRequest.getId()}`);
-        }
+
+        // if (newCheckRequest.get('Supporting Documents') != null) {
+        //   await fetch(`${utils.getInput('integromat-hook-prefix')}${newCheckRequest.getId()}`);
+        // }
+
+        const data = new FormData();
+        data.set('devKey', _bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .devKey */ .Xg);
+        data.set('sessionId', _bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .sessionId */ .W4);
+        for (const doc of thisRequest.getCellValue('Supporting Documents')) {
+            
+          // Fetch the document.
+          const response = await (0,node_fetch__WEBPACK_IMPORTED_MODULE_3__/* ["default"] */ .ZP)(doc.url);
+          _utils_js__WEBPACK_IMPORTED_MODULE_2__/* .logJson */ .u2(doc.filename, response);
+          if (!response.ok) {
+            _utils_js__WEBPACK_IMPORTED_MODULE_2__/* .fetchError */ .Tl(
+                response.status, doc.filename, response.statusText);
+          }
+
+          // Download it.
+          const file = await response.blob();
+
+          // Upload it.
+          data.set('file', file, doc.filename);
+          data.set('data', {id: createBillResponse.id, fileName: doc.filename});
+
+           await _bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .call */ .RE('UploadAttachment', undefined, data);
+         }
       });
 }
 

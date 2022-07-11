@@ -9,7 +9,7 @@ import fetch from 'node-fetch';
 import * as utils from './utils.js';
 
 /** The Bill.com developer key for API access. */
-const devKey = utils.getInput('bill-com-dev-key');
+export const devKey = utils.getInput('bill-com-dev-key');
 
 /** The Bill.com email for login. */
 const userName = utils.getInput('bill-com-user-name');
