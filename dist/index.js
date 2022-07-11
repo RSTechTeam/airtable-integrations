@@ -18948,7 +18948,7 @@ async function batchAwait(func, array, size) {
  * @param {number} size
  * @return {Promise<Array<any>>}
  */
-async function batchAsync(func, array, size) {
+function batchAsync(func, array, size) {
   const promises = [];
   for (const arr of batch(array, size)) {
     promises.push(func(arr));
