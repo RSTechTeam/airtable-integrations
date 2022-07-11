@@ -30,6 +30,16 @@ function error(querying, table) {
   };
 }
 
+/**
+ * Calls func with up to length-10 portions of array.
+ * @param {function(Array): any} func
+ * @param {Array} array
+ * @return {Promise<Array<any>>}
+ */
+function batch10(func, array) {
+  return utils.batch(func, array, 10);
+}
+
 /** An Airtable Base to query. */
 export class Base {
 
@@ -57,19 +67,23 @@ export class Base {
   /**
    * @param {string} table
    * @param {Array<Object>} updates
-   * @return {Promise<void>}
+   * @return {Promise<Array<any>>}
    */
   update(table, updates) {
-    return this.base_(table).update(updates).catch(error('updating', table));
+    return batch10(
+        (arr) => this.base_(table).update(arr).catch(error('updating', table)),
+        updates);
   }
 
   /**
    * @param {string} table
    * @param {Array<Object>} creates
-   * @return {Promise<void>}
+   * @return {Promise<Array<any>>}
    */
   create(table, creates) {
-    return this.base_(table).create(creates).catch(error('creating', table));
+    return batch10(
+        (arr) => this.base_(table).create(arr).catch(error('creating', table)),
+        creates);
   }
 
   /**
