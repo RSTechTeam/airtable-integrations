@@ -154,11 +154,10 @@ export async function main() {
         //   await fetch(`${utils.getInput('integromat-hook-prefix')}${newCheckRequest.getId()}`);
         // }
 
-        const docs = newCheckRequest.getCellValue('Supporting Documents');
         const data = new FormData();
         data.set('devKey', billCom.devKey);
         data.set('sessionId', billCom.sessionId);
-        for (const doc of docs) {
+        for (const doc of newCheckRequest.get('Supporting Documents')) {
             
           // Fetch the document.
           const response = await fetch(doc.url);

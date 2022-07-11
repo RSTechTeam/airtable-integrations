@@ -19082,11 +19082,10 @@ async function main() {
         //   await fetch(`${utils.getInput('integromat-hook-prefix')}${newCheckRequest.getId()}`);
         // }
 
-        const docs = newCheckRequest.getCellValue('Supporting Documents');
         const data = new formdata_node__WEBPACK_IMPORTED_MODULE_2__/* .FormData */ .Ct();
         data.set('devKey', _bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .devKey */ .Xg);
         data.set('sessionId', _bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .sessionId */ .W4);
-        for (const doc of docs) {
+        for (const doc of newCheckRequest.get('Supporting Documents')) {
             
           // Fetch the document.
           const response = await (0,node_fetch__WEBPACK_IMPORTED_MODULE_4__/* ["default"] */ .ZP)(doc.url);
