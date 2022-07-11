@@ -271,22 +271,19 @@ async function syncCustomers(anchorEntity) {
 
 export async function main () {
   await billCom.primaryOrgLogin();
-
-  // Wait for all updates to resolve before exiting script.
-  await Promise.all([
-    syncUnpaid('Check Requests', 'Bill'),
-    syncUnpaid('Invoices', 'Invoice'),
-    sync('Customer', 'All Customers', o => ({Name: o.name, Email: o.email})),
-    /*sync('Department', 'Departments', o => ({Name: o.name, Email: o.email})),*/
-    syncName(
-        'Vendor', 'Existing Vendors',
-        o => vendorName(o.name, o.addressCity, o.addressState)),
-    syncNameKey('ChartOfAccount', 'Chart of Accounts', 'name'),
-    sync(
-        'User', 'Users',
-        o => ({
-          'Name': `${o.firstName} ${o.lastName} (${o.email})`,
-          'Profile ID': o.profileId,
-        })),
-  ]);
+  await syncUnpaid('Check Requests', 'Bill');
+  await syncUnpaid('Invoices', 'Invoice');
+  await sync(
+      'Customer', 'All Customers', o => ({Name: o.name, Email: o.email}));
+  // sync('Department', 'Departments', o => ({Name: o.name, Email: o.email}))
+  await syncName(
+      'Vendor', 'Existing Vendors',
+      o => vendorName(o.name, o.addressCity, o.addressState));
+  await syncNameKey('ChartOfAccount', 'Chart of Accounts', 'name');
+  await sync(
+      'User', 'Users',
+      o => ({
+        'Name': `${o.firstName} ${o.lastName} (${o.email})`,
+        'Profile ID': o.profileId,
+      }));
 }
