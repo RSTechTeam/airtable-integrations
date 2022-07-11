@@ -154,10 +154,11 @@ export async function main() {
         //   await fetch(`${utils.getInput('integromat-hook-prefix')}${newCheckRequest.getId()}`);
         // }
 
+        const docs = newCheckRequest.getCellValue('Supporting Documents');
         const data = new FormData();
         data.set('devKey', billCom.devKey);
         data.set('sessionId', billCom.sessionId);
-        for (const doc of thisRequest.getCellValue('Supporting Documents')) {
+        for (const doc of docs) {
             
           // Fetch the document.
           const response = await fetch(doc.url);
@@ -174,7 +175,7 @@ export async function main() {
           data.set('file', file, doc.filename);
           data.set('data', {id: createBillResponse.id, fileName: doc.filename});
 
-           await billCom.call('UploadAttachment', undefined, data);
+          await billCom.call('UploadAttachment', undefined, data);
          }
       });
 }
