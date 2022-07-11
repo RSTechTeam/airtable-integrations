@@ -6,7 +6,6 @@ on:
 jobs:
   main:
     runs-on: ubuntu-latest
-    secrets: inherit
     strategy:
       # Run jobs sequentially to avoid Bill.com API's concurrent request limit:
       # 3 per Developer Key per Organization
