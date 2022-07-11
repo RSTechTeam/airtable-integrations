@@ -3,6 +3,7 @@
 import * as airtable from './airtable.js';
 import * as billCom from './bill_com.js';
 import fetch from 'node-fetch';
+import FormData from 'form-data';
 import * as utils from './utils.js';
 
 /** The Airtable Table name for Check Requests. */
