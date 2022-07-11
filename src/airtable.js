@@ -47,7 +47,7 @@ export class Base {
    * @return {Promise<Array<void>>}
    */
   select(table, view, func) {
-    const maybeView = (view == null) ? null : {view: view};
+    const maybeView = (view == undefined) ? undefined : {view: view};
     return this.base_(table).select(maybeView).all()
         .then((records) => Promise.all(records.map(func)))
         .catch(error('selecting', table));

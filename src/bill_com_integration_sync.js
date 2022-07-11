@@ -96,7 +96,7 @@ async function sync(entity, table, syncFunc) {
   const updates = [];
   await billComIntegrationBase.select(
       table,
-      null,
+      undefined,
       (record) => {
         const id = record.get(airtable.primaryOrgBillComId);
         updates.push({
