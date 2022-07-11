@@ -6,6 +6,9 @@
 import * as airtable from './airtable.js';
 import * as billCom from './bill_com.js';
 
+/** The Bill.com Integration Airtable Base. */
+const billComIntegrationBase = airtable.getInputBase();
+
 /**
  * @param {Array} bulkResponses
  * @param {function(Object, number): void} func
@@ -30,7 +33,7 @@ async function syncUnpaid(table, entity) {
   
   const billComIds = [];
   const airtableIds = [];
-  await airtable.select(
+  await billComIntegrationBase.select(
       table,
       'Unpaid',
       (record) => {
@@ -54,7 +57,7 @@ async function syncUnpaid(table, entity) {
           },
         });
       });
-  airtable.update(table, updates);
+  await billComIntegrationBase.update(table, updates);
 }
 
 /**
@@ -91,7 +94,7 @@ async function sync(entity, table, syncFunc) {
 
   // Update every existing table record based on the entity data.
   const updates = [];
-  await airtable.select(
+  await billComIntegrationBase.select(
       table,
       null,
       (record) => {
@@ -102,7 +105,7 @@ async function sync(entity, table, syncFunc) {
         });
         changes.delete(id);
       });
-  airtable.update(table, updates);
+  await billComIntegrationBase.update(table, updates);
 
   // Create new table records from new entity data.
   const creates = [];
@@ -110,7 +113,7 @@ async function sync(entity, table, syncFunc) {
     data[airtable.primaryOrgBillComId] = id;
     creates.push({fields: data});
   }
-  airtable.create(table, creates);
+  await billComIntegrationBase.create(table, creates);
 }
 
 /**
@@ -170,7 +173,7 @@ async function syncCustomers(anchorEntity) {
   const airtableUpdateIds = [];
   const airtableUpdates = [];
   const billComUpdates = [];
-  await airtable.select(
+  await billComIntegrationBase.select(
       ALL_CUSTOMERS_TABLE,
       null,
       (record) => {
@@ -187,12 +190,16 @@ async function syncCustomers(anchorEntity) {
           }
         }
 
-        // Skip any record that is neither active nor has an anchor entity Bill.com ID.
+        // Skip any record that is neither active
+        // nor has an anchor entity Bill.com ID.
         if (!isActive && !hasAnchorEntityId) return;
 
-        // Insert/Create in Bill.com any record with no anchor entity Bill.com ID.
+        // Create in Bill.com any record with no anchor entity Bill.com ID.
         if (!hasAnchorEntityId) {
-          if (name.length > 41) return; // Temporarily skip Customers with long names.
+
+          // Temporarily skip Customers with long names.
+          if (name.length > 41) return;
+
           billComCreates.push(change);
           airtableUpdateIds.push(record.getId());
           return;
@@ -209,7 +216,10 @@ async function syncCustomers(anchorEntity) {
 
         // Update in Bill.com other records with an anchor entity Bill.com ID.
         billComCustomerMap.delete(id);
-        if (r.name.length > 41) return; // Temporarily skip Customers with long names.
+
+        // Temporarily skip Customers with long names.
+        if (r.name.length > 41) return;
+
         change.obj.id = id;
         billComUpdates.push(change);
       });
@@ -228,7 +238,7 @@ async function syncCustomers(anchorEntity) {
         });
   }
   await billCom.bulkCall('Update/Customer', billComUpdates);
-  airtable.update(ALL_CUSTOMERS_TABLE, airtableUpdates);
+  await billComIntegrationBase.update(ALL_CUSTOMERS_TABLE, airtableUpdates);
 
   // Create any active anchor entity Bill.com Customer not in Airtable;
   // Create in both RS Bill.com and Airtable.
@@ -256,25 +266,27 @@ async function syncCustomers(anchorEntity) {
       }
     });
   }
-  airtable.create(ALL_CUSTOMERS_TABLE, airtableCreates);
+  await billComIntegrationBase.create(ALL_CUSTOMERS_TABLE, airtableCreates);
 }
 
-await billCom.primaryOrgLogin();
+export async function main () {
+  await billCom.primaryOrgLogin();
 
-// Wait for all updates to resolve before exiting script.
-await Promise.all([
-  syncUnpaid('Check Requests', 'Bill'),
-  syncUnpaid('Invoices', 'Invoice'),
-  sync('Customer', 'All Customers', o => ({Name: o.name, Email: o.email})),
-  /*sync('Department', 'Departments', o => ({Name: o.name, Email: o.email})),*/
-  syncName(
-      'Vendor', 'Existing Vendors',
-      o => vendorName(o.name, o.addressCity, o.addressState)),
-  syncNameKey('ChartOfAccount', 'Chart of Accounts', 'name'),
-  sync(
-      'User', 'Users',
-      o => ({
-        'Name': `${o.firstName} ${o.lastName} (${o.email})`,
-        'Profile ID': o.profileId,
-      })),
-]);
+  // Wait for all updates to resolve before exiting script.
+  await Promise.all([
+    syncUnpaid('Check Requests', 'Bill'),
+    syncUnpaid('Invoices', 'Invoice'),
+    sync('Customer', 'All Customers', o => ({Name: o.name, Email: o.email})),
+    /*sync('Department', 'Departments', o => ({Name: o.name, Email: o.email})),*/
+    syncName(
+        'Vendor', 'Existing Vendors',
+        o => vendorName(o.name, o.addressCity, o.addressState)),
+    syncNameKey('ChartOfAccount', 'Chart of Accounts', 'name'),
+    sync(
+        'User', 'Users',
+        o => ({
+          'Name': `${o.firstName} ${o.lastName} (${o.email})`,
+          'Profile ID': o.profileId,
+        })),
+  ]);
+}

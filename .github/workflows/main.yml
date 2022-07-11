@@ -1,12 +1,21 @@
 name: Main Workflow
 on:
   schedule:
-    - cron: '*/10 * * * *'
+    - cron: '*/5 * * * *'
   workflow_dispatch:
 jobs:
-  accounting_sync:
-    uses: ./.github/workflows/base.yml
-    with:
-      filename: 'accounting_sync'
-      use-accounting-base: true
-    secrets: inherit
+  main:
+    runs-on: ubuntu-latest
+    strategy:
+      # Run jobs sequentially to avoid Bill.com API's concurrent request limit:
+      # 3 per Developer Key per Organization
+      max-parallel: 1
+      fail-fast: false
+      matrix:
+        filename: ['accounting_sync', 'bill_com_integration_sync']
+    steps:
+      - uses: ./.github/workflows/base.yml
+        with:
+          filename: ${{ matrix.filename }}
+          use-accounting-base: ${{ startsWith(matrix.filename, 'accounting') }}
+        secrets: inherit

@@ -44,7 +44,7 @@ export class Base {
    * @param {string} table
    * @param {string} view
    * @param {function(Record<TField>): Promise<void>} func
-   * @return {Promise<void>}
+   * @return {Promise<Array<void>>}
    */
   select(table, view, func) {
     return this.base_(table).select({view: view}).all()
