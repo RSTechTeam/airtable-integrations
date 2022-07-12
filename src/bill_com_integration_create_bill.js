@@ -169,12 +169,13 @@ export async function main() {
 
           // Download it.
           const file = await response.blob();
+          utils.log(file);
 
           // Upload it.
           data.set('file', file, doc.filename);
           data.set('data', {id: createBillResponse.id, fileName: doc.filename});
 
-          await billCom.call('UploadAttachment', undefined, data);
+          await billCom.call('UploadAttachment', {}, data);
          }
       });
 }

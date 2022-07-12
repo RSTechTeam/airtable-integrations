@@ -19097,12 +19097,13 @@ async function main() {
 
           // Download it.
           const file = await response.blob();
+          _utils_js__WEBPACK_IMPORTED_MODULE_3__/* .log */ .cM(file);
 
           // Upload it.
           data.set('file', file, doc.filename);
           data.set('data', {id: createBillResponse.id, fileName: doc.filename});
 
-          await _bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .call */ .RE('UploadAttachment', undefined, data);
+          await _bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .call */ .RE('UploadAttachment', {}, data);
          }
       });
 }
@@ -19518,6 +19519,7 @@ __webpack_handle_async_dependencies__();
 /* harmony export */   "uP": () => (/* binding */ primaryOrg),
 /* harmony export */   "vU": () => (/* binding */ error),
 /* harmony export */   "Tl": () => (/* binding */ fetchError),
+/* harmony export */   "cM": () => (/* binding */ log),
 /* harmony export */   "u2": () => (/* binding */ logJson),
 /* harmony export */   "rE": () => (/* binding */ batchAwait),
 /* harmony export */   "aE": () => (/* binding */ batchAsync)
@@ -19560,6 +19562,8 @@ function error(err) {
 function fetchError(code, context, message) {
   throw new Error(`Error ${code} (from ${context}): ${message}`);
 }
+
+const log = _actions_core__WEBPACK_IMPORTED_MODULE_0__.info;
 
 /**
  * @param {string} title
