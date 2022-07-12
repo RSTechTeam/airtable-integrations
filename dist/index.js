@@ -19076,22 +19076,14 @@ async function main() {
               });
         }
 
-        // Upload the Supporting Documents (via Integromat).
-
-        // if (newCheckRequest.get('Supporting Documents') != null) {
-        //   await fetch(`${utils.getInput('integromat-hook-prefix')}${newCheckRequest.getId()}`);
-        // }
-
+        // Upload the Supporting Documents.
         const data = new formdata_node__WEBPACK_IMPORTED_MODULE_2__/* .FormData */ .Ct();
         data.set('devKey', _bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .devKey */ .Xg);
         data.set('sessionId', _bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .sessionId */ .W4);
         for (const doc of newCheckRequest.get('Supporting Documents')) {
-          _utils_js__WEBPACK_IMPORTED_MODULE_3__/* .logJson */ .u2('doc', doc);
+
           // Fetch the document.
           const response = await (0,node_fetch__WEBPACK_IMPORTED_MODULE_4__/* ["default"] */ .ZP)(doc.url);
-          _utils_js__WEBPACK_IMPORTED_MODULE_3__/* .logJson */ .u2(response.status, response.statusText);
-          _utils_js__WEBPACK_IMPORTED_MODULE_3__/* .logJson */ .u2(doc.filename, response);
-          _utils_js__WEBPACK_IMPORTED_MODULE_3__/* .logJson */ .u2('type', response.type);
           if (!response.ok) {
             _utils_js__WEBPACK_IMPORTED_MODULE_3__/* .fetchError */ .Tl(
                 response.status, doc.filename, response.statusText);
@@ -19099,7 +19091,6 @@ async function main() {
 
           // Download it.
           const file = await response.blob();
-          _utils_js__WEBPACK_IMPORTED_MODULE_3__/* .logJson */ .u2('file', file);
 
           // Upload it.
           data.set('file', file, doc.filename);
@@ -19109,72 +19100,9 @@ async function main() {
                   {id: createBillResponse.id, fileName: doc.filename}));
 
           await _bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .call */ .RE('UploadAttachment', {}, data);
-          // const endpoint = 'UploadAttachment';
-          // const r = await fetch(
-          //     `https://api.bill.com/api/v2/${endpoint}.json`,
-          //     {method: 'POST', body: data});
-          // const json = await r.json();
-          // utils.logJson(endpoint, json);
-          // const d = json.response_data;
-          // if (json.response_status === 1) {
-          //   utils.fetchError(d.error_code, endpoint, d.error_message);
-          // }
-         }
+        }
       });
 }
-
-
-// TODO use FormData now that we're off Airtable
-
-// const formBoundary = '----WebKitFormBoundary7MA4YWxkTrZu0gW';
-// let uploads = [];
-// /*let data = new FormData();
-// data.set('devKey', devKey);
-// data.set('sessionId', sessionId);*/
-// for (const doc of thisRequest.getCellValue('Supporting Documents')) {
-    
-//     // Fetch the document.
-//     const response = await fetch(doc.url);
-//     console.log(doc.filename, response);
-//     if (!response.ok) {
-//         error(
-//             response.status, doc.filename, response.statusText);
-//     }
-
-//     // Download it.
-//     const file = await response.blob();
-
-//     // Upload it.
-//     /*data.set('file', file, doc.filename);
-//     data.set(
-//         'data',
-//         {id: createBillResponse.id, fileName: doc.filename});*/
-//     //await billComLogin();
-//     //uploads.push(
-//      await   billComApiCall(
-//             'UploadAttachment',
-//             {'Content-Type':
-//                 `multipart/form-data; boundary=${formBoundary}`},
-// `${formBoundary}
-// Content-Disposition: form-data; name="devKey"
-
-// ${devKey}
-// ${formBoundary}
-// Content-Disposition: form-data; name="sessionId"
-
-// ${sessionId}
-// ${formBoundary}
-// Content-Disposition: form-data; name="file"; filename="${doc.filename}"
-// Content-Type: ${doc.type}
-
-// ${file}
-// ${formBoundary}
-// Content-Disposition: form-data; name="data"
-
-// {"id":"${createBillResponse.id}","fileName":"${doc.filename}"}
-// ${formBoundary}`);
-// }
-//await Promise.all(uploads);
 
 });
 
@@ -19538,7 +19466,6 @@ __webpack_handle_async_dependencies__();
 /* harmony export */   "rE": () => (/* binding */ batchAwait),
 /* harmony export */   "aE": () => (/* binding */ batchAsync)
 /* harmony export */ });
-/* unused harmony export log */
 /* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(6024);
 /** @fileoverview Shared code for Bill.com x Airtable Repository. */
 
@@ -19577,8 +19504,6 @@ function error(err) {
 function fetchError(code, context, message) {
   throw new Error(`Error ${code} (from ${context}): ${message}`);
 }
-
-const log = _actions_core__WEBPACK_IMPORTED_MODULE_0__.info;
 
 /**
  * @param {string} title

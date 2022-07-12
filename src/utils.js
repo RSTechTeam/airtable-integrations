@@ -36,8 +36,6 @@ export function fetchError(code, context, message) {
   throw new Error(`Error ${code} (from ${context}): ${message}`);
 }
 
-export const log = core.info;
-
 /**
  * @param {string} title
  * @param {Object} json

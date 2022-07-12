@@ -148,22 +148,14 @@ export async function main() {
               });
         }
 
-        // Upload the Supporting Documents (via Integromat).
-
-        // if (newCheckRequest.get('Supporting Documents') != null) {
-        //   await fetch(`${utils.getInput('integromat-hook-prefix')}${newCheckRequest.getId()}`);
-        // }
-
+        // Upload the Supporting Documents.
         const data = new FormData();
         data.set('devKey', billCom.devKey);
         data.set('sessionId', billCom.sessionId);
         for (const doc of newCheckRequest.get('Supporting Documents')) {
-          utils.logJson('doc', doc);
+
           // Fetch the document.
           const response = await fetch(doc.url);
-          utils.logJson(response.status, response.statusText);
-          utils.logJson(doc.filename, response);
-          utils.logJson('type', response.type);
           if (!response.ok) {
             utils.fetchError(
                 response.status, doc.filename, response.statusText);
@@ -171,7 +163,6 @@ export async function main() {
 
           // Download it.
           const file = await response.blob();
-          utils.logJson('file', file);
 
           // Upload it.
           data.set('file', file, doc.filename);
@@ -181,69 +172,6 @@ export async function main() {
                   {id: createBillResponse.id, fileName: doc.filename}));
 
           await billCom.call('UploadAttachment', {}, data);
-          // const endpoint = 'UploadAttachment';
-          // const r = await fetch(
-          //     `https://api.bill.com/api/v2/${endpoint}.json`,
-          //     {method: 'POST', body: data});
-          // const json = await r.json();
-          // utils.logJson(endpoint, json);
-          // const d = json.response_data;
-          // if (json.response_status === 1) {
-          //   utils.fetchError(d.error_code, endpoint, d.error_message);
-          // }
-         }
+        }
       });
 }
-
-
-// TODO use FormData now that we're off Airtable
-
-// const formBoundary = '----WebKitFormBoundary7MA4YWxkTrZu0gW';
-// let uploads = [];
-// /*let data = new FormData();
-// data.set('devKey', devKey);
-// data.set('sessionId', sessionId);*/
-// for (const doc of thisRequest.getCellValue('Supporting Documents')) {
-    
-//     // Fetch the document.
-//     const response = await fetch(doc.url);
-//     console.log(doc.filename, response);
-//     if (!response.ok) {
-//         error(
-//             response.status, doc.filename, response.statusText);
-//     }
-
-//     // Download it.
-//     const file = await response.blob();
-
-//     // Upload it.
-//     /*data.set('file', file, doc.filename);
-//     data.set(
-//         'data',
-//         {id: createBillResponse.id, fileName: doc.filename});*/
-//     //await billComLogin();
-//     //uploads.push(
-//      await   billComApiCall(
-//             'UploadAttachment',
-//             {'Content-Type':
-//                 `multipart/form-data; boundary=${formBoundary}`},
-// `${formBoundary}
-// Content-Disposition: form-data; name="devKey"
-
-// ${devKey}
-// ${formBoundary}
-// Content-Disposition: form-data; name="sessionId"
-
-// ${sessionId}
-// ${formBoundary}
-// Content-Disposition: form-data; name="file"; filename="${doc.filename}"
-// Content-Type: ${doc.type}
-
-// ${file}
-// ${formBoundary}
-// Content-Disposition: form-data; name="data"
-
-// {"id":"${createBillResponse.id}","fileName":"${doc.filename}"}
-// ${formBoundary}`);
-// }
-//await Promise.all(uploads);
