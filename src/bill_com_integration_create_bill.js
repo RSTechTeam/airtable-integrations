@@ -128,7 +128,6 @@ export async function main() {
               id: newCheckRequest.getId(),
               fields: {
                 'Active': true,
-                'Bill.com Session ID': billCom.sessionId,
                 'Bill.com Link': getUrlResponse.url,
                 [airtable.primaryOrgBillComId]: createBillResponse.id,
               },

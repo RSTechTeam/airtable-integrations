@@ -19056,7 +19056,6 @@ async function main() {
               id: newCheckRequest.getId(),
               fields: {
                 'Active': true,
-                'Bill.com Session ID': _bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .sessionId */ .W4,
                 'Bill.com Link': getUrlResponse.url,
                 [_airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .primaryOrgBillComId */ .Z1]: createBillResponse.id,
               },
