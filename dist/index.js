@@ -19086,7 +19086,7 @@ async function main() {
         data.set('devKey', _bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .devKey */ .Xg);
         data.set('sessionId', _bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .sessionId */ .W4);
         for (const doc of newCheckRequest.get('Supporting Documents')) {
-            
+          _utils_js__WEBPACK_IMPORTED_MODULE_3__/* .logJson */ .u2('doc', doc);
           // Fetch the document.
           const response = await (0,node_fetch__WEBPACK_IMPORTED_MODULE_4__/* ["default"] */ .ZP)(doc.url);
           _utils_js__WEBPACK_IMPORTED_MODULE_3__/* .logJson */ .u2(doc.filename, response);
@@ -19097,7 +19097,7 @@ async function main() {
 
           // Download it.
           const file = await response.blob();
-          _utils_js__WEBPACK_IMPORTED_MODULE_3__/* .log */ .cM(file);
+          _utils_js__WEBPACK_IMPORTED_MODULE_3__/* .logJson */ .u2('file', file);
 
           // Upload it.
           data.set('file', file, doc.filename);
@@ -19519,11 +19519,11 @@ __webpack_handle_async_dependencies__();
 /* harmony export */   "uP": () => (/* binding */ primaryOrg),
 /* harmony export */   "vU": () => (/* binding */ error),
 /* harmony export */   "Tl": () => (/* binding */ fetchError),
-/* harmony export */   "cM": () => (/* binding */ log),
 /* harmony export */   "u2": () => (/* binding */ logJson),
 /* harmony export */   "rE": () => (/* binding */ batchAwait),
 /* harmony export */   "aE": () => (/* binding */ batchAsync)
 /* harmony export */ });
+/* unused harmony export log */
 /* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(6024);
 /** @fileoverview Shared code for Bill.com x Airtable Repository. */
 

@@ -158,7 +158,7 @@ export async function main() {
         data.set('devKey', billCom.devKey);
         data.set('sessionId', billCom.sessionId);
         for (const doc of newCheckRequest.get('Supporting Documents')) {
-            
+          utils.logJson('doc', doc);
           // Fetch the document.
           const response = await fetch(doc.url);
           utils.logJson(doc.filename, response);
@@ -169,7 +169,7 @@ export async function main() {
 
           // Download it.
           const file = await response.blob();
-          utils.log(file);
+          utils.logJson('file', file);
 
           // Upload it.
           data.set('file', file, doc.filename);
