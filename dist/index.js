@@ -19111,9 +19111,9 @@ async function main() {
               {method: 'POST', body: data});
           const json = await r.json();
           _utils_js__WEBPACK_IMPORTED_MODULE_3__/* .logJson */ .u2(endpoint, json);
-          const data = json.response_data;
+          const d = json.response_data;
           if (json.response_status === 1) {
-            _utils_js__WEBPACK_IMPORTED_MODULE_3__/* .fetchError */ .Tl(data.error_code, endpoint, data.error_message);
+            _utils_js__WEBPACK_IMPORTED_MODULE_3__/* .fetchError */ .Tl(d.error_code, endpoint, d.error_message);
           }
          }
       });

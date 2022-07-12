@@ -184,9 +184,9 @@ export async function main() {
               {method: 'POST', body: data});
           const json = await r.json();
           utils.logJson(endpoint, json);
-          const data = json.response_data;
+          const d = json.response_data;
           if (json.response_status === 1) {
-            utils.fetchError(data.error_code, endpoint, data.error_message);
+            utils.fetchError(d.error_code, endpoint, d.error_message);
           }
          }
       });
