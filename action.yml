@@ -31,9 +31,6 @@ inputs:
   ecr-approver-user-profile-id:
     description: 'The Bill.com User Profile ID for ECR Approvers'
     required: false
-  integromat-hook-prefix:
-    description: 'The Integromat Webhook prefix for uploading attachments to Bill.com'
-    required: false
 runs:
   using: 'node16'
   main: 'dist/index.js'

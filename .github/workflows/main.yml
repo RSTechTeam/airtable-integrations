@@ -38,4 +38,3 @@ jobs:
           bill-com-password: ${{ secrets.BILL_COM_PASSWORD }}
           internal-customer-id: ${{ secrets.INTERNAL_CUSTOMER_ID }}
           ecr-approver-user-profile-id: ${{ secrets.ECR_APPROVER_USER_PROFILE_ID }}
-          integromat-hook-prefix: ${{ secrets.INTEGROMAT_HOOK_PREFIX }}
