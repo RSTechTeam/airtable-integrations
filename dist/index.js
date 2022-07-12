@@ -18692,7 +18692,7 @@ function error(querying, table) {
  * @param {Array} array
  * @return {Promise<Array<any>>}
  */
-function* batch(func, array) {
+function batch(func, array) {
   return _utils_js__WEBPACK_IMPORTED_MODULE_1__/* .batchAsync */ .aE(func, array, 10);
 }
 
@@ -19466,6 +19466,7 @@ __webpack_handle_async_dependencies__();
 /* harmony export */   "rE": () => (/* binding */ batchAwait),
 /* harmony export */   "aE": () => (/* binding */ batchAsync)
 /* harmony export */ });
+/* unused harmony export log */
 /* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(6024);
 /** @fileoverview Shared code for Bill.com x Airtable Repository. */
 
@@ -19475,6 +19476,9 @@ __webpack_handle_async_dependencies__();
  * https://github.com/actions/toolkit/tree/main/packages/core
  */
 
+
+/** @type {function(string): void} */
+const log = _actions_core__WEBPACK_IMPORTED_MODULE_0__.info;
 
 /**
  * @param {string} input
@@ -19513,7 +19517,7 @@ function fetchError(code, context, message) {
  */
 function logJsonGroup(title, json, replacer = null) {
   _actions_core__WEBPACK_IMPORTED_MODULE_0__.startGroup(title);
-  _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(JSON.stringify(json, replacer, '\t'));
+  log(JSON.stringify(json, replacer, '\t'));
   _actions_core__WEBPACK_IMPORTED_MODULE_0__.endGroup();
 }
 

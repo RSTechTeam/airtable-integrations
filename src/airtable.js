@@ -38,7 +38,7 @@ function error(querying, table) {
  * @param {Array} array
  * @return {Promise<Array<any>>}
  */
-function* batch(func, array) {
+function batch(func, array) {
   return utils.batchAsync(func, array, 10);
 }
 

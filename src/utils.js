@@ -7,6 +7,9 @@
  */
 import * as core from '@actions/core';
 
+/** @type {function(string): void} */
+export const log = core.info;
+
 /**
  * @param {string} input
  * @return {string} required input value
@@ -44,7 +47,7 @@ export function fetchError(code, context, message) {
  */
 function logJsonGroup(title, json, replacer = null) {
   core.startGroup(title);
-  core.info(JSON.stringify(json, replacer, '\t'));
+  log(JSON.stringify(json, replacer, '\t'));
   core.endGroup();
 }
 
