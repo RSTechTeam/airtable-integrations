@@ -160,7 +160,8 @@ export async function main() {
         for (const doc of newCheckRequest.get('Supporting Documents')) {
           utils.logJson('doc', doc);
           // Fetch the document.
-          const response = await fetch(doc.url);
+          const response = await fetch(doc.url, {headers: {'Content-Type': doc.type}});
+          utils.logJson(response.status, response.statusText);
           utils.logJson(doc.filename, response);
           utils.logJson('type', response.type);
           if (!response.ok) {

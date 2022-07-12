@@ -19088,7 +19088,8 @@ async function main() {
         for (const doc of newCheckRequest.get('Supporting Documents')) {
           _utils_js__WEBPACK_IMPORTED_MODULE_3__/* .logJson */ .u2('doc', doc);
           // Fetch the document.
-          const response = await (0,node_fetch__WEBPACK_IMPORTED_MODULE_4__/* ["default"] */ .ZP)(doc.url);
+          const response = await (0,node_fetch__WEBPACK_IMPORTED_MODULE_4__/* ["default"] */ .ZP)(doc.url, {headers: {'Content-Type': doc.type}});
+          _utils_js__WEBPACK_IMPORTED_MODULE_3__/* .logJson */ .u2(response.status, response.statusText);
           _utils_js__WEBPACK_IMPORTED_MODULE_3__/* .logJson */ .u2(doc.filename, response);
           _utils_js__WEBPACK_IMPORTED_MODULE_3__/* .logJson */ .u2('type', response.type);
           if (!response.ok) {
