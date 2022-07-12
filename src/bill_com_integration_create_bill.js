@@ -160,7 +160,7 @@ export async function main() {
         for (const doc of newCheckRequest.get('Supporting Documents')) {
           utils.logJson('doc', doc);
           // Fetch the document.
-          const response = await fetch(doc.url, {headers: {'Content-Type': doc.type}});
+          const response = await fetch(doc.url);
           utils.logJson(response.status, response.statusText);
           utils.logJson(doc.filename, response);
           utils.logJson('type', response.type);
@@ -177,7 +177,17 @@ export async function main() {
           data.set('file', file, doc.filename);
           data.set('data', {id: createBillResponse.id, fileName: doc.filename});
 
-          await billCom.call('UploadAttachment', {}, data);
+          //await billCom.call('UploadAttachment', {}, data);
+          const endpoint = 'UploadAttachment';
+          const r = await fetch(
+              `https://api.bill.com/api/v2/${endpoint}.json`,
+              {method: 'POST', body: data});
+          const json = await r.json();
+          utils.logJson(endpoint, json);
+          const data = json.response_data;
+          if (json.response_status === 1) {
+            utils.fetchError(data.error_code, endpoint, data.error_message);
+          }
          }
       });
 }
