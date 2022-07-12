@@ -18769,13 +18769,14 @@ __nccwpck_require__.a(__webpack_module__, async (__webpack_handle_async_dependen
 /* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
 /* harmony export */   "Xg": () => (/* binding */ devKey),
 /* harmony export */   "W4": () => (/* binding */ sessionId),
+/* harmony export */   "RE": () => (/* binding */ call),
 /* harmony export */   "kY": () => (/* binding */ primaryOrgLogin),
 /* harmony export */   "fI": () => (/* binding */ commonDataCall),
 /* harmony export */   "hX": () => (/* binding */ filter),
 /* harmony export */   "pb": () => (/* binding */ list),
 /* harmony export */   "Zs": () => (/* binding */ bulkCall)
 /* harmony export */ });
-/* unused harmony exports call, commonCall, login */
+/* unused harmony exports commonCall, login */
 /* harmony import */ var _airtable_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(7539);
 /* harmony import */ var node_fetch__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(4028);
 /* harmony import */ var _utils_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(8287);
@@ -19102,19 +19103,22 @@ async function main() {
 
           // Upload it.
           data.set('file', file, doc.filename);
-          data.set('data', {id: createBillResponse.id, fileName: doc.filename});
+          data.set(
+              'data',
+              JSON.stringify(
+                  {id: createBillResponse.id, fileName: doc.filename}));
 
-          //await billCom.call('UploadAttachment', {}, data);
-          const endpoint = 'UploadAttachment';
-          const r = await (0,node_fetch__WEBPACK_IMPORTED_MODULE_4__/* ["default"] */ .ZP)(
-              `https://api.bill.com/api/v2/${endpoint}.json`,
-              {method: 'POST', body: data});
-          const json = await r.json();
-          _utils_js__WEBPACK_IMPORTED_MODULE_3__/* .logJson */ .u2(endpoint, json);
-          const d = json.response_data;
-          if (json.response_status === 1) {
-            _utils_js__WEBPACK_IMPORTED_MODULE_3__/* .fetchError */ .Tl(d.error_code, endpoint, d.error_message);
-          }
+          await _bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .call */ .RE('UploadAttachment', {}, data);
+          // const endpoint = 'UploadAttachment';
+          // const r = await fetch(
+          //     `https://api.bill.com/api/v2/${endpoint}.json`,
+          //     {method: 'POST', body: data});
+          // const json = await r.json();
+          // utils.logJson(endpoint, json);
+          // const d = json.response_data;
+          // if (json.response_status === 1) {
+          //   utils.fetchError(d.error_code, endpoint, d.error_message);
+          // }
          }
       });
 }

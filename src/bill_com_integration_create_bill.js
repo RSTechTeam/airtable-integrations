@@ -175,19 +175,22 @@ export async function main() {
 
           // Upload it.
           data.set('file', file, doc.filename);
-          data.set('data', {id: createBillResponse.id, fileName: doc.filename});
+          data.set(
+              'data',
+              JSON.stringify(
+                  {id: createBillResponse.id, fileName: doc.filename}));
 
-          //await billCom.call('UploadAttachment', {}, data);
-          const endpoint = 'UploadAttachment';
-          const r = await fetch(
-              `https://api.bill.com/api/v2/${endpoint}.json`,
-              {method: 'POST', body: data});
-          const json = await r.json();
-          utils.logJson(endpoint, json);
-          const d = json.response_data;
-          if (json.response_status === 1) {
-            utils.fetchError(d.error_code, endpoint, d.error_message);
-          }
+          await billCom.call('UploadAttachment', {}, data);
+          // const endpoint = 'UploadAttachment';
+          // const r = await fetch(
+          //     `https://api.bill.com/api/v2/${endpoint}.json`,
+          //     {method: 'POST', body: data});
+          // const json = await r.json();
+          // utils.logJson(endpoint, json);
+          // const d = json.response_data;
+          // if (json.response_status === 1) {
+          //   utils.fetchError(d.error_code, endpoint, d.error_message);
+          // }
          }
       });
 }
