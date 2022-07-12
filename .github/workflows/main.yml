@@ -16,6 +16,7 @@ jobs:
           'accounting_sync',
           'bill_com_integration_sync',
           'bill_com_integration_create_bill',
+          'bill_com_integration_create_approver',
         ]
     steps:
       - id: get-airtable-base-id

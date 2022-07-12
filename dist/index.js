@@ -18911,6 +18911,58 @@ __webpack_handle_async_dependencies__();
 
 /***/ }),
 
+/***/ 9488:
+/***/ ((__webpack_module__, __webpack_exports__, __nccwpck_require__) => {
+
+__nccwpck_require__.a(__webpack_module__, async (__webpack_handle_async_dependencies__) => {
+__nccwpck_require__.r(__webpack_exports__);
+/* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
+/* harmony export */   "main": () => (/* binding */ main)
+/* harmony export */ });
+/* harmony import */ var _airtable_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(7539);
+/* harmony import */ var _bill_com_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(6496);
+/* harmony import */ var _utils_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(8287);
+var __webpack_async_dependencies__ = __webpack_handle_async_dependencies__([_bill_com_js__WEBPACK_IMPORTED_MODULE_1__]);
+_bill_com_js__WEBPACK_IMPORTED_MODULE_1__ = (__webpack_async_dependencies__.then ? await __webpack_async_dependencies__ : __webpack_async_dependencies__)[0];
+/** @fileoverview Creates a Bill.com Electronic Check Request Approver. */
+
+
+
+
+
+/** The Airtable Table name for new Bill.com approvers. */
+const APPROVER_TABLE = 'New Bill.com Approvers';
+
+/** The Bill.com User Profile ID for ECR Approvers. */
+const ecrApproverUserProfileId = _utils_js__WEBPACK_IMPORTED_MODULE_2__/* .getInput */ .Np('ecr-approver-user-profile-id');
+
+async function main() {
+  const billComIntegrationBase = _airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .getInputBase */ .Mn();
+  await _bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .primaryOrgLogin */ .kY();
+  await billComIntegrationBase.select(
+      APPROVER_TABLE,
+      'New',
+      async (record) => {
+        await _bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .commonDataCall */ .fI(
+            'Crud/Create/User',
+            {
+              obj: {
+                entity: 'User',
+                profileId: ecrApproverUserProfileId,
+                firstName: record.get('First Name'),
+                lastName: record.get('Last Name'),
+                email: record.get('Email'),
+              }
+            });
+        await billComIntegrationBase.update(
+            APPROVER_TABLE, [{id: record.getId(), fields: {'Created': true}}]);
+      });
+}
+
+});
+
+/***/ }),
+
 /***/ 3517:
 /***/ ((__webpack_module__, __webpack_exports__, __nccwpck_require__) => {
 
@@ -19418,11 +19470,12 @@ async function main () {
 
 __nccwpck_require__.a(__webpack_module__, async (__webpack_handle_async_dependencies__) => {
 /* harmony import */ var _accounting_sync_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(8763);
-/* harmony import */ var _bill_com_integration_create_bill_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(3517);
-/* harmony import */ var _bill_com_integration_sync_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(6174);
-/* harmony import */ var _utils_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(8287);
-var __webpack_async_dependencies__ = __webpack_handle_async_dependencies__([_bill_com_integration_sync_js__WEBPACK_IMPORTED_MODULE_2__, _bill_com_integration_create_bill_js__WEBPACK_IMPORTED_MODULE_1__, _accounting_sync_js__WEBPACK_IMPORTED_MODULE_0__]);
-([_bill_com_integration_sync_js__WEBPACK_IMPORTED_MODULE_2__, _bill_com_integration_create_bill_js__WEBPACK_IMPORTED_MODULE_1__, _accounting_sync_js__WEBPACK_IMPORTED_MODULE_0__] = __webpack_async_dependencies__.then ? await __webpack_async_dependencies__ : __webpack_async_dependencies__);
+/* harmony import */ var _bill_com_integration_create_approver_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(9488);
+/* harmony import */ var _bill_com_integration_create_bill_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(3517);
+/* harmony import */ var _bill_com_integration_sync_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(6174);
+/* harmony import */ var _utils_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(8287);
+var __webpack_async_dependencies__ = __webpack_handle_async_dependencies__([_bill_com_integration_sync_js__WEBPACK_IMPORTED_MODULE_3__, _bill_com_integration_create_bill_js__WEBPACK_IMPORTED_MODULE_2__, _bill_com_integration_create_approver_js__WEBPACK_IMPORTED_MODULE_1__, _accounting_sync_js__WEBPACK_IMPORTED_MODULE_0__]);
+([_bill_com_integration_sync_js__WEBPACK_IMPORTED_MODULE_3__, _bill_com_integration_create_bill_js__WEBPACK_IMPORTED_MODULE_2__, _bill_com_integration_create_approver_js__WEBPACK_IMPORTED_MODULE_1__, _accounting_sync_js__WEBPACK_IMPORTED_MODULE_0__] = __webpack_async_dependencies__.then ? await __webpack_async_dependencies__ : __webpack_async_dependencies__);
 /** @fileoverview Entrypoint for choosing which file to run. */
 
 
@@ -19430,23 +19483,27 @@ var __webpack_async_dependencies__ = __webpack_handle_async_dependencies__([_bil
 
 
 
-const filename = _utils_js__WEBPACK_IMPORTED_MODULE_3__/* .getInput */ .Np('filename');
+
+const filename = _utils_js__WEBPACK_IMPORTED_MODULE_4__/* .getInput */ .Np('filename');
 let imp;
 switch (filename) {
   case 'accounting_sync':
     imp = _accounting_sync_js__WEBPACK_IMPORTED_MODULE_0__;
     break;
+  case 'bill_com_integration_create_approver':
+    imp = _bill_com_integration_create_approver_js__WEBPACK_IMPORTED_MODULE_1__;
+    break;
   case 'bill_com_integration_create_bill':
-    imp = _bill_com_integration_create_bill_js__WEBPACK_IMPORTED_MODULE_1__;
+    imp = _bill_com_integration_create_bill_js__WEBPACK_IMPORTED_MODULE_2__;
     break;
   case 'bill_com_integration_sync':
-    imp = _bill_com_integration_sync_js__WEBPACK_IMPORTED_MODULE_2__;
+    imp = _bill_com_integration_sync_js__WEBPACK_IMPORTED_MODULE_3__;
     break;
   default:
-    _utils_js__WEBPACK_IMPORTED_MODULE_3__/* .error */ .vU(`Unknown filename ${filename}`);
+    _utils_js__WEBPACK_IMPORTED_MODULE_4__/* .error */ .vU(`Unknown filename ${filename}`);
 }
 
-await imp.main().catch(_utils_js__WEBPACK_IMPORTED_MODULE_3__/* .error */ .vU);
+await imp.main().catch(_utils_js__WEBPACK_IMPORTED_MODULE_4__/* .error */ .vU);
 
 __webpack_handle_async_dependencies__();
 }, 1);
