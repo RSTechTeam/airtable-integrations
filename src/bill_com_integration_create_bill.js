@@ -162,6 +162,7 @@ export async function main() {
           // Fetch the document.
           const response = await fetch(doc.url);
           utils.logJson(doc.filename, response);
+          utils.logJson('type', response.type);
           if (!response.ok) {
             utils.fetchError(
                 response.status, doc.filename, response.statusText);

@@ -19090,6 +19090,7 @@ async function main() {
           // Fetch the document.
           const response = await (0,node_fetch__WEBPACK_IMPORTED_MODULE_4__/* ["default"] */ .ZP)(doc.url);
           _utils_js__WEBPACK_IMPORTED_MODULE_3__/* .logJson */ .u2(doc.filename, response);
+          _utils_js__WEBPACK_IMPORTED_MODULE_3__/* .logJson */ .u2('type', response.type);
           if (!response.ok) {
             _utils_js__WEBPACK_IMPORTED_MODULE_3__/* .fetchError */ .Tl(
                 response.status, doc.filename, response.statusText);
