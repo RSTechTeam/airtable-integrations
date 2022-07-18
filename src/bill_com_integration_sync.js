@@ -48,14 +48,12 @@ async function syncUnpaid(table, entity) {
       bulkResponses,
       (r, i) => {
         const isPaid = r.paymentStatus === '0';
-        console.log(typeof r.updatedTime);
-        console.log(r.updatedTime);
         updates.push({
           id: airtableIds[i],
           fields: {
             'Active': r.isActive === '1',
             'Paid': isPaid,
-            'Paid Date': isPaid ? Date.parse(r.updatedTime) : null,
+            'Paid Date': isPaid ? r.updatedTime.substring(0, 10) : null,
           },
         });
       });
