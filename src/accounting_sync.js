@@ -38,7 +38,7 @@ export async function main() {
         }
 
         // Insert/Create in Bill.com any record with no primary org Bill.com ID.
-        if (id.length === 0) {
+        if (id == undefined) {
           const response =
               await billCom.commonDataCall('Crud/Create/Customer', change);
           await accountingBase.update(
