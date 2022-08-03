@@ -110,7 +110,7 @@ async function sync(entity, table, syncFunc) {
   // Create new table records from new entity data.
   const creates = [];
   for (const [id, data] of changes) {
-    data[airtable.primaryOrgBillComId] = id;
+    data[airtable.primaryOrgBillComId()] = id;
     creates.push({fields: data});
   }
   await billComIntegrationBase().create(table, creates);

@@ -19267,7 +19267,7 @@ async function sync(entity, table, syncFunc) {
   // Create new table records from new entity data.
   const creates = [];
   for (const [id, data] of changes) {
-    data[_airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .primaryOrgBillComId */ .Z1] = id;
+    data[_airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .primaryOrgBillComId */ .Z1()] = id;
     creates.push({fields: data});
   }
   await billComIntegrationBase().create(table, creates);
