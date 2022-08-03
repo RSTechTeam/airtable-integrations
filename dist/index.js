@@ -18593,7 +18593,7 @@ async function main() {
   // Upsert every Bill.com Customer from the Bill.com Sync View.
   const accountingBase = _airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .getInputBase */ .Mn();
   const updates = [];
-  await accountingBase.select(
+  await accountingBase().select(
       LCF_TABLE,
       'Bill.com Sync',
       async (record) => {
@@ -18612,7 +18612,7 @@ async function main() {
         if (id == undefined) {
           const response =
               await _bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .commonDataCall */ .fI('Crud/Create/Customer', change);
-          await accountingBase.update(
+          await accountingBase().update(
               LCF_TABLE,
               [{
                 id: record.getId(),
@@ -18925,7 +18925,7 @@ async function main() {
   const APPROVER_TABLE = 'New Bill.com Approvers';
   const billComIntegrationBase = _airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .getInputBase */ .Mn();
   await _bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .primaryOrgLogin */ .kY();
-  await billComIntegrationBase.select(
+  await billComIntegrationBase().select(
       APPROVER_TABLE,
       'New',
       async (record) => {
@@ -18940,7 +18940,7 @@ async function main() {
                 email: record.get('Email'),
               }
             });
-        await billComIntegrationBase.update(
+        await billComIntegrationBase().update(
             APPROVER_TABLE, [{id: record.getId(), fields: {'Created': true}}]);
       });
 }

@@ -19,7 +19,7 @@ export async function main() {
   // Upsert every Bill.com Customer from the Bill.com Sync View.
   const accountingBase = airtable.getInputBase();
   const updates = [];
-  await accountingBase.select(
+  await accountingBase().select(
       LCF_TABLE,
       'Bill.com Sync',
       async (record) => {
@@ -38,7 +38,7 @@ export async function main() {
         if (id == undefined) {
           const response =
               await billCom.commonDataCall('Crud/Create/Customer', change);
-          await accountingBase.update(
+          await accountingBase().update(
               LCF_TABLE,
               [{
                 id: record.getId(),

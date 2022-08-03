@@ -8,7 +8,7 @@ export async function main() {
   const APPROVER_TABLE = 'New Bill.com Approvers';
   const billComIntegrationBase = airtable.getInputBase();
   await billCom.primaryOrgLogin();
-  await billComIntegrationBase.select(
+  await billComIntegrationBase().select(
       APPROVER_TABLE,
       'New',
       async (record) => {
@@ -23,7 +23,7 @@ export async function main() {
                 email: record.get('Email'),
               }
             });
-        await billComIntegrationBase.update(
+        await billComIntegrationBase().update(
             APPROVER_TABLE, [{id: record.getId(), fields: {'Created': true}}]);
       });
 }
