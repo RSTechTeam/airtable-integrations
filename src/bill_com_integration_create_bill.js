@@ -20,7 +20,7 @@ async function getBillComId(table, airtableId) {
   await billComIntegrationBase().find(
       table,
       airtableId,
-      (record) => billComId = record.get(airtable.primaryOrgBillComId));
+      (record) => billComId = record.get(airtable.primaryOrgBillComId()));
   return billComId;
 }
 
@@ -67,7 +67,7 @@ export async function main() {
               NEW_VENDORS_TABLE,
               [{
                 id: newVendorId,
-                fields: {[airtable.primaryOrgBillComId]: vendorId},
+                fields: {[airtable.primaryOrgBillComId()]: vendorId},
               }]);
         } else {
           vendorId =
@@ -126,7 +126,7 @@ export async function main() {
               fields: {
                 'Active': true,
                 'Bill.com Link': getUrlResponse.url,
-                [airtable.primaryOrgBillComId]: createBillResponse.id,
+                [airtable.primaryOrgBillComId()]: createBillResponse.id,
               },
             }]);
 

@@ -23,7 +23,7 @@ export async function main() {
       LCF_TABLE,
       'Bill.com Sync',
       async (record) => {
-        const id = record.get(airtable.primaryOrgBillComId);
+        const id = record.get(airtable.primaryOrgBillComId());
         const change = {
           obj: {
             entity: 'Customer',
@@ -42,7 +42,7 @@ export async function main() {
               LCF_TABLE,
               [{
                 id: record.getId(),
-                fields: {[airtable.primaryOrgBillComId]: response.id},
+                fields: {[airtable.primaryOrgBillComId()]: response.id},
               }]);
           return;
         }

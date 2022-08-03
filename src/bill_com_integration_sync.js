@@ -29,7 +29,7 @@ function processBulkResponses(bulkResponses, func) {
 async function syncUnpaid(table, entity) {
   const billComId =
       entity === 'Bill' ?
-          airtable.primaryOrgBillComId : airtable.BILL_COM_ID_SUFFIX;
+          airtable.primaryOrgBillComId() : airtable.BILL_COM_ID_SUFFIX;
   
   const billComIds = [];
   const airtableIds = [];
@@ -98,7 +98,7 @@ async function sync(entity, table, syncFunc) {
       table,
       undefined,
       (record) => {
-        const id = record.get(airtable.primaryOrgBillComId);
+        const id = record.get(airtable.primaryOrgBillComId());
         updates.push({
           id: record.getId(),
           fields: changes.has(id) ? changes.get(id) : {'Active': false},
@@ -262,7 +262,7 @@ async function syncCustomers(anchorEntity) {
         Name: customer.name,
         Email: customer.email,
         [BILL_COM_ID]: id,
-        [airtable.primaryOrgBillComId]: response.id,
+        [airtable.primaryOrgBillComId()]: response.id,
       }
     });
   }

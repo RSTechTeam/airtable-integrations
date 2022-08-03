@@ -18597,7 +18597,7 @@ async function main() {
       LCF_TABLE,
       'Bill.com Sync',
       async (record) => {
-        const id = record.get(_airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .primaryOrgBillComId */ .Z1);
+        const id = record.get(_airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .primaryOrgBillComId */ .Z1());
         const change = {
           obj: {
             entity: 'Customer',
@@ -18616,7 +18616,7 @@ async function main() {
               LCF_TABLE,
               [{
                 id: record.getId(),
-                fields: {[_airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .primaryOrgBillComId */ .Z1]: response.id},
+                fields: {[_airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .primaryOrgBillComId */ .Z1()]: response.id},
               }]);
           return;
         }
@@ -18987,7 +18987,7 @@ async function getBillComId(table, airtableId) {
   await billComIntegrationBase().find(
       table,
       airtableId,
-      (record) => billComId = record.get(_airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .primaryOrgBillComId */ .Z1));
+      (record) => billComId = record.get(_airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .primaryOrgBillComId */ .Z1()));
   return billComId;
 }
 
@@ -19034,7 +19034,7 @@ async function main() {
               NEW_VENDORS_TABLE,
               [{
                 id: newVendorId,
-                fields: {[_airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .primaryOrgBillComId */ .Z1]: vendorId},
+                fields: {[_airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .primaryOrgBillComId */ .Z1()]: vendorId},
               }]);
         } else {
           vendorId =
@@ -19093,7 +19093,7 @@ async function main() {
               fields: {
                 'Active': true,
                 'Bill.com Link': getUrlResponse.url,
-                [_airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .primaryOrgBillComId */ .Z1]: createBillResponse.id,
+                [_airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .primaryOrgBillComId */ .Z1()]: createBillResponse.id,
               },
             }]);
 
@@ -19186,7 +19186,7 @@ function processBulkResponses(bulkResponses, func) {
 async function syncUnpaid(table, entity) {
   const billComId =
       entity === 'Bill' ?
-          _airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .primaryOrgBillComId */ .Z1 : _airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .BILL_COM_ID_SUFFIX */ .dK;
+          _airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .primaryOrgBillComId */ .Z1() : _airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .BILL_COM_ID_SUFFIX */ .dK;
   
   const billComIds = [];
   const airtableIds = [];
@@ -19255,7 +19255,7 @@ async function sync(entity, table, syncFunc) {
       table,
       undefined,
       (record) => {
-        const id = record.get(_airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .primaryOrgBillComId */ .Z1);
+        const id = record.get(_airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .primaryOrgBillComId */ .Z1());
         updates.push({
           id: record.getId(),
           fields: changes.has(id) ? changes.get(id) : {'Active': false},
@@ -19419,7 +19419,7 @@ async function syncCustomers(anchorEntity) {
         Name: customer.name,
         Email: customer.email,
         [BILL_COM_ID]: id,
-        [airtable.primaryOrgBillComId]: response.id,
+        [airtable.primaryOrgBillComId()]: response.id,
       }
     });
   }
