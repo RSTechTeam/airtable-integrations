@@ -3,14 +3,9 @@
 import * as airtable from './airtable.js';
 import * as billCom from './bill_com.js';
 import fetch from 'node-fetch';
-import {FormData} from 'formdata-node';
 import * as utils from './utils.js';
-
-/** The Airtable Table name for Check Requests. */
-const CHECK_REQUESTS_TABLE = 'Check Requests';
-
-/** The Airtable Table name for New Vendors. */
-const NEW_VENDORS_TABLE = 'New Vendors';
+import {billComDevKey} from 'inputs.js';
+import {FormData} from 'formdata-node';
 
 /** The Bill.com Integration Airtable Base. */
 const billComIntegrationBase = airtable.getInputBase();
@@ -22,7 +17,7 @@ const billComIntegrationBase = airtable.getInputBase();
  */
 async function getBillComId(table, airtableId) {
   let billComId;
-  await billComIntegrationBase.find(
+  await billComIntegrationBase().find(
       table,
       airtableId,
       (record) => billComId = record.get(airtable.primaryOrgBillComId));
@@ -31,10 +26,12 @@ async function getBillComId(table, airtableId) {
 
 
 export async function main() {
+  const CHECK_REQUESTS_TABLE = 'Check Requests';
+  const NEW_VENDORS_TABLE = 'New Vendors';
 
   // Get new Check Requests.
   await billCom.primaryOrgLogin();
-  await billComIntegrationBase.select(
+  await billComIntegrationBase().select(
       CHECK_REQUESTS_TABLE,
       'New',
       async (newCheckRequest) => {
@@ -149,7 +146,7 @@ export async function main() {
 
         // Upload the Supporting Documents.
         const data = new FormData();
-        data.set('devKey', billCom.devKey);
+        data.set('devKey', billComDevKey);
         data.set('sessionId', billCom.sessionId);
         for (const doc of newCheckRequest.get('Supporting Documents')) {
 

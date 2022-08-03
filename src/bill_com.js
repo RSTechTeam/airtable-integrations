@@ -6,20 +6,13 @@
 
 import * as airtable from './airtable.js';
 import fetch from 'node-fetch';
+import * as inputs from './inputs.js';
 import * as utils from './utils.js';
-
-/** The Bill.com developer key for API access. */
-export const devKey = utils.getInput('bill-com-dev-key');
-
-/** The Bill.com email for login. */
-const userName = utils.getInput('bill-com-user-name');
-
-/** The Bill.com password for login. */
-const password = utils.getInput('bill-com-password');
+import {logJson} from './github_actions_core.js';
 
 /** The organization ID for each Anchor Entity. */
 const orgIds = new Map();
-await new airtable.Base(utils.getInput('airtable-org-ids-base-id')).select(
+await new airtable.Base(inputs.airtableOrgIdsBaseId()).select(
     'Anchor Entities',
     'Org IDs',
     (r) => orgIds.set(r.get('Department'), r.get('Bill.com Org ID')));
@@ -39,7 +32,7 @@ export async function call(endpoint, headers, body) {
           `https://api.bill.com/api/v2/${endpoint}.json`,
           {method: 'POST', headers: headers, body: body});
   const json = await response.json();
-  utils.logJson(endpoint, json);
+  logJson(endpoint, json);
   const data = json.response_data;
   if (json.response_status === 1) {
     utils.fetchError(data.error_code, endpoint, data.error_message);
@@ -56,7 +49,7 @@ export function commonCall(endpoint, params) {
   return call(
       endpoint,
       {'Content-Type': 'application/x-www-form-urlencoded'},
-      `devKey=${devKey}&sessionId=${sessionId}&${params}`);
+      `devKey=${inputs.billComDevKey()}&sessionId=${sessionId}&${params}`);
 }
 
 /** 
@@ -67,14 +60,15 @@ export async function login(anchorEntity) {
   const loginResponse =
       await commonCall(
           'Login',
-          `userName=${userName}&password=${password}` +
+          `userName=${inputs.billComUserName()}` +
+              `&password=${inputs.billComPassword()}` +
               `&orgId=${orgIds.get(anchorEntity)}`);
   sessionId = loginResponse.sessionId;
 }
 
 /** Login to access the primaryOrg's Bill.com API and receive a session ID. */
 export function primaryOrgLogin() {
-    return login(utils.primaryOrg);
+    return login(inputs.primaryOrg());
 }
 
 /**

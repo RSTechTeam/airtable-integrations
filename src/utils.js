@@ -1,33 +1,17 @@
 /** @fileoverview Shared code for Bill.com x Airtable Repository. */
 
 /**
- * Core GitHub Action functions for getting inputs, setting results, logging,
- * registering secrets and exporting variables across actions.
- * https://github.com/actions/toolkit/tree/main/packages/core
+ * @param {function(): any} producer
+ * @return {function(): any} producer's result, lazily evaluated and cached
  */
-import * as core from '@actions/core';
-
-/** @type {function(string): void} */
-export const log = core.info;
-
-/**
- * @param {string} input
- * @return {string} required input value
- */
-export function getInput(input) {
-  return core.getInput(input, {required: true});
-}
-
-/** The primary Bill.com Org. */
-export const primaryOrg = getInput('primary-org');
-
-/**
- * Logs err, sets a failing exit code, and throws err.
- * @param {Error} err
- */
-export function error(err) {
-  core.setFailed(err);
-  throw err;
+export function lazyCache(producer) {
+  let result;
+  return () => {
+    if (result == undefined) {
+      result = producer();
+    }
+    return result;
+  }
 }
 
 /**
@@ -37,39 +21,6 @@ export function error(err) {
  */
 export function fetchError(code, context, message) {
   throw new Error(`Error ${code} (from ${context}): ${message}`);
-}
-
-/**
- * @param {string} title
- * @param {Object} json
- * @param {function|Array} replacer
- * @see JSON.stringify
- */
-function logJsonGroup(title, json, replacer = null) {
-  core.startGroup(title);
-  log(JSON.stringify(json, replacer, '\t'));
-  core.endGroup();
-}
-
-/**
- * Logs json, logging individual expandable groups for each element
- * of the assumed only top-level Array.
- * @param {string} endpoint
- * @param {Object} json
- */
-export function logJson(endpoint, json) {
-  let firstArray = [];
-  logJsonGroup(
-      endpoint,
-      json,
-      (key, value) => {
-        if (Array.isArray(value)) {
-          firstArray = value;
-          return `Array(${value.length}) <see below log groups for content>`;
-        }
-        return value;
-      });
-  firstArray.forEach((data, index) => logJsonGroup(index, data));
 }
 
 /**

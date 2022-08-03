@@ -15312,6 +15312,14 @@ module.exports = eval("require")("encoding");
 
 /***/ }),
 
+/***/ 9411:
+/***/ ((module) => {
+
+module.exports = eval("require")("inputs.js");
+
+
+/***/ }),
+
 /***/ 9491:
 /***/ ((module) => {
 
@@ -18569,7 +18577,7 @@ __nccwpck_require__.r(__webpack_exports__);
 /* harmony export */ });
 /* harmony import */ var _airtable_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(7539);
 /* harmony import */ var _bill_com_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(6496);
-/* harmony import */ var _utils_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(8287);
+/* harmony import */ var _inputs_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(1107);
 var __webpack_async_dependencies__ = __webpack_handle_async_dependencies__([_bill_com_js__WEBPACK_IMPORTED_MODULE_1__]);
 _bill_com_js__WEBPACK_IMPORTED_MODULE_1__ = (__webpack_async_dependencies__.then ? await __webpack_async_dependencies__ : __webpack_async_dependencies__)[0];
 /** @fileoverview Syncs Bill.com Customers from Airtable to Bill.com. */
@@ -18578,18 +18586,15 @@ _bill_com_js__WEBPACK_IMPORTED_MODULE_1__ = (__webpack_async_dependencies__.then
 
 
 
-/** The Airtable Table name Labor Charge Fields. */
-const LCF_TABLE = 'Labor Charge Field (LCF) Mapping';
-
 async function main() {
+  const LCF_TABLE = 'Labor Charge Field (LCF) Mapping';
 
   // Initialize Bill.com Customer collection.
   await _bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .primaryOrgLogin */ .kY();
-  const internalCustomerId = _utils_js__WEBPACK_IMPORTED_MODULE_2__/* .getInput */ .Np('internal-customer-id');
   const billComCustomers =
       await _bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .list */ .pb(
           'Customer',
-          [_bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .filter */ .hX('parentCustomerId', '=', internalCustomerId)]);
+          [_bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .filter */ .hX('parentCustomerId', '=', (0,_inputs_js__WEBPACK_IMPORTED_MODULE_2__/* .internalCustomerId */ .qV)())]);
   const billComCustomerIds = new Set();
   billComCustomers.forEach(c => billComCustomerIds.add(c.id));
 
@@ -18605,7 +18610,7 @@ async function main() {
           obj: {
             entity: 'Customer',
             isActive: '1',
-            parentCustomerId: internalCustomerId,
+            parentCustomerId: (0,_inputs_js__WEBPACK_IMPORTED_MODULE_2__/* .internalCustomerId */ .qV)(),
             name:
               encodeURIComponent(record.get('Abacus / Bill.com / QBO Code')),
           }
@@ -18651,7 +18656,8 @@ async function main() {
 /* harmony export */   "Mn": () => (/* binding */ getInputBase)
 /* harmony export */ });
 /* harmony import */ var airtable__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(5447);
-/* harmony import */ var _utils_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(8287);
+/* harmony import */ var _utils_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(8287);
+/* harmony import */ var _inputs_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(1107);
 /** @fileoverview Utilities for interacting with Airtable. */
 
 /**
@@ -18661,16 +18667,14 @@ async function main() {
 
 
 
-airtable__WEBPACK_IMPORTED_MODULE_0__.configure({apiKey: _utils_js__WEBPACK_IMPORTED_MODULE_1__/* .getInput */ .Np('airtable-api-key')});
 
 /** The Bill.com ID Field name suffix. */
 const BILL_COM_ID_SUFFIX = 'Bill.com ID';
 
 /** The primary Org Bill.com ID Field name. */
-const primaryOrgBillComId = `${_utils_js__WEBPACK_IMPORTED_MODULE_1__/* .primaryOrg */ .uP} ${BILL_COM_ID_SUFFIX}`;
-
-/** The input Airtable Base ID. */
-const inputBaseId = _utils_js__WEBPACK_IMPORTED_MODULE_1__/* .getInput */ .Np('airtable-base-id');
+const primaryOrgBillComId = () => {
+  return `${(0,_inputs_js__WEBPACK_IMPORTED_MODULE_1__/* .primaryOrg */ .uP)()} ${BILL_COM_ID_SUFFIX}`;
+}
 
 /**
  * @param {string} querying e.g., selecting, updating, etc
@@ -18693,7 +18697,7 @@ function error(querying, table) {
  * @return {Promise<Array<any>>}
  */
 function batch(func, array) {
-  return _utils_js__WEBPACK_IMPORTED_MODULE_1__/* .batchAsync */ .aE(func, array, 10);
+  return _utils_js__WEBPACK_IMPORTED_MODULE_2__/* .batchAsync */ .aE(func, array, 10);
 }
 
 /** An Airtable Base to query. */
@@ -18703,7 +18707,7 @@ class Base {
   constructor(baseId) {
 
     /** @private {Base} */
-    this.base_ = new airtable__WEBPACK_IMPORTED_MODULE_0__().base(baseId);
+    this.base_ = new airtable__WEBPACK_IMPORTED_MODULE_0__({apiKey: (0,_inputs_js__WEBPACK_IMPORTED_MODULE_1__/* .airtableApiKey */ .Bd)()}).base(baseId);
   }
 
   /**
@@ -18754,9 +18758,9 @@ class Base {
   }
 }
 
-/** @return {Base} */
+/** @return {function(): Base} */
 function getInputBase() {
-  return new Base(inputBaseId);
+  return _utils_js__WEBPACK_IMPORTED_MODULE_2__/* .lazyCache */ .ss(() => new Base((0,_inputs_js__WEBPACK_IMPORTED_MODULE_1__/* .airtableBaseId */ .kt)()));
 }
 
 
@@ -18767,7 +18771,6 @@ function getInputBase() {
 
 __nccwpck_require__.a(__webpack_module__, async (__webpack_handle_async_dependencies__) => {
 /* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
-/* harmony export */   "Xg": () => (/* binding */ devKey),
 /* harmony export */   "W4": () => (/* binding */ sessionId),
 /* harmony export */   "RE": () => (/* binding */ call),
 /* harmony export */   "kY": () => (/* binding */ primaryOrgLogin),
@@ -18778,8 +18781,10 @@ __nccwpck_require__.a(__webpack_module__, async (__webpack_handle_async_dependen
 /* harmony export */ });
 /* unused harmony exports commonCall, login */
 /* harmony import */ var _airtable_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(7539);
-/* harmony import */ var node_fetch__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(4028);
-/* harmony import */ var _utils_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(8287);
+/* harmony import */ var node_fetch__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(4028);
+/* harmony import */ var _inputs_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(1107);
+/* harmony import */ var _utils_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(8287);
+/* harmony import */ var _github_actions_core_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(5091);
 /**
  * @fileoverview Shared code for interacting with the Bill.com API.
  * For more information, check out the API documentation:
@@ -18790,18 +18795,11 @@ __nccwpck_require__.a(__webpack_module__, async (__webpack_handle_async_dependen
 
 
 
-/** The Bill.com developer key for API access. */
-const devKey = _utils_js__WEBPACK_IMPORTED_MODULE_1__/* .getInput */ .Np('bill-com-dev-key');
 
-/** The Bill.com email for login. */
-const userName = _utils_js__WEBPACK_IMPORTED_MODULE_1__/* .getInput */ .Np('bill-com-user-name');
-
-/** The Bill.com password for login. */
-const password = _utils_js__WEBPACK_IMPORTED_MODULE_1__/* .getInput */ .Np('bill-com-password');
 
 /** The organization ID for each Anchor Entity. */
 const orgIds = new Map();
-await new _airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .Base */ .XY(_utils_js__WEBPACK_IMPORTED_MODULE_1__/* .getInput */ .Np('airtable-org-ids-base-id')).select(
+await new _airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .Base */ .XY(_inputs_js__WEBPACK_IMPORTED_MODULE_1__/* .airtableOrgIdsBaseId */ .AG()).select(
     'Anchor Entities',
     'Org IDs',
     (r) => orgIds.set(r.get('Department'), r.get('Bill.com Org ID')));
@@ -18817,14 +18815,14 @@ let sessionId;
  */
 async function call(endpoint, headers, body) {
   const response =
-      await (0,node_fetch__WEBPACK_IMPORTED_MODULE_2__/* ["default"] */ .ZP)(
+      await (0,node_fetch__WEBPACK_IMPORTED_MODULE_3__/* ["default"] */ .ZP)(
           `https://api.bill.com/api/v2/${endpoint}.json`,
           {method: 'POST', headers: headers, body: body});
   const json = await response.json();
-  _utils_js__WEBPACK_IMPORTED_MODULE_1__/* .logJson */ .u2(endpoint, json);
+  (0,_github_actions_core_js__WEBPACK_IMPORTED_MODULE_2__/* .logJson */ .u2)(endpoint, json);
   const data = json.response_data;
   if (json.response_status === 1) {
-    _utils_js__WEBPACK_IMPORTED_MODULE_1__/* .fetchError */ .Tl(data.error_code, endpoint, data.error_message);
+    _utils_js__WEBPACK_IMPORTED_MODULE_4__/* .fetchError */ .Tl(data.error_code, endpoint, data.error_message);
   }
   return data;
 }
@@ -18838,7 +18836,7 @@ function commonCall(endpoint, params) {
   return call(
       endpoint,
       {'Content-Type': 'application/x-www-form-urlencoded'},
-      `devKey=${devKey}&sessionId=${sessionId}&${params}`);
+      `devKey=${_inputs_js__WEBPACK_IMPORTED_MODULE_1__/* .billComDevKey */ .Hc()}&sessionId=${sessionId}&${params}`);
 }
 
 /** 
@@ -18849,14 +18847,15 @@ async function login(anchorEntity) {
   const loginResponse =
       await commonCall(
           'Login',
-          `userName=${userName}&password=${password}` +
+          `userName=${_inputs_js__WEBPACK_IMPORTED_MODULE_1__/* .billComUserName */ .jv()}` +
+              `&password=${_inputs_js__WEBPACK_IMPORTED_MODULE_1__/* .billComPassword */ .Mr()}` +
               `&orgId=${orgIds.get(anchorEntity)}`);
   sessionId = loginResponse.sessionId;
 }
 
 /** Login to access the primaryOrg's Bill.com API and receive a session ID. */
 function primaryOrgLogin() {
-    return login(_utils_js__WEBPACK_IMPORTED_MODULE_1__/* .primaryOrg */ .uP);
+    return login(_inputs_js__WEBPACK_IMPORTED_MODULE_1__/* .primaryOrg */ .uP());
 }
 
 /**
@@ -18902,7 +18901,7 @@ async function list(entity, filters=undefined) {
  * @return {Promise<Array<Object>>}
  */
 function bulkCall(endpoint, data) {
-  return _utils_js__WEBPACK_IMPORTED_MODULE_1__/* .batchAwait */ .rE(
+  return _utils_js__WEBPACK_IMPORTED_MODULE_4__/* .batchAwait */ .rE(
       (arr) => commonDataCall(`Bulk/Crud/${endpoint}`, {bulk: arr}), data, 100);
 }
 
@@ -18921,7 +18920,7 @@ __nccwpck_require__.r(__webpack_exports__);
 /* harmony export */ });
 /* harmony import */ var _airtable_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(7539);
 /* harmony import */ var _bill_com_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(6496);
-/* harmony import */ var _utils_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(8287);
+/* harmony import */ var _inputs_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(1107);
 var __webpack_async_dependencies__ = __webpack_handle_async_dependencies__([_bill_com_js__WEBPACK_IMPORTED_MODULE_1__]);
 _bill_com_js__WEBPACK_IMPORTED_MODULE_1__ = (__webpack_async_dependencies__.then ? await __webpack_async_dependencies__ : __webpack_async_dependencies__)[0];
 /** @fileoverview Creates a Bill.com Electronic Check Request Approver. */
@@ -18930,13 +18929,8 @@ _bill_com_js__WEBPACK_IMPORTED_MODULE_1__ = (__webpack_async_dependencies__.then
 
 
 
-/** The Airtable Table name for new Bill.com approvers. */
-const APPROVER_TABLE = 'New Bill.com Approvers';
-
-/** The Bill.com User Profile ID for ECR Approvers. */
-const ecrApproverUserProfileId = _utils_js__WEBPACK_IMPORTED_MODULE_2__/* .getInput */ .Np('ecr-approver-user-profile-id');
-
 async function main() {
+  const APPROVER_TABLE = 'New Bill.com Approvers';
   const billComIntegrationBase = _airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .getInputBase */ .Mn();
   await _bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .primaryOrgLogin */ .kY();
   await billComIntegrationBase.select(
@@ -18948,7 +18942,7 @@ async function main() {
             {
               obj: {
                 entity: 'User',
-                profileId: ecrApproverUserProfileId,
+                profileId: (0,_inputs_js__WEBPACK_IMPORTED_MODULE_2__/* .ecrApproverUserProfileId */ .WI)(),
                 firstName: record.get('First Name'),
                 lastName: record.get('Last Name'),
                 email: record.get('Email'),
@@ -18974,8 +18968,9 @@ __nccwpck_require__.r(__webpack_exports__);
 /* harmony import */ var _airtable_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(7539);
 /* harmony import */ var _bill_com_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(6496);
 /* harmony import */ var node_fetch__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(4028);
-/* harmony import */ var formdata_node__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(7813);
-/* harmony import */ var _utils_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(8287);
+/* harmony import */ var _utils_js__WEBPACK_IMPORTED_MODULE_5__ = __nccwpck_require__(8287);
+/* harmony import */ var inputs_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(9411);
+/* harmony import */ var formdata_node__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(7813);
 var __webpack_async_dependencies__ = __webpack_handle_async_dependencies__([_bill_com_js__WEBPACK_IMPORTED_MODULE_1__]);
 _bill_com_js__WEBPACK_IMPORTED_MODULE_1__ = (__webpack_async_dependencies__.then ? await __webpack_async_dependencies__ : __webpack_async_dependencies__)[0];
 /** @fileoverview Creates a Bill.com Bill based on a new Check Request. */
@@ -18986,11 +18981,6 @@ _bill_com_js__WEBPACK_IMPORTED_MODULE_1__ = (__webpack_async_dependencies__.then
 
 
 
-/** The Airtable Table name for Check Requests. */
-const CHECK_REQUESTS_TABLE = 'Check Requests';
-
-/** The Airtable Table name for New Vendors. */
-const NEW_VENDORS_TABLE = 'New Vendors';
 
 /** The Bill.com Integration Airtable Base. */
 const billComIntegrationBase = _airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .getInputBase */ .Mn();
@@ -19002,7 +18992,7 @@ const billComIntegrationBase = _airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .getI
  */
 async function getBillComId(table, airtableId) {
   let billComId;
-  await billComIntegrationBase.find(
+  await billComIntegrationBase().find(
       table,
       airtableId,
       (record) => billComId = record.get(_airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .primaryOrgBillComId */ .Z1));
@@ -19011,10 +19001,12 @@ async function getBillComId(table, airtableId) {
 
 
 async function main() {
+  const CHECK_REQUESTS_TABLE = 'Check Requests';
+  const NEW_VENDORS_TABLE = 'New Vendors';
 
   // Get new Check Requests.
   await _bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .primaryOrgLogin */ .kY();
-  await billComIntegrationBase.select(
+  await billComIntegrationBase().select(
       CHECK_REQUESTS_TABLE,
       'New',
       async (newCheckRequest) => {
@@ -19128,15 +19120,15 @@ async function main() {
         }
 
         // Upload the Supporting Documents.
-        const data = new formdata_node__WEBPACK_IMPORTED_MODULE_2__/* .FormData */ .Ct();
-        data.set('devKey', _bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .devKey */ .Xg);
+        const data = new formdata_node__WEBPACK_IMPORTED_MODULE_3__/* .FormData */ .Ct();
+        data.set('devKey', inputs_js__WEBPACK_IMPORTED_MODULE_2__.billComDevKey);
         data.set('sessionId', _bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .sessionId */ .W4);
         for (const doc of newCheckRequest.get('Supporting Documents')) {
 
           // Fetch the document.
           const response = await (0,node_fetch__WEBPACK_IMPORTED_MODULE_4__/* ["default"] */ .ZP)(doc.url);
           if (!response.ok) {
-            _utils_js__WEBPACK_IMPORTED_MODULE_3__/* .fetchError */ .Tl(
+            _utils_js__WEBPACK_IMPORTED_MODULE_5__/* .fetchError */ .Tl(
                 response.status, doc.filename, response.statusText);
           }
 
@@ -19206,7 +19198,7 @@ async function syncUnpaid(table, entity) {
   
   const billComIds = [];
   const airtableIds = [];
-  await billComIntegrationBase.select(
+  await billComIntegrationBase().select(
       table,
       'Unpaid',
       (record) => {
@@ -19230,7 +19222,7 @@ async function syncUnpaid(table, entity) {
           },
         });
       });
-  await billComIntegrationBase.update(table, updates);
+  await billComIntegrationBase().update(table, updates);
 }
 
 /**
@@ -19267,7 +19259,7 @@ async function sync(entity, table, syncFunc) {
 
   // Update every existing table record based on the entity data.
   const updates = [];
-  await billComIntegrationBase.select(
+  await billComIntegrationBase().select(
       table,
       undefined,
       (record) => {
@@ -19278,7 +19270,7 @@ async function sync(entity, table, syncFunc) {
         });
         changes.delete(id);
       });
-  await billComIntegrationBase.update(table, updates);
+  await billComIntegrationBase().update(table, updates);
 
   // Create new table records from new entity data.
   const creates = [];
@@ -19286,7 +19278,7 @@ async function sync(entity, table, syncFunc) {
     data[_airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .primaryOrgBillComId */ .Z1] = id;
     creates.push({fields: data});
   }
-  await billComIntegrationBase.create(table, creates);
+  await billComIntegrationBase().create(table, creates);
 }
 
 /**
@@ -19346,7 +19338,7 @@ async function syncCustomers(anchorEntity) {
   const airtableUpdateIds = [];
   const airtableUpdates = [];
   const billComUpdates = [];
-  await billComIntegrationBase.select(
+  await billComIntegrationBase().select(
       ALL_CUSTOMERS_TABLE,
       undefined,
       (record) => {
@@ -19411,7 +19403,7 @@ async function syncCustomers(anchorEntity) {
         });
   }
   await billCom.bulkCall('Update/Customer', billComUpdates);
-  await billComIntegrationBase.update(ALL_CUSTOMERS_TABLE, airtableUpdates);
+  await billComIntegrationBase().update(ALL_CUSTOMERS_TABLE, airtableUpdates);
 
   // Create any active anchor entity Bill.com Customer not in Airtable;
   // Create in both RS Bill.com and Airtable.
@@ -19439,7 +19431,7 @@ async function syncCustomers(anchorEntity) {
       }
     });
   }
-  await billComIntegrationBase.create(ALL_CUSTOMERS_TABLE, airtableCreates);
+  await billComIntegrationBase().create(ALL_CUSTOMERS_TABLE, airtableCreates);
 }
 
 async function main () {
@@ -19465,66 +19457,20 @@ async function main () {
 
 /***/ }),
 
-/***/ 2337:
-/***/ ((__webpack_module__, __unused_webpack___webpack_exports__, __nccwpck_require__) => {
-
-__nccwpck_require__.a(__webpack_module__, async (__webpack_handle_async_dependencies__) => {
-/* harmony import */ var _accounting_sync_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(8763);
-/* harmony import */ var _bill_com_integration_create_approver_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(9488);
-/* harmony import */ var _bill_com_integration_create_bill_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(3517);
-/* harmony import */ var _bill_com_integration_sync_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(6174);
-/* harmony import */ var _utils_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(8287);
-var __webpack_async_dependencies__ = __webpack_handle_async_dependencies__([_bill_com_integration_sync_js__WEBPACK_IMPORTED_MODULE_3__, _bill_com_integration_create_bill_js__WEBPACK_IMPORTED_MODULE_2__, _bill_com_integration_create_approver_js__WEBPACK_IMPORTED_MODULE_1__, _accounting_sync_js__WEBPACK_IMPORTED_MODULE_0__]);
-([_bill_com_integration_sync_js__WEBPACK_IMPORTED_MODULE_3__, _bill_com_integration_create_bill_js__WEBPACK_IMPORTED_MODULE_2__, _bill_com_integration_create_approver_js__WEBPACK_IMPORTED_MODULE_1__, _accounting_sync_js__WEBPACK_IMPORTED_MODULE_0__] = __webpack_async_dependencies__.then ? await __webpack_async_dependencies__ : __webpack_async_dependencies__);
-/** @fileoverview Entrypoint for choosing which file to run. */
-
-
-
-
-
-
-
-const filename = _utils_js__WEBPACK_IMPORTED_MODULE_4__/* .getInput */ .Np('filename');
-let imp;
-switch (filename) {
-  case 'accounting_sync':
-    imp = _accounting_sync_js__WEBPACK_IMPORTED_MODULE_0__;
-    break;
-  case 'bill_com_integration_create_approver':
-    imp = _bill_com_integration_create_approver_js__WEBPACK_IMPORTED_MODULE_1__;
-    break;
-  case 'bill_com_integration_create_bill':
-    imp = _bill_com_integration_create_bill_js__WEBPACK_IMPORTED_MODULE_2__;
-    break;
-  case 'bill_com_integration_sync':
-    imp = _bill_com_integration_sync_js__WEBPACK_IMPORTED_MODULE_3__;
-    break;
-  default:
-    _utils_js__WEBPACK_IMPORTED_MODULE_4__/* .error */ .vU(`Unknown filename ${filename}`);
-}
-
-await imp.main().catch(_utils_js__WEBPACK_IMPORTED_MODULE_4__/* .error */ .vU);
-
-__webpack_handle_async_dependencies__();
-}, 1);
-
-/***/ }),
-
-/***/ 8287:
+/***/ 5091:
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
 
 /* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
 /* harmony export */   "Np": () => (/* binding */ getInput),
-/* harmony export */   "uP": () => (/* binding */ primaryOrg),
 /* harmony export */   "vU": () => (/* binding */ error),
-/* harmony export */   "Tl": () => (/* binding */ fetchError),
-/* harmony export */   "u2": () => (/* binding */ logJson),
-/* harmony export */   "rE": () => (/* binding */ batchAwait),
-/* harmony export */   "aE": () => (/* binding */ batchAsync)
+/* harmony export */   "u2": () => (/* binding */ logJson)
 /* harmony export */ });
 /* unused harmony export log */
 /* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(6024);
-/** @fileoverview Shared code for Bill.com x Airtable Repository. */
+/* harmony import */ var _utils_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(8287);
+/**
+ * @fileoverview Shared code for interacting with core GitHub Action functions.
+ */
 
 /**
  * Core GitHub Action functions for getting inputs, setting results, logging,
@@ -19533,19 +19479,17 @@ __webpack_handle_async_dependencies__();
  */
 
 
+
 /** @type {function(string): void} */
 const log = _actions_core__WEBPACK_IMPORTED_MODULE_0__.info;
 
 /**
  * @param {string} input
- * @return {string} required input value
+ * @return {function(): string} required input value
  */
 function getInput(input) {
-  return _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput(input, {required: true});
+  return (0,_utils_js__WEBPACK_IMPORTED_MODULE_1__/* .lazyCache */ .ss)(() => _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput(input, {required: true}));
 }
-
-/** The primary Bill.com Org. */
-const primaryOrg = getInput('primary-org');
 
 /**
  * Logs err, sets a failing exit code, and throws err.
@@ -19554,15 +19498,6 @@ const primaryOrg = getInput('primary-org');
 function error(err) {
   _actions_core__WEBPACK_IMPORTED_MODULE_0__.setFailed(err);
   throw err;
-}
-
-/**
- * @param {string|number} code
- * @param {string} context
- * @param {string} message
- */
-function fetchError(code, context, message) {
-  throw new Error(`Error ${code} (from ${context}): ${message}`);
 }
 
 /**
@@ -19596,6 +19531,128 @@ function logJson(endpoint, json) {
         return value;
       });
   firstArray.forEach((data, index) => logJsonGroup(index, data));
+}
+
+
+/***/ }),
+
+/***/ 2337:
+/***/ ((__webpack_module__, __unused_webpack___webpack_exports__, __nccwpck_require__) => {
+
+__nccwpck_require__.a(__webpack_module__, async (__webpack_handle_async_dependencies__) => {
+/* harmony import */ var _accounting_sync_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(8763);
+/* harmony import */ var _bill_com_integration_create_approver_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(9488);
+/* harmony import */ var _bill_com_integration_create_bill_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(3517);
+/* harmony import */ var _bill_com_integration_sync_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(6174);
+/* harmony import */ var _github_actions_core_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(5091);
+/* harmony import */ var _inputs_js__WEBPACK_IMPORTED_MODULE_5__ = __nccwpck_require__(1107);
+var __webpack_async_dependencies__ = __webpack_handle_async_dependencies__([_bill_com_integration_sync_js__WEBPACK_IMPORTED_MODULE_3__, _bill_com_integration_create_bill_js__WEBPACK_IMPORTED_MODULE_2__, _bill_com_integration_create_approver_js__WEBPACK_IMPORTED_MODULE_1__, _accounting_sync_js__WEBPACK_IMPORTED_MODULE_0__]);
+([_bill_com_integration_sync_js__WEBPACK_IMPORTED_MODULE_3__, _bill_com_integration_create_bill_js__WEBPACK_IMPORTED_MODULE_2__, _bill_com_integration_create_approver_js__WEBPACK_IMPORTED_MODULE_1__, _accounting_sync_js__WEBPACK_IMPORTED_MODULE_0__] = __webpack_async_dependencies__.then ? await __webpack_async_dependencies__ : __webpack_async_dependencies__);
+/** @fileoverview Entrypoint for choosing which file to run. */
+
+
+
+
+
+
+
+
+let imp;
+switch ((0,_inputs_js__WEBPACK_IMPORTED_MODULE_5__/* .filename */ .vB)()) {
+  case 'accounting_sync':
+    imp = _accounting_sync_js__WEBPACK_IMPORTED_MODULE_0__;
+    break;
+  case 'bill_com_integration_create_approver':
+    imp = _bill_com_integration_create_approver_js__WEBPACK_IMPORTED_MODULE_1__;
+    break;
+  case 'bill_com_integration_create_bill':
+    imp = _bill_com_integration_create_bill_js__WEBPACK_IMPORTED_MODULE_2__;
+    break;
+  case 'bill_com_integration_sync':
+    imp = _bill_com_integration_sync_js__WEBPACK_IMPORTED_MODULE_3__;
+    break;
+  default:
+    (0,_github_actions_core_js__WEBPACK_IMPORTED_MODULE_4__/* .error */ .vU)(`Unknown filename ${(0,_inputs_js__WEBPACK_IMPORTED_MODULE_5__/* .filename */ .vB)()}`);
+}
+
+await imp.main().catch(_github_actions_core_js__WEBPACK_IMPORTED_MODULE_4__/* .error */ .vU);
+
+__webpack_handle_async_dependencies__();
+}, 1);
+
+/***/ }),
+
+/***/ 1107:
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
+
+/* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
+/* harmony export */   "vB": () => (/* binding */ filename),
+/* harmony export */   "uP": () => (/* binding */ primaryOrg),
+/* harmony export */   "Bd": () => (/* binding */ airtableApiKey),
+/* harmony export */   "kt": () => (/* binding */ airtableBaseId),
+/* harmony export */   "AG": () => (/* binding */ airtableOrgIdsBaseId),
+/* harmony export */   "Hc": () => (/* binding */ billComDevKey),
+/* harmony export */   "jv": () => (/* binding */ billComUserName),
+/* harmony export */   "Mr": () => (/* binding */ billComPassword),
+/* harmony export */   "qV": () => (/* binding */ internalCustomerId),
+/* harmony export */   "WI": () => (/* binding */ ecrApproverUserProfileId)
+/* harmony export */ });
+/* harmony import */ var _github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(5091);
+/**
+ * @fileoverview Lazy evaluated inputs
+ * @see action.yml
+ */
+
+
+
+/** @type function(): string */
+const filename = (0,_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .getInput */ .Np)('filename');
+const primaryOrg = (0,_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .getInput */ .Np)('primary-org');
+const airtableApiKey = (0,_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .getInput */ .Np)('airtable-api-key');
+const airtableBaseId = (0,_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .getInput */ .Np)('airtable-base-id');
+const airtableOrgIdsBaseId = (0,_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .getInput */ .Np)('airtable-org-ids-base-id');
+const billComDevKey = (0,_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .getInput */ .Np)('bill-com-dev-key');
+const billComUserName = (0,_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .getInput */ .Np)('bill-com-user-name');
+const billComPassword = (0,_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .getInput */ .Np)('bill-com-password');
+const internalCustomerId = (0,_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .getInput */ .Np)('internal-customer-id');
+const ecrApproverUserProfileId =
+  (0,_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .getInput */ .Np)('ecr-approver-user-profile-id');
+
+
+/***/ }),
+
+/***/ 8287:
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
+
+/* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
+/* harmony export */   "ss": () => (/* binding */ lazyCache),
+/* harmony export */   "Tl": () => (/* binding */ fetchError),
+/* harmony export */   "rE": () => (/* binding */ batchAwait),
+/* harmony export */   "aE": () => (/* binding */ batchAsync)
+/* harmony export */ });
+/** @fileoverview Shared code for Bill.com x Airtable Repository. */
+
+/**
+ * @param {function(): any} producer
+ * @return {function(): any} producer's result, lazily evaluated and cached
+ */
+function lazyCache(producer) {
+  let result;
+  return () => {
+    if (result == undefined) {
+      result = producer();
+    }
+    return result;
+  }
+}
+
+/**
+ * @param {string|number} code
+ * @param {string} context
+ * @param {string} message
+ */
+function fetchError(code, context, message) {
+  throw new Error(`Error ${code} (from ${context}): ${message}`);
 }
 
 /**

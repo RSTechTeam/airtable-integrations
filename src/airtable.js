@@ -6,17 +6,15 @@
  */
 import Airtable from 'airtable';
 import * as utils from './utils.js';
-
-Airtable.configure({apiKey: utils.getInput('airtable-api-key')});
+import {primaryOrg, airtableApiKey, airtableBaseId} from './inputs.js';
 
 /** The Bill.com ID Field name suffix. */
 export const BILL_COM_ID_SUFFIX = 'Bill.com ID';
 
 /** The primary Org Bill.com ID Field name. */
-export const primaryOrgBillComId = `${utils.primaryOrg} ${BILL_COM_ID_SUFFIX}`;
-
-/** The input Airtable Base ID. */
-const inputBaseId = utils.getInput('airtable-base-id');
+export const primaryOrgBillComId = () => {
+  return `${primaryOrg()} ${BILL_COM_ID_SUFFIX}`;
+}
 
 /**
  * @param {string} querying e.g., selecting, updating, etc
@@ -49,7 +47,7 @@ export class Base {
   constructor(baseId) {
 
     /** @private {Base} */
-    this.base_ = new Airtable().base(baseId);
+    this.base_ = new Airtable({apiKey: airtableApiKey()}).base(baseId);
   }
 
   /**
@@ -100,7 +98,7 @@ export class Base {
   }
 }
 
-/** @return {Base} */
+/** @return {function(): Base} */
 export function getInputBase() {
-  return new Base(inputBaseId);
+  return utils.lazyCache(() => new Base(airtableBaseId()));
 }

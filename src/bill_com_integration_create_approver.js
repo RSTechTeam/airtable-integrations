@@ -2,15 +2,10 @@
 
 import * as airtable from './airtable.js';
 import * as billCom from './bill_com.js';
-import * as utils from './utils.js';
-
-/** The Airtable Table name for new Bill.com approvers. */
-const APPROVER_TABLE = 'New Bill.com Approvers';
-
-/** The Bill.com User Profile ID for ECR Approvers. */
-const ecrApproverUserProfileId = utils.getInput('ecr-approver-user-profile-id');
+import {ecrApproverUserProfileId} from './inputs.js';
 
 export async function main() {
+  const APPROVER_TABLE = 'New Bill.com Approvers';
   const billComIntegrationBase = airtable.getInputBase();
   await billCom.primaryOrgLogin();
   await billComIntegrationBase.select(
@@ -22,7 +17,7 @@ export async function main() {
             {
               obj: {
                 entity: 'User',
-                profileId: ecrApproverUserProfileId,
+                profileId: ecrApproverUserProfileId(),
                 firstName: record.get('First Name'),
                 lastName: record.get('Last Name'),
                 email: record.get('Email'),

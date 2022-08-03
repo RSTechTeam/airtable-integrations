@@ -33,7 +33,7 @@ async function syncUnpaid(table, entity) {
   
   const billComIds = [];
   const airtableIds = [];
-  await billComIntegrationBase.select(
+  await billComIntegrationBase().select(
       table,
       'Unpaid',
       (record) => {
@@ -57,7 +57,7 @@ async function syncUnpaid(table, entity) {
           },
         });
       });
-  await billComIntegrationBase.update(table, updates);
+  await billComIntegrationBase().update(table, updates);
 }
 
 /**
@@ -94,7 +94,7 @@ async function sync(entity, table, syncFunc) {
 
   // Update every existing table record based on the entity data.
   const updates = [];
-  await billComIntegrationBase.select(
+  await billComIntegrationBase().select(
       table,
       undefined,
       (record) => {
@@ -105,7 +105,7 @@ async function sync(entity, table, syncFunc) {
         });
         changes.delete(id);
       });
-  await billComIntegrationBase.update(table, updates);
+  await billComIntegrationBase().update(table, updates);
 
   // Create new table records from new entity data.
   const creates = [];
@@ -113,7 +113,7 @@ async function sync(entity, table, syncFunc) {
     data[airtable.primaryOrgBillComId] = id;
     creates.push({fields: data});
   }
-  await billComIntegrationBase.create(table, creates);
+  await billComIntegrationBase().create(table, creates);
 }
 
 /**
@@ -173,7 +173,7 @@ async function syncCustomers(anchorEntity) {
   const airtableUpdateIds = [];
   const airtableUpdates = [];
   const billComUpdates = [];
-  await billComIntegrationBase.select(
+  await billComIntegrationBase().select(
       ALL_CUSTOMERS_TABLE,
       undefined,
       (record) => {
@@ -238,7 +238,7 @@ async function syncCustomers(anchorEntity) {
         });
   }
   await billCom.bulkCall('Update/Customer', billComUpdates);
-  await billComIntegrationBase.update(ALL_CUSTOMERS_TABLE, airtableUpdates);
+  await billComIntegrationBase().update(ALL_CUSTOMERS_TABLE, airtableUpdates);
 
   // Create any active anchor entity Bill.com Customer not in Airtable;
   // Create in both RS Bill.com and Airtable.
@@ -266,7 +266,7 @@ async function syncCustomers(anchorEntity) {
       }
     });
   }
-  await billComIntegrationBase.create(ALL_CUSTOMERS_TABLE, airtableCreates);
+  await billComIntegrationBase().create(ALL_CUSTOMERS_TABLE, airtableCreates);
 }
 
 export async function main () {

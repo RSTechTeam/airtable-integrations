@@ -2,20 +2,17 @@
 
 import * as airtable from './airtable.js';
 import * as billCom from './bill_com.js';
-import * as utils from './utils.js';
-
-/** The Airtable Table name Labor Charge Fields. */
-const LCF_TABLE = 'Labor Charge Field (LCF) Mapping';
+import {internalCustomerId} from './inputs.js';
 
 export async function main() {
+  const LCF_TABLE = 'Labor Charge Field (LCF) Mapping';
 
   // Initialize Bill.com Customer collection.
   await billCom.primaryOrgLogin();
-  const internalCustomerId = utils.getInput('internal-customer-id');
   const billComCustomers =
       await billCom.list(
           'Customer',
-          [billCom.filter('parentCustomerId', '=', internalCustomerId)]);
+          [billCom.filter('parentCustomerId', '=', internalCustomerId())]);
   const billComCustomerIds = new Set();
   billComCustomers.forEach(c => billComCustomerIds.add(c.id));
 
@@ -31,7 +28,7 @@ export async function main() {
           obj: {
             entity: 'Customer',
             isActive: '1',
-            parentCustomerId: internalCustomerId,
+            parentCustomerId: internalCustomerId(),
             name:
               encodeURIComponent(record.get('Abacus / Bill.com / QBO Code')),
           }
