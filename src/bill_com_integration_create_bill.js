@@ -4,7 +4,7 @@ import * as airtable from './airtable.js';
 import * as billCom from './bill_com.js';
 import fetch from 'node-fetch';
 import * as utils from './utils.js';
-import {billComDevKey} from 'inputs.js';
+import {billComDevKey} from './inputs.js';
 import {FormData} from 'formdata-node';
 
 /** The Bill.com Integration Airtable Base. */

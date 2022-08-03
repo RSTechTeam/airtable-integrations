@@ -15312,14 +15312,6 @@ module.exports = eval("require")("encoding");
 
 /***/ }),
 
-/***/ 9411:
-/***/ ((module) => {
-
-module.exports = eval("require")("inputs.js");
-
-
-/***/ }),
-
 /***/ 9491:
 /***/ ((module) => {
 
@@ -18969,7 +18961,7 @@ __nccwpck_require__.r(__webpack_exports__);
 /* harmony import */ var _bill_com_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(6496);
 /* harmony import */ var node_fetch__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(4028);
 /* harmony import */ var _utils_js__WEBPACK_IMPORTED_MODULE_5__ = __nccwpck_require__(8287);
-/* harmony import */ var inputs_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(9411);
+/* harmony import */ var _inputs_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(1107);
 /* harmony import */ var formdata_node__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(7813);
 var __webpack_async_dependencies__ = __webpack_handle_async_dependencies__([_bill_com_js__WEBPACK_IMPORTED_MODULE_1__]);
 _bill_com_js__WEBPACK_IMPORTED_MODULE_1__ = (__webpack_async_dependencies__.then ? await __webpack_async_dependencies__ : __webpack_async_dependencies__)[0];
@@ -19121,7 +19113,7 @@ async function main() {
 
         // Upload the Supporting Documents.
         const data = new formdata_node__WEBPACK_IMPORTED_MODULE_3__/* .FormData */ .Ct();
-        data.set('devKey', inputs_js__WEBPACK_IMPORTED_MODULE_2__.billComDevKey);
+        data.set('devKey', _inputs_js__WEBPACK_IMPORTED_MODULE_2__/* .billComDevKey */ .Hc);
         data.set('sessionId', _bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .sessionId */ .W4);
         for (const doc of newCheckRequest.get('Supporting Documents')) {
 
