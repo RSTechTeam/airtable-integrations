@@ -18648,8 +18648,8 @@ async function main() {
 /* harmony export */   "Mn": () => (/* binding */ getInputBase)
 /* harmony export */ });
 /* harmony import */ var airtable__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(5447);
-/* harmony import */ var _utils_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(8287);
-/* harmony import */ var _inputs_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(1107);
+/* harmony import */ var _utils_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(136);
+/* harmony import */ var _inputs_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(1107);
 /** @fileoverview Utilities for interacting with Airtable. */
 
 /**
@@ -18665,7 +18665,7 @@ const BILL_COM_ID_SUFFIX = 'Bill.com ID';
 
 /** The primary Org Bill.com ID Field name. */
 const primaryOrgBillComId = () => {
-  return `${(0,_inputs_js__WEBPACK_IMPORTED_MODULE_1__/* .primaryOrg */ .uP)()} ${BILL_COM_ID_SUFFIX}`;
+  return `${(0,_inputs_js__WEBPACK_IMPORTED_MODULE_2__/* .primaryOrg */ .uP)()} ${BILL_COM_ID_SUFFIX}`;
 }
 
 /**
@@ -18689,7 +18689,7 @@ function error(querying, table) {
  * @return {Promise<Array<any>>}
  */
 function batch(func, array) {
-  return _utils_js__WEBPACK_IMPORTED_MODULE_2__/* .batchAsync */ .aE(func, array, 10);
+  return _utils_js__WEBPACK_IMPORTED_MODULE_1__/* .batchAsync */ .aE(func, array, 10);
 }
 
 /** An Airtable Base to query. */
@@ -18699,7 +18699,7 @@ class Base {
   constructor(baseId) {
 
     /** @private {Base} */
-    this.base_ = new airtable__WEBPACK_IMPORTED_MODULE_0__({apiKey: (0,_inputs_js__WEBPACK_IMPORTED_MODULE_1__/* .airtableApiKey */ .Bd)()}).base(baseId);
+    this.base_ = new airtable__WEBPACK_IMPORTED_MODULE_0__({apiKey: (0,_inputs_js__WEBPACK_IMPORTED_MODULE_2__/* .airtableApiKey */ .Bd)()}).base(baseId);
   }
 
   /**
@@ -18752,7 +18752,7 @@ class Base {
 
 /** @return {function(): Base} */
 function getInputBase() {
-  return _utils_js__WEBPACK_IMPORTED_MODULE_2__/* .lazyCache */ .ss(() => new Base((0,_inputs_js__WEBPACK_IMPORTED_MODULE_1__/* .airtableBaseId */ .kt)()));
+  return _utils_js__WEBPACK_IMPORTED_MODULE_1__/* .lazyCache */ .ss(() => new Base((0,_inputs_js__WEBPACK_IMPORTED_MODULE_2__/* .airtableBaseId */ .kt)()));
 }
 
 
@@ -18773,10 +18773,10 @@ __nccwpck_require__.a(__webpack_module__, async (__webpack_handle_async_dependen
 /* harmony export */ });
 /* unused harmony exports commonCall, login */
 /* harmony import */ var _airtable_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(7539);
-/* harmony import */ var node_fetch__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(4028);
+/* harmony import */ var node_fetch__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(4028);
 /* harmony import */ var _inputs_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(1107);
-/* harmony import */ var _utils_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(8287);
-/* harmony import */ var _github_actions_core_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(5091);
+/* harmony import */ var _utils_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(136);
+/* harmony import */ var _github_actions_core_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(5091);
 /**
  * @fileoverview Shared code for interacting with the Bill.com API.
  * For more information, check out the API documentation:
@@ -18807,14 +18807,14 @@ let sessionId;
  */
 async function call(endpoint, headers, body) {
   const response =
-      await (0,node_fetch__WEBPACK_IMPORTED_MODULE_3__/* ["default"] */ .ZP)(
+      await (0,node_fetch__WEBPACK_IMPORTED_MODULE_4__/* ["default"] */ .ZP)(
           `https://api.bill.com/api/v2/${endpoint}.json`,
           {method: 'POST', headers: headers, body: body});
   const json = await response.json();
-  (0,_github_actions_core_js__WEBPACK_IMPORTED_MODULE_2__/* .logJson */ .u2)(endpoint, json);
+  (0,_github_actions_core_js__WEBPACK_IMPORTED_MODULE_3__/* .logJson */ .u2)(endpoint, json);
   const data = json.response_data;
   if (json.response_status === 1) {
-    _utils_js__WEBPACK_IMPORTED_MODULE_4__/* .fetchError */ .Tl(data.error_code, endpoint, data.error_message);
+    _utils_js__WEBPACK_IMPORTED_MODULE_2__/* .fetchError */ .Tl(data.error_code, endpoint, data.error_message);
   }
   return data;
 }
@@ -18893,7 +18893,7 @@ async function list(entity, filters=undefined) {
  * @return {Promise<Array<Object>>}
  */
 function bulkCall(endpoint, data) {
-  return _utils_js__WEBPACK_IMPORTED_MODULE_4__/* .batchAwait */ .rE(
+  return _utils_js__WEBPACK_IMPORTED_MODULE_2__/* .batchAwait */ .rE(
       (arr) => commonDataCall(`Bulk/Crud/${endpoint}`, {bulk: arr}), data, 100);
 }
 
@@ -18959,10 +18959,10 @@ __nccwpck_require__.r(__webpack_exports__);
 /* harmony export */ });
 /* harmony import */ var _airtable_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(7539);
 /* harmony import */ var _bill_com_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(6496);
-/* harmony import */ var node_fetch__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(4028);
-/* harmony import */ var _utils_js__WEBPACK_IMPORTED_MODULE_5__ = __nccwpck_require__(8287);
-/* harmony import */ var _inputs_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(1107);
-/* harmony import */ var formdata_node__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(7813);
+/* harmony import */ var node_fetch__WEBPACK_IMPORTED_MODULE_5__ = __nccwpck_require__(4028);
+/* harmony import */ var _utils_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(136);
+/* harmony import */ var _inputs_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(1107);
+/* harmony import */ var formdata_node__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(7813);
 var __webpack_async_dependencies__ = __webpack_handle_async_dependencies__([_bill_com_js__WEBPACK_IMPORTED_MODULE_1__]);
 _bill_com_js__WEBPACK_IMPORTED_MODULE_1__ = (__webpack_async_dependencies__.then ? await __webpack_async_dependencies__ : __webpack_async_dependencies__)[0];
 /** @fileoverview Creates a Bill.com Bill based on a new Check Request. */
@@ -19112,15 +19112,15 @@ async function main() {
         }
 
         // Upload the Supporting Documents.
-        const data = new formdata_node__WEBPACK_IMPORTED_MODULE_3__/* .FormData */ .Ct();
-        data.set('devKey', _inputs_js__WEBPACK_IMPORTED_MODULE_2__/* .billComDevKey */ .Hc);
+        const data = new formdata_node__WEBPACK_IMPORTED_MODULE_4__/* .FormData */ .Ct();
+        data.set('devKey', _inputs_js__WEBPACK_IMPORTED_MODULE_3__/* .billComDevKey */ .Hc);
         data.set('sessionId', _bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .sessionId */ .W4);
         for (const doc of newCheckRequest.get('Supporting Documents')) {
 
           // Fetch the document.
-          const response = await (0,node_fetch__WEBPACK_IMPORTED_MODULE_4__/* ["default"] */ .ZP)(doc.url);
+          const response = await (0,node_fetch__WEBPACK_IMPORTED_MODULE_5__/* ["default"] */ .ZP)(doc.url);
           if (!response.ok) {
-            _utils_js__WEBPACK_IMPORTED_MODULE_5__/* .fetchError */ .Tl(
+            _utils_js__WEBPACK_IMPORTED_MODULE_2__/* .fetchError */ .Tl(
                 response.status, doc.filename, response.statusText);
           }
 
@@ -19459,7 +19459,7 @@ async function main () {
 /* harmony export */ });
 /* unused harmony export log */
 /* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(6024);
-/* harmony import */ var _utils_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(8287);
+/* harmony import */ var _utils_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(136);
 /**
  * @fileoverview Shared code for interacting with core GitHub Action functions.
  */
@@ -19613,20 +19613,28 @@ const ecrApproverUserProfileId =
 
 /***/ }),
 
-/***/ 8287:
+/***/ 136:
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
 
-/* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
-/* harmony export */   "ss": () => (/* binding */ lazyCache),
-/* harmony export */   "Tl": () => (/* binding */ fetchError),
-/* harmony export */   "rE": () => (/* binding */ batchAwait),
-/* harmony export */   "aE": () => (/* binding */ batchAsync)
-/* harmony export */ });
+
+// EXPORTS
+__nccwpck_require__.d(__webpack_exports__, {
+  "aE": () => (/* binding */ batchAsync),
+  "rE": () => (/* binding */ batchAwait),
+  "Tl": () => (/* binding */ fetchError),
+  "ss": () => (/* binding */ lazyCache)
+});
+
+;// CONCATENATED MODULE: external "node:assert/strict"
+const strict_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:assert/strict");
+;// CONCATENATED MODULE: ./src/utils.js
 /** @fileoverview Shared code for Bill.com x Airtable Repository. */
 
+
+
 /**
- * @param {function(): any} producer
- * @return {function(): any} producer's result, lazily evaluated and cached
+ * @param {function(): *} producer
+ * @return {function(): *} producer's result, lazily evaluated and cached
  */
 function lazyCache(producer) {
   let result;
@@ -19639,7 +19647,7 @@ function lazyCache(producer) {
 }
 
 /**
- * @param {string|number} code
+ * @param {(string|number)} code
  * @param {string} context
  * @param {string} message
  */
@@ -19648,11 +19656,12 @@ function fetchError(code, context, message) {
 }
 
 /**
- * @param {Array<any>} array
+ * @param {!Array<*>} array
  * @param {number} size
- * @return {!Iterator<Array<any>>} size-length portions of array
+ * @return {!Iterator<!Array<*>>} size-length portions of array
  */
 function* batch(array, size) {
+  strict_namespaceObject.ok(size > 0);
   while (array.length > 0) {
     yield array.splice(0, size);
   }
@@ -19660,10 +19669,10 @@ function* batch(array, size) {
 
 /**
  * Synchronously calls func with up to size-length portions of array.
- * @param {function(Array): any} func
- * @param {Array} array
+ * @param {function(Array<*>): *} func
+ * @param {!Array<*>} array
  * @param {number} size
- * @return {Promise<Array<any>>}
+ * @return {!Promise<!Array<!Array<*>>>} func results by batch
  */
 async function batchAwait(func, array, size) {
   const results = [];
@@ -19676,10 +19685,10 @@ async function batchAwait(func, array, size) {
 
 /**
  * Asynchronously calls func with up to size-length portions of array.
- * @param {function(Array): any} func
- * @param {Array} array
+ * @param {function(Array<*>): *} func
+ * @param {!Array<*>} array
  * @param {number} size
- * @return {Promise<Array<any>>}
+ * @return {!Promise<!Array<!Array<*>>>} func results by batch
  */
 function batchAsync(func, array, size) {
   const promises = [];
