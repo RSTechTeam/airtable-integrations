@@ -19007,7 +19007,7 @@ async function main() {
         let vendorId;
         if (newCheckRequest.get('New Vendor?')) {
           const newVendorId = newCheckRequest.get('New Vendor')[0];
-          await billComIntegrationBase.find(
+          await billComIntegrationBase().find(
               NEW_VENDORS_TABLE,
               newVendorId,
               async (newVendor) => {
@@ -19030,7 +19030,7 @@ async function main() {
                         });
                 vendorId = createVendorResponse.id;
               });
-          await billComIntegrationBase.update(
+          await billComIntegrationBase().update(
               NEW_VENDORS_TABLE,
               [{
                 id: newVendorId,
@@ -19045,7 +19045,7 @@ async function main() {
         // Get the Check Request Line Items.
         const billComLineItems = [];
         for (const itemId of newCheckRequest.get('Line Items')) {
-          await billComIntegrationBase.find(
+          await billComIntegrationBase().find(
               'Check Request Line Items',
               itemId,
               async (item) => {
@@ -19086,7 +19086,7 @@ async function main() {
         const getUrlResponse =
             await _bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .commonDataCall */ .fI(
                 'GetObjectUrl', {objectId: createBillResponse.id});
-        await billComIntegrationBase.update(
+        await billComIntegrationBase().update(
             CHECK_REQUESTS_TABLE,
             [{
               id: newCheckRequest.getId(),
