@@ -19657,11 +19657,11 @@ function fetchError(code, context, message) {
 
 /**
  * @param {!Array<*>} array
- * @param {number} size
+ * @param {number} size - A positive integer
  * @return {!Iterator<!Array<*>>} size-length portions of array
  */
 function* batch(array, size) {
-  strict_namespaceObject.ok(size > 0);
+  strict_namespaceObject.ok(size > 0, `${size} is not positive`);
   while (array.length > 0) {
     yield array.splice(0, size);
   }
@@ -19672,7 +19672,7 @@ function* batch(array, size) {
  * @param {function(Array<*>): *} func
  * @param {!Array<*>} array
  * @param {number} size
- * @return {!Promise<!Array<!Array<*>>>} func results by batch
+ * @return {!Promise<!Array<*>>} func results by batch
  */
 async function batchAwait(func, array, size) {
   const results = [];
@@ -19688,7 +19688,7 @@ async function batchAwait(func, array, size) {
  * @param {function(Array<*>): *} func
  * @param {!Array<*>} array
  * @param {number} size
- * @return {!Promise<!Array<!Array<*>>>} func results by batch
+ * @return {!Promise<!Array<*>>} func results by batch
  */
 function batchAsync(func, array, size) {
   const promises = [];

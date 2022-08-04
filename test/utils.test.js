@@ -4,29 +4,60 @@ test('fetchError throws', () => {
   expect(() => fetchError('code', 'context', 'message')).toThrow();
 });
 
-const identity = x => x;
 
-describe('batchAwait', () => {
+describe.each`
+  name       | batchFunc           | asyncExecutionOrder
+  ${'Await'} | ${utils.batchAwait} | ${[5, 2, 0]}
+  ${'Async'} | ${utils.batchAsync} | ${[0, 2, 5]}
+`('batch', ({name, batchFunc, asyncExecutionOrder}) => {
 
-  const identityBatchAwait =
-      (array, size) => utils.batchAwait(identity, array, size);
+  const successTest = (func, array, size, expected) => () => {
+    return expect(batchFunc(func, array, size)).resolves.toEqual(expected);
+  };
 
-  test('returns empty when given empty', () => {
-    return expect(identityBatchAwait([], 1)).resolves.toEqual([]);
-  });
+  const identity = x => x;
 
-  test('throws when size is not positive', () => {
-    return expect(identityBatchAwait([0], 0)).rejects.toThrow();
-  });
+  const identityTest =
+      (array, size, expected) => successTest(identity, array, size, expected);
 
-  describe.each`
-    array       | size | expected
-    ${[1]}      | ${1} | ${[[1]]}
-    ${[1, 2]}   | ${1} | ${[[1], [2]]}
-    ${[1, 2, 3]}| ${2} | ${[[1, 2], [3]]}
-  `('using identity func', ({array, size, expected}) => {
-    test(`with args (${array}, ${size}) returns ${expected}`, () => {
-      return expect(identityBatchAwait(array, size)).resolves.toEqual(expected);
+  describe(name, () => {
+
+    test('returns empty when given empty', identityTest([], 1, []));
+
+    test('throws when size is not positive', () => {
+      const got = () => batchFunc(identity, [0], 0);
+      if (name === 'Await') {
+        return expect(got()).rejects.toThrow();
+      } else {
+        expect(got).toThrow();
+      }
+    });
+
+    describe.each`
+      array       | size | expected
+      ${[1]}      | ${1} | ${[[1]]}
+      ${[1, 2]}   | ${1} | ${[[1], [2]]}
+      ${[1, 2, 3]}| ${2} | ${[[1, 2], [3]]}
+    `('using identity function', ({array, size, expected}) => {
+      test(
+          `with args (${array}, ${size}) returns ${expected}`,
+          identityTest(array, size, expected));
+    });
+
+    test(
+        'with transformation function changes output (increment)', 
+        successTest((arr) => arr[0] + 1, [1, 2], 1, [2, 3]));
+
+    test('with timely async function', async () => {
+      const gotExecutionOrder = [];
+      const waitPushReturn = async (arr) => {
+        const x = arr[0];
+        await new Promise(resolve => setTimeout(resolve, x * 10));
+        gotExecutionOrder.push(x);
+        return x;
+      };
+      await successTest(waitPushReturn, [5, 2, 0], 1, [5, 2, 0])();
+      expect(gotExecutionOrder).toEqual(asyncExecutionOrder);
     });
   });
 });
