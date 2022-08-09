@@ -283,7 +283,7 @@ export async function main () {
         'Address': o.address1,
         'City': o.addressCity,
         'State': o.addressState,
-        'Zip Code': o.addressZip,
+        'Zip Code': parseInt(o.addressZip),
       }));
   await syncNameKey('ChartOfAccount', 'Chart of Accounts', 'name');
   await sync(
