@@ -19433,9 +19433,15 @@ async function main () {
   await sync(
       'Customer', 'All Customers', o => ({Name: o.name, Email: o.email}));
   // sync('Department', 'Departments', o => ({Name: o.name, Email: o.email}))
-  await syncName(
+  await sync(
       'Vendor', 'Existing Vendors',
-      o => vendorName(o.name, o.addressCity, o.addressState));
+      o => ({
+        'Name': vendorName(o.name, o.addressCity, o.addressState),
+        'Address': o.address1,
+        'City': o.addressCity,
+        'State': o.addressState,
+        'Zip Code': o.addressZip,
+      }));
   await syncNameKey('ChartOfAccount', 'Chart of Accounts', 'name');
   await sync(
       'User', 'Users',
