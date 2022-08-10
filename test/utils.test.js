@@ -1,4 +1,32 @@
 import * as utils from '../src/utils.js';
+import {jest} from '@jest/globals';
+
+describe('lazyCache', () => {
+  let val = 0;
+  const producer = jest.fn(() => ++val);
+  let it;
+
+  const expectPostCallInvariant = () => {
+    expect(it()).toBe(1);
+    expect(val).toBe(1);
+    expect(producer.mock.calls.length).toBe(1);
+  };
+
+  test('is lazy', () => {
+    expect(val).toBe(0);
+
+    it = utils.lazyCache(producer);
+    expect(val).toBe(0);
+    expect(producer).not.toBeCalled();
+
+    expectPostCallInvariant();
+  });
+
+  test('caches', () => {
+    expect(val).toBe(1);
+    expectPostCallInvariant();
+  });
+});
 
 test('fetchError throws', () => {
   expect(() => fetchError('code', 'context', 'message')).toThrow();
