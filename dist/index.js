@@ -19183,6 +19183,15 @@ _bill_com_js__WEBPACK_IMPORTED_MODULE_1__ = (__webpack_async_dependencies__.then
 /** The Bill.com Integration Airtable Base. */
 const billComIntegrationBase = _airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .getInputBase */ .Mn();
 
+/** Bill.com Bill Approval Status. */
+const approvalStatuses = new Map([
+  ['0', 'Unassigned'],
+  ['1', 'Assigned'],
+  ['4', 'Approving'],
+  ['3', 'Approved'],
+  ['5', 'Denied'],
+]);
+
 /**
  * @param {Array} bulkResponses
  * @param {function(Object, number): void} func
@@ -19226,6 +19235,7 @@ async function syncUnpaid(table, entity) {
           id: airtableIds[i],
           fields: {
             'Active': r.isActive === '1',
+            'Approval Status': approvalStatuses.get(r.approvalStatus),
             'Paid': isPaid,
             'Paid Date': isPaid ? r.updatedTime.substring(0, 10) : null,
           },
