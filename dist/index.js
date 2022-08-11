@@ -19130,7 +19130,7 @@ async function main() {
 
         // Upload the Supporting Documents.
         const data = new formdata_node__WEBPACK_IMPORTED_MODULE_4__/* .FormData */ .Ct();
-        data.set('devKey', _inputs_js__WEBPACK_IMPORTED_MODULE_3__/* .billComDevKey */ .Hc);
+        data.set('devKey', (0,_inputs_js__WEBPACK_IMPORTED_MODULE_3__/* .billComDevKey */ .Hc)());
         data.set('sessionId', _bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .sessionId */ .W4);
         for (const doc of newCheckRequest.get('Supporting Documents')) {
 

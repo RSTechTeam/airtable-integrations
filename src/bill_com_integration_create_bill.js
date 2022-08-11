@@ -146,7 +146,7 @@ export async function main() {
 
         // Upload the Supporting Documents.
         const data = new FormData();
-        data.set('devKey', billComDevKey);
+        data.set('devKey', billComDevKey());
         data.set('sessionId', billCom.sessionId);
         for (const doc of newCheckRequest.get('Supporting Documents')) {
 
