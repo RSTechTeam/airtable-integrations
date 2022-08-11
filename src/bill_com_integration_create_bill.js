@@ -140,7 +140,7 @@ export async function main() {
                 entity: 'Bill',
                 approvers:
                   await Promise.all(
-                      approvers.map((a) => getBillComId('Users', a.id))),
+                      approvers.map((a) => getBillComId('Users', a))),
               });
         }
 

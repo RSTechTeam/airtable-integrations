@@ -16635,6 +16635,20 @@ const isDomainOrSubdomain = (destination, original) => {
 	return orig === dest || orig.endsWith(`.${dest}`);
 };
 
+/**
+ * isSameProtocol reports whether the two provided URLs use the same protocol.
+ *
+ * Both domains must already be in canonical form.
+ * @param {string|URL} original
+ * @param {string|URL} destination
+ */
+const isSameProtocol = (destination, original) => {
+	const orig = new URL(original).protocol;
+	const dest = new URL(destination).protocol;
+
+	return orig === dest;
+};
+
 ;// CONCATENATED MODULE: ./node_modules/node-fetch/src/body.js
 
 /**
@@ -17596,7 +17610,7 @@ function isOriginPotentiallyTrustworthy(url) {
 	// 5. If origin's host component is "localhost" or falls within ".localhost", and the user agent conforms to the name resolution rules in [let-localhost-be-localhost], return "Potentially Trustworthy".
 	// We are returning FALSE here because we cannot ensure conformance to
 	// let-localhost-be-loalhost (https://tools.ietf.org/html/draft-west-let-localhost-be-localhost)
-	if (/^(.+\.)*localhost$/.test(url.host)) {
+	if (url.host === 'localhost' || url.host.endsWith('.localhost')) {
 		return false;
 	}
 
@@ -17882,7 +17896,7 @@ class Request extends Body {
 			method = method.toUpperCase();
 		}
 
-		if ('data' in init) {
+		if (!isRequest(init) && 'data' in init) {
 			doBadDataWarn();
 		}
 
@@ -18346,7 +18360,10 @@ async function fetch(url, options_) {
 						// that is not a subdomain match or exact match of the initial domain.
 						// For example, a redirect from "foo.com" to either "foo.com" or "sub.foo.com"
 						// will forward the sensitive headers, but a redirect to "bar.com" will not.
-						if (!isDomainOrSubdomain(request.url, locationURL)) {
+						// headers will also be ignored when following a redirect to a domain using
+						// a different protocol. For example, a redirect from "https://foo.com" to "http://foo.com"
+						// will not forward the sensitive headers
+						if (!isDomainOrSubdomain(request.url, locationURL) || !isSameProtocol(request.url, locationURL)) {
 							for (const name of ['authorization', 'www-authenticate', 'cookie', 'cookie2']) {
 								requestOptions.headers.delete(name);
 							}
@@ -19107,7 +19124,7 @@ async function main() {
                 entity: 'Bill',
                 approvers:
                   await Promise.all(
-                      approvers.map((a) => getBillComId('Users', a.id))),
+                      approvers.map((a) => getBillComId('Users', a))),
               });
         }
 
