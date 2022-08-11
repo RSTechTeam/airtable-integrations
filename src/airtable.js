@@ -43,11 +43,14 @@ function batch(func, array) {
 /** An Airtable Base to query. */
 export class Base {
 
-  /** @param {string} baseId */
-  constructor(baseId) {
+  /**
+   * @param {string=} baseId
+   * @param {string=} apiKey
+   */
+  constructor(baseId = airtableBaseId(), apiKey = airtableApiKey()) {
 
     /** @private {Base} */
-    this.base_ = new Airtable({apiKey: airtableApiKey()}).base(baseId);
+    this.base_ = new Airtable({apiKey: apiKey}).base(baseId);
   }
 
   /**
@@ -100,5 +103,5 @@ export class Base {
 
 /** @return {function(): Base} */
 export function getInputBase() {
-  return utils.lazyCache(() => new Base(airtableBaseId()));
+  return utils.lazyCache(() => new Base());
 }

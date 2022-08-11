@@ -55,7 +55,7 @@ export async function batchAwait(func, array, size) {
 
 /**
  * Asynchronously calls func with up to size-length portions of array.
- * @param {function(Array<*>): *} func
+ * @param {function(!Array<*>): *} func
  * @param {!Array<*>} array
  * @param {number} size
  * @return {!Promise<!Array<*>>} func results by batch

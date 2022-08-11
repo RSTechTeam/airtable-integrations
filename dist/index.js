@@ -18712,11 +18712,14 @@ function batch(func, array) {
 /** An Airtable Base to query. */
 class Base {
 
-  /** @param {string} baseId */
-  constructor(baseId) {
+  /**
+   * @param {string=} baseId
+   * @param {string=} apiKey
+   */
+  constructor(baseId = (0,_inputs_js__WEBPACK_IMPORTED_MODULE_2__/* .airtableBaseId */ .kt)(), apiKey = (0,_inputs_js__WEBPACK_IMPORTED_MODULE_2__/* .airtableApiKey */ .Bd)()) {
 
     /** @private {Base} */
-    this.base_ = new airtable__WEBPACK_IMPORTED_MODULE_0__({apiKey: (0,_inputs_js__WEBPACK_IMPORTED_MODULE_2__/* .airtableApiKey */ .Bd)()}).base(baseId);
+    this.base_ = new airtable__WEBPACK_IMPORTED_MODULE_0__({apiKey: apiKey}).base(baseId);
   }
 
   /**
@@ -18769,7 +18772,7 @@ class Base {
 
 /** @return {function(): Base} */
 function getInputBase() {
-  return _utils_js__WEBPACK_IMPORTED_MODULE_1__/* .lazyCache */ .ss(() => new Base((0,_inputs_js__WEBPACK_IMPORTED_MODULE_2__/* .airtableBaseId */ .kt)()));
+  return _utils_js__WEBPACK_IMPORTED_MODULE_1__/* .lazyCache */ .ss(() => new Base());
 }
 
 
@@ -19727,7 +19730,7 @@ async function batchAwait(func, array, size) {
 
 /**
  * Asynchronously calls func with up to size-length portions of array.
- * @param {function(Array<*>): *} func
+ * @param {function(!Array<*>): *} func
  * @param {!Array<*>} array
  * @param {number} size
  * @return {!Promise<!Array<*>>} func results by batch
