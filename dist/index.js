@@ -18688,7 +18688,7 @@ const primaryOrgBillComId = () => {
 /**
  * @param {string} querying e.g., selecting, updating, etc
  * @param {string} table
- * @return {function(Error): void}
+ * @return {function(Error)}
  */
 function error(querying, table) {
   return (err) => {
@@ -18701,9 +18701,9 @@ function error(querying, table) {
  * Asynchronously calls func with portions of array that are at most
  * the max number of records that can be created or updated
  * via an Airtable API call.
- * @param {function(Array): any} func
- * @param {Array} array
- * @return {Promise<Array<any>>}
+ * @param {function(!Array<*>): *} func
+ * @param {!Array<*>} array
+ * @return {!Promise<!Array<*>>}
  */
 function batch(func, array) {
   return _utils_js__WEBPACK_IMPORTED_MODULE_1__/* .batchAsync */ .aE(func, array, 10);
@@ -18726,8 +18726,8 @@ class Base {
    * Runs func for each record from table view.
    * @param {string} table
    * @param {string} view
-   * @param {function(Record<TField>): Promise<void>} func
-   * @return {Promise<Array<void>>}
+   * @param {function(!Record<!TField>): !Promise<undefined>} func
+   * @return {!Promise<!Array<undefined>>}
    */
   select(table, view, func) {
     const maybeView = (view == undefined) ? undefined : {view: view};
@@ -18738,8 +18738,8 @@ class Base {
 
   /**
    * @param {string} table
-   * @param {Array<Object>} updates
-   * @return {Promise<Array<Object>>}
+   * @param {!Array<!Object<*>>} updates
+   * @return {!Promise<!Array<!Object<*>>>}
    */
   update(table, updates) {
     return batch(
@@ -18749,8 +18749,8 @@ class Base {
 
   /**
    * @param {string} table
-   * @param {Array<Object>} creates
-   * @return {Promise<Array<Object>>}
+   * @param {!Array<!Object<*>>} creates
+   * @return {!Promise<!Array<!Object<*>>>}
    */
   create(table, creates) {
     return batch(
@@ -18762,8 +18762,8 @@ class Base {
    * Runs func on table record with id.
    * @param {string} table
    * @param {string} id
-   * @param {function(Record<TField>): Promise<void>} func
-   * @return {Promise<void>}
+   * @param {function(!Record<!TField>): Promise<undefined>} func
+   * @return {!Promise<undefined>}
    */
   find(table, id, func) {
     return this.base_(table).find(id).then(func).catch(error('finding', table));
