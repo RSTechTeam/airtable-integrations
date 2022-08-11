@@ -8,7 +8,7 @@ const table = 'Table 1';
 describe('select', () => {
   test('with no view defaults', async () => {
     const ids = [];
-    await base().select(table, undefined, (r) => ids.push(r.get('ID')));
+    await base.select(table, undefined, (r) => ids.push(r.get('ID')));
     expect(ids).toEqual(expect.arrayContaining([1, 2, 3]));
   });
 });
