@@ -45,8 +45,7 @@ test('update', async () => {
       {id: recordIds.get(3), fields: {Text: text3}},
     ]);
   };
-  const result = await update('Goodbye', '?');
-  console.log(result);
+  await update('Goodbye', '?');
   await expectTextsToContain(['Goodbye', 'World', '?']);
 
   await update('Hello', '!');

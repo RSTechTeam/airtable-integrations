@@ -69,8 +69,10 @@ export class Base {
 
   /**
    * @param {string} table
-   * @param {!Array<!Object<*>>} updates
-   * @return {!Promise<!Array<!Object<*>>>}
+   * @param {!Object[]} updates
+   * @param {string} updates[].id
+   * @param {!Object<string, *>} updates[].fields
+   * @return {!Promise<!Object<string, *>[][]>}
    */
   update(table, updates) {
     return batch(
@@ -80,8 +82,9 @@ export class Base {
 
   /**
    * @param {string} table
-   * @param {!Array<!Object<*>>} creates
-   * @return {!Promise<!Array<!Object<*>>>}
+   * @param {!Object[]} creates
+   * @param {!Object<string, *>} creates[].fields
+   * @return {!Promise<!Object<string, *>[][]>}
    */
   create(table, creates) {
     return batch(
