@@ -19118,18 +19118,18 @@ async function main() {
             }]);
 
         // Set the Bill's approvers.
-        const approvers = newCheckRequest.get('Approvers');
-        if (approvers != null) {
-          await _bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .commonDataCall */ .fI(
-              'SetApprovers',
-              {
-                objectId: createBillResponse.id,
-                entity: 'Bill',
-                approvers:
-                  await Promise.all(
-                      approvers.map((a) => getBillComId('Users', a))),
-              });
-        }
+        const approverAirtableIds = newCheckRequest.get('Approvers') || [];
+        const approverBillComIds =
+            await Promise.all(
+                approverAirtableIds.map((aid) => getBillComId('Users', aid)));
+        approverBillComIds.push((0,_inputs_js__WEBPACK_IMPORTED_MODULE_3__/* .finalApproverUserId */ .Wk)());
+        await _bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .commonDataCall */ .fI(
+            'SetApprovers',
+            {
+              objectId: createBillResponse.id,
+              entity: 'Bill',
+              approvers: approverBillComIds,
+            });
 
         // Upload the Supporting Documents.
         const data = new formdata_node__WEBPACK_IMPORTED_MODULE_4__/* .FormData */ .Ct();
@@ -19632,7 +19632,8 @@ __webpack_handle_async_dependencies__();
 /* harmony export */   "jv": () => (/* binding */ billComUserName),
 /* harmony export */   "Mr": () => (/* binding */ billComPassword),
 /* harmony export */   "qV": () => (/* binding */ internalCustomerId),
-/* harmony export */   "WI": () => (/* binding */ ecrApproverUserProfileId)
+/* harmony export */   "WI": () => (/* binding */ ecrApproverUserProfileId),
+/* harmony export */   "Wk": () => (/* binding */ finalApproverUserId)
 /* harmony export */ });
 /* harmony import */ var _github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(5091);
 /**
@@ -19654,6 +19655,7 @@ const billComPassword = (0,_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/
 const internalCustomerId = (0,_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .getInput */ .Np)('internal-customer-id');
 const ecrApproverUserProfileId =
   (0,_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .getInput */ .Np)('ecr-approver-user-profile-id');
+const finalApproverUserId = (0,_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .getInput */ .Np)('final-approver-user-id');
 
 
 /***/ }),

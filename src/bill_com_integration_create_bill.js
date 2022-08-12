@@ -4,7 +4,7 @@ import * as airtable from './airtable.js';
 import * as billCom from './bill_com.js';
 import fetch from 'node-fetch';
 import * as utils from './utils.js';
-import {billComDevKey} from './inputs.js';
+import {billComDevKey, finalApproverUserId} from './inputs.js';
 import {FormData} from 'formdata-node';
 
 /** The Bill.com Integration Airtable Base. */
@@ -131,18 +131,18 @@ export async function main() {
             }]);
 
         // Set the Bill's approvers.
-        const approvers = newCheckRequest.get('Approvers');
-        if (approvers != null) {
-          await billCom.commonDataCall(
-              'SetApprovers',
-              {
-                objectId: createBillResponse.id,
-                entity: 'Bill',
-                approvers:
-                  await Promise.all(
-                      approvers.map((a) => getBillComId('Users', a))),
-              });
-        }
+        const approverAirtableIds = newCheckRequest.get('Approvers') || [];
+        const approverBillComIds =
+            await Promise.all(
+                approverAirtableIds.map((aid) => getBillComId('Users', aid)));
+        approverBillComIds.push(finalApproverUserId());
+        await billCom.commonDataCall(
+            'SetApprovers',
+            {
+              objectId: createBillResponse.id,
+              entity: 'Bill',
+              approvers: approverBillComIds,
+            });
 
         // Upload the Supporting Documents.
         const data = new FormData();

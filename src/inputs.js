@@ -17,3 +17,4 @@ export const billComPassword = getInput('bill-com-password');
 export const internalCustomerId = getInput('internal-customer-id');
 export const ecrApproverUserProfileId =
   getInput('ecr-approver-user-profile-id');
+export const finalApproverUserId = getInput('final-approver-user-id');
