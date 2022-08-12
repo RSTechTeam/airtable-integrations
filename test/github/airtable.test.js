@@ -41,8 +41,8 @@ test('update', async () => {
 
   const update = (text1, text3) => {
     return base.update(table, [
-      {id: recordIds.get(1), fields: {text: text1}},
-      {id: recordIds.get(3), fields: {text: text3}},
+      {id: recordIds.get(1), fields: {Text: text1}},
+      {id: recordIds.get(3), fields: {Text: text3}},
     ]);
   };
   const result = await update('Goodbye', '?');
