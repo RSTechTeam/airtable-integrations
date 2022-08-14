@@ -18726,8 +18726,8 @@ class Base {
    * Runs func for each record from table view.
    * @param {string} table
    * @param {string} view
-   * @param {function(!Record<!TField>): !Promise<undefined>} func
-   * @return {!Promise<!Array<undefined>>}
+   * @param {function(!Record<!TField>): *} func
+   * @return {!Promise<!Array<*>>}
    */
   select(table, view, func) {
     return this.base_(table).select({view: view}).all()
@@ -18764,8 +18764,8 @@ class Base {
    * Runs func on table record with id.
    * @param {string} table
    * @param {string} id
-   * @param {function(!Record<!TField>): Promise<undefined>} func
-   * @return {!Promise<undefined>}
+   * @param {function(!Record<!TField>): *} func
+   * @return {!Promise<*>}
    */
   find(table, id, func) {
     return this.base_(table).find(id).then(func).catch(error('finding', table));

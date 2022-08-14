@@ -6,24 +6,20 @@ const base =
 const table = 'Table 1';
 const select = (view, func) => base.select(table, view, func);
 const recordIds = new Map();
-const selectField = async (view, field) => {
-  const vals = [];
-  await select(view, (r) => vals.push(r.get(field)));
-  return vals;
-}
+const selectField = (view, field) => select(view, (r) => r.get(field));
 
 describe('select', () => {
 
-  test('with no view defaults to whole table', async () => {
-    const ids = [];
-    await select(
-      '',
-      (r) => {
-        const id = r.get('ID');
-        ids.push(id);
-        recordIds.set(id, r.getId()); // Init recordIds
-      });
-    expect(ids).toEqual(expect.arrayContaining([1, 2, 3]));
+  test('with no view defaults to whole table', () => {
+    const ids =
+        select(
+            '',
+            (r) => {
+              const id = r.get('ID');
+              recordIds.set(id, r.getId()); // Init recordIds
+              return id;
+            });
+    return expect(ids).resolves.toEqual(expect.arrayContaining([1, 2, 3]));
   });
 
   test('with unknown view throws', () => {
