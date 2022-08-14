@@ -10,7 +10,11 @@ const selectField = (view, field) => select(view, (r) => r.get(field));
 
 describe('select', () => {
 
-  test('with no view defaults to whole table', () => {
+  test('given no table, throws', () => {
+    return expect(base.select('', '', x => x)).rejects.toThrow();
+  });
+
+  test('given no view, defaults to whole table', () => {
     const ids =
         select(
             '',
@@ -22,7 +26,7 @@ describe('select', () => {
     return expect(ids).resolves.toEqual(expect.arrayContaining([1, 2, 3]));
   });
 
-  test('with unknown view throws', () => {
+  test('given unknown view, throws', () => {
     return expect(selectField('Unknown', 'ID')).rejects.toThrow();
   });
 

@@ -50,9 +50,9 @@ describe.each`
 
   describe(name, () => {
 
-    test('returns empty when given empty', identityTest([], 1, []));
+    test('given empty, returns empty', identityTest([], 1, []));
 
-    test('throws when size is not positive', () => {
+    test('given non-positive size, throws', () => {
       const got = () => batchFunc(identity, [0], 0);
       if (name === 'Await') {
         return expect(got()).rejects.toThrow();
@@ -68,15 +68,15 @@ describe.each`
       ${[1, 2, 3]}| ${2} | ${[[1, 2], [3]]}
     `('using identity function', ({array, size, expected}) => {
       test(
-          `with args (${array}, ${size}) returns ${expected}`,
+          `given args (${array}, ${size}), returns ${expected}`,
           identityTest(array, size, expected));
     });
 
     test(
-        'with transformation function changes output (increment)', 
+        'given transformation function (increment), changes output', 
         successTest((arr) => arr[0] + 1, [1, 2], 1, [2, 3]));
 
-    test('with timely async function', async () => {
+    test('given timely async function', async () => {
       const gotExecutionOrder = [];
       const waitPushReturn = async (arr) => {
         const x = arr[0];
