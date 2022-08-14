@@ -26,6 +26,10 @@ describe('select', () => {
     expect(ids).toEqual(expect.arrayContaining([1, 2, 3]));
   });
 
+  test('with unknown view throws', () => {
+    return expect(selectField('', 'ID')).rejects.toThrow();
+  });
+
   test('uses given view', async () => {
     const ids = await selectField('No One', 'ID');
     expect(ids).toEqual(expect.arrayContaining([2, 3]));
