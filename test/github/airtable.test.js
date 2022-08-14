@@ -27,7 +27,7 @@ describe('select', () => {
   });
 
   test('with unknown view throws', () => {
-    return expect(selectField('', 'ID')).rejects.toThrow();
+    return expect(selectField('Unknown', 'ID')).rejects.toThrow();
   });
 
   test('uses given view', async () => {
