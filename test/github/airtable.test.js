@@ -17,7 +17,7 @@ describe('select', () => {
   test('with no view defaults to whole table', async () => {
     const ids = [];
     await select(
-      undefined,
+      '',
       (r) => {
         const id = r.get('ID');
         ids.push(id);
@@ -39,7 +39,7 @@ describe('select', () => {
 
 test('update', async () => {
   const expectTextsToContain =
-      (expected) => expect(selectField(undefined, 'Text')).resolves.toEqual(
+      (expected) => expect(selectField('', 'Text')).resolves.toEqual(
           expect.arrayContaining(expected));
   await expectTextsToContain(['Hello', 'World', '!']);
 

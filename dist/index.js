@@ -18730,8 +18730,7 @@ class Base {
    * @return {!Promise<!Array<undefined>>}
    */
   select(table, view, func) {
-    const maybeView = (view == undefined) ? undefined : {view: view};
-    return this.base_(table).select(maybeView).all()
+    return this.base_(table).select({view: view}).all()
         .then((records) => Promise.all(records.map(func)))
         .catch(error('selecting', table));
   }
@@ -19295,7 +19294,7 @@ async function sync(entity, table, syncFunc) {
   const updates = [];
   await billComIntegrationBase().select(
       table,
-      undefined,
+      '',
       (record) => {
         const id = record.get(_airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .primaryOrgBillComId */ .Z1());
         updates.push({
@@ -19374,7 +19373,7 @@ async function syncCustomers(anchorEntity) {
   const billComUpdates = [];
   await billComIntegrationBase().select(
       ALL_CUSTOMERS_TABLE,
-      undefined,
+      '',
       (record) => {
         const isActive = record.get('Active');
         const id = record.get(billComId);

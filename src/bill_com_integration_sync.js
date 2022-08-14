@@ -115,7 +115,7 @@ async function sync(entity, table, syncFunc) {
   const updates = [];
   await billComIntegrationBase().select(
       table,
-      undefined,
+      '',
       (record) => {
         const id = record.get(airtable.primaryOrgBillComId());
         updates.push({
@@ -194,7 +194,7 @@ async function syncCustomers(anchorEntity) {
   const billComUpdates = [];
   await billComIntegrationBase().select(
       ALL_CUSTOMERS_TABLE,
-      undefined,
+      '',
       (record) => {
         const isActive = record.get('Active');
         const id = record.get(billComId);
