@@ -74,7 +74,7 @@ export class Base {
    * @param {!Object[]} updates
    * @param {string} updates[].id
    * @param {!Object<string, *>} updates[].fields
-   * @return {!Promise<!Object<string, *>[][]>}
+   * @return {!Promise<!Array<*>>}
    */
   update(table, updates) {
     return catchError(
@@ -85,7 +85,7 @@ export class Base {
    * @param {string} table
    * @param {!Object[]} creates
    * @param {!Object<string, *>} creates[].fields
-   * @return {!Promise<!Object<string, *>[][]>}
+   * @return {!Promise<!Array<*>>}
    */
   create(table, creates) {
     return catchError(
