@@ -99,6 +99,6 @@ describe('create', () => {
     expect(ids.length).toBe(5);
     expect(ids).toEqual(expect.arrayContaining([1, 2, 3, 4, 5]));
 
-    base.base_(table).destroy(newIds.map(recordIds.get));
+    base.base_(table).destroy(newIds.map((x) => recordIds.get(x)));
   });
 });
