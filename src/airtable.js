@@ -42,6 +42,11 @@ function batch(func, array) {
   return utils.batchAsync(func, array, 10);
 }
 
+function batch2(func, array, querying, table) {
+  return utils.batchAsync(
+      (arr) => catchError(func(arr), querying, table), array, 10);
+}
+
 /** An Airtable Base to query. */
 export class Base {
 
@@ -88,8 +93,9 @@ export class Base {
    * @return {!Promise<!Array<*>>}
    */
   create(table, creates) {
-    return catchError(
-        batch(this.base_(table).create, creates), 'creating', table);
+    // return catchError(
+    //     batch(this.base_(table).create, creates), 'creating', table);
+    return batch2(this.base_(table).create, creates, 'creating', table);
   }
 
   /**
