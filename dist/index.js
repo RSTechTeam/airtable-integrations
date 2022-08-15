@@ -18701,15 +18701,13 @@ function error(querying, table) {
  * Asynchronously calls func with portions of array that are at most
  * the max number of records that can be created or updated
  * via an Airtable API call.
- * @param {function(!Array<*>): *} func
+ * @param {function(!Array<*>): !Promise<*>} func
+ * @param {string} querying
+ * @param {string} table
  * @param {!Array<*>} array
  * @return {!Promise<!Array<*>>}
  */
-function batch(func, array) {
-  return _utils_js__WEBPACK_IMPORTED_MODULE_1__/* .batchAsync */ .aE(func, array, 10);
-}
-
-function batch2(func, querying, table, array) {
+function batch(func, querying, table, array) {
   return _utils_js__WEBPACK_IMPORTED_MODULE_1__/* .batchAsync */ .aE(
       (arr) => func(arr).catch(error(querying, table)), array, 10);
 }
@@ -18748,10 +18746,7 @@ class Base {
    * @return {!Promise<!Object<string, *>[][]>}
    */
   update(table, updates) {
-    // return batch(
-    //     (arr) => this.base_(table).update(arr).catch(error('updating', table)),
-    //     updates);
-    return batch2(this.base_(table).update, 'updating', table, updates);
+    return batch(this.base_(table).update, 'updating', table, updates);
   }
 
   /**
@@ -18761,9 +18756,7 @@ class Base {
    * @return {!Promise<!Object<string, *>[][]>}
    */
   create(table, creates) {
-    return batch(
-        (arr) => this.base_(table).create(arr).catch(error('creating', table)),
-        creates);
+    return batch(this.base_(table).create, 'creating', table, creates);
   }
 
   /**
