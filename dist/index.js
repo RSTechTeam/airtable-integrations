@@ -18709,6 +18709,11 @@ function batch(func, array) {
   return _utils_js__WEBPACK_IMPORTED_MODULE_1__/* .batchAsync */ .aE(func, array, 10);
 }
 
+function batch2(func, querying, table, array) {
+  return _utils_js__WEBPACK_IMPORTED_MODULE_1__/* .batchAsync */ .aE(
+      (arr) => func(arr).catch(error(querying, table)), array, 10);
+}
+
 /** An Airtable Base to query. */
 class Base {
 
@@ -18743,9 +18748,10 @@ class Base {
    * @return {!Promise<!Object<string, *>[][]>}
    */
   update(table, updates) {
-    return batch(
-        (arr) => this.base_(table).update(arr).catch(error('updating', table)),
-        updates);
+    // return batch(
+    //     (arr) => this.base_(table).update(arr).catch(error('updating', table)),
+    //     updates);
+    return batch2(this.base_(table).update, 'updating', table, updates);
   }
 
   /**

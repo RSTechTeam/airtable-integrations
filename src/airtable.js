@@ -40,6 +40,11 @@ function batch(func, array) {
   return utils.batchAsync(func, array, 10);
 }
 
+function batch2(func, querying, table, array) {
+  return utils.batchAsync(
+      (arr) => func(arr).catch(error(querying, table)), array, 10);
+}
+
 /** An Airtable Base to query. */
 export class Base {
 
@@ -74,9 +79,10 @@ export class Base {
    * @return {!Promise<!Object<string, *>[][]>}
    */
   update(table, updates) {
-    return batch(
-        (arr) => this.base_(table).update(arr).catch(error('updating', table)),
-        updates);
+    // return batch(
+    //     (arr) => this.base_(table).update(arr).catch(error('updating', table)),
+    //     updates);
+    return batch2(this.base_(table).update, 'updating', table, updates);
   }
 
   /**
