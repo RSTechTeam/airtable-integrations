@@ -95,6 +95,7 @@ describe('create', () => {
               if (newIds.includes(id)) recordIds.set(id, r.getId());
               return id;
             });
+    console.log(recordIds);
     expect(ids.length).toBe(5);
     expect(ids).toEqual(expect.arrayContaining([1, 2, 3, 4, 5]));
 
