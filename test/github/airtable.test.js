@@ -37,21 +37,32 @@ describe('select', () => {
   });
 });
 
-test('update', async () => {
-  const expectTextsToContain =
-      (expected) => expect(selectField('', 'Text')).resolves.toEqual(
-          expect.arrayContaining(expected));
-  await expectTextsToContain(['Hello', 'World', '!']);
+describe('update', () => {
 
-  const update = (text1, text3) => {
-    return base.update(table, [
-      {id: recordIds.get(1), fields: {Text: text1}},
-      {id: recordIds.get(3), fields: {Text: text3}},
-    ]);
-  };
-  await update('Goodbye', '?');
-  await expectTextsToContain(['Goodbye', 'World', '?']);
+  test('given no table, throws', () => {
+    return expect(base.update('', [])).rejects.toThrow();
+  });
 
-  await update('Hello', '!');
-  await expectTextsToContain(['Hello', 'World', '!']);
+  test('given empty, returns empty', () => {
+    return expect(base.update(table, [])).resolves.toEqual([]);
+  });
+
+  test('updates records', async () => {
+    const expectTextsToContain =
+        (expected) => expect(selectField('', 'Text')).resolves.toEqual(
+            expect.arrayContaining(expected));
+    await expectTextsToContain(['Hello', 'World', '!']);
+
+    const update = (text1, text3) => {
+      return base.update(table, [
+        {id: recordIds.get(1), fields: {Text: text1}},
+        {id: recordIds.get(3), fields: {Text: text3}},
+      ]);
+    };
+    await update('Goodbye', '?');
+    await expectTextsToContain(['Goodbye', 'World', '?']);
+
+    await update('Hello', '!');
+    await expectTextsToContain(['Hello', 'World', '!']);
+  });
 });
