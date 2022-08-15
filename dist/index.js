@@ -18711,11 +18711,6 @@ function batch(func, array) {
   return _utils_js__WEBPACK_IMPORTED_MODULE_1__/* .batchAsync */ .aE(func, array, 10);
 }
 
-function batch2(func, array, querying, table) {
-  return _utils_js__WEBPACK_IMPORTED_MODULE_1__/* .batchAsync */ .aE(
-      (arr) => catchError(func(arr), querying, table), array, 10);
-}
-
 /** An Airtable Base to query. */
 class Base {
 
@@ -18760,11 +18755,11 @@ class Base {
    * @param {!Object[]} creates
    * @param {!Object<string, *>} creates[].fields
    * @return {!Promise<!Array<*>>}
+   * ^^ Return doesn't seem to be working, but leaving for now.
    */
   create(table, creates) {
-    // return catchError(
-    //     batch(this.base_(table).create, creates), 'creating', table);
-    return batch2(this.base_(table).create, creates, 'creating', table);
+    return catchError(
+        batch(this.base_(table).create, creates), 'creating', table);
   }
 
   /**

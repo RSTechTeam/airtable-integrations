@@ -62,8 +62,7 @@ describe('update', () => {
     await expectTextsToContain(['Hello', 'World', '!']);
 
     
-    const updated = await update(table, 'Goodbye', '?');
-    console.log(updated);
+    await update(table, 'Goodbye', '?');
     await expectTextsToContain(['Goodbye', 'World', '?']);
 
     await update(table, 'Hello', '!');
@@ -86,10 +85,19 @@ describe('create', () => {
   });
 
   test('creates records', async () => {
-    const created = await create(table);
-    console.log(created);
-    const ids = await selectId('');
+    await create(table);
+    const newIds = [4, 5];
+    const ids =
+        select(
+            '',
+            (r) => {
+              const id = r.get('ID');
+              if (newIds.includes(id)) recordIds.set(id, r.getId());
+              return id;
+            });
     expect(ids.length).toBe(5);
     expect(ids).toEqual(expect.arrayContaining([1, 2, 3, 4, 5]));
+
+    base.base_(table).destroy(newIds.map(recordIds.get));
   });
 });
