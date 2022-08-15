@@ -17,17 +17,11 @@ export const primaryOrgBillComId = () => {
 }
 
 /**
+ * @param {!Promise<*>} promise
  * @param {string} querying e.g., selecting, updating, etc
  * @param {string} table
- * @return {function(Error)}
+ * @return {!Promise<*>}
  */
-function error(querying, table) {
-  return (err) => {
-    throw new Error(
-        `Error while ${querying} records in Airtable Table ${table}: ${err}`)
-  };
-}
-
 function catchError(promise, querying, table) {
   return promise.catch(
       (err) => {
