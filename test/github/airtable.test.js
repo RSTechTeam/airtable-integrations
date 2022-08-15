@@ -72,6 +72,9 @@ describe('update', () => {
 
 describe('create', () => {
 
+  // Expect no residual created records.
+  afterEach(() => expect(selectId('')).resolves.toHaveLength(3));
+
   test('given empty, return empty', () => {
     return expect(base.create(table, [])).resolves.toEqual([]);
   });
@@ -96,7 +99,7 @@ describe('create', () => {
               return id;
             });
     console.log(recordIds);
-    expect(ids.length).toBe(5);
+    expect(ids).toHaveLength(5);
     expect(ids).toEqual(expect.arrayContaining([1, 2, 3, 4, 5]));
 
     base.base_(table).destroy(newIds.map((x) => recordIds.get(x)));
