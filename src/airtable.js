@@ -28,19 +28,24 @@ function error(querying, table) {
   };
 }
 
+function catchError(promise, querying, table) {
+  return promise.catch(
+      (err) => {
+        throw new Error(
+            `Error ${querying} records in Airtable Table ${table}: ${err}`);
+      });
+}
+
 /**
  * Asynchronously calls func with portions of array that are at most
  * the max number of records that can be created or updated
  * via an Airtable API call.
  * @param {function(!Array<*>): !Promise<*>} func
- * @param {string} querying
- * @param {string} table
  * @param {!Array<*>} array
  * @return {!Promise<!Array<*>>}
  */
-function batch(func, querying, table, array) {
-  return utils.batchAsync(
-      (arr) => func(arr).catch(error(querying, table)), array, 10);
+function batch(func, array) {
+  return utils.batchAsync(func, array, 10);
 }
 
 /** An Airtable Base to query. */
@@ -64,9 +69,10 @@ export class Base {
    * @return {!Promise<!Array<*>>}
    */
   select(table, view, func) {
-    return this.base_(table).select({view: view}).all()
-        .then((records) => Promise.all(records.map(func)))
-        .catch(error('selecting', table));
+    return catchError(
+        this.base_(table).select({view: view}).all().then(
+            (records) => Promise.all(records.map(func))),
+        'selecting', table);
   }
 
   /**
@@ -77,7 +83,8 @@ export class Base {
    * @return {!Promise<!Object<string, *>[][]>}
    */
   update(table, updates) {
-    return batch(this.base_(table).update, 'updating', table, updates);
+    return catchError(
+        batch(this.base_(table).update, updates), 'updating', table);
   }
 
   /**
@@ -87,7 +94,8 @@ export class Base {
    * @return {!Promise<!Object<string, *>[][]>}
    */
   create(table, creates) {
-    return batch(this.base_(table).create, 'creating', table, creates);
+    return catchError(
+        batch(this.base_(table).create, creates), 'creating', table);
   }
 
   /**
@@ -98,7 +106,7 @@ export class Base {
    * @return {!Promise<*>}
    */
   find(table, id, func) {
-    return this.base_(table).find(id).then(func).catch(error('finding', table));
+    return catchError(this.base_(table).find(id).then(func), 'finding', table);
   }
 }
 
