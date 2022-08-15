@@ -62,7 +62,8 @@ describe('update', () => {
     await expectTextsToContain(['Hello', 'World', '!']);
 
     
-    await update(table, 'Goodbye', '?');
+    const updated = await update(table, 'Goodbye', '?');
+    console.log(updated);
     await expectTextsToContain(['Goodbye', 'World', '?']);
 
     await update(table, 'Hello', '!');
