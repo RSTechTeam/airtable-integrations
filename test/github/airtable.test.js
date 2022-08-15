@@ -88,7 +88,7 @@ describe('create', () => {
     await create(table);
     const newIds = [4, 5];
     const ids =
-        select(
+        await select(
             '',
             (r) => {
               const id = r.get('ID');
