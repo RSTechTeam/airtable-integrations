@@ -32,7 +32,7 @@ describe('select', () => {
   });
 
   test('uses given view', async () => {
-    const ids = await selectField('No One');
+    const ids = await selectId('No One');
     expect(ids).toEqual(expect.arrayContaining([2, 3]));
     expect(ids).toEqual(expect.not.arrayContaining([1]));
   });
@@ -73,7 +73,7 @@ describe('update', () => {
 describe('create', () => {
 
   test('given empty, return empty', () => {
-    return expect(base.create(table, []).resolves.toEqual([]));
+    return expect(base.create(table, [])).resolves.toEqual([]);
   });
 
   const create = (tbl) => {
