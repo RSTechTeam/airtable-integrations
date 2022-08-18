@@ -90,7 +90,7 @@ describe('create', () => {
 
   test('creates records', async () => {
     const it = create(table);
-    console.log(typeof if);
+    console.log(typeof it);
     await it;
 
     const newIds = [4, 5];
