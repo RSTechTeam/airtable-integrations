@@ -89,7 +89,10 @@ describe('create', () => {
   });
 
   test('creates records', async () => {
-    await create(table);
+    const it = create(table);
+    console.log(typeof if);
+    await it;
+
     const newIds = [4, 5];
     const ids =
         await select(
@@ -119,6 +122,8 @@ describe('find', () => {
   });
 
   test('finds record', () => {
-    expect(find(table, 1)).resolves.toEqual(1);
+    const it = find(table, 1);
+    console.log(typeof it);
+    expect(it).resolves.toEqual(1);
   });
 });
