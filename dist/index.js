@@ -18755,7 +18755,6 @@ class Base {
    * @param {!Object[]} creates
    * @param {!Object<string, *>} creates[].fields
    * @return {!Promise<!Array<*>>}
-   * ^^ Return doesn't seem to be working, but leaving for now.
    */
   create(table, creates) {
     return catchError(

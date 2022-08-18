@@ -90,21 +90,10 @@ describe('create', () => {
 
   test('creates records', async () => {
     const created = await create(table);
-    console.log(created);
-
-    const newIds = [4, 5];
-    const ids =
-        await select(
-            '',
-            (r) => {
-              const id = r.get('ID');
-              if (newIds.includes(id)) recordIds.set(id, r.getId());
-              return id;
-            });
+    const ids = await selectId('');
     expect(ids).toHaveLength(5);
     expect(ids).toEqual(expect.arrayContaining([1, 2, 3, 4, 5]));
-
-    return base.base_(table).destroy(newIds.map((x) => recordIds.get(x)));
+    return base.base_(table).destroy(created[0]);
   });
 });
 
