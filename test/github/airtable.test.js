@@ -99,11 +99,10 @@ describe('create', () => {
               if (newIds.includes(id)) recordIds.set(id, r.getId());
               return id;
             });
-    console.log(recordIds);
     expect(ids).toHaveLength(5);
     expect(ids).toEqual(expect.arrayContaining([1, 2, 3, 4, 5]));
 
-    await base.base_(table).destroy(newIds.map((x) => recordIds.get(x)));
+    return base.base_(table).destroy(newIds.map((x) => recordIds.get(x)));
   });
 });
 
