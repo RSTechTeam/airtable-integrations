@@ -4,9 +4,10 @@ const base =
     new airtable.Base(
         process.env.AIRTABLE_BASE_ID, process.env.AIRTABLE_API_KEY);
 const table = 'Table 1';
-const select = (view, func) => base.select(table, view, func);
 const recordIds = new Map();
-const selectField = (view, field) => select(view, (r) => r.get(field));
+const getField = (field) => (r) => r.get(field);
+const select = (view, func) => base.select(table, view, func);
+const selectField = (view, field) => select(view, getField(field));
 const selectId = (view) => selectField(view, 'ID');
 
 describe('select', () => {
@@ -103,5 +104,22 @@ describe('create', () => {
     expect(ids).toEqual(expect.arrayContaining([1, 2, 3, 4, 5]));
 
     await base.base_(table).destroy(newIds.map((x) => recordIds.get(x)));
+  });
+});
+
+describe('find', () => {
+
+  const find = (tbl, id) => base.find(tbl, recordIds.get(id), getField('ID'));
+
+  test('given no table, throws', () => {
+    expect(() => find('', 1)).toThrow();
+  });
+
+  test('given no id, throws', () => {
+    expect(find(table, '')).rejects.toThrow();
+  });
+
+  test('finds record', () => {
+    expect(find(table, 1)).resolves.toEqual(1);
   });
 });
