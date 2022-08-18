@@ -93,7 +93,7 @@ describe('create', () => {
     const ids = await selectId('');
     expect(ids).toHaveLength(5);
     expect(ids).toEqual(expect.arrayContaining([1, 2, 3, 4, 5]));
-    return base.base_(table).destroy(created[0]);
+    return base.base_(table).destroy(created[0].map((r) => r.id));
   });
 });
 
