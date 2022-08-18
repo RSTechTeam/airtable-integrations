@@ -81,7 +81,7 @@ describe('create', () => {
   });
 
   const create = (tbl) => {
-    base.create(tbl, [{fields: {ID: 4}}, {fields: {ID: 5}}]);
+    return base.create(tbl, [{fields: {ID: 4}}, {fields: {ID: 5}}]);
   };
 
   test('given no table (with non-empty creates), throws', () => {
@@ -89,9 +89,8 @@ describe('create', () => {
   });
 
   test('creates records', async () => {
-    const it = create(table);
-    console.log(typeof it);
-    await it;
+    const created = await create(table);
+    console.log(created);
 
     const newIds = [4, 5];
     const ids =
@@ -113,17 +112,7 @@ describe('find', () => {
 
   const find = (tbl, id) => base.find(tbl, recordIds.get(id), getField('ID'));
 
-  test('given no table, throws', () => {
-    expect(() => find('', 1)).toThrow();
-  });
-
-  test('given no id, throws', () => {
-    expect(find(table, '')).rejects.toThrow();
-  });
-
-  test('finds record', () => {
-    const it = find(table, 1);
-    console.log(typeof it);
-    expect(it).resolves.toEqual(1);
-  });
+  test('given no table, throws', () => expect(() => find('', 1)).toThrow());
+  test('given no id, throws', () => expect(find(table, '')).rejects.toThrow());
+  test('finds record', () => expect(find(table, 1)).resolves.toEqual(1));
 });
