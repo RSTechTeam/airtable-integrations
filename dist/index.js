@@ -18786,7 +18786,7 @@ function getInputBase() {
 
 __nccwpck_require__.a(__webpack_module__, async (__webpack_handle_async_dependencies__) => {
 /* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
-/* harmony export */   "W4": () => (/* binding */ sessionId),
+/* harmony export */   "MQ": () => (/* binding */ getSessionId),
 /* harmony export */   "RE": () => (/* binding */ call),
 /* harmony export */   "kY": () => (/* binding */ primaryOrgLogin),
 /* harmony export */   "fI": () => (/* binding */ commonDataCall),
@@ -18821,6 +18821,11 @@ await new _airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .Base */ .XY(_inputs_js__W
 
 /** The ID of the Bill.com API session (after successful authentication). */
 let sessionId;
+
+/** @return {string} */
+function getSessionId() {
+  return sessionId;
+}
 
 /**
  * @param {string} endpoint 
@@ -19137,7 +19142,7 @@ async function main() {
         // Upload the Supporting Documents.
         const data = new formdata_node__WEBPACK_IMPORTED_MODULE_4__/* .FormData */ .Ct();
         data.set('devKey', (0,_inputs_js__WEBPACK_IMPORTED_MODULE_3__/* .billComDevKey */ .Hc)());
-        data.set('sessionId', _bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .sessionId */ .W4);
+        data.set('sessionId', _bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .getSessionId */ .MQ());
         for (const doc of newCheckRequest.get('Supporting Documents')) {
 
           // Fetch the document.
