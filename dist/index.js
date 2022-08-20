@@ -18466,7 +18466,7 @@ class Api {
 
   /** Login to access the primaryOrg's Bill.com API and receive a session ID. */
   primaryOrgLogin() {
-    this.login(_inputs_js__WEBPACK_IMPORTED_MODULE_0__/* .primaryOrg */ .uP());
+    return this.login(_inputs_js__WEBPACK_IMPORTED_MODULE_0__/* .primaryOrg */ .uP());
   }
 
   /**
