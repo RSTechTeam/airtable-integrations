@@ -99,7 +99,7 @@ export class Api {
 
   /** Login to access the primaryOrg's Bill.com API and receive a session ID. */
   primaryOrgLogin() {
-    login(inputs.primaryOrg());
+    this.login(inputs.primaryOrg());
   }
 
   /**
