@@ -2,13 +2,13 @@
 
 import {filter} from './bill_com.js';
 import {internalCustomerId} from './inputs.js';
-import {primaryOrgBillComId} from './airtable.js';
+import {Base, primaryOrgBillComId} from './airtable.js';
 
 /**
- * @param {!Base} accountingBase
  * @param {!Api} billComApi
+ * @param {!Base=} accountingBase
  */
-export async function main(accountingBase, billComApi) {
+export async function main(billComApi, accountingBase = new Base()) {
   const LCF_TABLE = 'Labor Charge Field (LCF) Mapping';
 
   // Initialize Bill.com Customer collection.

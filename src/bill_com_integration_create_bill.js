@@ -2,10 +2,10 @@
 
 import fetch from 'node-fetch';
 import {apiCall} from './bill_com.js';
+import {Base, primaryOrgBillComId} from './airtable.js';
 import {fetchError} from './utils.js';
 import {finalApproverUserId} from './inputs.js';
 import {FormData} from 'formdata-node';
-import {primaryOrgBillComId} from './airtable.js';
 
 /** The Bill.com Integration Airtable Base. */
 let billComIntegrationBase;
@@ -25,10 +25,10 @@ async function getBillComId(table, airtableId) {
 }
 
 /**
- * @param {!Base} airtableBase
  * @param {!Api} billComApi
+ * @param {!Base=} airtableBase
  */
-export async function main(airtableBase, billComApi) {
+export async function main(billComApi, airtableBase = new Base()) {
   const CHECK_REQUESTS_TABLE = 'Check Requests';
   const NEW_VENDORS_TABLE = 'New Vendors';
 

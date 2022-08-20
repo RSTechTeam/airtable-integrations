@@ -4,7 +4,6 @@ import * as accountingSync from './accounting_sync.js';
 import * as billComIntegrationCreateApprover from './bill_com_integration_create_approver.js';
 import * as billComIntegrationCreateBill from './bill_com_integration_create_bill.js';
 import * as billComIntegrationSync from './bill_com_integration_sync.js';
-import {Base} from './airtable.js';
 import {error} from './github_actions_core.js';
 import {filename} from './inputs.js';
 import {getApi} from './bill_com.js';
@@ -28,4 +27,4 @@ switch (filename()) {
 }
 
 const billComApi = await getApi();
-await imp.main(new Base(), billComApi).catch(error);
+await imp.main(billComApi).catch(error);

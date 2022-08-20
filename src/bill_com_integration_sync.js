@@ -3,7 +3,7 @@
  * (e.g., Vendors, Chart of Accounts) into Airtable.
  */
 
-import {BILL_COM_ID_SUFFIX, primaryOrgBillComId} from './airtable.js';
+import {Base, BILL_COM_ID_SUFFIX, primaryOrgBillComId} from './airtable.js';
 import {filter} from './bill_com.js';
 
 /** Bill.com Bill Approval Statuses. */
@@ -290,10 +290,10 @@ async function syncCustomers(anchorEntity) {
 }
 
 /**
- * @param {!Base} airtableBase
  * @param {!Api} api
+ * @param {!Base=} airtableBase
  */
-export async function main (airtableBase, api) {
+export async function main (api, airtableBase = new Base()) {
   billComIntegrationBase = airtableBase;
   billComApi = api;
 

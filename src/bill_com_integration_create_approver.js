@@ -1,12 +1,13 @@
 /** @fileoverview Creates a Bill.com Electronic Check Request Approver. */
 
+import {Base} from './airtable.js';
 import {ecrApproverUserProfileId} from './inputs.js';
 
 /**
- * @param {!Base} billComIntegrationBase
  * @param {!Api} billComApi
+ * @param {!Base=} billComIntegrationBase
  */
-export async function main(billComIntegrationBase, billComApi) {
+export async function main(billComApi, billComIntegrationBase = new Base()) {
   const APPROVER_TABLE = 'New Bill.com Approvers';
   await billComApi.primaryOrgLogin();
   await billComIntegrationBase.select(
