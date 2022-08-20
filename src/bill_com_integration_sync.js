@@ -3,11 +3,8 @@
  * (e.g., Vendors, Chart of Accounts) into Airtable.
  */
 
-import * as airtable from './airtable.js';
-import * as billCom from './bill_com.js';
-
-/** The Bill.com Integration Airtable Base. */
-const billComIntegrationBase = airtable.getInputBase();
+import {BILL_COM_ID_SUFFIX, primaryOrgBillComId} from './airtable.js';
+import {filter} from './bill_com.js';
 
 /** Bill.com Bill Approval Statuses. */
 const approvalStatuses = new Map([
@@ -25,6 +22,12 @@ const paymentStatuses = new Map([
   ['0', 'Paid In Full'],
   ['2', 'Partial Payment'],
 ]);
+
+/** The Bill.com Integration Airtable Base. */
+let billComIntegrationBase;
+
+/** The Bill.com API connection. */
+let billComApi;
 
 /**
  * @param {Array} bulkResponses
@@ -45,12 +48,11 @@ function processBulkResponses(bulkResponses, func) {
  */
 async function syncUnpaid(table, entity) {
   const billComId =
-      entity === 'Bill' ?
-          airtable.primaryOrgBillComId() : airtable.BILL_COM_ID_SUFFIX;
+      entity === 'Bill' ? primaryOrgBillComId() : BILL_COM_ID_SUFFIX;
   
   const billComIds = [];
   const airtableIds = [];
-  await billComIntegrationBase().select(
+  await billComIntegrationBase.select(
       table,
       'Unpaid',
       (record) => {
@@ -59,7 +61,7 @@ async function syncUnpaid(table, entity) {
        });
   if (billComIds.length === 0) return;
   
-  const bulkResponses = await billCom.bulkCall(`Read/${entity}`, billComIds);
+  const bulkResponses = await billComApi.bulkCall(`Read/${entity}`, billComIds);
   const updates = [];
   processBulkResponses(
       bulkResponses,
@@ -76,7 +78,7 @@ async function syncUnpaid(table, entity) {
           },
         });
       });
-  await billComIntegrationBase().update(table, updates);
+  await billComIntegrationBase.update(table, updates);
 }
 
 /**
@@ -84,12 +86,12 @@ async function syncUnpaid(table, entity) {
  * @return {Promise<!Array<Object>>} entity list.
  */
 function listActiveCall(entity) {
-  const filters = [billCom.filter('isActive', '=', '1')];
+  const filters = [filter('isActive', '=', '1')];
   if (entity === 'ChartOfAccount') {
     // Expenses or Income
-    filters.push(billCom.filter('accountType', 'in', '7,9'));
+    filters.push(filter('accountType', 'in', '7,9'));
   }
-  return billCom.list(entity, filters);
+  return billComApi.list(entity, filters);
 }
 
 /**
@@ -113,26 +115,26 @@ async function sync(entity, table, syncFunc) {
 
   // Update every existing table record based on the entity data.
   const updates = [];
-  await billComIntegrationBase().select(
+  await billComIntegrationBase.select(
       table,
       '',
       (record) => {
-        const id = record.get(airtable.primaryOrgBillComId());
+        const id = record.get(primaryOrgBillComId());
         updates.push({
           id: record.getId(),
           fields: changes.has(id) ? changes.get(id) : {'Active': false},
         });
         changes.delete(id);
       });
-  await billComIntegrationBase().update(table, updates);
+  await billComIntegrationBase.update(table, updates);
 
   // Create new table records from new entity data.
   const creates = [];
   for (const [id, data] of changes) {
-    data[airtable.primaryOrgBillComId()] = id;
+    data[primaryOrgBillComId()] = id;
     creates.push({fields: data});
   }
-  await billComIntegrationBase().create(table, creates);
+  await billComIntegrationBase.create(table, creates);
 }
 
 /**
@@ -176,12 +178,11 @@ function vendorName(name, city, state) {
  */
 async function syncCustomers(anchorEntity) {
   const ALL_CUSTOMERS_TABLE = 'All Customers';
-  const billComId = `${anchorEntity} ${airtable.BILL_COM_ID_SUFFIX}`;
+  const billComId = `${anchorEntity} ${BILL_COM_ID_SUFFIX}`;
 
-  await billCom.login(anchorEntity);
+  await billComApi.login(anchorEntity);
 
-  // Initialize Airtable and Bill.com Customer collections.
-  const airtableCustomers = await allCustomersTable.selectRecordsAsync();
+  // Initialize Bill.com Customer collections.
   const billComCustomers = await listActiveCall('Customer');
   const billComCustomerMap = new Map();
   billComCustomers.forEach(
@@ -192,7 +193,7 @@ async function syncCustomers(anchorEntity) {
   const airtableUpdateIds = [];
   const airtableUpdates = [];
   const billComUpdates = [];
-  await billComIntegrationBase().select(
+  await billComIntegrationBase.select(
       ALL_CUSTOMERS_TABLE,
       '',
       (record) => {
@@ -246,7 +247,7 @@ async function syncCustomers(anchorEntity) {
   // Bulk execute Bill.com Creates and Updates.
   if (billComCreates.length > 0) {
     const bulkResponses =
-        await billCom.bulkCall('Create/Customer', billComCreates);
+        await billComApi.bulkCall('Create/Customer', billComCreates);
     processBulkResponses(
         bulkResponses,
         (r, i) => {
@@ -256,16 +257,16 @@ async function syncCustomers(anchorEntity) {
           });
         });
   }
-  await billCom.bulkCall('Update/Customer', billComUpdates);
-  await billComIntegrationBase().update(ALL_CUSTOMERS_TABLE, airtableUpdates);
+  await billComApi.bulkCall('Update/Customer', billComUpdates);
+  await billComIntegrationBase.update(ALL_CUSTOMERS_TABLE, airtableUpdates);
 
   // Create any active anchor entity Bill.com Customer not in Airtable;
   // Create in both RS Bill.com and Airtable.
-  await billCom.primaryOrgLogin();
+  await billComApi.primaryOrgLogin();
   const airtableCreates = [];
   for (const [id, customer] of billComCustomerMap) {
     const response =
-        await billCom.commonDataCall(
+        await billComApi.dataCall(
             'Crud/Create/Customer',
             {
               obj: {
@@ -281,15 +282,22 @@ async function syncCustomers(anchorEntity) {
         Name: customer.name,
         Email: customer.email,
         [BILL_COM_ID]: id,
-        [airtable.primaryOrgBillComId()]: response.id,
+        [primaryOrgBillComId()]: response.id,
       }
     });
   }
-  await billComIntegrationBase().create(ALL_CUSTOMERS_TABLE, airtableCreates);
+  await billComIntegrationBase.create(ALL_CUSTOMERS_TABLE, airtableCreates);
 }
 
-export async function main () {
-  await billCom.primaryOrgLogin();
+/**
+ * @param {!Base} airtableBase
+ * @param {!Api} api
+ */
+export async function main (airtableBase, api) {
+  billComIntegrationBase = airtableBase;
+  billComApi = api;
+
+  await billComApi.primaryOrgLogin();
   await syncUnpaid('Check Requests', 'Bill');
   await syncUnpaid('Invoices', 'Invoice');
   await sync(

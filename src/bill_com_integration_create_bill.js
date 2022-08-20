@@ -1,14 +1,14 @@
 /** @fileoverview Creates a Bill.com Bill based on a new Check Request. */
 
-import * as airtable from './airtable.js';
-import * as billCom from './bill_com.js';
 import fetch from 'node-fetch';
-import * as utils from './utils.js';
-import {billComDevKey, finalApproverUserId} from './inputs.js';
+import {apiCall} from './bill_com.js';
+import {fetchError} from './utils.js';
+import {finalApproverUserId} from './inputs.js';
 import {FormData} from 'formdata-node';
+import {primaryOrgBillComId} from './airtable.js';
 
 /** The Bill.com Integration Airtable Base. */
-const billComIntegrationBase = airtable.getInputBase();
+let billComIntegrationBase;
 
 /**
  * @param {string} table
@@ -17,21 +17,26 @@ const billComIntegrationBase = airtable.getInputBase();
  */
 async function getBillComId(table, airtableId) {
   let billComId;
-  await billComIntegrationBase().find(
+  await billComIntegrationBase.find(
       table,
       airtableId,
-      (record) => billComId = record.get(airtable.primaryOrgBillComId()));
+      (record) => billComId = record.get(primaryOrgBillComId()));
   return billComId;
 }
 
-
-export async function main() {
+/**
+ * @param {!Base} airtableBase
+ * @param {!Api} billComApi
+ */
+export async function main(airtableBase, billComApi) {
   const CHECK_REQUESTS_TABLE = 'Check Requests';
   const NEW_VENDORS_TABLE = 'New Vendors';
 
+  billComIntegrationBase = airtableBase;
+
   // Get new Check Requests.
-  await billCom.primaryOrgLogin();
-  await billComIntegrationBase().select(
+  await billComApi.primaryOrgLogin();
+  await billComIntegrationBase.select(
       CHECK_REQUESTS_TABLE,
       'New',
       async (newCheckRequest) => {
@@ -40,12 +45,12 @@ export async function main() {
         let vendorId;
         if (newCheckRequest.get('New Vendor?')) {
           const newVendorId = newCheckRequest.get('New Vendor')[0];
-          await billComIntegrationBase().find(
+          await billComIntegrationBase.find(
               NEW_VENDORS_TABLE,
               newVendorId,
               async (newVendor) => {
                 const createVendorResponse =
-                    await billCom.commonDataCall(
+                    await billComApi.dataCall(
                         'Crud/Create/Vendor',
                         {
                           obj: {
@@ -63,12 +68,9 @@ export async function main() {
                         });
                 vendorId = createVendorResponse.id;
               });
-          await billComIntegrationBase().update(
+          await billComIntegrationBase.update(
               NEW_VENDORS_TABLE,
-              [{
-                id: newVendorId,
-                fields: {[airtable.primaryOrgBillComId()]: vendorId},
-              }]);
+              [{id: newVendorId, fields: {[primaryOrgBillComId()]: vendorId}}]);
         } else {
           vendorId =
               await getBillComId(
@@ -78,7 +80,7 @@ export async function main() {
         // Get the Check Request Line Items.
         const billComLineItems = [];
         for (const itemId of newCheckRequest.get('Line Items')) {
-          await billComIntegrationBase().find(
+          await billComIntegrationBase.find(
               'Check Request Line Items',
               itemId,
               async (item) => {
@@ -102,7 +104,7 @@ export async function main() {
 
         // Create Bill.com Bill based on Check Request.
         const createBillResponse =
-            await billCom.commonDataCall(
+            await billComApi.dataCall(
                 'Crud/Create/Bill',
                 {
                   obj: {
@@ -117,16 +119,16 @@ export async function main() {
 
         // Get and set the link (and ID) for the newly created Bill.com Bill.
         const getUrlResponse =
-            await billCom.commonDataCall(
+            await billComApi.dataCall(
                 'GetObjectUrl', {objectId: createBillResponse.id});
-        await billComIntegrationBase().update(
+        await billComIntegrationBase.update(
             CHECK_REQUESTS_TABLE,
             [{
               id: newCheckRequest.getId(),
               fields: {
                 'Active': true,
                 'Bill.com Link': getUrlResponse.url,
-                [airtable.primaryOrgBillComId()]: createBillResponse.id,
+                [primaryOrgBillComId()]: createBillResponse.id,
               },
             }]);
 
@@ -136,7 +138,7 @@ export async function main() {
             await Promise.all(
                 approverAirtableIds.map((aid) => getBillComId('Users', aid)));
         approverBillComIds.push(finalApproverUserId());
-        await billCom.commonDataCall(
+        await billComApi.dataCall(
             'SetApprovers',
             {
               objectId: createBillResponse.id,
@@ -146,15 +148,14 @@ export async function main() {
 
         // Upload the Supporting Documents.
         const data = new FormData();
-        data.set('devKey', billComDevKey());
-        data.set('sessionId', billCom.getSessionId());
+        data.set('devKey', billComApi.getDevKey());
+        data.set('sessionId', billComApi.getSessionId());
         for (const doc of newCheckRequest.get('Supporting Documents')) {
 
           // Fetch the document.
           const response = await fetch(doc.url);
           if (!response.ok) {
-            utils.fetchError(
-                response.status, doc.filename, response.statusText);
+            fetchError(response.status, doc.filename, response.statusText);
           }
 
           // Download it.
@@ -167,7 +168,7 @@ export async function main() {
               JSON.stringify(
                   {id: createBillResponse.id, fileName: doc.filename}));
 
-          await billCom.call('UploadAttachment', {}, data);
+          await apiCall('UploadAttachment', {}, data);
         }
       });
 }

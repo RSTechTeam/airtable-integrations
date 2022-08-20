@@ -5,7 +5,7 @@
  * https://github.com/Airtable/airtable.js
  */
 import Airtable from 'airtable';
-import * as utils from './utils.js';
+import {batchAsync} from './utils.js';
 import {primaryOrg, airtableApiKey, airtableBaseId} from './inputs.js';
 
 /** The Bill.com ID Field name suffix. */
@@ -39,7 +39,7 @@ function catchError(promise, querying, table) {
  * @return {!Promise<!Array<*>>}
  */
 function batch(func, array) {
-  return utils.batchAsync(func, array, 10);
+  return batchAsync(func, array, 10);
 }
 
 /** An Airtable Base to query. */
@@ -51,7 +51,7 @@ export class Base {
    */
   constructor(baseId = airtableBaseId(), apiKey = airtableApiKey()) {
 
-    /** @private {Base} */
+    /** @private @const {!Base} */
     this.base_ = new Airtable({apiKey: apiKey}).base(baseId);
   }
 
@@ -102,9 +102,4 @@ export class Base {
   find(table, id, func) {
     return catchError(this.base_(table).find(id).then(func), 'finding', table);
   }
-}
-
-/** @return {function(): Base} */
-export function getInputBase() {
-  return utils.lazyCache(() => new Base());
 }

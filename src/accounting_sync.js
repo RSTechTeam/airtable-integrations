@@ -1,29 +1,32 @@
 /** @fileoverview Syncs Bill.com Customers from Airtable to Bill.com. */
 
-import * as airtable from './airtable.js';
-import * as billCom from './bill_com.js';
+import {filter} from './bill_com.js';
 import {internalCustomerId} from './inputs.js';
+import {primaryOrgBillComId} from './airtable.js';
 
-export async function main() {
+/**
+ * @param {!Base} accountingBase
+ * @param {!Api} billComApi
+ */
+export async function main(accountingBase, billComApi) {
   const LCF_TABLE = 'Labor Charge Field (LCF) Mapping';
 
   // Initialize Bill.com Customer collection.
-  await billCom.primaryOrgLogin();
+  await billComApi.primaryOrgLogin();
   const billComCustomers =
-      await billCom.list(
+      await billComApi.list(
           'Customer',
-          [billCom.filter('parentCustomerId', '=', internalCustomerId())]);
+          [filter('parentCustomerId', '=', internalCustomerId())]);
   const billComCustomerIds = new Set();
   billComCustomers.forEach(c => billComCustomerIds.add(c.id));
 
   // Upsert every Bill.com Customer from the Bill.com Sync View.
-  const accountingBase = airtable.getInputBase();
   const updates = [];
-  await accountingBase().select(
+  await accountingBase.select(
       LCF_TABLE,
       'Bill.com Sync',
       async (record) => {
-        const id = record.get(airtable.primaryOrgBillComId());
+        const id = record.get(primaryOrgBillComId());
         const change = {
           obj: {
             entity: 'Customer',
@@ -37,12 +40,12 @@ export async function main() {
         // Insert/Create in Bill.com any record with no primary org Bill.com ID.
         if (id == undefined) {
           const response =
-              await billCom.commonDataCall('Crud/Create/Customer', change);
-          await accountingBase().update(
+              await billComApi.dataCall('Crud/Create/Customer', change);
+          await accountingBase.update(
               LCF_TABLE,
               [{
                 id: record.getId(),
-                fields: {[airtable.primaryOrgBillComId()]: response.id},
+                fields: {[primaryOrgBillComId()]: response.id},
               }]);
           return;
         }
@@ -57,5 +60,5 @@ export async function main() {
   for (const id of billComCustomerIds) {
     updates.push({obj: {entity: 'Customer', id: id, isActive: '2'}});
   }
-  await billCom.bulkCall('Update/Customer', updates);
+  await billComApi.bulkCall('Update/Customer', updates);
 }
