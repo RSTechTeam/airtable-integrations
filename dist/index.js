@@ -18460,7 +18460,7 @@ class Api {
         await this.call(
             'Login',
             `userName=${this.userName_}&password=${this.password_}` +
-                `&orgId=${this.orgIds.get(anchorEntity)}`);
+                `&orgId=${this.orgIds_.get(anchorEntity)}`);
     this.sessionId_ = loginResponse.sessionId;
   }
 
