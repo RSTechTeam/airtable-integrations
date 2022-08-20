@@ -18381,12 +18381,14 @@ class Base {
  * @param {string} endpoint 
  * @param {!Object<string, *>} headers
  * @param {(string|FormData)} body
+ * @param {boolean} test
  * @return {!Promise<!Object<string, *>>} endpoint-specific response_data.
  */
-async function apiCall(endpoint, headers, body) {
+async function apiCall(endpoint, headers, body, test = false) {
   const response =
       await (0,node_fetch__WEBPACK_IMPORTED_MODULE_4__/* ["default"] */ .ZP)(
-          `https://api.bill.com/api/v2/${endpoint}.json`,
+          `https://api${test ? '-sandbox' : ''}.bill.com/` +
+              `api/v2/${endpoint}.json`,
           {method: 'POST', headers: headers, body: body});
   const json = await response.json();
   (0,_github_actions_core_js__WEBPACK_IMPORTED_MODULE_3__/* .logJson */ .u2)(endpoint, json);

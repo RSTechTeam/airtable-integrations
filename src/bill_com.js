@@ -14,12 +14,14 @@ import {logJson} from './github_actions_core.js';
  * @param {string} endpoint 
  * @param {!Object<string, *>} headers
  * @param {(string|FormData)} body
+ * @param {boolean} test
  * @return {!Promise<!Object<string, *>>} endpoint-specific response_data.
  */
-export async function apiCall(endpoint, headers, body) {
+export async function apiCall(endpoint, headers, body, test = false) {
   const response =
       await fetch(
-          `https://api.bill.com/api/v2/${endpoint}.json`,
+          `https://api${test ? '-sandbox' : ''}.bill.com/` +
+              `api/v2/${endpoint}.json`,
           {method: 'POST', headers: headers, body: body});
   const json = await response.json();
   logJson(endpoint, json);
