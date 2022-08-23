@@ -18381,7 +18381,7 @@ class Base {
  * @param {string} endpoint 
  * @param {!Object<string, *>} headers
  * @param {(string|FormData)} body
- * @param {boolean} test
+ * @param {boolean=} test
  * @return {!Promise<!Object<string, *>>} endpoint-specific response_data.
  */
 async function apiCall(endpoint, headers, body, test = false) {
@@ -18418,8 +18418,9 @@ class Api {
    * @param {string} userName
    * @param {string} password
    * @param {string} devKey
+   * @param {boolean} test
    */
-  constructor(orgIds, userName, password, devKey) {
+  constructor(orgIds, userName, password, devKey, test) {
 
     /** @private @const {!Map<string, string>} */
     this.orgIds_ = orgIds;
@@ -18429,11 +18430,15 @@ class Api {
     /** @private @const {string} */
     this.password_ = password;
 
+    /** @private @const {boolena} */
+    this.test_ = test;
+
     /** @return {string} */
     this.getDevKey = () => devKey;
 
     /** 
-     * The ID of the Bill.com API session (after successful authentication).
+     * The ID of the current Bill.com API session
+     * (after successful authentication).
      * @private {?string}
      */
     this.sessionId_ = null;
@@ -18450,7 +18455,8 @@ class Api {
     return apiCall(
         endpoint,
         {'Content-Type': 'application/x-www-form-urlencoded'},
-        `devKey=${this.getDevKey()}&sessionId=${this.sessionId_}&${params}`);
+        `devKey=${this.getDevKey()}&sessionId=${this.sessionId_}&${params}`,
+        this.test_);
   }
 
   /** 
@@ -18466,7 +18472,10 @@ class Api {
     this.sessionId_ = loginResponse.sessionId;
   }
 
-  /** Login to access the primaryOrg's Bill.com API and receive a session ID. */
+  /**
+   * Login to access the primaryOrg's Bill.com API and receive a session ID.
+   * @return {!Promise<undefined>}
+   */
   primaryOrgLogin() {
     return this.login(_inputs_js__WEBPACK_IMPORTED_MODULE_0__/* .primaryOrg */ .uP());
   }
@@ -18516,20 +18525,22 @@ class Api {
  * @param {string=} userName
  * @param {string=} password
  * @param {string=} devKey
+ * @param {boolean=} test
  * @return {!Promise<!Api>}
  */
 async function getApi(
     baseId = _inputs_js__WEBPACK_IMPORTED_MODULE_0__/* .airtableOrgIdsBaseId */ .AG(),
     userName = _inputs_js__WEBPACK_IMPORTED_MODULE_0__/* .billComUserName */ .jv(),
     password = _inputs_js__WEBPACK_IMPORTED_MODULE_0__/* .billComPassword */ .Mr(),
-    devKey = _inputs_js__WEBPACK_IMPORTED_MODULE_0__/* .billComDevKey */ .Hc()) {
+    devKey = _inputs_js__WEBPACK_IMPORTED_MODULE_0__/* .billComDevKey */ .Hc(),
+    test = false) {
 
   const orgIds = new Map();
   await new _airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .Base */ .XY(baseId).select(
       'Anchor Entities',
       'Org IDs',
       (r) => orgIds.set(r.get('Department'), r.get('Bill.com Org ID')));
-  return new Api(orgIds, userName, password, devKey);
+  return new Api(orgIds, userName, password, devKey, test);
 }
 
 

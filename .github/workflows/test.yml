@@ -13,3 +13,7 @@ jobs:
         env:
           AIRTABLE_API_KEY: ${{ secrets.AIRTABLE_API_KEY }}
           AIRTABLE_BASE_ID: ${{ secrets.TEST_BASE_ID }}
+          AIRTABLE_ORG_IDS_BASE_ID: ${{ secrets.BILL_COM_INTEGRATION_BASE_ID }}
+          BILL_COM_DEV_KEY: ${{ secrets.BILL_COM_DEV_KEY }}
+          BILL_COM_USER_NAME: ${{ secrets.BILL_COM_USER_NAME }}
+          BILL_COM_PASSWORD: ${{ secrets.BILL_COM_PASSWORD }}

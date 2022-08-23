@@ -1,4 +1,4 @@
 #!/usr/bin/env sh
 . "$(dirname -- "$0")/_/husky.sh"
 
-npm test -- 'local/*' && npm run ncc-build && git add dist
+npm run ncc-build && npm test -- 'local/*' && git add dist

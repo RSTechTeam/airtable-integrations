@@ -14,7 +14,7 @@ import {logJson} from './github_actions_core.js';
  * @param {string} endpoint 
  * @param {!Object<string, *>} headers
  * @param {(string|FormData)} body
- * @param {boolean} test
+ * @param {boolean=} test
  * @return {!Promise<!Object<string, *>>} endpoint-specific response_data.
  */
 export async function apiCall(endpoint, headers, body, test = false) {
@@ -51,8 +51,9 @@ export class Api {
    * @param {string} userName
    * @param {string} password
    * @param {string} devKey
+   * @param {boolean} test
    */
-  constructor(orgIds, userName, password, devKey) {
+  constructor(orgIds, userName, password, devKey, test) {
 
     /** @private @const {!Map<string, string>} */
     this.orgIds_ = orgIds;
@@ -62,11 +63,15 @@ export class Api {
     /** @private @const {string} */
     this.password_ = password;
 
+    /** @private @const {boolena} */
+    this.test_ = test;
+
     /** @return {string} */
     this.getDevKey = () => devKey;
 
     /** 
-     * The ID of the Bill.com API session (after successful authentication).
+     * The ID of the current Bill.com API session
+     * (after successful authentication).
      * @private {?string}
      */
     this.sessionId_ = null;
@@ -83,7 +88,8 @@ export class Api {
     return apiCall(
         endpoint,
         {'Content-Type': 'application/x-www-form-urlencoded'},
-        `devKey=${this.getDevKey()}&sessionId=${this.sessionId_}&${params}`);
+        `devKey=${this.getDevKey()}&sessionId=${this.sessionId_}&${params}`,
+        this.test_);
   }
 
   /** 
@@ -99,7 +105,10 @@ export class Api {
     this.sessionId_ = loginResponse.sessionId;
   }
 
-  /** Login to access the primaryOrg's Bill.com API and receive a session ID. */
+  /**
+   * Login to access the primaryOrg's Bill.com API and receive a session ID.
+   * @return {!Promise<undefined>}
+   */
   primaryOrgLogin() {
     return this.login(inputs.primaryOrg());
   }
@@ -149,18 +158,20 @@ export class Api {
  * @param {string=} userName
  * @param {string=} password
  * @param {string=} devKey
+ * @param {boolean=} test
  * @return {!Promise<!Api>}
  */
 export async function getApi(
     baseId = inputs.airtableOrgIdsBaseId(),
     userName = inputs.billComUserName(),
     password = inputs.billComPassword(),
-    devKey = inputs.billComDevKey()) {
+    devKey = inputs.billComDevKey(),
+    test = false) {
 
   const orgIds = new Map();
   await new Base(baseId).select(
       'Anchor Entities',
       'Org IDs',
       (r) => orgIds.set(r.get('Department'), r.get('Bill.com Org ID')));
-  return new Api(orgIds, userName, password, devKey);
+  return new Api(orgIds, userName, password, devKey, test);
 }
