@@ -18530,13 +18530,14 @@ class Api {
  */
 async function getApi(
     baseId = _inputs_js__WEBPACK_IMPORTED_MODULE_0__/* .airtableOrgIdsBaseId */ .AG(),
+    apiKey = _inputs_js__WEBPACK_IMPORTED_MODULE_0__/* .airtableApiKey */ .Bd(),
     userName = _inputs_js__WEBPACK_IMPORTED_MODULE_0__/* .billComUserName */ .jv(),
     password = _inputs_js__WEBPACK_IMPORTED_MODULE_0__/* .billComPassword */ .Mr(),
     devKey = _inputs_js__WEBPACK_IMPORTED_MODULE_0__/* .billComDevKey */ .Hc(),
     test = false) {
 
   const orgIds = new Map();
-  await new _airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .Base */ .XY(baseId).select(
+  await new _airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .Base */ .XY(baseId, apiKey).select(
       'Anchor Entities',
       'Org IDs',
       (r) => orgIds.set(r.get('Department'), r.get('Bill.com Org ID')));

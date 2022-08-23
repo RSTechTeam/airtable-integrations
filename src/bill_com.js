@@ -163,13 +163,14 @@ export class Api {
  */
 export async function getApi(
     baseId = inputs.airtableOrgIdsBaseId(),
+    apiKey = inputs.airtableApiKey(),
     userName = inputs.billComUserName(),
     password = inputs.billComPassword(),
     devKey = inputs.billComDevKey(),
     test = false) {
 
   const orgIds = new Map();
-  await new Base(baseId).select(
+  await new Base(baseId, apiKey).select(
       'Anchor Entities',
       'Org IDs',
       (r) => orgIds.set(r.get('Department'), r.get('Bill.com Org ID')));
