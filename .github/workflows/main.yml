@@ -33,7 +33,9 @@ jobs:
           echo "::set-output name=id::$id"
       - uses: RSMvmtTech/Bill.com-Airtable-Integration@main
         env:
-          BASE_IDS: (${{ secrets.BILL_COM_INTEGRATION_BASE_ID }} ${{ secrets.ACCOUNTING_TERMINOLOGY_INDEX_BASE_ID }})
+          BASE_IDS:
+            - ${{ secrets.BILL_COM_INTEGRATION_BASE_ID }}
+            - ${{ secrets.ACCOUNTING_TERMINOLOGY_INDEX_BASE_ID }}
         with:
           file-id: ${{ matrix.file-id }}
           primary-org: 'RS'
