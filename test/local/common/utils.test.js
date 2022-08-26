@@ -1,4 +1,4 @@
-import * as utils from '../../src/utils.js';
+import * as utils from '../../../src/common/utils.js';
 import {jest} from '@jest/globals';
 
 describe('lazyCache', () => {

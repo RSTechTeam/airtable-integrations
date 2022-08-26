@@ -1,4 +1,4 @@
-import * as airtable from '../../src/airtable.js';
+import * as airtable from '../../../src/common/airtable.js';
 
 const base =
     new airtable.Base(

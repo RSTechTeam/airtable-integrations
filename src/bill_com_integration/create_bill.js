@@ -1,10 +1,10 @@
 /** @fileoverview Creates a Bill.com Bill based on a new Check Request. */
 
 import fetch from 'node-fetch';
-import {apiCall} from './bill_com.js';
-import {Base, primaryOrgBillComId} from './airtable.js';
-import {fetchError} from './utils.js';
-import {finalApproverUserId} from './inputs.js';
+import {apiCall} from '../common/bill_com.js';
+import {Base, primaryOrgBillComId} from '../common/airtable.js';
+import {fetchError} from '../common/utils.js';
+import {finalApproverUserId} from '../common/inputs.js';
 import {FormData} from 'formdata-node';
 
 /** The Bill.com Integration Airtable Base. */

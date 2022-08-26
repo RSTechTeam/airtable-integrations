@@ -1,8 +1,8 @@
 /** @fileoverview Syncs Bill.com Customers from Airtable to Bill.com. */
 
-import {filter} from './bill_com.js';
-import {internalCustomerId} from './inputs.js';
-import {Base, primaryOrgBillComId} from './airtable.js';
+import {filter} from '../common/bill_com.js';
+import {internalCustomerId} from '../common/inputs.js';
+import {Base, primaryOrgBillComId} from '../common/airtable.js';
 
 /**
  * @param {!Api} billComApi

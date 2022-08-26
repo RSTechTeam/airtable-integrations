@@ -3,8 +3,8 @@
  * (e.g., Vendors, Chart of Accounts) into Airtable.
  */
 
-import {Base, BILL_COM_ID_SUFFIX, primaryOrgBillComId} from './airtable.js';
-import {filter} from './bill_com.js';
+import {Base, BILL_COM_ID_SUFFIX, primaryOrgBillComId} from '../common/airtable.js';
+import {filter} from '../common/bill_com.js';
 
 /** Bill.com Bill Approval Statuses. */
 const approvalStatuses = new Map([

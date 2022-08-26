@@ -12,7 +12,7 @@ jobs:
       max-parallel: 1
       fail-fast: false
       matrix:
-        filename: [
+        file-id: [
           'accounting_sync',
           'bill_com_integration_sync',
           'bill_com_integration_create_bill',
@@ -21,7 +21,7 @@ jobs:
     steps:
       - id: get-airtable-base-id
         run: |
-          if [ ${{ startsWith(matrix.filename, 'accounting') }} = true ] ; then
+          if [ ${{ startsWith(matrix.file-id, 'accounting') }} = true ] ; then
             id=${{ secrets.ACCOUNTING_TERMINOLOGY_INDEX_BASE_ID }}
           else
             id=${{ secrets.BILL_COM_INTEGRATION_BASE_ID }}
@@ -29,7 +29,7 @@ jobs:
           echo "::set-output name=id::$id"
       - uses: RSMvmtTech/Bill.com-Airtable-Integration@main
         with:
-          filename: ${{ matrix.filename }}
+          file-id: ${{ matrix.file-id }}
           primary-org: 'RS'
           airtable-api-key: ${{ secrets.AIRTABLE_API_KEY }}
           airtable-base-id: ${{ steps.get-airtable-base-id.outputs.id }}

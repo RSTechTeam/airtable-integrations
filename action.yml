@@ -1,8 +1,8 @@
 name: 'Bill.com x Airtable Action'
-description: 'Run a Javascript program that uses bill_com.js and airtable.js'
+description: 'Run a Javascript program that uses airtable.js and bill_com.js'
 inputs:
-  filename:
-    description: 'The Javascript file name (without the extension)'
+  file-id:
+    description: 'The Javascript file ID'
     required: true
   primary-org:
     description: 'The primary Bill.com Org'

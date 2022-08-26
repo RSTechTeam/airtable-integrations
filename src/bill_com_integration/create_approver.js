@@ -1,7 +1,7 @@
 /** @fileoverview Creates a Bill.com Electronic Check Request Approver. */
 
-import {Base} from './airtable.js';
-import {ecrApproverUserProfileId} from './inputs.js';
+import {Base} from '../common/airtable.js';
+import {ecrApproverUserProfileId} from '../common/inputs.js';
 
 /**
  * @param {!Api} billComApi
