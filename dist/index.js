@@ -18814,6 +18814,9 @@ async function main(billComApi, airtableBase = new airtable/* Base */.XY()) {
                     invoiceNumber: newCheckRequest.get('Vendor Invoice ID'),
                     invoiceDate: newCheckRequest.get('Expense Date'),
                     dueDate: newCheckRequest.get('Due Date'),
+                    description:
+                      `Submitted by ${newCheckRequest.get('Requester Name')}` +
+                          ` (${newCheckRequest.get('Requester Email')}).`,
                     billLineItems: billComLineItems,
                   }
                 });
