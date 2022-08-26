@@ -17,7 +17,7 @@ test('getApi', async () => {
   expect(billComApi.getSessionId()).toBeNull();
 });
 
-test.skip('login', async () => {
+test('login', async () => {
   await billComApi.login('RS');
   expect(billComApi.getSessionId()).not.toBeNull();
 });
