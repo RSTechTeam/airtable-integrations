@@ -18,6 +18,10 @@ jobs:
           'bill_com_integration_create_bill',
           'bill_com_integration_create_approver',
         ]
+        include:
+          - base-id-index: 0
+          - base-id-index: 1
+            file-id: 'accounting_sync'
     steps:
       - id: get-airtable-base-id
         run: |
@@ -28,11 +32,15 @@ jobs:
           fi
           echo "::set-output name=id::$id"
       - uses: RSMvmtTech/Bill.com-Airtable-Integration@main
+        env:
+          BASE_IDS:
+            - ${{ secrets.BILL_COM_INTEGRATION_BASE_ID }}
+            - ${{ secrets.ACCOUNTING_TERMINOLOGY_INDEX_BASE_ID }}
         with:
           file-id: ${{ matrix.file-id }}
           primary-org: 'RS'
           airtable-api-key: ${{ secrets.AIRTABLE_API_KEY }}
-          airtable-base-id: ${{ steps.get-airtable-base-id.outputs.id }}
+          airtable-base-id: ${{ env.BASE_IDS[matrix.base-id-index] }}
           airtable-org-ids-base-id: ${{ secrets.BILL_COM_INTEGRATION_BASE_ID }}
           bill-com-dev-key: ${{ secrets.BILL_COM_DEV_KEY }}
           bill-com-user-name: ${{ secrets.BILL_COM_USER_NAME }}
