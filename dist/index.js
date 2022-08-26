@@ -18757,24 +18757,17 @@ async function main(billComApi, airtableBase = new airtable/* Base */.XY()) {
               NEW_VENDORS_TABLE,
               newVendorId,
               async (newVendor) => {
-                const createVendorResponse =
-                    await billComApi.dataCall(
-                        'Crud/Create/Vendor',
-                        {
-                          obj: {
-                            entity: 'Vendor',
-                            name: encodeURIComponent(newVendor.get('Name')),
-                            address1: newVendor.get('Address Line 1'),
-                            address2: newVendor.get('Address Line 2'),
-                            addressCity: newVendor.get('City'),
-                            addressState: newVendor.get('State'),
-                            addressZip: newVendor.get('Zip Code').toString(),
-                            addressCountry: newVendor.get('Country'),
-                            email: newVendor.get('Email'),
-                            phone: newVendor.get('Phone'),
-                          }
-                        });
-                vendorId = createVendorResponse.id;
+                vendorId =
+                    await billComApi.createVendor(
+                        newVendor.get('Name'),
+                        newVendor.get('Address Line 1'),
+                        newVendor.get('Address Line 2'),
+                        newVendor.get('City'),
+                        newVendor.get('State'),
+                        newVendor.get('Zip Code').toString(),
+                        newVendor.get('Country'),
+                        newVendor.get('Email'),
+                        newVendor.get('Phone'));
               });
           await billComIntegrationBase.update(
               NEW_VENDORS_TABLE,
@@ -19493,6 +19486,41 @@ class Api {
       if (response.length < MAX) break;
     }
     return fullList;
+  }
+
+  /**
+   * @param {string} name
+   * @param {string} address1 - Address line 1
+   * @param {string} address2 - Address line 2
+   * @param {string} city
+   * @param {string} state - The 2 letter postal abbreviation.
+   * @param {string} zip
+   * @param {string} country - The 2 letter ISO alpha-2 code, except USA.
+   * @param {string} email
+   * @param {string} phone
+   * @return {!Promise<string>} The newly created vendor ID.
+   */
+  async createVendor(
+      name, address1, address2, city, state, zip, country, email, phone) {
+
+    const response =
+        await this.dataCall(
+            'Crud/Create/Vendor',
+            {
+              obj: {
+                entity: 'Vendor',
+                name: encodeURIComponent(name),
+                address1: address1,
+                address2: address2,
+                addressCity: city,
+                addressState: state,
+                addressZip: zip,
+                addressCountry: country,
+                email: email,
+                phone: phone,
+              }
+            });
+    return response.id;
   }
 
   /**

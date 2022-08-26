@@ -49,24 +49,17 @@ export async function main(billComApi, airtableBase = new Base()) {
               NEW_VENDORS_TABLE,
               newVendorId,
               async (newVendor) => {
-                const createVendorResponse =
-                    await billComApi.dataCall(
-                        'Crud/Create/Vendor',
-                        {
-                          obj: {
-                            entity: 'Vendor',
-                            name: encodeURIComponent(newVendor.get('Name')),
-                            address1: newVendor.get('Address Line 1'),
-                            address2: newVendor.get('Address Line 2'),
-                            addressCity: newVendor.get('City'),
-                            addressState: newVendor.get('State'),
-                            addressZip: newVendor.get('Zip Code').toString(),
-                            addressCountry: newVendor.get('Country'),
-                            email: newVendor.get('Email'),
-                            phone: newVendor.get('Phone'),
-                          }
-                        });
-                vendorId = createVendorResponse.id;
+                vendorId =
+                    await billComApi.createVendor(
+                        newVendor.get('Name'),
+                        newVendor.get('Address Line 1'),
+                        newVendor.get('Address Line 2'),
+                        newVendor.get('City'),
+                        newVendor.get('State'),
+                        newVendor.get('Zip Code').toString(),
+                        newVendor.get('Country'),
+                        newVendor.get('Email'),
+                        newVendor.get('Phone'));
               });
           await billComIntegrationBase.update(
               NEW_VENDORS_TABLE,

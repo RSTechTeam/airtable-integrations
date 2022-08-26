@@ -141,6 +141,41 @@ export class Api {
   }
 
   /**
+   * @param {string} name
+   * @param {string} address1 - Address line 1
+   * @param {string} address2 - Address line 2
+   * @param {string} city
+   * @param {string} state - The 2 letter postal abbreviation.
+   * @param {string} zip
+   * @param {string} country - The 2 letter ISO alpha-2 code, except USA.
+   * @param {string} email
+   * @param {string} phone
+   * @return {!Promise<string>} The newly created vendor ID.
+   */
+  async createVendor(
+      name, address1, address2, city, state, zip, country, email, phone) {
+
+    const response =
+        await this.dataCall(
+            'Crud/Create/Vendor',
+            {
+              obj: {
+                entity: 'Vendor',
+                name: encodeURIComponent(name),
+                address1: address1,
+                address2: address2,
+                addressCity: city,
+                addressState: state,
+                addressZip: zip,
+                addressCountry: country,
+                email: email,
+                phone: phone,
+              }
+            });
+    return response.id;
+  }
+
+  /**
    * @param {string} endpoint
    * @param {!Object<string, *>[]} data
    * @return {!Promise<!Object<string, *>[]>}
