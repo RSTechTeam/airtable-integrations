@@ -19098,12 +19098,13 @@ async function syncCustomers(anchorEntity) {
         const id = record.get(billComId);
         const hasAnchorEntityId = id != undefined;
         const email = record.get('Email');
+        const name = record.get('Name');
         const change = {
           obj: {
             entity: 'Customer',
             email: email,
             isActive: isActive ? '1' : '2',
-            name: encodeURIComponent(r.name),
+            name: encodeURIComponent(name),
           }
         }
 
@@ -19127,7 +19128,9 @@ async function syncCustomers(anchorEntity) {
           const billComEmail = billComCustomerMap.get(id).email;
           if (billComEmail != null) {
             change.obj.email = billComEmail;
-            airtableUpdates.push({id: r.id, fields: {'Email': billComEmail}});
+            airtableUpdates.push({
+              id: record.getId(), fields: {'Email': billComEmail},
+            });
           }
         }
 
@@ -19135,7 +19138,7 @@ async function syncCustomers(anchorEntity) {
         billComCustomerMap.delete(id);
 
         // Temporarily skip Customers with long names.
-        if (r.name.length > 41) return;
+        if (name.length > 41) return;
 
         change.obj.id = id;
         billComUpdates.push(change);
