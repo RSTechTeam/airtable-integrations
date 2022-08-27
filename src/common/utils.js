@@ -2,6 +2,9 @@
 
 import assert from 'node:assert/strict';
 
+/** The Primary Bill.com Org. */
+export const PRIMARY_ORG = 'RS';
+
 /**
  * @param {function(): *} producer
  * @return {function(): *} producer's result, lazily evaluated and cached

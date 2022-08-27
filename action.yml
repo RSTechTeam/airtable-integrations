@@ -4,9 +4,6 @@ inputs:
   file-id:
     description: 'The Javascript file ID'
     required: true
-  primary-org:
-    description: 'The primary Bill.com Org'
-    required: true
   airtable-api-key:
     description: 'The Airtable API key to use for Airtable interactions'
     required: true

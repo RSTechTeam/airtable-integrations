@@ -3,7 +3,7 @@
  * (e.g., Vendors, Chart of Accounts) into Airtable.
  */
 
-import {Base, BILL_COM_ID_SUFFIX, primaryOrgBillComId} from '../common/airtable.js';
+import {Base, BILL_COM_ID_SUFFIX, PRIMARY_ORG_BILL_COM_ID} from '../common/airtable.js';
 import {filter} from '../common/bill_com.js';
 
 /** Bill.com Bill Approval Statuses. */
@@ -48,7 +48,7 @@ function processBulkResponses(bulkResponses, func) {
  */
 async function syncUnpaid(table, entity) {
   const billComId =
-      entity === 'Bill' ? primaryOrgBillComId() : BILL_COM_ID_SUFFIX;
+      entity === 'Bill' ? PRIMARY_ORG_BILL_COM_ID : BILL_COM_ID_SUFFIX;
   
   const billComIds = [];
   const airtableIds = [];
@@ -119,7 +119,7 @@ async function sync(entity, table, syncFunc) {
       table,
       '',
       (record) => {
-        const id = record.get(primaryOrgBillComId());
+        const id = record.get(PRIMARY_ORG_BILL_COM_ID);
         updates.push({
           id: record.getId(),
           fields: changes.has(id) ? changes.get(id) : {'Active': false},
@@ -131,7 +131,7 @@ async function sync(entity, table, syncFunc) {
   // Create new table records from new entity data.
   const creates = [];
   for (const [id, data] of changes) {
-    data[primaryOrgBillComId()] = id;
+    data[PRIMARY_ORG_BILL_COM_ID] = id;
     creates.push({fields: data});
   }
   await billComIntegrationBase.create(table, creates);
@@ -282,7 +282,7 @@ async function syncCustomers(anchorEntity) {
         Name: customer.name,
         Email: customer.email,
         [BILL_COM_ID]: id,
-        [primaryOrgBillComId()]: response.id,
+        [PRIMARY_ORG_BILL_COM_ID]: response.id,
       }
     });
   }

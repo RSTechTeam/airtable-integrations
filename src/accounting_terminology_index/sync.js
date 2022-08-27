@@ -2,7 +2,7 @@
 
 import {filter} from '../common/bill_com.js';
 import {internalCustomerId} from '../common/inputs.js';
-import {Base, primaryOrgBillComId} from '../common/airtable.js';
+import {Base, PRIMARY_ORG_BILL_COM_ID} from '../common/airtable.js';
 
 /**
  * @param {!Api} billComApi
@@ -26,7 +26,7 @@ export async function main(billComApi, accountingBase = new Base()) {
       LCF_TABLE,
       'Bill.com Sync',
       async (record) => {
-        const id = record.get(primaryOrgBillComId());
+        const id = record.get(PRIMARY_ORG_BILL_COM_ID);
         const change = {
           obj: {
             entity: 'Customer',
@@ -45,7 +45,7 @@ export async function main(billComApi, accountingBase = new Base()) {
               LCF_TABLE,
               [{
                 id: record.getId(),
-                fields: {[primaryOrgBillComId()]: response.id},
+                fields: {[PRIMARY_ORG_BILL_COM_ID]: response.id},
               }]);
           return;
         }

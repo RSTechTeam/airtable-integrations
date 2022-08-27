@@ -18191,7 +18191,7 @@ async function main(billComApi, accountingBase = new _common_airtable_js__WEBPAC
       LCF_TABLE,
       'Bill.com Sync',
       async (record) => {
-        const id = record.get((0,_common_airtable_js__WEBPACK_IMPORTED_MODULE_2__/* .primaryOrgBillComId */ .Z1)());
+        const id = record.get(_common_airtable_js__WEBPACK_IMPORTED_MODULE_2__/* .PRIMARY_ORG_BILL_COM_ID */ .bB);
         const change = {
           obj: {
             entity: 'Customer',
@@ -18210,7 +18210,7 @@ async function main(billComApi, accountingBase = new _common_airtable_js__WEBPAC
               LCF_TABLE,
               [{
                 id: record.getId(),
-                fields: {[(0,_common_airtable_js__WEBPACK_IMPORTED_MODULE_2__/* .primaryOrgBillComId */ .Z1)()]: response.id},
+                fields: {[_common_airtable_js__WEBPACK_IMPORTED_MODULE_2__/* .PRIMARY_ORG_BILL_COM_ID */ .bB]: response.id},
               }]);
           return;
         }
@@ -18728,7 +18728,7 @@ async function getBillComId(table, airtableId) {
   await billComIntegrationBase.find(
       table,
       airtableId,
-      (record) => billComId = record.get((0,airtable/* primaryOrgBillComId */.Z1)()));
+      (record) => billComId = record.get(airtable/* PRIMARY_ORG_BILL_COM_ID */.bB));
   return billComId;
 }
 
@@ -18771,7 +18771,10 @@ async function main(billComApi, airtableBase = new airtable/* Base */.XY()) {
               });
           await billComIntegrationBase.update(
               NEW_VENDORS_TABLE,
-              [{id: newVendorId, fields: {[(0,airtable/* primaryOrgBillComId */.Z1)()]: vendorId}}]);
+              [{
+                id: newVendorId,
+                fields: {[airtable/* PRIMARY_ORG_BILL_COM_ID */.bB]: vendorId},
+              }]);
         } else {
           vendorId =
               await getBillComId(
@@ -18832,7 +18835,7 @@ async function main(billComApi, airtableBase = new airtable/* Base */.XY()) {
               fields: {
                 'Active': true,
                 'Bill.com Link': getUrlResponse.url,
-                [(0,airtable/* primaryOrgBillComId */.Z1)()]: createBillResponse.id,
+                [airtable/* PRIMARY_ORG_BILL_COM_ID */.bB]: createBillResponse.id,
               },
             }]);
 
@@ -18939,7 +18942,7 @@ function processBulkResponses(bulkResponses, func) {
  */
 async function syncUnpaid(table, entity) {
   const billComId =
-      entity === 'Bill' ? (0,_common_airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .primaryOrgBillComId */ .Z1)() : _common_airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .BILL_COM_ID_SUFFIX */ .dK;
+      entity === 'Bill' ? _common_airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .PRIMARY_ORG_BILL_COM_ID */ .bB : _common_airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .BILL_COM_ID_SUFFIX */ .dK;
   
   const billComIds = [];
   const airtableIds = [];
@@ -19010,7 +19013,7 @@ async function sync(entity, table, syncFunc) {
       table,
       '',
       (record) => {
-        const id = record.get((0,_common_airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .primaryOrgBillComId */ .Z1)());
+        const id = record.get(_common_airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .PRIMARY_ORG_BILL_COM_ID */ .bB);
         updates.push({
           id: record.getId(),
           fields: changes.has(id) ? changes.get(id) : {'Active': false},
@@ -19022,7 +19025,7 @@ async function sync(entity, table, syncFunc) {
   // Create new table records from new entity data.
   const creates = [];
   for (const [id, data] of changes) {
-    data[(0,_common_airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .primaryOrgBillComId */ .Z1)()] = id;
+    data[_common_airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .PRIMARY_ORG_BILL_COM_ID */ .bB] = id;
     creates.push({fields: data});
   }
   await billComIntegrationBase.create(table, creates);
@@ -19173,7 +19176,7 @@ async function syncCustomers(anchorEntity) {
         Name: customer.name,
         Email: customer.email,
         [BILL_COM_ID]: id,
-        [primaryOrgBillComId()]: response.id,
+        [PRIMARY_ORG_BILL_COM_ID]: response.id,
       }
     });
   }
@@ -19220,7 +19223,7 @@ async function main (api, airtableBase = new _common_airtable_js__WEBPACK_IMPORT
 
 /* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
 /* harmony export */   "dK": () => (/* binding */ BILL_COM_ID_SUFFIX),
-/* harmony export */   "Z1": () => (/* binding */ primaryOrgBillComId),
+/* harmony export */   "bB": () => (/* binding */ PRIMARY_ORG_BILL_COM_ID),
 /* harmony export */   "XY": () => (/* binding */ Base)
 /* harmony export */ });
 /* harmony import */ var airtable__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(5447);
@@ -19240,9 +19243,7 @@ async function main (api, airtableBase = new _common_airtable_js__WEBPACK_IMPORT
 const BILL_COM_ID_SUFFIX = 'Bill.com ID';
 
 /** The primary Org Bill.com ID Field name. */
-const primaryOrgBillComId = () => {
-  return `${(0,_inputs_js__WEBPACK_IMPORTED_MODULE_2__/* .primaryOrg */ .uP)()} ${BILL_COM_ID_SUFFIX}`;
-}
+const PRIMARY_ORG_BILL_COM_ID = `${_utils_js__WEBPACK_IMPORTED_MODULE_1__/* .PRIMARY_ORG */ .l3} ${BILL_COM_ID_SUFFIX}`;
 
 /**
  * @param {!Promise<*>} promise
@@ -19457,11 +19458,11 @@ class Api {
   }
 
   /**
-   * Login to access the primaryOrg's Bill.com API and receive a session ID.
+   * Login to access the primary org's Bill.com API and receive a session ID.
    * @return {!Promise<undefined>}
    */
   primaryOrgLogin() {
-    return this.login(_inputs_js__WEBPACK_IMPORTED_MODULE_0__/* .primaryOrg */ .uP());
+    return this.login(_utils_js__WEBPACK_IMPORTED_MODULE_2__/* .PRIMARY_ORG */ .l3);
   }
 
   /**
@@ -19650,7 +19651,6 @@ function logJson(endpoint, json) {
 
 /* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
 /* harmony export */   "o8": () => (/* binding */ fileId),
-/* harmony export */   "uP": () => (/* binding */ primaryOrg),
 /* harmony export */   "Bd": () => (/* binding */ airtableApiKey),
 /* harmony export */   "kt": () => (/* binding */ airtableBaseId),
 /* harmony export */   "AG": () => (/* binding */ airtableOrgIdsBaseId),
@@ -19671,7 +19671,6 @@ function logJson(endpoint, json) {
 
 /** @type function(): string */
 const fileId = (0,_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .getInput */ .Np)('file-id');
-const primaryOrg = (0,_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .getInput */ .Np)('primary-org');
 const airtableApiKey = (0,_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .getInput */ .Np)('airtable-api-key');
 const airtableBaseId = (0,_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .getInput */ .Np)('airtable-base-id');
 const airtableOrgIdsBaseId = (0,_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .getInput */ .Np)('airtable-org-ids-base-id');
@@ -19692,6 +19691,7 @@ const finalApproverUserId = (0,_github_actions_core_js__WEBPACK_IMPORTED_MODULE_
 
 // EXPORTS
 __nccwpck_require__.d(__webpack_exports__, {
+  "l3": () => (/* binding */ PRIMARY_ORG),
   "aE": () => (/* binding */ batchAsync),
   "rE": () => (/* binding */ batchAwait),
   "Tl": () => (/* binding */ fetchError),
@@ -19704,6 +19704,9 @@ const strict_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)
 /** @fileoverview Shared code for Bill.com x Airtable Repository. */
 
 
+
+/** The Primary Bill.com Org. */
+const PRIMARY_ORG = 'RS';
 
 /**
  * @param {function(): *} producer

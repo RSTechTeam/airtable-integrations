@@ -7,7 +7,7 @@
 import fetch from 'node-fetch';
 import * as inputs from './inputs.js';
 import {Base} from './airtable.js';
-import {batchAwait, fetchError} from './utils.js';
+import {batchAwait, fetchError, PRIMARY_ORG} from './utils.js';
 import {logJson} from './github_actions_core.js';
 
 /**
@@ -106,11 +106,11 @@ export class Api {
   }
 
   /**
-   * Login to access the primaryOrg's Bill.com API and receive a session ID.
+   * Login to access the primary org's Bill.com API and receive a session ID.
    * @return {!Promise<undefined>}
    */
   primaryOrgLogin() {
-    return this.login(inputs.primaryOrg());
+    return this.login(PRIMARY_ORG);
   }
 
   /**
