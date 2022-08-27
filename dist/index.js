@@ -18944,7 +18944,7 @@ function processBulkResponses(bulkResponses, func) {
  * @return {!Promise<undefined>}
  */
 async function syncUnpaid(table, entity) {
-  const billComId =
+  const BILL_COM_ID =
       entity === 'Bill' ? _common_airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .PRIMARY_ORG_BILL_COM_ID */ .bB : _common_airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .BILL_COM_ID_SUFFIX */ .dK;
   
   const billComIds = [];
@@ -18953,7 +18953,7 @@ async function syncUnpaid(table, entity) {
       table,
       'Unpaid',
       (record) => {
-        billComIds.push({id: record.get(billComId)});
+        billComIds.push({id: record.get(BILL_COM_ID)});
         airtableIds.push(record.getId());
        });
   if (billComIds.length === 0) return;
@@ -19075,7 +19075,7 @@ function vendorName(name, city, state) {
  */
 async function syncCustomers(anchorEntity) {
   const ALL_CUSTOMERS_TABLE = 'All Customers';
-  const billComId = `${anchorEntity} ${_common_airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .BILL_COM_ID_SUFFIX */ .dK}`;
+  const BILL_COM_ID = `${anchorEntity} ${_common_airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .BILL_COM_ID_SUFFIX */ .dK}`;
 
   await billComApi.login(anchorEntity);
 
@@ -19095,7 +19095,7 @@ async function syncCustomers(anchorEntity) {
       '',
       (record) => {
         const isActive = record.get('Active');
-        const id = record.get(billComId);
+        const id = record.get(BILL_COM_ID);
         const hasAnchorEntityId = id != undefined;
         const email = record.get('Email');
         const name = record.get('Name');
@@ -19153,7 +19153,7 @@ async function syncCustomers(anchorEntity) {
         (r, i) => {
           airtableUpdates.push({
             id: airtableUpdateIds[i],
-            fields: {[billComId]: r.id},
+            fields: {[BILL_COM_ID]: r.id},
           });
         });
   }

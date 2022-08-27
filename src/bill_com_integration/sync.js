@@ -47,7 +47,7 @@ function processBulkResponses(bulkResponses, func) {
  * @return {!Promise<undefined>}
  */
 async function syncUnpaid(table, entity) {
-  const billComId =
+  const BILL_COM_ID =
       entity === 'Bill' ? PRIMARY_ORG_BILL_COM_ID : BILL_COM_ID_SUFFIX;
   
   const billComIds = [];
@@ -56,7 +56,7 @@ async function syncUnpaid(table, entity) {
       table,
       'Unpaid',
       (record) => {
-        billComIds.push({id: record.get(billComId)});
+        billComIds.push({id: record.get(BILL_COM_ID)});
         airtableIds.push(record.getId());
        });
   if (billComIds.length === 0) return;
@@ -178,7 +178,7 @@ function vendorName(name, city, state) {
  */
 async function syncCustomers(anchorEntity) {
   const ALL_CUSTOMERS_TABLE = 'All Customers';
-  const billComId = `${anchorEntity} ${BILL_COM_ID_SUFFIX}`;
+  const BILL_COM_ID = `${anchorEntity} ${BILL_COM_ID_SUFFIX}`;
 
   await billComApi.login(anchorEntity);
 
@@ -198,7 +198,7 @@ async function syncCustomers(anchorEntity) {
       '',
       (record) => {
         const isActive = record.get('Active');
-        const id = record.get(billComId);
+        const id = record.get(BILL_COM_ID);
         const hasAnchorEntityId = id != undefined;
         const email = record.get('Email');
         const name = record.get('Name');
@@ -256,7 +256,7 @@ async function syncCustomers(anchorEntity) {
         (r, i) => {
           airtableUpdates.push({
             id: airtableUpdateIds[i],
-            fields: {[billComId]: r.id},
+            fields: {[BILL_COM_ID]: r.id},
           });
         });
   }
