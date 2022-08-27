@@ -19075,7 +19075,7 @@ function vendorName(name, city, state) {
  */
 async function syncCustomers(anchorEntity) {
   const ALL_CUSTOMERS_TABLE = 'All Customers';
-  const billComId = `${anchorEntity} ${BILL_COM_ID_SUFFIX}`;
+  const billComId = `${anchorEntity} ${_common_airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .BILL_COM_ID_SUFFIX */ .dK}`;
 
   await billComApi.login(anchorEntity);
 
@@ -19096,7 +19096,7 @@ async function syncCustomers(anchorEntity) {
       (record) => {
         const isActive = record.get('Active');
         const id = record.get(billComId);
-        const hasAnchorEntityId = id != null;
+        const hasAnchorEntityId = id != undefined;
         const email = record.get('Email');
         const change = {
           obj: {
@@ -19123,7 +19123,7 @@ async function syncCustomers(anchorEntity) {
         }
 
         // Set email address in Airtable if empty but present in Bill.com.
-        if (email == null && billComCustomerMap.has(id)) {
+        if (email == undefined && billComCustomerMap.has(id)) {
           const billComEmail = billComCustomerMap.get(id).email;
           if (billComEmail != null) {
             change.obj.email = billComEmail;
@@ -19179,7 +19179,7 @@ async function syncCustomers(anchorEntity) {
         Name: customer.name,
         Email: customer.email,
         [BILL_COM_ID]: id,
-        [PRIMARY_ORG_BILL_COM_ID]: response.id,
+        [_common_airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .PRIMARY_ORG_BILL_COM_ID */ .bB]: response.id,
       }
     });
   }
@@ -19217,6 +19217,7 @@ async function main (api, airtableBase = new _common_airtable_js__WEBPACK_IMPORT
         'Name': `${o.firstName} ${o.lastName} (${o.email})`,
         'Profile ID': o.profileId,
       }));
+  await syncCustomers('CPASF');
 }
 
 

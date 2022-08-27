@@ -199,7 +199,7 @@ async function syncCustomers(anchorEntity) {
       (record) => {
         const isActive = record.get('Active');
         const id = record.get(billComId);
-        const hasAnchorEntityId = id != null;
+        const hasAnchorEntityId = id != undefined;
         const email = record.get('Email');
         const change = {
           obj: {
@@ -226,7 +226,7 @@ async function syncCustomers(anchorEntity) {
         }
 
         // Set email address in Airtable if empty but present in Bill.com.
-        if (email == null && billComCustomerMap.has(id)) {
+        if (email == undefined && billComCustomerMap.has(id)) {
           const billComEmail = billComCustomerMap.get(id).email;
           if (billComEmail != null) {
             change.obj.email = billComEmail;
@@ -320,4 +320,5 @@ export async function main (api, airtableBase = new Base()) {
         'Name': `${o.firstName} ${o.lastName} (${o.email})`,
         'Profile ID': o.profileId,
       }));
+  await syncCustomers('CPASF');
 }
