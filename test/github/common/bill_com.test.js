@@ -22,7 +22,7 @@ test('login', async () => {
   expect(billComApi.getSessionId()).not.toBeNull();
 });
 
-test('dataCall', () => {
+test.skip('dataCall', () => {
   const response =
       billComApi.dataCall('GetEntityMetadata', {'entity': ['Vendor']});
   return expect(response).resolves.not.toBeNull();
