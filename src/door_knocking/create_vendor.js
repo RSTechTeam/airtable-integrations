@@ -6,6 +6,7 @@ import {primaryOrg} from '../common/inputs.js';
 /**
  * @param {!Api} billComApi
  * @param {!Base=} airtableBase
+ * @return {!Promise<undefined>}
  */
 export async function main(billComApi, airtableBase = new Base()) {
   const VOLUNTEERS_TABLE = 'Sign Ups';

@@ -95,6 +95,7 @@ export class Api {
   /** 
    * Login to access anchorEntity's Bill.com API and receive a session ID.
    * @param {string} anchorEntity
+   * @return {!Promise<undefined>}
    */
   async login(anchorEntity) {
     const loginResponse =

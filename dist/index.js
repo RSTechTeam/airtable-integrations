@@ -18172,6 +18172,7 @@ __nccwpck_require__.r(__webpack_exports__);
 /**
  * @param {!Api} billComApi
  * @param {!Base=} accountingBase
+ * @return {!Promise<undefined>}
  */
 async function main(billComApi, accountingBase = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_2__/* .Base */ .XY()) {
   const LCF_TABLE = 'Labor Charge Field (LCF) Mapping';
@@ -18248,6 +18249,7 @@ __nccwpck_require__.r(__webpack_exports__);
 /**
  * @param {!Api} billComApi
  * @param {!Base=} billComIntegrationBase
+ * @return {!Promise<undefined>}
  */
 async function main(billComApi, billComIntegrationBase = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .Base */ .XY()) {
   const APPROVER_TABLE = 'New Bill.com Approvers';
@@ -18721,7 +18723,7 @@ let billComIntegrationBase;
 /**
  * @param {string} table
  * @param {string} airtableId
- * @return {Promise<string>}
+ * @return {!Promise<string>}
  */
 async function getBillComId(table, airtableId) {
   let billComId;
@@ -18735,6 +18737,7 @@ async function getBillComId(table, airtableId) {
 /**
  * @param {!Api} billComApi
  * @param {!Base=} airtableBase
+ * @return {!Promise<undefined>}
  */
 async function main(billComApi, airtableBase = new airtable/* Base */.XY()) {
   const CHECK_REQUESTS_TABLE = 'Check Requests';
@@ -18924,8 +18927,8 @@ let billComIntegrationBase;
 let billComApi;
 
 /**
- * @param {Array} bulkResponses
- * @param {function(Object, number): void} func
+ * @param {!Object<string, *>[]} bulkResponses
+ * @param {function(!Object<string, *>, number)} func
  */
 function processBulkResponses(bulkResponses, func) {
   bulkResponses.forEach(
@@ -18937,8 +18940,8 @@ function processBulkResponses(bulkResponses, func) {
 /**
  * Syncs active and paid statuses of unpaid bills or invoices.
  * @param {string} table
- * @param {string} entity Bill or Invoice
- * @return {Promise<void>}
+ * @param {string} entity - Bill or Invoice.
+ * @return {!Promise<undefined>}
  */
 async function syncUnpaid(table, entity) {
   const billComId =
@@ -18977,7 +18980,7 @@ async function syncUnpaid(table, entity) {
 
 /**
  * @param {string} entity
- * @return {Promise<!Array<Object>>} entity list.
+ * @return {!Promise<!Object<string, *>[]>} entity list.
  */
 function listActiveCall(entity) {
   const filters = [(0,_common_bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .filter */ .hX)('isActive', '=', '1')];
@@ -18990,11 +18993,11 @@ function listActiveCall(entity) {
 
 /**
  * Syncs entity data to table.
- * @param {string} entity A Bill.com entity name.
- * @param {string} table A corresponding Airtable Table name.
- * @param {Function} syncFunc
- *   Determines what entity data will be synced to table.
- * @return {Promise<void>}
+ * @param {string} entity - A Bill.com entity name.
+ * @param {string} table - A corresponding Airtable Table name.
+ * @param {function(!Object<string, *>): !Object<string, *>} syncFunc
+ *   - Determines what entity data will be synced to table.
+ * @return {!Promise<undefined>}
  */
 async function sync(entity, table, syncFunc) {  
 
@@ -19033,11 +19036,11 @@ async function sync(entity, table, syncFunc) {
 
 /**
  * Syncs entity name to table.
- * @param {string} entity A Bill.com entity name.
- * @param {string} table A corresponding Airtable Table name.
- * @param {function(Object): string} nameFunc
- *   Determines what entity data constitutes the name.
- * @return {Promise<void>}
+ * @param {string} entity - A Bill.com entity name.
+ * @param {string} table - A corresponding Airtable Table name.
+ * @param {function(!Object<string, *>): string} nameFunc
+ *   - Determines what entity data constitutes the name.
+ * @return {!Promise<undefined>}
  */
 function syncName(entity, table, nameFunc) {
   return sync(entity, table, o => ({Name: nameFunc(o)}));
@@ -19045,11 +19048,11 @@ function syncName(entity, table, nameFunc) {
 
 /**
  * Syncs entity name to table.
- * @param {string} entity A Bill.com entity name.
- * @param {string} table A corresponding Airtable Table name.
+ * @param {string} entity - A Bill.com entity name.
+ * @param {string} table - A corresponding Airtable Table name.
  * @param {string} nameKey
- *   Determines what entity data key corresponds to the name.
- * @return {Promise<void>}
+ *   - Determines what entity data key corresponds to the name.
+ * @return {!Promise<undefined>}
  */
 function syncNameKey(entity, table, nameKey) {
   return syncName(entity, table, o => o[nameKey])
@@ -19068,7 +19071,7 @@ function vendorName(name, city, state) {
 /**
  * Sync anchorEntity Customers.
  * @param {string} anchorEntity
- * @return {Promise<void>}
+ * @return {!Promise<undefined>}
  */
 async function syncCustomers(anchorEntity) {
   const ALL_CUSTOMERS_TABLE = 'All Customers';
@@ -19186,6 +19189,7 @@ async function syncCustomers(anchorEntity) {
 /**
  * @param {!Api} api
  * @param {!Base=} airtableBase
+ * @return {!Promise<undefined>}
  */
 async function main (api, airtableBase = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .Base */ .XY()) {
   billComIntegrationBase = airtableBase;
@@ -19447,6 +19451,7 @@ class Api {
   /** 
    * Login to access anchorEntity's Bill.com API and receive a session ID.
    * @param {string} anchorEntity
+   * @return {!Promise<undefined>}
    */
   async login(anchorEntity) {
     const loginResponse =
@@ -19590,7 +19595,7 @@ async function getApi(
 
 
 
-/** @type {function(string): void} */
+/** @type {function(string)} */
 const log = _actions_core__WEBPACK_IMPORTED_MODULE_0__.info;
 
 /**
@@ -19603,7 +19608,7 @@ function getInput(input) {
 
 /**
  * Logs err, sets a failing exit code, and throws err.
- * @param {Error} err
+ * @param {!Error} err
  */
 function error(err) {
   _actions_core__WEBPACK_IMPORTED_MODULE_0__.setFailed(err);
@@ -19612,8 +19617,8 @@ function error(err) {
 
 /**
  * @param {string} title
- * @param {Object} json
- * @param {function|Array} replacer
+ * @param {!Object<string, *>} json
+ * @param {(function|Array)=} replacer
  * @see JSON.stringify
  */
 function logJsonGroup(title, json, replacer = null) {
@@ -19626,7 +19631,7 @@ function logJsonGroup(title, json, replacer = null) {
  * Logs json, logging individual expandable groups for each element
  * of the assumed only top-level Array.
  * @param {string} endpoint
- * @param {Object} json
+ * @param {!Object<string, *>} json
  */
 function logJson(endpoint, json) {
   let firstArray = [];

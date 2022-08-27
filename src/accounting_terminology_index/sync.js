@@ -7,6 +7,7 @@ import {Base, PRIMARY_ORG_BILL_COM_ID} from '../common/airtable.js';
 /**
  * @param {!Api} billComApi
  * @param {!Base=} accountingBase
+ * @return {!Promise<undefined>}
  */
 export async function main(billComApi, accountingBase = new Base()) {
   const LCF_TABLE = 'Labor Charge Field (LCF) Mapping';

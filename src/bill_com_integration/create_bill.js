@@ -13,7 +13,7 @@ let billComIntegrationBase;
 /**
  * @param {string} table
  * @param {string} airtableId
- * @return {Promise<string>}
+ * @return {!Promise<string>}
  */
 async function getBillComId(table, airtableId) {
   let billComId;
@@ -27,6 +27,7 @@ async function getBillComId(table, airtableId) {
 /**
  * @param {!Api} billComApi
  * @param {!Base=} airtableBase
+ * @return {!Promise<undefined>}
  */
 export async function main(billComApi, airtableBase = new Base()) {
   const CHECK_REQUESTS_TABLE = 'Check Requests';

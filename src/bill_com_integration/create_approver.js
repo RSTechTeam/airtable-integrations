@@ -6,6 +6,7 @@ import {ecrApproverUserProfileId} from '../common/inputs.js';
 /**
  * @param {!Api} billComApi
  * @param {!Base=} billComIntegrationBase
+ * @return {!Promise<undefined>}
  */
 export async function main(billComApi, billComIntegrationBase = new Base()) {
   const APPROVER_TABLE = 'New Bill.com Approvers';

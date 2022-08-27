@@ -10,7 +10,7 @@
 import * as core from '@actions/core';
 import {lazyCache} from './utils.js'
 
-/** @type {function(string): void} */
+/** @type {function(string)} */
 export const log = core.info;
 
 /**
@@ -23,7 +23,7 @@ export function getInput(input) {
 
 /**
  * Logs err, sets a failing exit code, and throws err.
- * @param {Error} err
+ * @param {!Error} err
  */
 export function error(err) {
   core.setFailed(err);
@@ -32,8 +32,8 @@ export function error(err) {
 
 /**
  * @param {string} title
- * @param {Object} json
- * @param {function|Array} replacer
+ * @param {!Object<string, *>} json
+ * @param {(function|Array)=} replacer
  * @see JSON.stringify
  */
 function logJsonGroup(title, json, replacer = null) {
@@ -46,7 +46,7 @@ function logJsonGroup(title, json, replacer = null) {
  * Logs json, logging individual expandable groups for each element
  * of the assumed only top-level Array.
  * @param {string} endpoint
- * @param {Object} json
+ * @param {!Object<string, *>} json
  */
 export function logJson(endpoint, json) {
   let firstArray = [];
