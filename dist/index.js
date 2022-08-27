@@ -19220,7 +19220,9 @@ async function main (api, airtableBase = new _common_airtable_js__WEBPACK_IMPORT
         'Name': `${o.firstName} ${o.lastName} (${o.email})`,
         'Profile ID': o.profileId,
       }));
+
   await syncCustomers('CPASF');
+  await syncCustomers('CEP');
 }
 
 

@@ -323,5 +323,7 @@ export async function main (api, airtableBase = new Base()) {
         'Name': `${o.firstName} ${o.lastName} (${o.email})`,
         'Profile ID': o.profileId,
       }));
+
   await syncCustomers('CPASF');
+  await syncCustomers('CEP');
 }
