@@ -19223,6 +19223,7 @@ async function main (api, airtableBase = new _common_airtable_js__WEBPACK_IMPORT
 
   await syncCustomers('CPASF');
   await syncCustomers('CEP');
+  await syncCustomers('CEPEF');
 }
 
 

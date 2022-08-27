@@ -326,4 +326,5 @@ export async function main (api, airtableBase = new Base()) {
 
   await syncCustomers('CPASF');
   await syncCustomers('CEP');
+  await syncCustomers('CEPEF');
 }
