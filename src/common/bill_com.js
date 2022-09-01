@@ -87,7 +87,7 @@ export class Api {
   call(endpoint, params) {
     return apiCall(
         endpoint,
-        {},
+        {'Content-Type': 'application/x-www-form-urlencoded'},
         `devKey=${this.getDevKey()}&sessionId=${this.sessionId_}&${params}`,
         this.test_);
   }

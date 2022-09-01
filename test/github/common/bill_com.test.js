@@ -27,3 +27,7 @@ test('dataCall', () => {
       billComApi.dataCall('GetEntityMetadata', {'entity': ['Vendor']});
   return expect(response).resolves.not.toBeNull();
 });
+
+test('list', () => {
+  return expect(billComApi.list('Vendor')).resolves.not.toBeNull();
+});
