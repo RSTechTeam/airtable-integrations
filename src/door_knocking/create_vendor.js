@@ -19,9 +19,9 @@ export async function main(billComApi, airtableBase = new Base()) {
 
         const vendorId =
             await billComApi.createVendor(
-                record.get('Name*'),
+                `${record.get('Name*')} (STV)`,
                 record.get('Address*'),
-                null,
+                '',
                 record.get('City*'),
                 record.get('State*'),
                 record.get('Zip Code*'),
