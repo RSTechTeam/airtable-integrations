@@ -128,7 +128,7 @@ export class Api {
    * @param {?Object<string, string>[]=} filters
    * @return {!Promise<!Object<string, *>[]>} entity list.
    */
-  async list(entity, filters = undefined) {
+  async list(entity, filters = null) {
     const MAX = 999;
     let fullList = [];
     for (let start = 0; ; start += MAX) {

@@ -28,6 +28,13 @@ test('dataCall', () => {
   return expect(response).resolves.not.toBeNull();
 });
 
-test('list', () => {
-  return expect(billComApi.list('Vendor')).resolves.not.toBeNull();
+describe('list', () => {
+  const expectListLength = (expectedLength, filters = null) => () => {
+    const response = bilcomApi.list('Vendor', filters);
+    return expect(response).resolves.toHaveLength(expectedLength);
+  };
+
+  test('no filter', expectListLength(2));
+  test('with filter',
+      expectListLength(1, [billCom.filter('isActive', '=', '1')]));
 });
