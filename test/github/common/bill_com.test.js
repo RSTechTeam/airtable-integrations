@@ -30,7 +30,7 @@ test('dataCall', () => {
 
 describe('list', () => {
   const expectListLength = (expectedLength, filters = null) => () => {
-    const response = bilcomApi.list('Vendor', filters);
+    const response = billcomApi.list('Vendor', filters);
     return expect(response).resolves.toHaveLength(expectedLength);
   };
 
