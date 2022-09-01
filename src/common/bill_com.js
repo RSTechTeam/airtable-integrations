@@ -87,7 +87,7 @@ export class Api {
   call(endpoint, params) {
     return apiCall(
         endpoint,
-        {'Content-Type': 'application/x-www-form-urlencoded'},
+        {},
         `devKey=${this.getDevKey()}&sessionId=${this.sessionId_}&${params}`,
         this.test_);
   }
@@ -128,7 +128,7 @@ export class Api {
    * @param {?Object<string, string>[]=} filters
    * @return {!Promise<!Object<string, *>[]>} entity list.
    */
-  async list(entity, filters=undefined) {
+  async list(entity, filters = undefined) {
     const MAX = 999;
     let fullList = [];
     for (let start = 0; ; start += MAX) {
