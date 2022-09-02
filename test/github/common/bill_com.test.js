@@ -2,7 +2,7 @@ import * as billCom from '../../../src/common/bill_com.js';
 
 let billComApi;
 
-test('getApi', async () => {
+test('getApi queries Airtable and creates unauthenticated Api', async () => {
   const devKey = process.env.BILL_COM_DEV_KEY;
   billComApi =
       await billCom.getApi(
@@ -17,12 +17,12 @@ test('getApi', async () => {
   expect(billComApi.getSessionId()).toBeNull();
 });
 
-test('login', async () => {
+test('login authenticates and sets session ID', async () => {
   await billComApi.login('RS');
   expect(billComApi.getSessionId()).not.toBeNull();
 });
 
-test('dataCall', () => {
+test('dataCall successfully makes API call with json data', () => {
   const response =
       billComApi.dataCall('GetEntityMetadata', {'entity': ['Vendor']});
   return expect(response).resolves.not.toBeNull();
@@ -34,7 +34,32 @@ describe('list', () => {
     return expect(response).resolves.toHaveLength(expectedLength);
   };
 
-  test('no filter', expectListLength(2));
-  test('with filter',
+  test('without filter, returns all 2 vendors', expectListLength(2));
+  test('with active filter, returns single active vendor',
       expectListLength(1, [billCom.filter('isActive', '=', '1')]));
+});
+
+describe('createVendor', () => {
+  const expected = {
+    entity: 'Vendor',
+    isActive: '1',
+    name: 'Test',
+    email: 'test@rsllc.co',
+  };
+  const createVendor = (state) => {
+    return billComApi.createVendor(
+        expected.name, '', '', '', state, '', '', expected.email, '');
+  };
+
+  test('given valid info, creates vendor', async () => {
+    const state = 'CA';
+    const id = await createVendor(state);
+    const response = await billComApi.dataCall('Crud/Read/Vendor', {id: id});
+    expect(response).toMatchObject(expected);
+    expect(response.addressState).toBe(state);
+  });
+
+  test('given invalid state, throws', () => {
+    return expect(createVendor('X')).rejects.toThrow();
+  });
 });

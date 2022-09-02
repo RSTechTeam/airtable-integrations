@@ -25,7 +25,7 @@ describe('apiCall', () => {
       expectLoginToThrow('x-www-form-urlencoded', body, 1129));
 });
 
-test('filter', () => {
+test('filter creates API filter object', () => {
   expect(billCom.filter('field', 'op', 'value')).toEqual(
       {field: 'field', op: 'op', value: 'value'});
 });

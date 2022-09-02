@@ -19505,8 +19505,8 @@ class Api {
 
   /**
    * @param {string} name
-   * @param {string} address1 - Address line 1
-   * @param {string} address2 - Address line 2
+   * @param {string} address1 - Address line 1.
+   * @param {string} address2 - Address line 2.
    * @param {string} city
    * @param {string} state - The 2 letter postal abbreviation.
    * @param {string} zip
