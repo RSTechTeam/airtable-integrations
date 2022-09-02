@@ -44,15 +44,20 @@ describe('list', () => {
   });
 });
 
+const expectedVendor = {entity: 'Vendor', name: 'Test', email: 'test@rsllc.co'};
+let vendorQueryData;
+
 test('createVendor creates vendor', async () => {
-  const expected = {
-    entity: 'Vendor',
-    name: 'Test',
-    email: 'test@rsllc.co',
-  };
   const id =
       await billComApi.createVendor(
-          expected.name, '', '', '', '', '', '', expected.email, '');
-  const vendor = await billComApi.dataCall('Crud/Delete/Vendor', {id: id});
-  expect(vendor).toMatchObject(expected);
+          expectedVendor.name, '', '', '', '', '', '', expectedVendor.email, '');
+  vendorQueryData = {id: id};
+  const vendor =
+      await billComApi.dataCall('Crud/Delete/Vendor', vendorQueryData);
+  expect(vendor).toMatchObject(expectedVendor);
+});
+
+test('bulkCall returns bulk responses', async () => {
+  const response = await billComApi.bulkCall('Read/Vendor', [vendorQueryData]);
+  expect(response.bulk[0].response_data).toMatchObject(expectedVendor);
 });
