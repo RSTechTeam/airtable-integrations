@@ -45,6 +45,7 @@ describe('list', () => {
 });
 
 const expectedVendor = {entity: 'Vendor', name: 'Test', email: 'test@rsllc.co'};
+const expectVendor = (vendor) => expect(vendor).toMatchObject(expectedVendor);
 let vendorQueryData;
 
 test('createVendor creates vendor', async () => {
@@ -52,12 +53,10 @@ test('createVendor creates vendor', async () => {
       await billComApi.createVendor(
           expectedVendor.name, '', '', '', '', '', '', expectedVendor.email, '');
   vendorQueryData = {id: id};
-  const vendor =
-      await billComApi.dataCall('Crud/Delete/Vendor', vendorQueryData);
-  expect(vendor).toMatchObject(expectedVendor);
+  billComApi.dataCall('Crud/Delete/Vendor', vendorQueryData).then(expectVendor);
 });
 
 test('bulkCall returns bulk responses', async () => {
   const response = await billComApi.bulkCall('Read/Vendor', [vendorQueryData]);
-  expect(response.bulk[0].response_data).toMatchObject(expectedVendor);
+  expectVendor(response[0].bulk[0].response_data);
 });
