@@ -29,14 +29,16 @@ test('dataCall successfully makes API call with json data', () => {
 });
 
 describe('list', () => {
-  const expectListLength = (expectedLength, filters = null) => () => {
-    const response = billComApi.list('Vendor', filters);
-    return expect(response).resolves.toHaveLength(expectedLength);
+  const expectListLength = (filters = null) => {
+    return expect(billComApi.list('Vendor', filters)).resolves.length;
   };
 
-  test('without filter, returns all 4 vendors', expectListLength(4));
-  test('with active filter, returns single active vendor',
-      expectListLength(1, [billCom.filter('isActive', '=', '1')]));
+  test('without filter, returns all vendors', () => {
+    return expectListLength().toBeGreaterThan(1);
+  });
+  test('with active filter, returns single active vendor', () => {
+    return expectListLength([billCom.filter('isActive', '=', '1')]).toBe(1);
+  });
 });
 
 test('createVendor creates vendor', async () => {
