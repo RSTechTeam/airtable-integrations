@@ -34,32 +34,20 @@ describe('list', () => {
     return expect(response).resolves.toHaveLength(expectedLength);
   };
 
-  test('without filter, returns all 2 vendors', expectListLength(2));
+  test('without filter, returns all 4 vendors', expectListLength(4));
   test('with active filter, returns single active vendor',
       expectListLength(1, [billCom.filter('isActive', '=', '1')]));
 });
 
-describe('createVendor', () => {
+test('createVendor creates vendor', async () => {
   const expected = {
     entity: 'Vendor',
-    isActive: '1',
     name: 'Test',
     email: 'test@rsllc.co',
   };
-  const createVendor = (state) => {
-    return billComApi.createVendor(
-        expected.name, '', '', '', state, '', '', expected.email, '');
-  };
-
-  test('given valid info, creates vendor', async () => {
-    const state = 'CA';
-    const id = await createVendor(state);
-    const response = await billComApi.dataCall('Crud/Read/Vendor', {id: id});
-    expect(response).toMatchObject(expected);
-    expect(response.addressState).toBe(state);
-  });
-
-  test('given invalid state, throws', () => {
-    return expect(createVendor('X')).rejects.toThrow();
-  });
+  const id =
+      await billComApi.createVendor(
+          expected.name, '', '', '', '', '', '', expected.email, '');
+  const response = await billComApi.dataCall('Crud/Delete/Vendor', {id: id});
+  expect(response).toMatchObject(expected);
 });
