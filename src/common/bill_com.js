@@ -148,7 +148,7 @@ export class Api {
    */
   listActive(entity, filters = []) {
     filters.push(filter('isActive', '=', '1'));
-    return list(entity, filters);
+    return this.list(entity, filters);
   }
 
   /**
