@@ -29,17 +29,13 @@ test('dataCall successfully makes API call with json data', () => {
 });
 
 describe('list', () => {
-  const listLength = async (listFunc) => {
-    const list = await listFunc('Vendor');
-    return list.length;
-  };
-
-  test('without filter, returns all vendors', () => {
-    return expect(listLength(billComApi.list)).resolves.toBeGreaterThan(1);
+  test('without filter, returns all vendors', async () => {
+    const vendors = await billComApi.list('Vendor');
+    expect(vendors.length).toBeGreaterThan(1);
   });
 
   test('with active filter, returns single active vendor', () => {
-    return expect(listLength(billComApi.listActive)).resolves.toBe(1);
+    return expect(billComApi.listActive('Vendor')).resolves.toHaveLength(1);
   });
 });
 
