@@ -18203,7 +18203,7 @@ async function main(
         const id = record.get(_common_airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .PRIMARY_ORG_BILL_COM_ID */ .bB);
         const change =
             (0,_common_bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .customerChange */ .Ys)(
-                id, true, record.get(nameField), null, parentCustomerId);
+                id, true, record.get(nameField), undefined, parentCustomerId);
 
         // Insert/Create in Bill.com any record with no primary org Bill.com ID.
         if (id == undefined) {
@@ -19588,14 +19588,18 @@ async function getApi(
  * @return {!Object<string, string>}
  */
 function customerChange(
-    id, isActive, name = null, email = null, parentCustomerId = null) {
+    id,
+    isActive,
+    name = undefined,
+    email = undefined,
+    parentCustomerId = undefined) {
 
   return {
     obj: {
       entity: 'Customer',
       id: id,
       isActive: isActive ? '1' : '2',
-      name: name == null ? name : encodeURIComponent(name),
+      name: name == undefined ? undefined : encodeURIComponent(name),
       email: email,
       parentCustomerId: parentCustomerId,
     }

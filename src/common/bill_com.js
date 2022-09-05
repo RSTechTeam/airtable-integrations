@@ -232,14 +232,18 @@ export async function getApi(
  * @return {!Object<string, string>}
  */
 export function customerChange(
-    id, isActive, name = null, email = null, parentCustomerId = null) {
+    id,
+    isActive,
+    name = undefined,
+    email = undefined,
+    parentCustomerId = undefined) {
 
   return {
     obj: {
       entity: 'Customer',
       id: id,
       isActive: isActive ? '1' : '2',
-      name: name == null ? name : encodeURIComponent(name),
+      name: name == undefined ? undefined : encodeURIComponent(name),
       email: email,
       parentCustomerId: parentCustomerId,
     }

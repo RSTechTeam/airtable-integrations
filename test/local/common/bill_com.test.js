@@ -29,3 +29,27 @@ test('filter creates API filter object', () => {
   expect(billCom.filter('field', 'op', 'value')).toEqual(
       {field: 'field', op: 'op', value: 'value'});
 });
+
+describe('customerChange', () => {
+
+  test('given all fields and active, returns correct Customer change', () => {
+    const change =
+        billCom.customerChange('id', true, 'First Last', 'abc@xyz.co', 'pid');
+    expect(change).toEqual({
+      obj: {
+        entity: 'Customer',
+        id: 'id',
+        isActive: '1',
+        name: 'First%20Last',
+        email: 'abc@xyz.co',
+        parentCustomerId: 'pid',
+      }
+    });
+  });
+
+  test('some fields and inactive, returns correct Customer change', () => {
+    expect(billCom.customerChange('id', false)).toEqual({
+      obj: {entity: 'Customer', id: 'id', isActive: '2'}
+    });
+  });
+});

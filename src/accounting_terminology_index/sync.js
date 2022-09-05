@@ -38,7 +38,7 @@ export async function main(
         const id = record.get(PRIMARY_ORG_BILL_COM_ID);
         const change =
             customerChange(
-                id, true, record.get(nameField), null, parentCustomerId);
+                id, true, record.get(nameField), undefined, parentCustomerId);
 
         // Insert/Create in Bill.com any record with no primary org Bill.com ID.
         if (id == undefined) {
