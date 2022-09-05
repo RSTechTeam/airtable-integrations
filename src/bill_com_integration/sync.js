@@ -4,7 +4,7 @@
  */
 
 import {Base, BILL_COM_ID_SUFFIX, PRIMARY_ORG_BILL_COM_ID} from '../common/airtable.js';
-import {filter} from '../common/bill_com.js';
+import {customerChange, filter} from '../common/bill_com.js';
 
 /** Bill.com Bill Approval Statuses. */
 const approvalStatuses = new Map([
@@ -194,14 +194,7 @@ async function syncCustomers(anchorEntity) {
         const hasAnchorEntityId = id != undefined;
         const email = record.get('Email');
         const name = record.get('Name');
-        const change = {
-          obj: {
-            entity: 'Customer',
-            email: email,
-            isActive: isActive ? '1' : '2',
-            name: encodeURIComponent(name),
-          }
-        };
+        const change = customerChange(id, isActive, name, email);
 
         // Skip any record that is neither active
         // nor has an anchor entity Bill.com ID.
@@ -235,7 +228,6 @@ async function syncCustomers(anchorEntity) {
         // Temporarily skip Customers with long names.
         if (name.length > 41) return;
 
-        change.obj.id = id;
         billComUpdates.push(change);
       });
 
@@ -263,14 +255,7 @@ async function syncCustomers(anchorEntity) {
     const response =
         await billComApi.dataCall(
             'Crud/Create/Customer',
-            {
-              obj: {
-                entity: 'Customer',
-                isActive: '1',
-                email: customer.email,
-                name: encodeURIComponent(customer.name),
-              }
-            });
+            customerChange(undefined, true, customer.email, customer.name));
     airtableCreates.push({
       fields: {
         Active: true,

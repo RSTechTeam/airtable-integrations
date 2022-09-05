@@ -11,12 +11,7 @@ export const PRIMARY_ORG = 'RS';
  */
 export function lazyCache(producer) {
   let result;
-  return () => {
-    if (result == undefined) {
-      result = producer();
-    }
-    return result;
-  }
+  return () => result || (result = producer());
 }
 
 /**

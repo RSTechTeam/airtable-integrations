@@ -19092,14 +19092,7 @@ async function syncCustomers(anchorEntity) {
         const hasAnchorEntityId = id != undefined;
         const email = record.get('Email');
         const name = record.get('Name');
-        const change = {
-          obj: {
-            entity: 'Customer',
-            email: email,
-            isActive: isActive ? '1' : '2',
-            name: encodeURIComponent(name),
-          }
-        };
+        const change = (0,_common_bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .customerChange */ .Ys)(id, isActive, name, email);
 
         // Skip any record that is neither active
         // nor has an anchor entity Bill.com ID.
@@ -19133,7 +19126,6 @@ async function syncCustomers(anchorEntity) {
         // Temporarily skip Customers with long names.
         if (name.length > 41) return;
 
-        change.obj.id = id;
         billComUpdates.push(change);
       });
 
@@ -19161,14 +19153,7 @@ async function syncCustomers(anchorEntity) {
     const response =
         await billComApi.dataCall(
             'Crud/Create/Customer',
-            {
-              obj: {
-                entity: 'Customer',
-                isActive: '1',
-                email: customer.email,
-                name: encodeURIComponent(customer.name),
-              }
-            });
+            (0,_common_bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .customerChange */ .Ys)(undefined, true, customer.email, customer.name));
     airtableCreates.push({
       fields: {
         Active: true,
@@ -19756,12 +19741,7 @@ const PRIMARY_ORG = 'RS';
  */
 function lazyCache(producer) {
   let result;
-  return () => {
-    if (result == undefined) {
-      result = producer();
-    }
-    return result;
-  }
+  return () => result || (result = producer());
 }
 
 /**
