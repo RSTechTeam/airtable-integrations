@@ -92,9 +92,11 @@ async function syncUnpaid(table, entity) {
 async function sync(entity, table, syncFunc) {  
 
   // Initialize sync changes.
-  const maybeFilter =
-      // If Chart of Account, only pull Expenses and Income.
-      entity === 'ChartOfAccount' ? filter('accountType', 'in', '7,9') : null;
+  const maybeFilter = [];
+  if (entity === 'ChartOfAccount') {
+    // Expenses or Income.
+    maybeFilter.push(filter('accountType', 'in', '7,9'));
+  }
   const billComEntities = await billComApi.listActive(entity, maybeFilter);
   const changes = new Map();
   for (const e of billComEntities) {

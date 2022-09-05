@@ -18996,9 +18996,11 @@ async function syncUnpaid(table, entity) {
 async function sync(entity, table, syncFunc) {  
 
   // Initialize sync changes.
-  const maybeFilter =
-      // If Chart of Account, only pull Expenses and Income.
-      entity === 'ChartOfAccount' ? (0,_common_bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .filter */ .hX)('accountType', 'in', '7,9') : null;
+  const maybeFilter = [];
+  if (entity === 'ChartOfAccount') {
+    // Expenses or Income.
+    maybeFilter.push((0,_common_bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .filter */ .hX)('accountType', 'in', '7,9'));
+  }
   const billComEntities = await billComApi.listActive(entity, maybeFilter);
   const changes = new Map();
   for (const e of billComEntities) {
@@ -19484,10 +19486,10 @@ class Api {
 
   /**
    * @param {string} entity
-   * @param {?Object<string, string>[]=} filters
+   * @param {!Object<string, string>[]=} filters
    * @return {!Promise<!Object<string, *>[]>} entity list.
    */
-  async list(entity, filters = null) {
+  async list(entity, filters = []) {
     const MAX = 999;
     let fullList = [];
     for (let start = 0; ; start += MAX) {
@@ -19502,11 +19504,11 @@ class Api {
 
   /**
    * @param {string} entity
-   * @param {?Object<string, string>[]=} filters
+   * @param {!Object<string, string>[]=} filters
    * @return {!Promise<!Object<string, *>[]>} entity list.
    */
-  listActive(entity, filters = null) {
-    (filters || []).push(filter('isActive', '=', '1'));
+  listActive(entity, filters = []) {
+    filters.push(filter('isActive', '=', '1'));
     return this.list(entity, filters);
   }
 
