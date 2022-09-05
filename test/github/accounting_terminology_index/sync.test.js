@@ -33,6 +33,7 @@ test('main syncs Customers from Airtable to Bill.com', async () => {
   const NEW_NAME = 'New Name Customer';
 
   // Check pre-conditions.
+  await billComApi.primaryOrgLogin();
   const initiallyActiveCustomers = [BILL_COM_ONLY, STALE_NAME];
   await expectListActiveNames(initiallyActiveCustomers);
   expect(testCustomers.size).toEqual(2);
