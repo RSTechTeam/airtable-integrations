@@ -35,10 +35,10 @@ export async function main(
       customerTable,
       syncView,
       async (record) => {
-        const id = record.get(PRIMARY_ORG_BILL_COM_ID);
         const change = {
           obj: {
             entity: 'Customer',
+            id: record.get(PRIMARY_ORG_BILL_COM_ID),
             isActive: '1',
             parentCustomerId: parentCustomerId,
             name: encodeURIComponent(record.get(nameField)),
@@ -46,7 +46,7 @@ export async function main(
         }
 
         // Insert/Create in Bill.com any record with no primary org Bill.com ID.
-        if (id == undefined) {
+        if (change.obj.id == undefined) {
           const response =
               await billComApi.dataCall('Crud/Create/Customer', change);
           await accountingBase.update(
@@ -59,7 +59,6 @@ export async function main(
         }
 
         // Update in Bill.com other records with a primary org Bill.com ID.
-        change.obj.id = id;
         updates.push(change);
         billComCustomerIds.delete(id);
       });
