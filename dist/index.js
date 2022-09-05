@@ -18986,19 +18986,6 @@ async function syncUnpaid(table, entity) {
 }
 
 /**
- * @param {string} entity
- * @return {!Promise<!Object<string, *>[]>} entity list.
- */
-function listActiveCall(entity) {
-  const filters = [(0,_common_bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .filter */ .hX)('isActive', '=', '1')];
-  if (entity === 'ChartOfAccount') {
-    // Expenses or Income
-    filters.push((0,_common_bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .filter */ .hX)('accountType', 'in', '7,9'));
-  }
-  return billComApi.list(entity, filters);
-}
-
-/**
  * Syncs entity data to table.
  * @param {string} entity - A Bill.com entity name.
  * @param {string} table - A corresponding Airtable Table name.
@@ -19009,7 +18996,10 @@ function listActiveCall(entity) {
 async function sync(entity, table, syncFunc) {  
 
   // Initialize sync changes.
-  const billComEntities = await listActiveCall(entity);
+  const maybeFilter =
+      // If Chart of Account, only pull Expenses and Income.
+      entity === 'ChartOfAccount' ? (0,_common_bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .filter */ .hX)('accountType', 'in', '7,9') : null;
+  const billComEntities = await billComApi.listActive(entity, maybeFilter);
   const changes = new Map();
   for (const e of billComEntities) {
     const change = syncFunc(e);
@@ -19087,7 +19077,7 @@ async function syncCustomers(anchorEntity) {
   await billComApi.login(anchorEntity);
 
   // Initialize Bill.com Customer collections.
-  const billComCustomers = await listActiveCall('Customer');
+  const billComCustomers = await billComApi.listActive('Customer');
   const billComCustomerMap = new Map();
   billComCustomers.forEach(
       c => billComCustomerMap.set(c.id, {name: c.name, email: c.email}));
@@ -19512,11 +19502,11 @@ class Api {
 
   /**
    * @param {string} entity
-   * @param {!Object<string, string>[]=} filters
+   * @param {?Object<string, string>[]=} filters
    * @return {!Promise<!Object<string, *>[]>} entity list.
    */
-  listActive(entity, filters = []) {
-    filters.push(filter('isActive', '=', '1'));
+  listActive(entity, filters = null) {
+    (filters || []).push(filter('isActive', '=', '1'));
     return this.list(entity, filters);
   }
 

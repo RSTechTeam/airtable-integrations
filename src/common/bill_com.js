@@ -143,11 +143,11 @@ export class Api {
 
   /**
    * @param {string} entity
-   * @param {!Object<string, string>[]=} filters
+   * @param {?Object<string, string>[]=} filters
    * @return {!Promise<!Object<string, *>[]>} entity list.
    */
-  listActive(entity, filters = []) {
-    filters.push(filter('isActive', '=', '1'));
+  listActive(entity, filters = null) {
+    (filters || []).push(filter('isActive', '=', '1'));
     return this.list(entity, filters);
   }
 
