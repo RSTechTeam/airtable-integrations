@@ -18172,34 +18172,41 @@ __nccwpck_require__.r(__webpack_exports__);
 /**
  * @param {!Api} billComApi
  * @param {!Base=} accountingBase
+ * @param {string=} internalCustomerId
+ * @param {string=} customerTable
+ * @param {string=} syncView
+ * @param {string=} nameField
  * @return {!Promise<undefined>}
  */
-async function main(billComApi, accountingBase = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_2__/* .Base */ .XY()) {
-  const LCF_TABLE = 'Labor Charge Field (LCF) Mapping';
+async function main(
+    billComApi,
+    accountingBase = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_2__/* .Base */ .XY(),
+    parentCustomerId = (0,_common_inputs_js__WEBPACK_IMPORTED_MODULE_1__/* .internalCustomerId */ .qV)(),
+    customerTable = 'Labor Charge Field (LCF) Mapping',
+    syncView = 'Bill.com Sync',
+    nameField = 'Abacus / Bill.com / QBO Code') {
 
   // Initialize Bill.com Customer collection.
   await billComApi.primaryOrgLogin();
   const billComCustomers =
       await billComApi.list(
-          'Customer',
-          [(0,_common_bill_com_js__WEBPACK_IMPORTED_MODULE_0__/* .filter */ .hX)('parentCustomerId', '=', (0,_common_inputs_js__WEBPACK_IMPORTED_MODULE_1__/* .internalCustomerId */ .qV)())]);
+          'Customer', [(0,_common_bill_com_js__WEBPACK_IMPORTED_MODULE_0__/* .filter */ .hX)('parentCustomerId', '=', parentCustomerId)]);
   const billComCustomerIds = new Set();
   billComCustomers.forEach(c => billComCustomerIds.add(c.id));
 
   // Upsert every Bill.com Customer from the Bill.com Sync View.
   const updates = [];
   await accountingBase.select(
-      LCF_TABLE,
-      'Bill.com Sync',
+      customerTable,
+      syncView,
       async (record) => {
         const id = record.get(_common_airtable_js__WEBPACK_IMPORTED_MODULE_2__/* .PRIMARY_ORG_BILL_COM_ID */ .bB);
         const change = {
           obj: {
             entity: 'Customer',
             isActive: '1',
-            parentCustomerId: (0,_common_inputs_js__WEBPACK_IMPORTED_MODULE_1__/* .internalCustomerId */ .qV)(),
-            name:
-              encodeURIComponent(record.get('Abacus / Bill.com / QBO Code')),
+            parentCustomerId: parentCustomerId,
+            name: encodeURIComponent(record.get(nameField)),
           }
         }
 
@@ -18208,7 +18215,7 @@ async function main(billComApi, accountingBase = new _common_airtable_js__WEBPAC
           const response =
               await billComApi.dataCall('Crud/Create/Customer', change);
           await accountingBase.update(
-              LCF_TABLE,
+              customerTable,
               [{
                 id: record.getId(),
                 fields: {[_common_airtable_js__WEBPACK_IMPORTED_MODULE_2__/* .PRIMARY_ORG_BILL_COM_ID */ .bB]: response.id},
@@ -19106,7 +19113,7 @@ async function syncCustomers(anchorEntity) {
             isActive: isActive ? '1' : '2',
             name: encodeURIComponent(name),
           }
-        }
+        };
 
         // Skip any record that is neither active
         // nor has an anchor entity Bill.com ID.
@@ -19501,6 +19508,16 @@ class Api {
       if (response.length < MAX) break;
     }
     return fullList;
+  }
+
+  /**
+   * @param {string} entity
+   * @param {!Object<string, string>[]=} filters
+   * @return {!Promise<!Object<string, *>[]>} entity list.
+   */
+  listActive(entity, filters = []) {
+    filters.push(filter('isActive', '=', '1'));
+    return list(entity, filters);
   }
 
   /**

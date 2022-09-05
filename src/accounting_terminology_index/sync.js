@@ -7,34 +7,41 @@ import {Base, PRIMARY_ORG_BILL_COM_ID} from '../common/airtable.js';
 /**
  * @param {!Api} billComApi
  * @param {!Base=} accountingBase
+ * @param {string=} internalCustomerId
+ * @param {string=} customerTable
+ * @param {string=} syncView
+ * @param {string=} nameField
  * @return {!Promise<undefined>}
  */
-export async function main(billComApi, accountingBase = new Base()) {
-  const LCF_TABLE = 'Labor Charge Field (LCF) Mapping';
+export async function main(
+    billComApi,
+    accountingBase = new Base(),
+    parentCustomerId = internalCustomerId(),
+    customerTable = 'Labor Charge Field (LCF) Mapping',
+    syncView = 'Bill.com Sync',
+    nameField = 'Abacus / Bill.com / QBO Code') {
 
   // Initialize Bill.com Customer collection.
   await billComApi.primaryOrgLogin();
   const billComCustomers =
       await billComApi.list(
-          'Customer',
-          [filter('parentCustomerId', '=', internalCustomerId())]);
+          'Customer', [filter('parentCustomerId', '=', parentCustomerId)]);
   const billComCustomerIds = new Set();
   billComCustomers.forEach(c => billComCustomerIds.add(c.id));
 
   // Upsert every Bill.com Customer from the Bill.com Sync View.
   const updates = [];
   await accountingBase.select(
-      LCF_TABLE,
-      'Bill.com Sync',
+      customerTable,
+      syncView,
       async (record) => {
         const id = record.get(PRIMARY_ORG_BILL_COM_ID);
         const change = {
           obj: {
             entity: 'Customer',
             isActive: '1',
-            parentCustomerId: internalCustomerId(),
-            name:
-              encodeURIComponent(record.get('Abacus / Bill.com / QBO Code')),
+            parentCustomerId: parentCustomerId,
+            name: encodeURIComponent(record.get(nameField)),
           }
         }
 
@@ -43,7 +50,7 @@ export async function main(billComApi, accountingBase = new Base()) {
           const response =
               await billComApi.dataCall('Crud/Create/Customer', change);
           await accountingBase.update(
-              LCF_TABLE,
+              customerTable,
               [{
                 id: record.getId(),
                 fields: {[PRIMARY_ORG_BILL_COM_ID]: response.id},

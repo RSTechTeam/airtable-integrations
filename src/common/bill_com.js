@@ -142,6 +142,16 @@ export class Api {
   }
 
   /**
+   * @param {string} entity
+   * @param {!Object<string, string>[]=} filters
+   * @return {!Promise<!Object<string, *>[]>} entity list.
+   */
+  listActive(entity, filters = []) {
+    filters.push(filter('isActive', '=', '1'));
+    return list(entity, filters);
+  }
+
+  /**
    * @param {string} name
    * @param {string} address1 - Address line 1.
    * @param {string} address2 - Address line 2.

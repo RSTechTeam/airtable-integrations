@@ -209,7 +209,7 @@ async function syncCustomers(anchorEntity) {
             isActive: isActive ? '1' : '2',
             name: encodeURIComponent(name),
           }
-        }
+        };
 
         // Skip any record that is neither active
         // nor has an anchor entity Bill.com ID.
