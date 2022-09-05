@@ -222,3 +222,26 @@ export async function getApi(
       (r) => orgIds.set(r.get('Department'), r.get('Bill.com Org ID')));
   return new Api(orgIds, userName, password, devKey, test);
 }
+
+/**
+ * @param {?string} id
+ * @param {boolean} isActive
+ * @param {?string=} name
+ * @param {?string=} email
+ * @param {?string=} parentCustomerId
+ * @return {!Object<string, string>}
+ */
+export function customerChange(
+    id, isActive, name = null, email = null, parentCustomerId = null) {
+
+  return {
+    obj: {
+      entity: 'Customer',
+      id: id,
+      isActive: isActive ? '1' : '2',
+      name: name == null ? name : encodeURIComponent(name),
+      email: email,
+      parentCustomerId: parentCustomerId,
+    }
+  };
+}

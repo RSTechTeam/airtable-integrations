@@ -6301,7 +6301,7 @@ var baseTimes = __nccwpck_require__(3349),
     isArray = __nccwpck_require__(5997),
     isBuffer = __nccwpck_require__(3741),
     isIndex = __nccwpck_require__(576),
-    isTypedArray = __nccwpck_require__(9137);
+    isTypedArray = __nccwpck_require__(3837);
 
 /** Used for built-in method references. */
 var objectProto = Object.prototype;
@@ -8410,7 +8410,7 @@ module.exports = isSymbol;
 
 /***/ }),
 
-/***/ 9137:
+/***/ 3837:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 var baseIsTypedArray = __nccwpck_require__(6934),
@@ -8870,7 +8870,7 @@ var http = __nccwpck_require__(3685);
 var https = __nccwpck_require__(5687);
 var events = __nccwpck_require__(2361);
 var assert = __nccwpck_require__(9491);
-var util = __nccwpck_require__(3837);
+var util = __nccwpck_require__(3849);
 
 
 exports.httpOverHttp = httpOverHttp;
@@ -15417,7 +15417,7 @@ module.exports = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("url");
 
 /***/ }),
 
-/***/ 3837:
+/***/ 3849:
 /***/ ((module) => {
 
 module.exports = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("util");
@@ -18160,9 +18160,9 @@ __nccwpck_require__.r(__webpack_exports__);
 /* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
 /* harmony export */   "main": () => (/* binding */ main)
 /* harmony export */ });
-/* harmony import */ var _common_bill_com_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(1398);
-/* harmony import */ var _common_inputs_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(4684);
-/* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(5585);
+/* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(5585);
+/* harmony import */ var _common_bill_com_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(1398);
+/* harmony import */ var _common_inputs_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(4684);
 /** @fileoverview Syncs Bill.com Customers from Airtable to Bill.com. */
 
 
@@ -18180,8 +18180,8 @@ __nccwpck_require__.r(__webpack_exports__);
  */
 async function main(
     billComApi,
-    accountingBase = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_2__/* .Base */ .XY(),
-    parentCustomerId = (0,_common_inputs_js__WEBPACK_IMPORTED_MODULE_1__/* .internalCustomerId */ .qV)(),
+    accountingBase = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .Base */ .XY(),
+    parentCustomerId = (0,_common_inputs_js__WEBPACK_IMPORTED_MODULE_2__/* .internalCustomerId */ .qV)(),
     customerTable = 'Labor Charge Field (LCF) Mapping',
     syncView = 'Bill.com Sync',
     nameField = 'Abacus / Bill.com / QBO Code') {
@@ -18190,7 +18190,7 @@ async function main(
   await billComApi.primaryOrgLogin();
   const billComCustomers =
       await billComApi.list(
-          'Customer', [(0,_common_bill_com_js__WEBPACK_IMPORTED_MODULE_0__/* .filter */ .hX)('parentCustomerId', '=', parentCustomerId)]);
+          'Customer', [(0,_common_bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .filter */ .hX)('parentCustomerId', '=', parentCustomerId)]);
   const billComCustomerIds = new Set();
   billComCustomers.forEach(c => billComCustomerIds.add(c.id));
 
@@ -18200,25 +18200,20 @@ async function main(
       customerTable,
       syncView,
       async (record) => {
-        const change = {
-          obj: {
-            entity: 'Customer',
-            id: record.get(_common_airtable_js__WEBPACK_IMPORTED_MODULE_2__/* .PRIMARY_ORG_BILL_COM_ID */ .bB),
-            isActive: '1',
-            parentCustomerId: parentCustomerId,
-            name: encodeURIComponent(record.get(nameField)),
-          }
-        }
+        const id = record.get(_common_airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .PRIMARY_ORG_BILL_COM_ID */ .bB);
+        const change =
+            (0,_common_bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .customerChange */ .Ys)(
+                id, true, record.get(nameField), null, parentCustomerId);
 
         // Insert/Create in Bill.com any record with no primary org Bill.com ID.
-        if (change.obj.id == undefined) {
+        if (id == undefined) {
           const response =
               await billComApi.dataCall('Crud/Create/Customer', change);
           await accountingBase.update(
               customerTable,
               [{
                 id: record.getId(),
-                fields: {[_common_airtable_js__WEBPACK_IMPORTED_MODULE_2__/* .PRIMARY_ORG_BILL_COM_ID */ .bB]: response.id},
+                fields: {[_common_airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .PRIMARY_ORG_BILL_COM_ID */ .bB]: response.id},
               }]);
           return;
         }
@@ -18230,7 +18225,7 @@ async function main(
 
   // Mark internal Bill.com Customers not in the Bill.com Sync View as inactive.
   for (const id of billComCustomerIds) {
-    updates.push({obj: {entity: 'Customer', id: id, isActive: '2'}});
+    updates.push((0,_common_bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .customerChange */ .Ys)(id, false));
   }
   await billComApi.bulkCall('Update/Customer', updates);
 }
@@ -18305,7 +18300,7 @@ var utils = __nccwpck_require__(381);
 // EXTERNAL MODULE: ./src/common/inputs.js
 var inputs = __nccwpck_require__(4684);
 // EXTERNAL MODULE: external "util"
-var external_util_ = __nccwpck_require__(3837);
+var external_util_ = __nccwpck_require__(3849);
 ;// CONCATENATED MODULE: ./node_modules/formdata-node/node_modules/web-streams-polyfill/dist/ponyfill.mjs
 /**
  * @license
@@ -19350,7 +19345,8 @@ class Base {
 /* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
 /* harmony export */   "k_": () => (/* binding */ apiCall),
 /* harmony export */   "hX": () => (/* binding */ filter),
-/* harmony export */   "ac": () => (/* binding */ getApi)
+/* harmony export */   "ac": () => (/* binding */ getApi),
+/* harmony export */   "Ys": () => (/* binding */ customerChange)
 /* harmony export */ });
 /* unused harmony export Api */
 /* harmony import */ var node_fetch__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(4028);
@@ -19581,6 +19577,29 @@ async function getApi(
       'Org IDs',
       (r) => orgIds.set(r.get('Department'), r.get('Bill.com Org ID')));
   return new Api(orgIds, userName, password, devKey, test);
+}
+
+/**
+ * @param {?string} id
+ * @param {boolean} isActive
+ * @param {?string=} name
+ * @param {?string=} email
+ * @param {?string=} parentCustomerId
+ * @return {!Object<string, string>}
+ */
+function customerChange(
+    id, isActive, name = null, email = null, parentCustomerId = null) {
+
+  return {
+    obj: {
+      entity: 'Customer',
+      id: id,
+      isActive: isActive ? '1' : '2',
+      name: name == null ? name : encodeURIComponent(name),
+      email: email,
+      parentCustomerId: parentCustomerId,
+    }
+  };
 }
 
 
