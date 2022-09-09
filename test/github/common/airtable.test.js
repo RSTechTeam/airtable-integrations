@@ -1,8 +1,6 @@
 import * as airtable from '../../../src/common/airtable.js';
 
-const base =
-    new airtable.Base(
-        process.env.AIRTABLE_BASE_ID, process.env.AIRTABLE_API_KEY);
+const base = airtableBase();
 const table = 'Table 1';
 const recordIds = new Map();
 const getField = (field) => (r) => r.get(field);
