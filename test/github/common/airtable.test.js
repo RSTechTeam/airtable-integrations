@@ -1,4 +1,5 @@
 import * as airtable from '../../../src/common/airtable.js';
+import {airtableBase} from '../../test_utils.js';
 
 const base = airtableBase();
 const table = 'Table 1';

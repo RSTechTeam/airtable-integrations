@@ -1,6 +1,7 @@
 import * as sync from '../../../src/accounting_terminology_index/sync.js';
-import {PRIMARY_ORG_BILL_COM_ID} from '../../../src/common/airtable.js';
+import {airtableBase, billComApi} from '../../test_utils.js';
 import {customerData} from '../../../src/common/bill_com.js';
+import {PRIMARY_ORG_BILL_COM_ID} from '../../../src/common/airtable.js';
 
 test('main syncs Customers from Airtable to Bill.com', async () => {
   const api = await billComApi();
