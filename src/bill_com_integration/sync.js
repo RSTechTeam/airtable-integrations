@@ -4,7 +4,7 @@
  */
 
 import {Base, BILL_COM_ID_SUFFIX, PRIMARY_ORG_BILL_COM_ID} from '../common/airtable.js';
-import {customerChange, filter} from '../common/bill_com.js';
+import {customerData, filter} from '../common/bill_com.js';
 
 /** Bill.com Bill Approval Statuses. */
 const approvalStatuses = new Map([
@@ -194,7 +194,7 @@ async function syncCustomers(anchorEntity) {
         const hasAnchorEntityId = id != undefined;
         const email = record.get('Email');
         const name = record.get('Name');
-        const change = customerChange(id, isActive, name, email);
+        const change = customerData(id, isActive, name, email);
 
         // Skip any record that is neither active
         // nor has an anchor entity Bill.com ID.
@@ -255,7 +255,7 @@ async function syncCustomers(anchorEntity) {
     const response =
         await billComApi.dataCall(
             'Crud/Create/Customer',
-            customerChange(undefined, true, customer.email, customer.name));
+            customerData(undefined, true, customer.email, customer.name));
     airtableCreates.push({
       fields: {
         Active: true,

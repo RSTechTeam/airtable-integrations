@@ -231,7 +231,7 @@ export async function getApi(
  * @param {?string=} parentCustomerId
  * @return {!Object<string, string>}
  */
-export function customerChange(
+export function customerData(
     id,
     isActive,
     name = undefined,

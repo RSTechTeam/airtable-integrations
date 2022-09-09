@@ -1,7 +1,7 @@
 /** @fileoverview Syncs Bill.com Customers from Airtable to Bill.com. */
 
 import {Base, PRIMARY_ORG_BILL_COM_ID} from '../common/airtable.js';
-import {customerChange, filter} from '../common/bill_com.js';
+import {customerData, filter} from '../common/bill_com.js';
 import {internalCustomerId} from '../common/inputs.js';
 
 /**
@@ -37,7 +37,7 @@ export async function main(
       async (record) => {
         const id = record.get(PRIMARY_ORG_BILL_COM_ID);
         const change =
-            customerChange(
+            customerData(
                 id, true, record.get(nameField), undefined, parentCustomerId);
 
         // Insert/Create in Bill.com any record with no primary org Bill.com ID.
@@ -60,7 +60,7 @@ export async function main(
 
   // Mark internal Bill.com Customers not in the Bill.com Sync View as inactive.
   for (const id of billComCustomerIds) {
-    updates.push(customerChange(id, false));
+    updates.push(customerData(id, false));
   }
   await billComApi.bulkCall('Update/Customer', updates);
 }

@@ -30,11 +30,11 @@ test('filter creates API filter object', () => {
       {field: 'field', op: 'op', value: 'value'});
 });
 
-describe('customerChange', () => {
+describe('customerData', () => {
 
-  test('given all fields and active, returns correct Customer change', () => {
+  test('given all fields and active, returns correct Customer data', () => {
     const change =
-        billCom.customerChange('id', true, 'First Last', 'abc@xyz.co', 'pid');
+        billCom.customerData('id', true, 'First Last', 'abc@xyz.co', 'pid');
     expect(change).toEqual({
       obj: {
         entity: 'Customer',
@@ -47,8 +47,8 @@ describe('customerChange', () => {
     });
   });
 
-  test('some fields and inactive, returns correct Customer change', () => {
-    expect(billCom.customerChange('id', false)).toEqual({
+  test('some fields and inactive, returns correct Customer data', () => {
+    expect(billCom.customerData('id', false)).toEqual({
       obj: {entity: 'Customer', id: 'id', isActive: '2'}
     });
   });

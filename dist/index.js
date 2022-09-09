@@ -18202,7 +18202,7 @@ async function main(
       async (record) => {
         const id = record.get(_common_airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .PRIMARY_ORG_BILL_COM_ID */ .bB);
         const change =
-            (0,_common_bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .customerChange */ .Ys)(
+            (0,_common_bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .customerData */ .A5)(
                 id, true, record.get(nameField), undefined, parentCustomerId);
 
         // Insert/Create in Bill.com any record with no primary org Bill.com ID.
@@ -18225,7 +18225,7 @@ async function main(
 
   // Mark internal Bill.com Customers not in the Bill.com Sync View as inactive.
   for (const id of billComCustomerIds) {
-    updates.push((0,_common_bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .customerChange */ .Ys)(id, false));
+    updates.push((0,_common_bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .customerData */ .A5)(id, false));
   }
   await billComApi.bulkCall('Update/Customer', updates);
 }
@@ -19092,7 +19092,7 @@ async function syncCustomers(anchorEntity) {
         const hasAnchorEntityId = id != undefined;
         const email = record.get('Email');
         const name = record.get('Name');
-        const change = (0,_common_bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .customerChange */ .Ys)(id, isActive, name, email);
+        const change = (0,_common_bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .customerData */ .A5)(id, isActive, name, email);
 
         // Skip any record that is neither active
         // nor has an anchor entity Bill.com ID.
@@ -19153,7 +19153,7 @@ async function syncCustomers(anchorEntity) {
     const response =
         await billComApi.dataCall(
             'Crud/Create/Customer',
-            (0,_common_bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .customerChange */ .Ys)(undefined, true, customer.email, customer.name));
+            (0,_common_bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .customerData */ .A5)(undefined, true, customer.email, customer.name));
     airtableCreates.push({
       fields: {
         Active: true,
@@ -19331,7 +19331,7 @@ class Base {
 /* harmony export */   "k_": () => (/* binding */ apiCall),
 /* harmony export */   "hX": () => (/* binding */ filter),
 /* harmony export */   "ac": () => (/* binding */ getApi),
-/* harmony export */   "Ys": () => (/* binding */ customerChange)
+/* harmony export */   "A5": () => (/* binding */ customerData)
 /* harmony export */ });
 /* unused harmony export Api */
 /* harmony import */ var node_fetch__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(4028);
@@ -19572,7 +19572,7 @@ async function getApi(
  * @param {?string=} parentCustomerId
  * @return {!Object<string, string>}
  */
-function customerChange(
+function customerData(
     id,
     isActive,
     name = undefined,
