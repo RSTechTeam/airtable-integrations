@@ -1,6 +1,6 @@
 import * as sync from '../../../src/accounting_terminology_index/sync.js';
 import {Base, PRIMARY_ORG_BILL_COM_ID} from '../../../src/common/airtable.js';
-import {customerChange, getApi} from '../../../src/common/bill_com.js';
+import {customerData, getApi} from '../../../src/common/bill_com.js';
 
 test('main syncs Customers from Airtable to Bill.com', async () => {
   const apiKey = process.env.AIRTABLE_API_KEY;
@@ -59,7 +59,7 @@ test('main syncs Customers from Airtable to Bill.com', async () => {
   const updates = [];
   for (const [name, id] of testCustomers) {
     updates.push(
-        customerChange(id, initiallyActiveCustomers.includes(name), name));
+        customerData(id, initiallyActiveCustomers.includes(name), name));
   }
   await billComApi.bulkCall('Update/Customer', updates);
   await airtableBase.select(
