@@ -1,7 +1,7 @@
 import {Base} from '../src/common/airtable.js';
 import {getApi} from '../src/common/bill_com.js';
 
-const billComApi = () => {
+global.billComApi = () => {
   return getApi(
       process.env.AIRTABLE_ORG_IDS_BASE_ID,
       process.env.AIRTABLE_API_KEY,
@@ -11,6 +11,6 @@ const billComApi = () => {
       true);
 };
 
-const airtableBase = () => {
+global.airtableBase = () => {
   return new Base(process.env.AIRTABLE_BASE_ID, process.env.AIRTABLE_API_KEY);
 };
