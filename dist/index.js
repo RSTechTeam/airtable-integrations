@@ -18250,28 +18250,36 @@ __nccwpck_require__.r(__webpack_exports__);
 /**
  * @param {!Api} billComApi
  * @param {!Base=} billComIntegrationBase
+ * @param {string=} approverUserProfileId
+ * @param {string=} approverTable
+ * @param {string=} createView
  * @return {!Promise<undefined>}
  */
-async function main(billComApi, billComIntegrationBase = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .Base */ .XY()) {
-  const APPROVER_TABLE = 'New Bill.com Approvers';
+async function main(
+    billComApi,
+    billComIntegrationBase = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .Base */ .XY(),
+    approverUserProfileId = (0,_common_inputs_js__WEBPACK_IMPORTED_MODULE_1__/* .ecrApproverUserProfileId */ .WI)(),
+    approverTable = 'New Bill.com Approvers',
+    createView = 'New') {
+
   await billComApi.primaryOrgLogin();
   await billComIntegrationBase.select(
-      APPROVER_TABLE,
-      'New',
+      approverTable,
+      createView,
       async (record) => {
         await billComApi.dataCall(
             'Crud/Create/User',
             {
               obj: {
                 entity: 'User',
-                profileId: (0,_common_inputs_js__WEBPACK_IMPORTED_MODULE_1__/* .ecrApproverUserProfileId */ .WI)(),
+                profileId: approverUserProfileId,
                 firstName: record.get('First Name'),
                 lastName: record.get('Last Name'),
                 email: record.get('Email'),
               }
             });
         await billComIntegrationBase.update(
-            APPROVER_TABLE, [{id: record.getId(), fields: {'Created': true}}]);
+            approverTable, [{id: record.getId(), fields: {'Created': true}}]);
       });
 }
 
