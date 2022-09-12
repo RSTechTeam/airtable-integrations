@@ -3,7 +3,7 @@ import {airtableBase, billComApi} from '../../test_utils.js';
 import {filter} from '../../../src/common/bill_com.js';
 
 test('main creates Bill.com Approver User', async () => {
-  const testStartTime = Date().toISOString();
+  const testStartTime = new Date().toISOString();
   const api = await billComApi();
   const listRecentlyCreatedUsers = () => {
     return api.listActive('User', [filter('createdTime', '>', testStartTime)]);
