@@ -11,7 +11,7 @@ test('main creates Bill.com Approver User', async () => {
   const base = airtableBase();
 
   // Check pre-conditions.
-  api.primaryOrgLogin();
+  await api.primaryOrgLogin();
   expect(listRecentlyCreatedUsers()).resolves.toHaveLength(0);
 
   // Execute main.
