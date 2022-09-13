@@ -20,21 +20,24 @@ test('dataCall successfully makes API call with json data', () => {
   return expect(response).resolves.not.toBeNull();
 });
 
-const expectListToHaveLength = (listResult, expected) => () => {
+const expectListToHaveLength = (listResult, expected) => {
   return expect(listResult).resolves.toHaveLength(expected);
 };
 
 describe('list', () => {
-  test('with no filter, returns all objects',
-      expectListToHaveLength(api.list('Item'), 2));
+  test('with no filter, returns all objects', () => {
+    return expectListToHaveLength(api.list('Item'), 2)
+  });
 
-  test('with inactive filter, returns all inactive objects',
-      expectListToHaveLength(
-          api.list('Item', [billCom.filter('isActive', '=', '2')]), 1));
+  test('with inactive filter, returns all inactive objects', () => {
+    return expectListToHaveLength(
+        api.list('Item', [billCom.filter('isActive', '=', '2')]), 1)
+  });;
 });
 
-test('listActive returns all active objects',
-    expectListToHaveLength(api.listActive('Item'), 1));
+test('listActive returns all active objects', () => {
+  return expectListToHaveLength(api.listActive('Item'), 1)
+});
 
 const expectedVendor = {entity: 'Vendor', name: 'Test', email: 'test@rsllc.co'};
 const expectVendor = (vendor) => expect(vendor).toMatchObject(expectedVendor);
