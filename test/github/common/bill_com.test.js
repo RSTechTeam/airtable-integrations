@@ -21,7 +21,7 @@ test('dataCall successfully makes API call with json data', () => {
 });
 
 const expectListToHaveLength = (listResult, expected) => () => {
-  expect(listResult).resolves.toHaveLength(expected);
+  return expect(listResult).resolves.toHaveLength(expected);
 };
 
 describe('list', () => {
