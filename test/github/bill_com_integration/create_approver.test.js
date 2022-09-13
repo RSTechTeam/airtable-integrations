@@ -8,7 +8,21 @@ test('main creates Bill.com Approver User', async () => {
   const listRecentlyCreatedUsers = () => {
     return api.listActive('User', [filter('createdTime', '>', testStartTime)]);
   };
+  const allUsers = await api.list('User');
   const base = airtableBase();
+  let userAirtableId;
+  base.select(
+      userTable,
+      '',
+      (record) => {
+        userAirtableId = record.getId();
+        return base.update(
+            userTable,
+            [{
+              id: userAirtableId,
+              fields: {'Email': `test${allUsers.length}@abc.xyz`},
+            }]);
+      });
 
   // Check pre-conditions.
   await api.primaryOrgLogin();
@@ -19,16 +33,15 @@ test('main creates Bill.com Approver User', async () => {
   await createApprover.main(
       api, base, process.env.APPROVER_USER_PROFILE_ID, userTable, '');
 
-  // Check post-conditions and reset.
+  // Check post-conditions.
   const users = await listRecentlyCreatedUsers();
   expect(users).toHaveLength(1);
-  api.dataCall('Crud/Delete/User', {id: users[0].id});
-  base.select(
+  base.find(
       userTable,
-      '',
-      (record) => {
-        expect(record.get('Created')).toBe(true);
-        return base.update(
-            userTable, [{id: record.getId(), fields: {'Created': false}}]);
-      });
+      userAirtableId,
+      (record) => expect(record.get('Created')).toBe(true));
+
+  // Reset.
+  api.dataCall('Crud/Delete/User', {id: users[0].id});
+  base.update(userTable, [{id: userAirtableId, fields: {'Created': false}}]);
 });
