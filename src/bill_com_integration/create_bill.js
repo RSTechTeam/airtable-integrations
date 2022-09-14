@@ -101,6 +101,10 @@ export async function main(billComApi, airtableBase = new Base()) {
 
         // Create Bill.com Bill based on Check Request.
         const requester = newCheckRequest.get('Requester Name');
+        const invoiceId =
+            newCheckRequest.get('Vendor Invoice ID') ||
+                `${requester.substring(0, 15)}` +
+                    ` - ${newCheckRequest.getId().substring(3, 6)}`;
         const createBillResponse =
             await billComApi.dataCall(
                 'Crud/Create/Bill',
@@ -108,10 +112,7 @@ export async function main(billComApi, airtableBase = new Base()) {
                   obj: {
                     entity: 'Bill',
                     vendorId: vendorId,
-                    invoiceNumber:
-                      newCheckRequest.get('Vendor Invoice ID') ||
-                          `${requester.substring(0, 15)}` +
-                              ` - ${newCheckRequest.getId().substring(3, 6)}`,
+                    invoiceNumber: invoiceId,
                     invoiceDate: newCheckRequest.get('Expense Date'),
                     dueDate: newCheckRequest.get('Due Date'),
                     description:
@@ -132,6 +133,7 @@ export async function main(billComApi, airtableBase = new Base()) {
               fields: {
                 'Active': true,
                 'Bill.com Link': getUrlResponse.url,
+                'Vendor Invoice ID': invoiceId,
                 [PRIMARY_ORG_BILL_COM_ID]: createBillResponse.id,
               },
             }]);
