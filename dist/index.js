@@ -18869,7 +18869,8 @@ async function main(billComApi, airtableBase = new airtable/* Base */.XY()) {
         const data = new FormData();
         data.set('devKey', billComApi.getDevKey());
         data.set('sessionId', billComApi.getSessionId());
-        for (const doc of newCheckRequest.get('Supporting Documents')) {
+        const docs = newCheckRequest.get('Supporting Documents') || [];
+        for (const doc of docs) {
 
           // Fetch the document.
           const response = await (0,src/* default */.ZP)(doc.url);
