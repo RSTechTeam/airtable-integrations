@@ -132,7 +132,7 @@ export class Api {
     const response =
         await this.dataCall(
             `Crud/Create/${entity}`, {obj: {entity: entity, ...data}});
-  //   return response.id;
+    return response.id;
   }
 
   /**
