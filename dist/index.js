@@ -19330,8 +19330,8 @@ class Base {
         table,
         view,
         async (record) => {
-          return this.update(
-              table, [{id: record.getId(), fields: await fieldsFunc(record)}]);
+          const fields = await fieldsFunc(record);
+          return this.update(table, [{id: record.getId(), fields: fields}]);
         });
    }
 
