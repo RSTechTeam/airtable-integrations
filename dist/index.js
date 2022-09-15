@@ -18822,6 +18822,10 @@ async function main(billComApi, airtableBase = new airtable/* Base */.XY()) {
         const requester = newCheckRequest.get('Requester Name');
         const invoiceId =
             newCheckRequest.get('Vendor Invoice ID') ||
+                // Invoice number can currently be max 21 characters.
+                // For default ID, take 15 from requester name
+                // and 3 from unique part of Airtable Record ID,
+                // with 3 to pretty divide these parts.
                 `${requester.substring(0, 15)}` +
                     ` - ${newCheckRequest.getId().substring(3, 6)}`;
         const createBillResponse =
