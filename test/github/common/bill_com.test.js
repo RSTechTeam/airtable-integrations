@@ -27,7 +27,7 @@ const deleteAndExpectVendor =
     (data) => api.dataCall('Crud/Delete/Vendor', data).then(expectVendor);
 
 test('create creates given entity', () => {
-  const id = await api.create('Vendor', givenVendor);
+  const id = await api.createEntity('Vendor', givenVendor);
   await deleteAndExpectVendor({id: id});
 });
 
