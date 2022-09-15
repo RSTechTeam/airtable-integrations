@@ -85,7 +85,7 @@ describe('selectAndUpdate', () => {
   });
 
   const selectAndUpdate = (view) => {
-    return base.selectAndUpdate(table, view, (record) => ({Text: 'Hi'});
+    return base.selectAndUpdate(table, view, (record) => ({Text: 'Hi'}));
   };
 
   test('given no view, defaults to whole table', async () => {
