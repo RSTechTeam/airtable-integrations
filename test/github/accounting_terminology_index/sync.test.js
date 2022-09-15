@@ -1,7 +1,13 @@
 import * as sync from '../../../src/accounting_terminology_index/sync.js';
 import {airtableBase, billComApi} from '../../test_utils.js';
 import {customerData} from '../../../src/common/bill_com.js';
+import {jest} from '@jest/globals';
 import {PRIMARY_ORG_BILL_COM_ID} from '../../../src/common/airtable.js';
+
+// Increasingly long because this test lists both active and inactive Customers,
+// creates a Customer every run, and Bill.com doesn't currently enable
+// true deleting.
+jest.setTimeout(10000);
 
 test('main syncs Customers from Airtable to Bill.com', async () => {
   const api = await billComApi();
