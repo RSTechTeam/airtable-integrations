@@ -20,6 +20,17 @@ test('dataCall successfully makes API call with json data', () => {
   return expect(response).resolves.not.toBeNull();
 });
 
+const givenVendor = {name: 'Test', email: 'test@abc.xyz'};
+const expectedVendor = {entity: 'Vendor', ...givenVendor};
+const expectVendor = (vendor) => expect(vendor).toMatchObject(expectedVendor);
+const deleteAndExpectVendor =
+    (data) => api.dataCall('Crud/Delete/Vendor', data).then(expectVendor);
+
+test('create creates given entity', () => {
+  const id = await api.create('Vendor', givenVendor);
+  await deleteAndExpectVendor({id: id});
+});
+
 const expectListToHaveLength = (listResult, expected) => {
   return expect(listResult).resolves.toHaveLength(expected);
 };
@@ -39,16 +50,14 @@ test('listActive returns all active objects', () => {
   return expectListToHaveLength(api.listActive('Item'), 1)
 });
 
-const expectedVendor = {entity: 'Vendor', name: 'Test', email: 'test@rsllc.co'};
-const expectVendor = (vendor) => expect(vendor).toMatchObject(expectedVendor);
 let vendorQueryData;
 
 test('createVendor creates vendor', async () => {
   const id =
       await api.createVendor(
-          expectedVendor.name, '', '', '', '', '', '', expectedVendor.email, '');
+          givenVendor.name, '', '', '', '', '', '', givenVendor.email, '');
   vendorQueryData = {id: id};
-  api.dataCall('Crud/Delete/Vendor', vendorQueryData).then(expectVendor);
+  await deleteAndExpectVendor(vendorQueryData);
 });
 
 test('bulkCall returns bulk responses', async () => {
