@@ -128,12 +128,12 @@ export class Api {
    * @param {!Object<string, *>} data
    * @return {!Promise<string>} The newly created entity ID.
    */
-  // async create(entity, data) {
+  async create(entity, data) {
   //   const response =
   //       await this.dataCall(
   //           `Crud/Create/${entity}`, {obj: {entity: entity, ...data}});
   //   return response.id;
-  // }
+  }
 
   /**
    * @param {string} entity
