@@ -19500,7 +19500,7 @@ class Api {
    * @param {!Object<string, *>} data
    * @return {!Promise<string>} The newly created entity ID.
    */
-  async createEntity(entity, data) {
+  async create(entity, data) {
     const response =
         await this.dataCall(
             `Crud/Create/${entity}`, {obj: {entity: entity, ...data}});
@@ -19550,7 +19550,7 @@ class Api {
   createVendor(
       name, address1, address2, city, state, zip, country, email, phone) {
 
-    return this.createEntity(
+    return this.create(
         'Vendor',
         {
           name: encodeURIComponent(name),
