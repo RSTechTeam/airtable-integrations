@@ -80,6 +80,24 @@ export class Base {
   }
 
   /**
+   * Runs fieldsFunc for each record from table view
+   * and updates each record's fields using fieldsFunc's return value.
+   * @param {string} table
+   * @param {string} view
+   * @param {function(!Record<!TField>): !Object<string, *>} fieldsFunc
+   * @return {!Promise<!Array<*>>}
+   */
+   selectAndUpdate(table, view, fieldsFunc) {
+    return this.select(
+        table,
+        view,
+        async (record) => {
+          return this.update(
+              table, [{id: record.getId(), fields: await fieldsFunc(record)}]);
+        });
+   }
+
+  /**
    * @param {string} table
    * @param {!Object[]} creates
    * @param {!Object<string, *>} creates[].fields

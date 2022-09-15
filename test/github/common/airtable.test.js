@@ -38,35 +38,68 @@ describe('select', () => {
   });
 });
 
+const update = (tbl, text1, text2, text3) => {
+  return base.update(tbl, [
+    {id: recordIds.get(1), fields: {Text: text1}},
+    {id: recordIds.get(2), fields: {Text: text2}},
+    {id: recordIds.get(3), fields: {Text: text3}},
+  ]);
+};
+const resetTexts = () => update(table, 'Hello', 'World', '!');
+const expectTextsToEqual =
+    (expected) => expect(selectField('', 'Text')).resolves.toEqual(expected);
+const expectTextsToContain =
+    (expected) => expectTextsToEqual(expect.arrayContaining(expected));
+const expectControlTexts = () => expectTextsToContain(['Hello', 'World', '!']);
+const resetAndExpectControlTexts = async () => {
+  await resetTexts();
+  await expectControlTexts();
+};
+
 describe('update', () => {
 
   test('given empty, returns empty', () => {
     return expect(base.update(table, [])).resolves.toEqual([]);
   });
 
-  const update = (tbl, text1, text3) => {
-    return base.update(tbl, [
-      {id: recordIds.get(1), fields: {Text: text1}},
-      {id: recordIds.get(3), fields: {Text: text3}},
-    ]);
-  };
-
   test('given no table (with non-empty updates), throws', () => {
-    expect(() => update('', '', '')).toThrow();
+    expect(() => update('', '', '', '')).toThrow();
   });
 
   test('updates records', async () => {
-    const expectTextsToContain =
-        (expected) => expect(selectField('', 'Text')).resolves.toEqual(
-            expect.arrayContaining(expected));
-    await expectTextsToContain(['Hello', 'World', '!']);
-
+    await expectControlTexts();
     
-    await update(table, 'Goodbye', '?');
-    await expectTextsToContain(['Goodbye', 'World', '?']);
+    await update(table, 'Goodbye', 'Earth', '?');
+    await expectTextsToContain(['Goodbye', 'Earth', '?']);
 
-    await update(table, 'Hello', '!');
-    await expectTextsToContain(['Hello', 'World', '!']);
+    await resetAndExpectControlTexts();
+  });
+});
+
+describe('selectAndUpdate', () => {
+
+  afterEach(resetAndExpectControlTexts);
+
+  test('given no table, throws', () => {
+    expect(() => base.selectAndUpdate('', '', x => x)).toThrow();
+  });
+
+  const selectAndUpdate = (view) => {
+    return base.selectAndUpdate(table, view, (record) => {Text: 'Hi'});
+  };
+
+  test('given no view, defaults to whole table', async () => {
+    await selectAndUpdate('');
+    await expectTextsToEqual(['Hi', 'Hi', 'Hi']);
+  });
+
+  test('given unknown view, throws', () => {
+    return expect(selectAndUpdate('Unknown')).rejects.toThrow();
+  });
+
+  test('uses given view', async () => {
+    await selectAndUpdate('No One');
+    await expectTextsToContain(['Hello', 'Hi', 'Hi']);
   });
 });
 
@@ -92,7 +125,7 @@ describe('create', () => {
     const ids = await selectId('');
     expect(ids).toHaveLength(5);
     expect(ids).toEqual(expect.arrayContaining([1, 2, 3, 4, 5]));
-    return base.base_(table).destroy(created[0].map((r) => r.id));
+    await base.base_(table).destroy(created[0].map((r) => r.id));
   });
 });
 
