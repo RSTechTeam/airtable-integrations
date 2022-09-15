@@ -19316,7 +19316,7 @@ class Base {
    * and updates each record's fields using fieldsFunc's return value.
    * @param {string} table
    * @param {string} view
-   * @param {function(!Record<!TField>): !Object<string, *>} fieldsFunc
+   * @param {function(!Record<!TField>): !Promise<!Object<string, *>>} fieldsFunc
    * @return {!Promise<!Array<*>>}
    */
    selectAndUpdate(table, view, fieldsFunc) {
