@@ -20200,27 +20200,22 @@ class Api {
    * @param {string} phone
    * @return {!Promise<string>} The newly created vendor ID.
    */
-  async createVendor(
+  createVendor(
       name, address1, address2, city, state, zip, country, email, phone) {
 
-    const response =
-        await this.dataCall(
-            'Crud/Create/Vendor',
-            {
-              obj: {
-                entity: 'Vendor',
-                name: encodeURIComponent(name),
-                address1: address1,
-                address2: address2,
-                addressCity: city,
-                addressState: state,
-                addressZip: zip,
-                addressCountry: country,
-                email: email,
-                phone: phone,
-              }
-            });
-    return response.id;
+    return this.create(
+        'Vendor',
+        {
+          name: encodeURIComponent(name),
+          address1: address1,
+          address2: address2,
+          addressCity: city,
+          addressState: state,
+          addressZip: zip,
+          addressCountry: country,
+          email: email,
+          phone: phone,
+        });
   }
 
   /**
