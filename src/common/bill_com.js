@@ -33,6 +33,16 @@ export async function apiCall(endpoint, headers, body, test = false) {
 }
 
 /**
+ * @param {string} entity
+ * @param {string} data
+ * @return {!Object<string, !Object<string, *>>}
+ */
+export function entityData(entity, data) {
+  data.name &&= encodeURIComponent(data.name);
+  return {obj: {entity: entity, ...data}};
+}
+
+/**
  * @param {string} field
  * @param {string} op
  * @param {string} value
@@ -130,8 +140,7 @@ export class Api {
    */
   async create(entity, data) {
     const response =
-        await this.dataCall(
-            `Crud/Create/${entity}`, {obj: {entity: entity, ...data}});
+        await this.dataCall(`Crud/Create/${entity}`, entityData(entity, data));
     return response.id;
   }
 
@@ -245,14 +254,13 @@ export function customerData(
     email = undefined,
     parentCustomerId = undefined) {
 
-  return {
-    obj: {
-      entity: 'Customer',
-      id: id,
-      isActive: isActive ? '1' : '2',
-      name: name == undefined ? undefined : encodeURIComponent(name),
-      email: email,
-      parentCustomerId: parentCustomerId,
-    }
-  };
+  return entityData(
+      'Customer',
+      {
+        id: id,
+        isActive: isActive ? '1' : '2',
+        name: name,
+        email: email,
+        parentCustomerId: parentCustomerId,
+      });
 }

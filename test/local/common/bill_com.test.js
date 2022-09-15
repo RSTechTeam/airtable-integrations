@@ -25,6 +25,19 @@ describe('apiCall', () => {
       expectLoginToThrow('x-www-form-urlencoded', body, 1129));
 });
 
+describe.each`
+  testName                            | givenName       | expectedName
+  ${'given no name, pass it through'} | ${undefined}    | ${undefined}
+  ${'given name, URI encodes it'}     | ${'First Last'} | ${'First%20Last'}
+`('entityData', ({testName, givenName, expectedName}) => {
+  
+  test(testName, () => {
+    expect(billCom.entityData('Customer', {id: 1, name: givenName})).toEqual({
+      obj: {entity: 'Customer', id: 1, name: expectedName}
+    });
+  });
+});
+
 test('filter creates API filter object', () => {
   expect(billCom.filter('field', 'op', 'value')).toEqual(
       {field: 'field', op: 'op', value: 'value'});

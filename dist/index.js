@@ -20017,7 +20017,7 @@ class Base {
 /* harmony export */   "ac": () => (/* binding */ getApi),
 /* harmony export */   "A5": () => (/* binding */ customerData)
 /* harmony export */ });
-/* unused harmony export Api */
+/* unused harmony exports entityData, Api */
 /* harmony import */ var node_fetch__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(4028);
 /* harmony import */ var _inputs_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(4684);
 /* harmony import */ var _airtable_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(5585);
@@ -20055,6 +20055,16 @@ async function apiCall(endpoint, headers, body, test = false) {
     (0,_utils_js__WEBPACK_IMPORTED_MODULE_2__/* .fetchError */ .Tl)(data.error_code, endpoint, data.error_message);
   }
   return data;
+}
+
+/**
+ * @param {string} entity
+ * @param {string} data
+ * @return {!Object<string, !Object<string, *>>}
+ */
+function entityData(entity, data) {
+  data.name &&= encodeURIComponent(data.name);
+  return {obj: {entity: entity, ...data}};
 }
 
 /**
@@ -20155,8 +20165,7 @@ class Api {
    */
   async create(entity, data) {
     const response =
-        await this.dataCall(
-            `Crud/Create/${entity}`, {obj: {entity: entity, ...data}});
+        await this.dataCall(`Crud/Create/${entity}`, entityData(entity, data));
     return response.id;
   }
 
@@ -20270,16 +20279,15 @@ function customerData(
     email = undefined,
     parentCustomerId = undefined) {
 
-  return {
-    obj: {
-      entity: 'Customer',
-      id: id,
-      isActive: isActive ? '1' : '2',
-      name: name == undefined ? undefined : encodeURIComponent(name),
-      email: email,
-      parentCustomerId: parentCustomerId,
-    }
-  };
+  return entityData(
+      'Customer',
+      {
+        id: id,
+        isActive: isActive ? '1' : '2',
+        name: name,
+        email: email,
+        parentCustomerId: parentCustomerId,
+      });
 }
 
 
