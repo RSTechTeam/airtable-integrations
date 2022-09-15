@@ -92,8 +92,8 @@ export class Base {
         table,
         view,
         async (record) => {
-          const fields = await fieldsFunc(record);
-          return this.update(table, [{id: record.getId(), fields: fields}]);
+          return this.update(
+              table, [{id: record.getId(), fields: await fieldsFunc(record)}]);
         });
    }
 
