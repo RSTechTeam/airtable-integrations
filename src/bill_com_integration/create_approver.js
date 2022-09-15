@@ -19,7 +19,7 @@ export async function main(
     createView = 'New') {
 
   await billComApi.primaryOrgLogin();
-  await billComIntegrationBase.select(
+  await billComIntegrationBase.selectAndUpdate(
       approverTable,
       createView,
       async (record) => {
@@ -34,7 +34,6 @@ export async function main(
                 email: record.get('Email'),
               }
             });
-        await billComIntegrationBase.update(
-            approverTable, [{id: record.getId(), fields: {'Created': true}}]);
+        return {Created: true};
       });
 }

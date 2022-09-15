@@ -37,7 +37,7 @@ export async function main(billComApi, airtableBase = new Base()) {
 
   // Get new Check Requests.
   await billComApi.primaryOrgLogin();
-  await billComIntegrationBase.select(
+  await billComIntegrationBase.selectAndUpdate(
       CHECK_REQUESTS_TABLE,
       'New',
       async (newCheckRequest) => {
@@ -126,22 +126,6 @@ export async function main(billComApi, airtableBase = new Base()) {
                   }
                 });
 
-        // Get and set the link (and ID) for the newly created Bill.com Bill.
-        const getUrlResponse =
-            await billComApi.dataCall(
-                'GetObjectUrl', {objectId: createBillResponse.id});
-        await billComIntegrationBase.update(
-            CHECK_REQUESTS_TABLE,
-            [{
-              id: newCheckRequest.getId(),
-              fields: {
-                'Active': true,
-                'Bill.com Link': getUrlResponse.url,
-                'Vendor Invoice ID': invoiceId,
-                [PRIMARY_ORG_BILL_COM_ID]: createBillResponse.id,
-              },
-            }]);
-
         // Set the Bill's approvers.
         const approverAirtableIds = newCheckRequest.get('Approvers') || [];
         const approverBillComIds =
@@ -181,5 +165,16 @@ export async function main(billComApi, airtableBase = new Base()) {
 
           await apiCall('UploadAttachment', {}, data);
         }
+
+        // Get and set the link (and ID) for the newly created Bill.com Bill.
+        const getUrlResponse =
+            await billComApi.dataCall(
+                'GetObjectUrl', {objectId: createBillResponse.id});
+        return {
+          'Active': true,
+          'Bill.com Link': getUrlResponse.url,
+          'Vendor Invoice ID': invoiceId,
+          [PRIMARY_ORG_BILL_COM_ID]: createBillResponse.id,
+        };
       });
 }

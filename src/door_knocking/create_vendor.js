@@ -9,14 +9,11 @@ import {primaryOrg} from '../common/inputs.js';
  * @return {!Promise<undefined>}
  */
 export async function main(billComApi, airtableBase = new Base()) {
-  const VOLUNTEERS_TABLE = 'Sign Ups';
-
   await billComApi.primaryOrgLogin();
-  await airtableBase.select(
-      VOLUNTEERS_TABLE,
+  await airtableBase.selectAndUpdate(
+      'Sign Ups',
       'Create Bill.com Vendor',
       async (record) => {
-
         const vendorId =
             await billComApi.createVendor(
                 `${record.get('Name*')} (STV)`,
@@ -29,11 +26,6 @@ export async function main(billComApi, airtableBase = new Base()) {
                 record.get('Email*'),
                 record.get('Phone*'));
 
-        await airtableBase.update(
-            VOLUNTEERS_TABLE,
-            [{
-              id: record.getId(),
-              fields: {[`${primaryOrg()} Bill.com Vendor ID`]: vendorId},
-            }]);
-      })
+        return {[`${primaryOrg()} Bill.com Vendor ID`]: vendorId};
+      });
 }
