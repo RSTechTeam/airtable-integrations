@@ -131,7 +131,7 @@ export class Api {
   async create(entity, data) {
     const response =
         await this.dataCall(
-            `Crud/Create/${entity}`, {}); //{obj: {entity: entity, ...data}});
+            `Crud/Create/${entity}`, {obj: {entity: entity, ...data}});
   //   return response.id;
   }
 
