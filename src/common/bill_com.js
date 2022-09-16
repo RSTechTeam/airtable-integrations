@@ -191,7 +191,7 @@ export class Api {
    * @param {!Object<string, *>[]} data
    * @return {!Promise<!Object<string, *>[]>}
    */
-  bulkCall(endpoint, data) {
+  bulk(endpoint, data) {
     return batchAwait(
         (arr) => this.dataCall(`Bulk/Crud/${endpoint}`, {bulk: arr}),
         data, 100);

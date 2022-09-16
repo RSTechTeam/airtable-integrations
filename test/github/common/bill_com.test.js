@@ -50,7 +50,7 @@ test('listActive returns all active objects', () => {
   return expectListToHaveLength(api.listActive('Item'), 1)
 });
 
-test('bulkCall returns bulk responses', async () => {
-  const response = await api.bulkCall('Read/Vendor', [vendorQueryData]);
+test('bulk returns bulk responses', async () => {
+  const response = await api.bulk('Read/Vendor', [vendorQueryData]);
   expectVendor(response[0].bulk[0].response_data);
 });

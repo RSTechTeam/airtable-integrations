@@ -18865,7 +18865,7 @@ async function main(
   for (const id of billComCustomerIds) {
     updates.push({id: id, isActive: _common_bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .ActiveStatus.INACTIVE */ .tV.INACTIVE});
   }
-  await billComApi.bulkCall(
+  await billComApi.bulkC(
       'Update/Customer', updates.map((data) => (0,_common_bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .entityData */ .FX)('Customer', data)));
 }
 
@@ -19622,7 +19622,7 @@ async function syncUnpaid(table, entity) {
        });
   if (billComIds.length === 0) return;
   
-  const bulkResponses = await billComApi.bulkCall(`Read/${entity}`, billComIds);
+  const bulkResponses = await billComApi.bulk(`Read/${entity}`, billComIds);
   const updates = [];
   processBulkResponses(
       bulkResponses,
@@ -19798,7 +19798,7 @@ async function syncCustomers(anchorEntity) {
   if (billComCreates.length > 0) {
     billComCreates = billComCreates.map((data) => (0,_common_bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .entityData */ .FX)('Customer', data));
     const bulkResponses =
-        await billComApi.bulkCall('Create/Customer', billComCreates);
+        await billComApi.bulk('Create/Customer', billComCreates);
     processBulkResponses(
         bulkResponses,
         (r, i) => {
@@ -19809,7 +19809,7 @@ async function syncCustomers(anchorEntity) {
         });
   }
   billComUpdates = billComUpdates.map((data) => (0,_common_bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .entityData */ .FX)('Customer', data));
-  await billComApi.bulkCall('Update/Customer', billComUpdates);
+  await billComApi.bulk('Update/Customer', billComUpdates);
   await billComIntegrationBase.update(ALL_CUSTOMERS_TABLE, airtableUpdates);
 
   // Create any active anchor entity Bill.com Customer not in Airtable;
@@ -20216,7 +20216,7 @@ class Api {
    * @param {!Object<string, *>[]} data
    * @return {!Promise<!Object<string, *>[]>}
    */
-  bulkCall(endpoint, data) {
+  bulk(endpoint, data) {
     return (0,_utils_js__WEBPACK_IMPORTED_MODULE_2__/* .batchAwait */ .rE)(
         (arr) => this.dataCall(`Bulk/Crud/${endpoint}`, {bulk: arr}),
         data, 100);

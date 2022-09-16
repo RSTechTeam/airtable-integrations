@@ -66,7 +66,7 @@ test('main syncs Customers from Airtable to Bill.com', async () => {
               isActive: isActiveEnum(initiallyActiveCustomers.includes(name)),
             }));
   }
-  await api.bulkCall('Update/Customer', updates);
+  await api.bulk('Update/Customer', updates);
   await base.select(
       customerTable,
       '',
