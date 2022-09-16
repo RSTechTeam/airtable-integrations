@@ -54,9 +54,10 @@ test('listActive returns all active objects', () => {
 
 // shadowOp is not executed but has similar control flow
 const expectedVendor = {entity: 'Vendor', ...givenVendor, name: 'Test 2'};
+const test = {id: vendorId, name: 'Test 2'};
 describe.each`
   op          | shadowOp    | data
-  ${'Update'} | ${'Create'} | ${({id: vendorId, name: 'Test 2'})}
+  ${'Update'} | ${'Create'} | ${test}
   ${'Read'}   | ${'Delete'} | ${vendorId}
 `('bulk', ({op, shadowOp, data}) => {
 
