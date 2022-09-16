@@ -20207,7 +20207,7 @@ class Api {
    * @return {!Promise<!Object<string, *>[]>} entity list.
    */
   listActive(entity, filters = []) {
-    filters.push(filter('isActive', '=', '1'));
+    filters.push(filter('isActive', '=', ActiveStatus.ACTIVE));
     return this.list(entity, filters);
   }
 
