@@ -21,13 +21,13 @@ test('dataCall successfully makes API call with json data', () => {
 });
 
 const givenVendor = {name: 'Test', email: 'test@abc.xyz'};
-const expectedVendor = () => ({entity: 'Vendor', ...givenVendor});
-const expectVendor = (vendor) => expect(vendor).toMatchObject(expectedVendor());
+const expectVendor = (got, expected) => expect(got).toMatchObject(expected);
 let vendorId;
 
 test('create creates given entity', async () => {
   vendorId = await api.create('Vendor', givenVendor);
-  await api.dataCall('Crud/Delete/Vendor', {id: vendorId}).then(expectVendor);
+  const vendor = await api.dataCall('Crud/Delete/Vendor', {id: vendorId});
+  expectVendor(vendor, {entity: 'Vendor', ...givenVendor});
 });
 
 const expectListToHaveLength = (listResult, expected) => {
@@ -53,15 +53,15 @@ test('listActive returns all active objects', () => {
 });
 
 // shadowOp is not executed but has similar control flow
-givenVendor.name = 'Test 2';
+const expectedVendor = {entity: 'Vendor', ...givenVendor, name: 'Test 2'};
 describe.each`
   op          | shadowOp    | data
-  ${'Update'} | ${'Create'} | ${{id: vendorId, name: givenVendor.name}}
+  ${'Update'} | ${'Create'} | ${{id: vendorId, name: 'Test 2'}}
   ${'Read'}   | ${'Delete'} | ${vendorId}
 `('bulk', ({op, shadowOp, data}) => {
-
+  givenVendor.name = 'Test 2';
   test(`processes and executes ${op}(/${shadowOp}) data`, async () => {
     const response = await api.bulk(op, 'Vendor', [data]);
-    expectVendor(response[0].bulk[0].response_data);
+    expectVendor(response[0].bulk[0].response_data, expectedVendor);
   });
 });
