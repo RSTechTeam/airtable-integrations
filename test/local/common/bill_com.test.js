@@ -26,12 +26,22 @@ describe('apiCall', () => {
 });
 
 describe.each`
-  testName                            | givenName       | expectedName
-  ${'given no name, pass it through'} | ${undefined}    | ${undefined}
-  ${'given name, URI encodes it'}     | ${'First Last'} | ${'First%20Last'}
-`('entityData', ({testName, givenName, expectedName}) => {
+  given    | expected
+  ${true}  | ${'1'}
+  ${false} | ${'2'}
+`('isActiveEnum', ({given, expected}) => {
+
+  test(`given ${given}, returns ${expected}`,
+      () => expect(billCom.isActiveEnum(given)).toBe(expected));
+});
+
+describe.each`
+  givenName       | expectedName
+  ${undefined}    | ${undefined}
+  ${'First Last'} | ${'First%20Last'}
+`('entityData', ({givenName, expectedName}) => {
   
-  test(testName, () => {
+  test(`given name "${givenName}", expect name "${expectedName}"`, () => {
     expect(billCom.entityData('Customer', {id: 1, name: givenName})).toEqual({
       obj: {entity: 'Customer', id: 1, name: expectedName}
     });

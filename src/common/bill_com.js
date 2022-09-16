@@ -33,6 +33,14 @@ export async function apiCall(endpoint, headers, body, test = false) {
 }
 
 /**
+ * @param {boolean} isActive
+ * @return {string}
+ */
+export function isActiveEnum(isActive) {
+  return isActive ? '1' : '2';
+}
+
+/**
  * @param {string} entity
  * @param {string} data
  * @return {!Object<string, !Object<string, *>>}
@@ -258,7 +266,7 @@ export function customerData(
       'Customer',
       {
         id: id,
-        isActive: isActive ? '1' : '2',
+        isActive: isActiveEnum(isActive),
         name: name,
         email: email,
         parentCustomerId: parentCustomerId,
