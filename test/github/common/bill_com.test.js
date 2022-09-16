@@ -52,12 +52,6 @@ test('listActive returns all active objects', () => {
   return expectListToHaveLength(api.listActive('Item'), 1)
 });
 
-test('bulk returns bulk responses', async () => {
-  const response = await api.bulk('Read/Vendor', [vendorQueryData]);
-  expectVendor(response[0].bulk[0].response_data);
-});
-
-
 // shadowOp is not executed but has similar control flow
 givenVendor.name = 'Test 2';
 describe.each`
@@ -66,7 +60,7 @@ describe.each`
   ${'Read'}   | ${'Delete'} | ${vendorId}
 `('bulk', ({op, shadowOp, data}) => {
 
-  test(`processes and executes ${op}(/${shadowOp}) data`, () => {
+  test(`processes and executes ${op}(/${shadowOp}) data`, async () => {
     const response = await api.bulk(op, 'Vendor', [data]);
     expectVendor(response[0].bulk[0].response_data);
   });
