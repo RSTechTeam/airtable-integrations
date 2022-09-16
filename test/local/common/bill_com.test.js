@@ -27,8 +27,8 @@ describe('apiCall', () => {
 
 describe.each`
   given    | expected
-  ${true}  | ${'1'}
-  ${false} | ${'2'}
+  ${true}  | ${billCom.ActiveStatus.ACTIVE}
+  ${false} | ${billCom.ActiveStatus.INACTIVE}
 `('isActiveEnum', ({given, expected}) => {
 
   test(`given ${given}, returns ${expected}`,
@@ -51,28 +51,4 @@ describe.each`
 test('filter creates API filter object', () => {
   expect(billCom.filter('field', 'op', 'value')).toEqual(
       {field: 'field', op: 'op', value: 'value'});
-});
-
-describe('customerData', () => {
-
-  test('given all fields and active, returns correct Customer data', () => {
-    const change =
-        billCom.customerData('id', true, 'First Last', 'abc@xyz.co', 'pid');
-    expect(change).toEqual({
-      obj: {
-        entity: 'Customer',
-        id: 'id',
-        isActive: '1',
-        name: 'First%20Last',
-        email: 'abc@xyz.co',
-        parentCustomerId: 'pid',
-      }
-    });
-  });
-
-  test('some fields and inactive, returns correct Customer data', () => {
-    expect(billCom.customerData('id', false)).toEqual({
-      obj: {entity: 'Customer', id: 'id', isActive: '2'}
-    });
-  });
 });

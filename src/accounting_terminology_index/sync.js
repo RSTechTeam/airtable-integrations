@@ -1,7 +1,7 @@
 /** @fileoverview Syncs Bill.com Customers from Airtable to Bill.com. */
 
 import {Base, PRIMARY_ORG_BILL_COM_ID} from '../common/airtable.js';
-import {customerData, filter} from '../common/bill_com.js';
+import {ActiveStatus, entityData, filter} from '../common/bill_com.js';
 import {internalCustomerId} from '../common/inputs.js';
 
 /**
@@ -36,19 +36,21 @@ export async function main(
       syncView,
       async (record) => {
         const id = record.get(PRIMARY_ORG_BILL_COM_ID);
-        const change =
-            customerData(
-                id, true, record.get(nameField), undefined, parentCustomerId);
+        const change = {
+          id: id,
+          name: record.get(nameField),
+          isActive: ActiveStatus.ACTIVE,
+          parentCustomerId: parentCustomerId,
+        };
 
         // Insert/Create in Bill.com any record with no primary org Bill.com ID.
         if (id == undefined) {
-          const response =
-              await billComApi.dataCall('Crud/Create/Customer', change);
+          const billComId = await billComApi.create('Customer', change);
           await accountingBase.update(
               customerTable,
               [{
                 id: record.getId(),
-                fields: {[PRIMARY_ORG_BILL_COM_ID]: response.id},
+                fields: {[PRIMARY_ORG_BILL_COM_ID]: billComId},
               }]);
           return;
         }
@@ -60,7 +62,8 @@ export async function main(
 
   // Mark internal Bill.com Customers not in the Bill.com Sync View as inactive.
   for (const id of billComCustomerIds) {
-    updates.push(customerData(id, false));
+    updates.push({id: id, isActive: ActiveStatus.INACTIVE});
   }
-  await billComApi.bulkCall('Update/Customer', updates);
+  await billComApi.bulkCall(
+      'Update/Customer', updates.map((data) => entityData('Customer', data)));
 }

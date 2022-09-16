@@ -1,6 +1,6 @@
 import * as sync from '../../../src/accounting_terminology_index/sync.js';
 import {airtableBase, billComApi} from '../../test_utils.js';
-import {customerData} from '../../../src/common/bill_com.js';
+import {entityData, isActiveEnum} from '../../../src/common/bill_com.js';
 import {jest} from '@jest/globals';
 import {PRIMARY_ORG_BILL_COM_ID} from '../../../src/common/airtable.js';
 
@@ -58,7 +58,13 @@ test('main syncs Customers from Airtable to Bill.com', async () => {
   const updates = [];
   for (const [name, id] of testCustomers) {
     updates.push(
-        customerData(id, initiallyActiveCustomers.includes(name), name));
+        entityData(
+            'Customer',
+            {
+              id: id,
+              name: name,
+              isActive: isActiveEnum(initiallyActiveCustomers.includes(name)),
+            }));
   }
   await api.bulkCall('Update/Customer', updates);
   await base.select(

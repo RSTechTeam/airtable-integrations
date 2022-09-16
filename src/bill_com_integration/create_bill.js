@@ -51,16 +51,19 @@ export async function main(billComApi, airtableBase = new Base()) {
               newVendorId,
               async (newVendor) => {
                 vendorId =
-                    await billComApi.createVendor(
-                        newVendor.get('Name'),
-                        newVendor.get('Address Line 1'),
-                        newVendor.get('Address Line 2'),
-                        newVendor.get('City'),
-                        newVendor.get('State'),
-                        newVendor.get('Zip Code').toString(),
-                        newVendor.get('Country'),
-                        newVendor.get('Email'),
-                        newVendor.get('Phone'));
+                    await billComApi.create(
+                        'Vendor',
+                        {
+                          name: newVendor.get('Name'),
+                          address1: newVendor.get('Address Line 1'),
+                          address2: newVendor.get('Address Line 2'),
+                          addressCity: newVendor.get('City'),
+                          addressState: newVendor.get('State'),
+                          addressZip: newVendor.get('Zip Code').toString(),
+                          addressCountry: newVendor.get('Country'),
+                          email: newVendor.get('Email'),
+                          phone: newVendor.get('Phone'),
+                        });
               });
           await billComIntegrationBase.update(
               NEW_VENDORS_TABLE,
@@ -109,21 +112,18 @@ export async function main(billComApi, airtableBase = new Base()) {
                 // with 3 to pretty divide these parts.
                 `${requester.substring(0, 15)}` +
                     ` - ${newCheckRequest.getId().substring(3, 6)}`;
-        const createBillResponse =
-            await billComApi.dataCall(
-                'Crud/Create/Bill',
+        const newBillId =
+            await billComApi.create(
+                'Bill',
                 {
-                  obj: {
-                    entity: 'Bill',
-                    vendorId: vendorId,
-                    invoiceNumber: invoiceId,
-                    invoiceDate: newCheckRequest.get('Expense Date'),
-                    dueDate: newCheckRequest.get('Due Date'),
-                    description:
-                      `Submitted by ${requester}` +
-                          ` (${newCheckRequest.get('Requester Email')}).`,
-                    billLineItems: billComLineItems,
-                  }
+                  vendorId: vendorId,
+                  invoiceNumber: invoiceId,
+                  invoiceDate: newCheckRequest.get('Expense Date'),
+                  dueDate: newCheckRequest.get('Due Date'),
+                  description:
+                    `Submitted by ${requester}` +
+                        ` (${newCheckRequest.get('Requester Email')}).`,
+                  billLineItems: billComLineItems,
                 });
 
         // Set the Bill's approvers.
@@ -135,7 +135,7 @@ export async function main(billComApi, airtableBase = new Base()) {
         await billComApi.dataCall(
             'SetApprovers',
             {
-              objectId: createBillResponse.id,
+              objectId: newBillId,
               entity: 'Bill',
               approvers: approverBillComIds,
             });
@@ -159,22 +159,19 @@ export async function main(billComApi, airtableBase = new Base()) {
           // Upload it.
           data.set('file', file, doc.filename);
           data.set(
-              'data',
-              JSON.stringify(
-                  {id: createBillResponse.id, fileName: doc.filename}));
+              'data', JSON.stringify({id: newBillId, fileName: doc.filename}));
 
           await apiCall('UploadAttachment', {}, data);
         }
 
         // Get and set the link (and ID) for the newly created Bill.com Bill.
         const getUrlResponse =
-            await billComApi.dataCall(
-                'GetObjectUrl', {objectId: createBillResponse.id});
+            await billComApi.dataCall('GetObjectUrl', {objectId: newBillId});
         return {
           'Active': true,
           'Bill.com Link': getUrlResponse.url,
           'Vendor Invoice ID': invoiceId,
-          [PRIMARY_ORG_BILL_COM_ID]: createBillResponse.id,
+          [PRIMARY_ORG_BILL_COM_ID]: newBillId,
         };
       });
 }

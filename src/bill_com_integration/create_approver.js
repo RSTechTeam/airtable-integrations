@@ -23,16 +23,13 @@ export async function main(
       approverTable,
       createView,
       async (record) => {
-        await billComApi.dataCall(
-            'Crud/Create/User',
+        await billComApi.create(
+            'User',
             {
-              obj: {
-                entity: 'User',
-                profileId: approverUserProfileId,
-                firstName: record.get('First Name'),
-                lastName: record.get('Last Name'),
-                email: record.get('Email'),
-              }
+              profileId: approverUserProfileId,
+              firstName: record.get('First Name'),
+              lastName: record.get('Last Name'),
+              email: record.get('Email'),
             });
         return {Created: true};
       });

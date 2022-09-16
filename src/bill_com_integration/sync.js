@@ -4,7 +4,7 @@
  */
 
 import {Base, BILL_COM_ID_SUFFIX, PRIMARY_ORG_BILL_COM_ID} from '../common/airtable.js';
-import {customerData, filter} from '../common/bill_com.js';
+import {ActiveStatus, entityData, filter, isActiveEnum} from '../common/bill_com.js';
 
 /** Bill.com Bill Approval Statuses. */
 const approvalStatuses = new Map([
@@ -70,7 +70,7 @@ async function syncUnpaid(table, entity) {
         updates.push({
           id: airtableIds[i],
           fields: {
-            'Active': r.isActive === '1',
+            'Active': r.isActive === ActiveStatus.ACTIVE,
             'Approval Status': approvalStatuses.get(r.approvalStatus),
             'Payment Status': paymentStatuses.get(r.paymentStatus),
             'Paid': isPaid,
@@ -114,7 +114,7 @@ async function sync(entity, table, syncFunc) {
         const id = record.get(PRIMARY_ORG_BILL_COM_ID);
         updates.push({
           id: record.getId(),
-          fields: changes.has(id) ? changes.get(id) : {'Active': false},
+          fields: changes.has(id) ? changes.get(id) : {Active: false},
         });
         changes.delete(id);
       });
@@ -194,7 +194,9 @@ async function syncCustomers(anchorEntity) {
         const hasAnchorEntityId = id != undefined;
         const email = record.get('Email');
         const name = record.get('Name');
-        const change = customerData(id, isActive, name, email);
+        const change = {
+          id: id, name: name, isActive: isActiveEnum(isActive), email: email,
+        };
 
         // Skip any record that is neither active
         // nor has an anchor entity Bill.com ID.
@@ -215,9 +217,9 @@ async function syncCustomers(anchorEntity) {
         if (email == undefined && billComCustomerMap.has(id)) {
           const billComEmail = billComCustomerMap.get(id).email;
           if (billComEmail != null) {
-            change.obj.email = billComEmail;
+            change.email = billComEmail;
             airtableUpdates.push({
-              id: record.getId(), fields: {'Email': billComEmail},
+              id: record.getId(), fields: {Email: billComEmail},
             });
           }
         }
@@ -233,6 +235,7 @@ async function syncCustomers(anchorEntity) {
 
   // Bulk execute Bill.com Creates and Updates.
   if (billComCreates.length > 0) {
+    billComCreates = billComCreates.map((data) => entityData('Customer', data));
     const bulkResponses =
         await billComApi.bulkCall('Create/Customer', billComCreates);
     processBulkResponses(
@@ -244,6 +247,7 @@ async function syncCustomers(anchorEntity) {
           });
         });
   }
+  billComUpdates = billComUpdates.map((data) => entityData('Customer', data));
   await billComApi.bulkCall('Update/Customer', billComUpdates);
   await billComIntegrationBase.update(ALL_CUSTOMERS_TABLE, airtableUpdates);
 
@@ -252,17 +256,14 @@ async function syncCustomers(anchorEntity) {
   await billComApi.primaryOrgLogin();
   const airtableCreates = [];
   for (const [id, customer] of billComCustomerMap) {
-    const response =
-        await billComApi.dataCall(
-            'Crud/Create/Customer',
-            customerData(undefined, true, customer.email, customer.name));
     airtableCreates.push({
       fields: {
         Active: true,
         Name: customer.name,
         Email: customer.email,
         [BILL_COM_ID]: id,
-        [PRIMARY_ORG_BILL_COM_ID]: response.id,
+        [PRIMARY_ORG_BILL_COM_ID]:
+          await billComApi.create('Customer', customer),
       }
     });
   }

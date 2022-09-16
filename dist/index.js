@@ -18837,19 +18837,21 @@ async function main(
       syncView,
       async (record) => {
         const id = record.get(_common_airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .PRIMARY_ORG_BILL_COM_ID */ .bB);
-        const change =
-            (0,_common_bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .customerData */ .A5)(
-                id, true, record.get(nameField), undefined, parentCustomerId);
+        const change = {
+          id: id,
+          name: record.get(nameField),
+          isActive: _common_bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .ActiveStatus.ACTIVE */ .tV.ACTIVE,
+          parentCustomerId: parentCustomerId,
+        };
 
         // Insert/Create in Bill.com any record with no primary org Bill.com ID.
         if (id == undefined) {
-          const response =
-              await billComApi.dataCall('Crud/Create/Customer', change);
+          const billComId = await billComApi.create('Customer', change);
           await accountingBase.update(
               customerTable,
               [{
                 id: record.getId(),
-                fields: {[_common_airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .PRIMARY_ORG_BILL_COM_ID */ .bB]: response.id},
+                fields: {[_common_airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .PRIMARY_ORG_BILL_COM_ID */ .bB]: billComId},
               }]);
           return;
         }
@@ -18861,9 +18863,10 @@ async function main(
 
   // Mark internal Bill.com Customers not in the Bill.com Sync View as inactive.
   for (const id of billComCustomerIds) {
-    updates.push((0,_common_bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .customerData */ .A5)(id, false));
+    updates.push({id: id, isActive: _common_bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .ActiveStatus.INACTIVE */ .tV.INACTIVE});
   }
-  await billComApi.bulkCall('Update/Customer', updates);
+  await billComApi.bulkCall(
+      'Update/Customer', updates.map((data) => (0,_common_bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .entityData */ .FX)('Customer', data)));
 }
 
 
@@ -18903,16 +18906,13 @@ async function main(
       approverTable,
       createView,
       async (record) => {
-        await billComApi.dataCall(
-            'Crud/Create/User',
+        await billComApi.create(
+            'User',
             {
-              obj: {
-                entity: 'User',
-                profileId: approverUserProfileId,
-                firstName: record.get('First Name'),
-                lastName: record.get('Last Name'),
-                email: record.get('Email'),
-              }
+              profileId: approverUserProfileId,
+              firstName: record.get('First Name'),
+              lastName: record.get('Last Name'),
+              email: record.get('Email'),
             });
         return {Created: true};
       });
@@ -19422,16 +19422,19 @@ async function main(billComApi, airtableBase = new airtable/* Base */.XY()) {
               newVendorId,
               async (newVendor) => {
                 vendorId =
-                    await billComApi.createVendor(
-                        newVendor.get('Name'),
-                        newVendor.get('Address Line 1'),
-                        newVendor.get('Address Line 2'),
-                        newVendor.get('City'),
-                        newVendor.get('State'),
-                        newVendor.get('Zip Code').toString(),
-                        newVendor.get('Country'),
-                        newVendor.get('Email'),
-                        newVendor.get('Phone'));
+                    await billComApi.create(
+                        'Vendor',
+                        {
+                          name: newVendor.get('Name'),
+                          address1: newVendor.get('Address Line 1'),
+                          address2: newVendor.get('Address Line 2'),
+                          addressCity: newVendor.get('City'),
+                          addressState: newVendor.get('State'),
+                          addressZip: newVendor.get('Zip Code').toString(),
+                          addressCountry: newVendor.get('Country'),
+                          email: newVendor.get('Email'),
+                          phone: newVendor.get('Phone'),
+                        });
               });
           await billComIntegrationBase.update(
               NEW_VENDORS_TABLE,
@@ -19480,21 +19483,18 @@ async function main(billComApi, airtableBase = new airtable/* Base */.XY()) {
                 // with 3 to pretty divide these parts.
                 `${requester.substring(0, 15)}` +
                     ` - ${newCheckRequest.getId().substring(3, 6)}`;
-        const createBillResponse =
-            await billComApi.dataCall(
-                'Crud/Create/Bill',
+        const newBillId =
+            await billComApi.create(
+                'Bill',
                 {
-                  obj: {
-                    entity: 'Bill',
-                    vendorId: vendorId,
-                    invoiceNumber: invoiceId,
-                    invoiceDate: newCheckRequest.get('Expense Date'),
-                    dueDate: newCheckRequest.get('Due Date'),
-                    description:
-                      `Submitted by ${requester}` +
-                          ` (${newCheckRequest.get('Requester Email')}).`,
-                    billLineItems: billComLineItems,
-                  }
+                  vendorId: vendorId,
+                  invoiceNumber: invoiceId,
+                  invoiceDate: newCheckRequest.get('Expense Date'),
+                  dueDate: newCheckRequest.get('Due Date'),
+                  description:
+                    `Submitted by ${requester}` +
+                        ` (${newCheckRequest.get('Requester Email')}).`,
+                  billLineItems: billComLineItems,
                 });
 
         // Set the Bill's approvers.
@@ -19506,7 +19506,7 @@ async function main(billComApi, airtableBase = new airtable/* Base */.XY()) {
         await billComApi.dataCall(
             'SetApprovers',
             {
-              objectId: createBillResponse.id,
+              objectId: newBillId,
               entity: 'Bill',
               approvers: approverBillComIds,
             });
@@ -19530,22 +19530,19 @@ async function main(billComApi, airtableBase = new airtable/* Base */.XY()) {
           // Upload it.
           data.set('file', file, doc.filename);
           data.set(
-              'data',
-              JSON.stringify(
-                  {id: createBillResponse.id, fileName: doc.filename}));
+              'data', JSON.stringify({id: newBillId, fileName: doc.filename}));
 
           await (0,bill_com/* apiCall */.k_)('UploadAttachment', {}, data);
         }
 
         // Get and set the link (and ID) for the newly created Bill.com Bill.
         const getUrlResponse =
-            await billComApi.dataCall(
-                'GetObjectUrl', {objectId: createBillResponse.id});
+            await billComApi.dataCall('GetObjectUrl', {objectId: newBillId});
         return {
           'Active': true,
           'Bill.com Link': getUrlResponse.url,
           'Vendor Invoice ID': invoiceId,
-          [airtable/* PRIMARY_ORG_BILL_COM_ID */.bB]: createBillResponse.id,
+          [airtable/* PRIMARY_ORG_BILL_COM_ID */.bB]: newBillId,
         };
       });
 }
@@ -19634,7 +19631,7 @@ async function syncUnpaid(table, entity) {
         updates.push({
           id: airtableIds[i],
           fields: {
-            'Active': r.isActive === '1',
+            'Active': r.isActive === _common_bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .ActiveStatus.ACTIVE */ .tV.ACTIVE,
             'Approval Status': approvalStatuses.get(r.approvalStatus),
             'Payment Status': paymentStatuses.get(r.paymentStatus),
             'Paid': isPaid,
@@ -19678,7 +19675,7 @@ async function sync(entity, table, syncFunc) {
         const id = record.get(_common_airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .PRIMARY_ORG_BILL_COM_ID */ .bB);
         updates.push({
           id: record.getId(),
-          fields: changes.has(id) ? changes.get(id) : {'Active': false},
+          fields: changes.has(id) ? changes.get(id) : {Active: false},
         });
         changes.delete(id);
       });
@@ -19758,7 +19755,9 @@ async function syncCustomers(anchorEntity) {
         const hasAnchorEntityId = id != undefined;
         const email = record.get('Email');
         const name = record.get('Name');
-        const change = (0,_common_bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .customerData */ .A5)(id, isActive, name, email);
+        const change = {
+          id: id, name: name, isActive: (0,_common_bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .isActiveEnum */ .dA)(isActive), email: email,
+        };
 
         // Skip any record that is neither active
         // nor has an anchor entity Bill.com ID.
@@ -19779,9 +19778,9 @@ async function syncCustomers(anchorEntity) {
         if (email == undefined && billComCustomerMap.has(id)) {
           const billComEmail = billComCustomerMap.get(id).email;
           if (billComEmail != null) {
-            change.obj.email = billComEmail;
+            change.email = billComEmail;
             airtableUpdates.push({
-              id: record.getId(), fields: {'Email': billComEmail},
+              id: record.getId(), fields: {Email: billComEmail},
             });
           }
         }
@@ -19797,6 +19796,7 @@ async function syncCustomers(anchorEntity) {
 
   // Bulk execute Bill.com Creates and Updates.
   if (billComCreates.length > 0) {
+    billComCreates = billComCreates.map((data) => (0,_common_bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .entityData */ .FX)('Customer', data));
     const bulkResponses =
         await billComApi.bulkCall('Create/Customer', billComCreates);
     processBulkResponses(
@@ -19808,6 +19808,7 @@ async function syncCustomers(anchorEntity) {
           });
         });
   }
+  billComUpdates = billComUpdates.map((data) => (0,_common_bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .entityData */ .FX)('Customer', data));
   await billComApi.bulkCall('Update/Customer', billComUpdates);
   await billComIntegrationBase.update(ALL_CUSTOMERS_TABLE, airtableUpdates);
 
@@ -19816,17 +19817,14 @@ async function syncCustomers(anchorEntity) {
   await billComApi.primaryOrgLogin();
   const airtableCreates = [];
   for (const [id, customer] of billComCustomerMap) {
-    const response =
-        await billComApi.dataCall(
-            'Crud/Create/Customer',
-            (0,_common_bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .customerData */ .A5)(undefined, true, customer.email, customer.name));
     airtableCreates.push({
       fields: {
         Active: true,
         Name: customer.name,
         Email: customer.email,
         [BILL_COM_ID]: id,
-        [_common_airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .PRIMARY_ORG_BILL_COM_ID */ .bB]: response.id,
+        [_common_airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .PRIMARY_ORG_BILL_COM_ID */ .bB]:
+          await billComApi.create('Customer', customer),
       }
     });
   }
@@ -20012,12 +20010,14 @@ class Base {
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
 
 /* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
+/* harmony export */   "tV": () => (/* binding */ ActiveStatus),
 /* harmony export */   "k_": () => (/* binding */ apiCall),
+/* harmony export */   "dA": () => (/* binding */ isActiveEnum),
+/* harmony export */   "FX": () => (/* binding */ entityData),
 /* harmony export */   "hX": () => (/* binding */ filter),
-/* harmony export */   "ac": () => (/* binding */ getApi),
-/* harmony export */   "A5": () => (/* binding */ customerData)
+/* harmony export */   "ac": () => (/* binding */ getApi)
 /* harmony export */ });
-/* unused harmony exports isActiveEnum, entityData, Api */
+/* unused harmony export Api */
 /* harmony import */ var node_fetch__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(4028);
 /* harmony import */ var _inputs_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(4684);
 /* harmony import */ var _airtable_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(5585);
@@ -20034,6 +20034,12 @@ class Base {
 
 
 
+
+/**
+ * Mirrors Bill.com's isActive enum.
+ * @enum {string}
+ */
+const ActiveStatus = {ACTIVE: '1', INACTIVE: '2'};
 
 /**
  * @param {string} endpoint 
@@ -20062,7 +20068,7 @@ async function apiCall(endpoint, headers, body, test = false) {
  * @return {string}
  */
 function isActiveEnum(isActive) {
-  return isActive ? '1' : '2';
+  return isActive ? ActiveStatus.ACTIVE : ActiveStatus.INACTIVE;
 }
 
 /**
@@ -20206,36 +20212,6 @@ class Api {
   }
 
   /**
-   * @param {string} name
-   * @param {string} address1 - Address line 1.
-   * @param {string} address2 - Address line 2.
-   * @param {string} city
-   * @param {string} state - The 2 letter postal abbreviation.
-   * @param {string} zip
-   * @param {string} country - The 2 letter ISO alpha-2 code, except USA.
-   * @param {string} email
-   * @param {string} phone
-   * @return {!Promise<string>} The newly created vendor ID.
-   */
-  createVendor(
-      name, address1, address2, city, state, zip, country, email, phone) {
-
-    return this.create(
-        'Vendor',
-        {
-          name: encodeURIComponent(name),
-          address1: address1,
-          address2: address2,
-          addressCity: city,
-          addressState: state,
-          addressZip: zip,
-          addressCountry: country,
-          email: email,
-          phone: phone,
-        });
-  }
-
-  /**
    * @param {string} endpoint
    * @param {!Object<string, *>[]} data
    * @return {!Promise<!Object<string, *>[]>}
@@ -20270,32 +20246,6 @@ async function getApi(
       'Org IDs',
       (r) => orgIds.set(r.get('Department'), r.get('Bill.com Org ID')));
   return new Api(orgIds, userName, password, devKey, test);
-}
-
-/**
- * @param {?string} id
- * @param {boolean} isActive
- * @param {?string=} name
- * @param {?string=} email
- * @param {?string=} parentCustomerId
- * @return {!Object<string, string>}
- */
-function customerData(
-    id,
-    isActive,
-    name = undefined,
-    email = undefined,
-    parentCustomerId = undefined) {
-
-  return entityData(
-      'Customer',
-      {
-        id: id,
-        isActive: isActiveEnum(isActive),
-        name: name,
-        email: email,
-        parentCustomerId: parentCustomerId,
-      });
 }
 
 

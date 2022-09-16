@@ -11,6 +11,12 @@ import {batchAwait, fetchError, PRIMARY_ORG} from './utils.js';
 import {logJson} from './github_actions_core.js';
 
 /**
+ * Mirrors Bill.com's isActive enum.
+ * @enum {string}
+ */
+export const ActiveStatus = {ACTIVE: '1', INACTIVE: '2'};
+
+/**
  * @param {string} endpoint 
  * @param {!Object<string, *>} headers
  * @param {(string|FormData)} body
@@ -37,7 +43,7 @@ export async function apiCall(endpoint, headers, body, test = false) {
  * @return {string}
  */
 export function isActiveEnum(isActive) {
-  return isActive ? '1' : '2';
+  return isActive ? ActiveStatus.ACTIVE : ActiveStatus.INACTIVE;
 }
 
 /**
@@ -181,36 +187,6 @@ export class Api {
   }
 
   /**
-   * @param {string} name
-   * @param {string} address1 - Address line 1.
-   * @param {string} address2 - Address line 2.
-   * @param {string} city
-   * @param {string} state - The 2 letter postal abbreviation.
-   * @param {string} zip
-   * @param {string} country - The 2 letter ISO alpha-2 code, except USA.
-   * @param {string} email
-   * @param {string} phone
-   * @return {!Promise<string>} The newly created vendor ID.
-   */
-  createVendor(
-      name, address1, address2, city, state, zip, country, email, phone) {
-
-    return this.create(
-        'Vendor',
-        {
-          name: encodeURIComponent(name),
-          address1: address1,
-          address2: address2,
-          addressCity: city,
-          addressState: state,
-          addressZip: zip,
-          addressCountry: country,
-          email: email,
-          phone: phone,
-        });
-  }
-
-  /**
    * @param {string} endpoint
    * @param {!Object<string, *>[]} data
    * @return {!Promise<!Object<string, *>[]>}
@@ -245,30 +221,4 @@ export async function getApi(
       'Org IDs',
       (r) => orgIds.set(r.get('Department'), r.get('Bill.com Org ID')));
   return new Api(orgIds, userName, password, devKey, test);
-}
-
-/**
- * @param {?string} id
- * @param {boolean} isActive
- * @param {?string=} name
- * @param {?string=} email
- * @param {?string=} parentCustomerId
- * @return {!Object<string, string>}
- */
-export function customerData(
-    id,
-    isActive,
-    name = undefined,
-    email = undefined,
-    parentCustomerId = undefined) {
-
-  return entityData(
-      'Customer',
-      {
-        id: id,
-        isActive: isActiveEnum(isActive),
-        name: name,
-        email: email,
-        parentCustomerId: parentCustomerId,
-      });
 }

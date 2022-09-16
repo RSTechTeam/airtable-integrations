@@ -23,12 +23,12 @@ test('dataCall successfully makes API call with json data', () => {
 const givenVendor = {name: 'Test', email: 'test@abc.xyz'};
 const expectedVendor = {entity: 'Vendor', ...givenVendor};
 const expectVendor = (vendor) => expect(vendor).toMatchObject(expectedVendor);
-const deleteAndExpectVendor =
-    (data) => api.dataCall('Crud/Delete/Vendor', data).then(expectVendor);
+let vendorQueryData;
 
 test('create creates given entity', async () => {
   const id = await api.create('Vendor', givenVendor);
-  await deleteAndExpectVendor({id: id});
+  vendorQueryData = {id: id};
+  await api.dataCall('Crud/Delete/Vendor', vendorQueryData).then(expectVendor);
 });
 
 const expectListToHaveLength = (listResult, expected) => {
@@ -48,16 +48,6 @@ describe('list', () => {
 
 test('listActive returns all active objects', () => {
   return expectListToHaveLength(api.listActive('Item'), 1)
-});
-
-let vendorQueryData;
-
-test('createVendor creates vendor', async () => {
-  const id =
-      await api.createVendor(
-          givenVendor.name, '', '', '', '', '', '', givenVendor.email, '');
-  vendorQueryData = {id: id};
-  await deleteAndExpectVendor(vendorQueryData);
 });
 
 test('bulkCall returns bulk responses', async () => {
