@@ -56,9 +56,10 @@ test('listActive returns all active objects', () => {
 const expectedVendor = {entity: 'Vendor', ...givenVendor, name: 'Test 2'};
 describe.each`
   op          | shadowOp    | data
-  ${'Update'} | ${'Create'} | ${{id: vendorId, name: 'Test 2'}}
+  ${'Update'} | ${'Create'} | ${({id: vendorId, name: 'Test 2'})}
   ${'Read'}   | ${'Delete'} | ${vendorId}
 `('bulk', ({op, shadowOp, data}) => {
+
   test(`processes and executes ${op}(/${shadowOp}) data`, async () => {
     const response = await api.bulk(op, 'Vendor', [data]);
     expectVendor(response[0].bulk[0].response_data, expectedVendor);
