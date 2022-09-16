@@ -18865,7 +18865,7 @@ async function main(
   for (const id of billComCustomerIds) {
     updates.push({id: id, isActive: _common_bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .ActiveStatus.INACTIVE */ .tV.INACTIVE});
   }
-  await billComApi.bulkC(
+  await billComApi.bulk(
       'Update/Customer', updates.map((data) => (0,_common_bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .entityData */ .FX)('Customer', data)));
 }
 
