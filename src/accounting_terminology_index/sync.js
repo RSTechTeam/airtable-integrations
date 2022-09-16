@@ -64,5 +64,5 @@ export async function main(
   for (const id of billComCustomerIds) {
     updates.push({id: id, isActive: ActiveStatus.INACTIVE});
   }
-  await billComApi.bulk('Update', 'Customer', data);
+  await billComApi.bulk('Update', 'Customer', updates);
 }
