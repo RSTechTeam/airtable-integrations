@@ -59,7 +59,6 @@ describe.each`
   ${'Update'} | ${'Create'} | ${{id: vendorId, name: 'Test 2'}}
   ${'Read'}   | ${'Delete'} | ${vendorId}
 `('bulk', ({op, shadowOp, data}) => {
-  givenVendor.name = 'Test 2';
   test(`processes and executes ${op}(/${shadowOp}) data`, async () => {
     const response = await api.bulk(op, 'Vendor', [data]);
     expectVendor(response[0].bulk[0].response_data, expectedVendor);
