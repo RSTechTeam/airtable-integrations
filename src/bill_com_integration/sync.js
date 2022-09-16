@@ -49,19 +49,19 @@ function processBulkResponses(bulkResponses, func) {
 async function syncUnpaid(table, entity) {
   const BILL_COM_ID =
       entity === 'Bill' ? PRIMARY_ORG_BILL_COM_ID : BILL_COM_ID_SUFFIX;
-  
+
   const billComIds = [];
   const airtableIds = [];
   await billComIntegrationBase.select(
       table,
       'Unpaid',
       (record) => {
-        billComIds.push({id: record.get(BILL_COM_ID)});
+        billComIds.push(record.get(BILL_COM_ID));
         airtableIds.push(record.getId());
        });
   if (billComIds.length === 0) return;
-  
-  const bulkResponses = await billComApi.bulk(`Read/${entity}`, billComIds);
+
+  const bulkResponses = await billComApi.bulk('Read', entity, billComIds);
   const updates = [];
   processBulkResponses(
       bulkResponses,
@@ -235,9 +235,8 @@ async function syncCustomers(anchorEntity) {
 
   // Bulk execute Bill.com Creates and Updates.
   if (billComCreates.length > 0) {
-    billComCreates = billComCreates.map((data) => entityData('Customer', data));
     const bulkResponses =
-        await billComApi.bulk('Create/Customer', billComCreates);
+        await billComApi.bulk('Create', 'Customer', billComCreates);
     processBulkResponses(
         bulkResponses,
         (r, i) => {
@@ -247,8 +246,7 @@ async function syncCustomers(anchorEntity) {
           });
         });
   }
-  billComUpdates = billComUpdates.map((data) => entityData('Customer', data));
-  await billComApi.bulk('Update/Customer', billComUpdates);
+  await billComApi.bulk('Update', 'Customer', billComUpdates);
   await billComIntegrationBase.update(ALL_CUSTOMERS_TABLE, airtableUpdates);
 
   // Create any active anchor entity Bill.com Customer not in Airtable;

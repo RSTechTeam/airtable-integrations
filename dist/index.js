@@ -18865,8 +18865,7 @@ async function main(
   for (const id of billComCustomerIds) {
     updates.push({id: id, isActive: _common_bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .ActiveStatus.INACTIVE */ .tV.INACTIVE});
   }
-  await billComApi.bulk(
-      'Update/Customer', updates.map((data) => (0,_common_bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .entityData */ .FX)('Customer', data)));
+  await billComApi.bulk('Update', 'Customer', data);
 }
 
 
@@ -19610,19 +19609,19 @@ function processBulkResponses(bulkResponses, func) {
 async function syncUnpaid(table, entity) {
   const BILL_COM_ID =
       entity === 'Bill' ? _common_airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .PRIMARY_ORG_BILL_COM_ID */ .bB : _common_airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .BILL_COM_ID_SUFFIX */ .dK;
-  
+
   const billComIds = [];
   const airtableIds = [];
   await billComIntegrationBase.select(
       table,
       'Unpaid',
       (record) => {
-        billComIds.push({id: record.get(BILL_COM_ID)});
+        billComIds.push(record.get(BILL_COM_ID));
         airtableIds.push(record.getId());
        });
   if (billComIds.length === 0) return;
-  
-  const bulkResponses = await billComApi.bulk(`Read/${entity}`, billComIds);
+
+  const bulkResponses = await billComApi.bulk('Read', entity, billComIds);
   const updates = [];
   processBulkResponses(
       bulkResponses,
@@ -19796,9 +19795,8 @@ async function syncCustomers(anchorEntity) {
 
   // Bulk execute Bill.com Creates and Updates.
   if (billComCreates.length > 0) {
-    billComCreates = billComCreates.map((data) => (0,_common_bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .entityData */ .FX)('Customer', data));
     const bulkResponses =
-        await billComApi.bulk('Create/Customer', billComCreates);
+        await billComApi.bulk('Create', 'Customer', billComCreates);
     processBulkResponses(
         bulkResponses,
         (r, i) => {
@@ -19808,8 +19806,7 @@ async function syncCustomers(anchorEntity) {
           });
         });
   }
-  billComUpdates = billComUpdates.map((data) => (0,_common_bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .entityData */ .FX)('Customer', data));
-  await billComApi.bulk('Update/Customer', billComUpdates);
+  await billComApi.bulk('Update', 'Customer', billComUpdates);
   await billComIntegrationBase.update(ALL_CUSTOMERS_TABLE, airtableUpdates);
 
   // Create any active anchor entity Bill.com Customer not in Airtable;
@@ -20013,11 +20010,10 @@ class Base {
 /* harmony export */   "tV": () => (/* binding */ ActiveStatus),
 /* harmony export */   "k_": () => (/* binding */ apiCall),
 /* harmony export */   "dA": () => (/* binding */ isActiveEnum),
-/* harmony export */   "FX": () => (/* binding */ entityData),
 /* harmony export */   "hX": () => (/* binding */ filter),
 /* harmony export */   "ac": () => (/* binding */ getApi)
 /* harmony export */ });
-/* unused harmony export Api */
+/* unused harmony exports entityData, Api */
 /* harmony import */ var node_fetch__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(4028);
 /* harmony import */ var _inputs_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(4684);
 /* harmony import */ var _airtable_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(5585);
@@ -20212,14 +20208,19 @@ class Api {
   }
 
   /**
-   * @param {string} endpoint
-   * @param {!Object<string, *>[]} data
+   * @param {string} op - Create|Read|Update|Delete
+   * @param {string} entity
+   * @param {(string[]|!Object<string, *>[])} data -
+   *   A list of IDs if op is Read or Delete, otherwise a list of entity data.
    * @return {!Promise<!Object<string, *>[]>}
    */
-  bulk(endpoint, data) {
+  bulk(op, entity, data) {
+    const func =
+        ['Read', 'Delete'].includes(op) ?
+            (datum) => ({id: datum}) : (datum) => entityData(entity, datum);
     return (0,_utils_js__WEBPACK_IMPORTED_MODULE_2__/* .batchAwait */ .rE)(
-        (arr) => this.dataCall(`Bulk/Crud/${endpoint}`, {bulk: arr}),
-        data, 100);
+        (arr) => this.dataCall(`Bulk/Crud/${op}/${entity}`, {bulk: arr}),
+        data.map(func), 100);
   }
 }
 

@@ -21,14 +21,13 @@ test('dataCall successfully makes API call with json data', () => {
 });
 
 const givenVendor = {name: 'Test', email: 'test@abc.xyz'};
-const expectedVendor = {entity: 'Vendor', ...givenVendor};
-const expectVendor = (vendor) => expect(vendor).toMatchObject(expectedVendor);
-let vendorQueryData;
+const expectedVendor = () => ({entity: 'Vendor', ...givenVendor});
+const expectVendor = (vendor) => expect(vendor).toMatchObject(expectedVendor());
+let vendorId;
 
 test('create creates given entity', async () => {
-  const id = await api.create('Vendor', givenVendor);
-  vendorQueryData = {id: id};
-  await api.dataCall('Crud/Delete/Vendor', vendorQueryData).then(expectVendor);
+  vendorId = await api.create('Vendor', givenVendor);
+  await api.dataCall('Crud/Delete/Vendor', {id: vendorId}).then(expectVendor);
 });
 
 const expectListToHaveLength = (listResult, expected) => {
@@ -42,8 +41,11 @@ describe('list', () => {
 
   test('with inactive filter, returns all inactive objects', () => {
     return expectListToHaveLength(
-        api.list('Item', [billCom.filter('isActive', '=', '2')]), 1)
-  });;
+        api.list(
+            'Item',
+            [billCom.filter('isActive', '=', billCom.ActiveStatus.INACTIVE)]),
+        1);
+  });
 });
 
 test('listActive returns all active objects', () => {
@@ -53,4 +55,19 @@ test('listActive returns all active objects', () => {
 test('bulk returns bulk responses', async () => {
   const response = await api.bulk('Read/Vendor', [vendorQueryData]);
   expectVendor(response[0].bulk[0].response_data);
+});
+
+
+// shadowOp is not executed but has similar control flow
+givenVendor.name = 'Test 2';
+describe.each`
+  op          | shadowOp    | data
+  ${'Update'} | ${'Create'} | ${{id: vendorId, name: givenVendor.name}}
+  ${'Read'}   | ${'Delete'} | ${vendorId}
+`('bulk', ({op, shadowOp, data}) => {
+
+  test(`processes and executes ${op}(/${shadowOp}) data`, () => {
+    const response = await api.bulk(op, 'Vendor', [data]);
+    expectVendor(response[0].bulk[0].response_data);
+  });
 });

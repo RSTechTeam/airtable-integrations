@@ -57,16 +57,13 @@ test('main syncs Customers from Airtable to Bill.com', async () => {
   testCustomers.delete(NEW_NAME);
   const updates = [];
   for (const [name, id] of testCustomers) {
-    updates.push(
-        entityData(
-            'Customer',
-            {
-              id: id,
-              name: name,
-              isActive: isActiveEnum(initiallyActiveCustomers.includes(name)),
-            }));
+    updates.push({
+      id: id,
+      name: name,
+      isActive: isActiveEnum(initiallyActiveCustomers.includes(name)),
+    });
   }
-  await api.bulk('Update/Customer', updates);
+  await api.bulk('Update', 'Customer', updates);
   await base.select(
       customerTable,
       '',

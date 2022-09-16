@@ -187,14 +187,19 @@ export class Api {
   }
 
   /**
-   * @param {string} endpoint
-   * @param {!Object<string, *>[]} data
+   * @param {string} op - Create|Read|Update|Delete
+   * @param {string} entity
+   * @param {(string[]|!Object<string, *>[])} data -
+   *   A list of IDs if op is Read or Delete, otherwise a list of entity data.
    * @return {!Promise<!Object<string, *>[]>}
    */
-  bulk(endpoint, data) {
+  bulk(op, entity, data) {
+    const func =
+        ['Read', 'Delete'].includes(op) ?
+            (datum) => ({id: datum}) : (datum) => entityData(entity, datum);
     return batchAwait(
-        (arr) => this.dataCall(`Bulk/Crud/${endpoint}`, {bulk: arr}),
-        data, 100);
+        (arr) => this.dataCall(`Bulk/Crud/${op}/${entity}`, {bulk: arr}),
+        data.map(func), 100);
   }
 }
 
