@@ -19367,8 +19367,11 @@ class FormData {
 
 
 
+// EXTERNAL MODULE: ./src/common/github_actions_core.js
+var github_actions_core = __nccwpck_require__(1444);
 ;// CONCATENATED MODULE: ./src/bill_com_integration/create_bill.js
 /** @fileoverview Creates a Bill.com Bill based on a new Check Request. */
+
 
 
 
@@ -19482,6 +19485,7 @@ async function main(billComApi, airtableBase = new airtable/* Base */.XY()) {
                 // with 3 to pretty divide these parts.
                 `${requester.substring(0, 15)}` +
                     ` - ${newCheckRequest.getId().substring(3, 6)}`;
+        (0,github_actions_core/* log */.cM)(`invoice ID: ${invoiceId}`);
         const newBillId =
             await billComApi.create(
                 'Bill',
@@ -20256,11 +20260,11 @@ async function getApi(
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
 
 /* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
+/* harmony export */   "cM": () => (/* binding */ log),
 /* harmony export */   "Np": () => (/* binding */ getInput),
 /* harmony export */   "vU": () => (/* binding */ error),
 /* harmony export */   "u2": () => (/* binding */ logJson)
 /* harmony export */ });
-/* unused harmony export log */
 /* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(6024);
 /* harmony import */ var _utils_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(381);
 /**

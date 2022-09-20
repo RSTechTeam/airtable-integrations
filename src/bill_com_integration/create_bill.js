@@ -6,6 +6,7 @@ import {Base, PRIMARY_ORG_BILL_COM_ID} from '../common/airtable.js';
 import {fetchError} from '../common/utils.js';
 import {finalApproverUserId} from '../common/inputs.js';
 import {FormData} from 'formdata-node';
+import {log} from '../common/github_actions_core.js';
 
 /** The Bill.com Integration Airtable Base. */
 let billComIntegrationBase;
@@ -112,6 +113,7 @@ export async function main(billComApi, airtableBase = new Base()) {
                 // with 3 to pretty divide these parts.
                 `${requester.substring(0, 15)}` +
                     ` - ${newCheckRequest.getId().substring(3, 6)}`;
+        log(`invoice ID: ${invoiceId}`);
         const newBillId =
             await billComApi.create(
                 'Bill',
