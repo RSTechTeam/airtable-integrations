@@ -19367,11 +19367,8 @@ class FormData {
 
 
 
-// EXTERNAL MODULE: ./src/common/github_actions_core.js
-var github_actions_core = __nccwpck_require__(1444);
 ;// CONCATENATED MODULE: ./src/bill_com_integration/create_bill.js
 /** @fileoverview Creates a Bill.com Bill based on a new Check Request. */
-
 
 
 
@@ -19485,7 +19482,6 @@ async function main(billComApi, airtableBase = new airtable/* Base */.XY()) {
                 // with 3 to pretty divide these parts.
                 `${requester.substring(0, 15)}` +
                     ` - ${newCheckRequest.getId().substring(3, 6)}`;
-        (0,github_actions_core/* log */.cM)(`invoice ID: ${invoiceId}`);
         const newBillId =
             await billComApi.create(
                 'Bill',
