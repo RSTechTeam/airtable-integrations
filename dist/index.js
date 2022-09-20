@@ -20134,6 +20134,7 @@ class Api {
    * @return {!Promise<!Object<string, *>>} endpoint-specific response_data.
    */
   call(endpoint, params) {
+    (0,_github_actions_core_js__WEBPACK_IMPORTED_MODULE_3__/* .log */ .cM)(params);
     return apiCall(
         endpoint,
         {'Content-Type': 'application/x-www-form-urlencoded'},

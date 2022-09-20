@@ -8,7 +8,7 @@ import fetch from 'node-fetch';
 import * as inputs from './inputs.js';
 import {Base} from './airtable.js';
 import {batchAwait, fetchError, PRIMARY_ORG} from './utils.js';
-import {logJson} from './github_actions_core.js';
+import {log, logJson} from './github_actions_core.js';
 
 /**
  * Mirrors Bill.com's isActive enum.
@@ -109,6 +109,7 @@ export class Api {
    * @return {!Promise<!Object<string, *>>} endpoint-specific response_data.
    */
   call(endpoint, params) {
+    log(params);
     return apiCall(
         endpoint,
         {'Content-Type': 'application/x-www-form-urlencoded'},
