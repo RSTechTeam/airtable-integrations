@@ -19488,7 +19488,9 @@ async function main(billComApi, airtableBase = new airtable/* Base */.XY()) {
                 {
                   vendorId: vendorId,
                   invoiceNumber: invoiceId,
-                  invoiceDate: newCheckRequest.get('Expense Date'),
+                  invoiceDate:
+                    newCheckRequest.get('Expense Date') ||
+                        (0,utils/* getYyyyMmDd */.PQ)(new Date().toISOString()),
                   dueDate: newCheckRequest.get('Due Date'),
                   description:
                     `Submitted by ${requester}` +
@@ -19556,12 +19558,14 @@ __nccwpck_require__.r(__webpack_exports__);
 /* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
 /* harmony export */   "main": () => (/* binding */ main)
 /* harmony export */ });
-/* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(5585);
-/* harmony import */ var _common_bill_com_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(1398);
+/* harmony import */ var _common_bill_com_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(1398);
+/* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(5585);
+/* harmony import */ var _common_utils_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(381);
 /**
  * @fileoverview Checks whether Bills have been paid and syncs Bill.com data
  * (e.g., Vendors, Chart of Accounts) into Airtable.
  */
+
 
 
 
@@ -19608,7 +19612,7 @@ function processBulkResponses(bulkResponses, func) {
  */
 async function syncUnpaid(table, entity) {
   const BILL_COM_ID =
-      entity === 'Bill' ? _common_airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .PRIMARY_ORG_BILL_COM_ID */ .bB : _common_airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .BILL_COM_ID_SUFFIX */ .dK;
+      entity === 'Bill' ? _common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .PRIMARY_ORG_BILL_COM_ID */ .bB : _common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .BILL_COM_ID_SUFFIX */ .dK;
 
   const billComIds = [];
   const airtableIds = [];
@@ -19630,11 +19634,11 @@ async function syncUnpaid(table, entity) {
         updates.push({
           id: airtableIds[i],
           fields: {
-            'Active': r.isActive === _common_bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .ActiveStatus.ACTIVE */ .tV.ACTIVE,
+            'Active': r.isActive === _common_bill_com_js__WEBPACK_IMPORTED_MODULE_0__/* .ActiveStatus.ACTIVE */ .tV.ACTIVE,
             'Approval Status': approvalStatuses.get(r.approvalStatus),
             'Payment Status': paymentStatuses.get(r.paymentStatus),
             'Paid': isPaid,
-            'Paid Date': isPaid ? r.updatedTime.substring(0, 10) : null,
+            'Paid Date': isPaid ? (0,_common_utils_js__WEBPACK_IMPORTED_MODULE_2__/* .getYyyyMmDd */ .PQ)(r.updatedTime) : null,
           },
         });
       });
@@ -19655,7 +19659,7 @@ async function sync(entity, table, syncFunc) {
   const maybeFilter = [];
   if (entity === 'ChartOfAccount') {
     // Expenses or Income.
-    maybeFilter.push((0,_common_bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .filter */ .hX)('accountType', 'in', '7,9'));
+    maybeFilter.push((0,_common_bill_com_js__WEBPACK_IMPORTED_MODULE_0__/* .filter */ .hX)('accountType', 'in', '7,9'));
   }
   const billComEntities = await billComApi.listActive(entity, maybeFilter);
   const changes = new Map();
@@ -19671,7 +19675,7 @@ async function sync(entity, table, syncFunc) {
       table,
       '',
       (record) => {
-        const id = record.get(_common_airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .PRIMARY_ORG_BILL_COM_ID */ .bB);
+        const id = record.get(_common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .PRIMARY_ORG_BILL_COM_ID */ .bB);
         updates.push({
           id: record.getId(),
           fields: changes.has(id) ? changes.get(id) : {Active: false},
@@ -19683,7 +19687,7 @@ async function sync(entity, table, syncFunc) {
   // Create new table records from new entity data.
   const creates = [];
   for (const [id, data] of changes) {
-    data[_common_airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .PRIMARY_ORG_BILL_COM_ID */ .bB] = id;
+    data[_common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .PRIMARY_ORG_BILL_COM_ID */ .bB] = id;
     creates.push({fields: data});
   }
   await billComIntegrationBase.create(table, creates);
@@ -19730,7 +19734,7 @@ function vendorName(name, city, state) {
  */
 async function syncCustomers(anchorEntity) {
   const ALL_CUSTOMERS_TABLE = 'All Customers';
-  const BILL_COM_ID = `${anchorEntity} ${_common_airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .BILL_COM_ID_SUFFIX */ .dK}`;
+  const BILL_COM_ID = `${anchorEntity} ${_common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .BILL_COM_ID_SUFFIX */ .dK}`;
 
   await billComApi.login(anchorEntity);
 
@@ -19755,7 +19759,7 @@ async function syncCustomers(anchorEntity) {
         const email = record.get('Email');
         const name = record.get('Name');
         const change = {
-          id: id, name: name, isActive: (0,_common_bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .isActiveEnum */ .dA)(isActive), email: email,
+          id: id, name: name, isActive: (0,_common_bill_com_js__WEBPACK_IMPORTED_MODULE_0__/* .isActiveEnum */ .dA)(isActive), email: email,
         };
 
         // Skip any record that is neither active
@@ -19820,7 +19824,7 @@ async function syncCustomers(anchorEntity) {
         Name: customer.name,
         Email: customer.email,
         [BILL_COM_ID]: id,
-        [_common_airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .PRIMARY_ORG_BILL_COM_ID */ .bB]:
+        [_common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .PRIMARY_ORG_BILL_COM_ID */ .bB]:
           await billComApi.create('Customer', customer),
       }
     });
@@ -19833,7 +19837,7 @@ async function syncCustomers(anchorEntity) {
  * @param {!Base=} airtableBase
  * @return {!Promise<undefined>}
  */
-async function main (api, airtableBase = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .Base */ .XY()) {
+async function main (api, airtableBase = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .Base */ .XY()) {
   billComIntegrationBase = airtableBase;
   billComApi = api;
 
@@ -20381,6 +20385,7 @@ __nccwpck_require__.d(__webpack_exports__, {
   "aE": () => (/* binding */ batchAsync),
   "rE": () => (/* binding */ batchAwait),
   "Tl": () => (/* binding */ fetchError),
+  "PQ": () => (/* binding */ getYyyyMmDd),
   "ss": () => (/* binding */ lazyCache)
 });
 
@@ -20453,6 +20458,14 @@ function batchAsync(func, array, size) {
     promises.push(func(arr));
   }
   return Promise.all(promises);
+}
+
+/**
+ * @param {string} date - ISO 8601 Format
+ * @return {string} YYYY-MM-DD
+ */
+function getYyyyMmDd(date) {
+  return date.substring(0, 10);
 }
 
 

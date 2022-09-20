@@ -3,8 +3,9 @@
  * (e.g., Vendors, Chart of Accounts) into Airtable.
  */
 
-import {Base, BILL_COM_ID_SUFFIX, PRIMARY_ORG_BILL_COM_ID} from '../common/airtable.js';
 import {ActiveStatus, entityData, filter, isActiveEnum} from '../common/bill_com.js';
+import {Base, BILL_COM_ID_SUFFIX, PRIMARY_ORG_BILL_COM_ID} from '../common/airtable.js';
+import {getYyyyMmDd} from '../common/utils.js';
 
 /** Bill.com Bill Approval Statuses. */
 const approvalStatuses = new Map([
@@ -74,7 +75,7 @@ async function syncUnpaid(table, entity) {
             'Approval Status': approvalStatuses.get(r.approvalStatus),
             'Payment Status': paymentStatuses.get(r.paymentStatus),
             'Paid': isPaid,
-            'Paid Date': isPaid ? r.updatedTime.substring(0, 10) : null,
+            'Paid Date': isPaid ? getYyyyMmDd(r.updatedTime) : null,
           },
         });
       });

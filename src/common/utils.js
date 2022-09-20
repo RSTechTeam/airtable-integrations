@@ -65,3 +65,11 @@ export function batchAsync(func, array, size) {
   }
   return Promise.all(promises);
 }
+
+/**
+ * @param {string} date - ISO 8601 Format
+ * @return {string} YYYY-MM-DD
+ */
+export function getYyyyMmDd(date) {
+  return date.substring(0, 10);
+}

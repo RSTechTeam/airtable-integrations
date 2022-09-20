@@ -89,3 +89,8 @@ describe.each`
     });
   });
 });
+
+test('getYyyyMmDd returns YYYY-MM-DD', () => {
+  const got = utils.getYyyyMmDd(new Date(1995, 9, 28).toISOString());
+  expect(got).toBe('1995-10-28');
+});

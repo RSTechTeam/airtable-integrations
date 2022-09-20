@@ -3,7 +3,7 @@
 import fetch from 'node-fetch';
 import {apiCall} from '../common/bill_com.js';
 import {Base, PRIMARY_ORG_BILL_COM_ID} from '../common/airtable.js';
-import {fetchError} from '../common/utils.js';
+import {fetchError, getYyyyMmDd} from '../common/utils.js';
 import {finalApproverUserId} from '../common/inputs.js';
 import {FormData} from 'formdata-node';
 
@@ -118,7 +118,9 @@ export async function main(billComApi, airtableBase = new Base()) {
                 {
                   vendorId: vendorId,
                   invoiceNumber: invoiceId,
-                  invoiceDate: newCheckRequest.get('Expense Date'),
+                  invoiceDate:
+                    newCheckRequest.get('Expense Date') ||
+                        getYyyyMmDd(new Date().toISOString()),
                   dueDate: newCheckRequest.get('Due Date'),
                   description:
                     `Submitted by ${requester}` +
