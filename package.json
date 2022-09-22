@@ -17,9 +17,9 @@
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/RSMvmtTech/Bill.com-Airtable-Integration/issues"
+    "url": "https://github.com/RSTechTeam/Bill.com-Airtable-Integration/issues"
   },
-  "homepage": "https://github.com/RSMvmtTech/Bill.com-Airtable-Integration#readme",
+  "homepage": "https://github.com/RSTechTeam/Bill.com-Airtable-Integration#readme",
   "dependencies": {
     "@actions/core": "^1.9.0",
     "airtable": "^0.11.4",

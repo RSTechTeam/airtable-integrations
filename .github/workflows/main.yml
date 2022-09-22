@@ -27,7 +27,7 @@ jobs:
             id=${{ secrets.BILL_COM_INTEGRATION_BASE_ID }}
           fi
           echo "::set-output name=id::$id"
-      - uses: RSMvmtTech/Bill.com-Airtable-Integration@main
+      - uses: RSTechTeam/Bill.com-Airtable-Integration@main
         with:
           file-id: ${{ matrix.file-id }}
           airtable-api-key: ${{ secrets.AIRTABLE_API_KEY }}
