@@ -1,7 +1,7 @@
 /** @fileoverview Creates a Bill.com Vendor based on volunteer address info. */
  
 import {Base} from '../common/airtable.js';
-import {primaryOrg} from '../common/inputs.js';
+import {PRIMARY_ORG} from '../common/utils.js';
 
 /**
  * @param {!Api} billComApi
@@ -28,6 +28,6 @@ export async function main(billComApi, airtableBase = new Base()) {
                   phone: record.get('Phone*'),
                 });
 
-        return {[`${primaryOrg()} Bill.com Vendor ID`]: vendorId};
+        return {[`${PRIMARY_ORG} Bill.com Vendor ID`]: vendorId};
       });
 }
