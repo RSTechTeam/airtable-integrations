@@ -64,13 +64,11 @@ test('main syncs Customers from Airtable to Bill.com', async () => {
     });
   }
   await api.bulk('Update', 'Customer', updates);
-  await base.select(
+  await base.selectAndUpdate(
       customerTable,
       '',
       (record) => {
-        if (record.get(nameField) !== AIRTABLE_ONLY) return;
-        return base.update(
-            customerTable,
-            [{id: record.getId(), fields: {[PRIMARY_ORG_BILL_COM_ID]: ''}}]);
+        return record.get(nameField) === AIRTABLE_ONLY ?
+            {[PRIMARY_ORG_BILL_COM_ID]: ''} : null;
       });
 });

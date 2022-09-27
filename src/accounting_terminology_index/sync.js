@@ -31,7 +31,7 @@ export async function main(
 
   // Upsert every Bill.com Customer from the Bill.com Sync View.
   const updates = [];
-  await accountingBase.select(
+  await accountingBase.selectAndUpdate(
       customerTable,
       syncView,
       async (record) => {
@@ -46,18 +46,13 @@ export async function main(
         // Insert/Create in Bill.com any record with no primary org Bill.com ID.
         if (id == undefined) {
           const billComId = await billComApi.create('Customer', change);
-          await accountingBase.update(
-              customerTable,
-              [{
-                id: record.getId(),
-                fields: {[PRIMARY_ORG_BILL_COM_ID]: billComId},
-              }]);
-          return;
+          return {[PRIMARY_ORG_BILL_COM_ID]: billComId};
         }
 
         // Update in Bill.com other records with a primary org Bill.com ID.
         updates.push(change);
         billComCustomerIds.delete(id);
+        return null;
       });
 
   // Mark internal Bill.com Customers not in the Bill.com Sync View as inactive.
