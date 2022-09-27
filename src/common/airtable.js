@@ -81,10 +81,11 @@ export class Base {
 
   /**
    * Runs fieldsFunc for each record from table view
-   * and updates each record's fields using fieldsFunc's return value.
+   * and updates each record's fields using fieldsFunc's return value,
+   * if there is one.
    * @param {string} table
    * @param {string} view
-   * @param {function(!Record<!TField>): !Promise<!Object<string, *>>} fieldsFunc
+   * @param {function(!Record<!TField>): !Promise<?Object<string, *>>} fieldsFunc
    * @return {!Promise<!Array<*>>}
    */
    selectAndUpdate(table, view, fieldsFunc) {
@@ -92,8 +93,9 @@ export class Base {
         table,
         view,
         async (record) => {
-          return this.update(
-              table, [{id: record.getId(), fields: await fieldsFunc(record)}]);
+          const fields = await fieldsFunc(record);
+          if (fields == null) return null;
+          return this.update(table, [{id: record.getId(), fields: fields}]);
         });
    }
 

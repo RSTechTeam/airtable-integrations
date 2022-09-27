@@ -85,12 +85,13 @@ describe('selectAndUpdate', () => {
   });
 
   const selectAndUpdate = (view) => {
-    return base.selectAndUpdate(table, view, (record) => ({Text: 'Hi'}));
+    return base.selectAndUpdate(
+        table, view, (record) => record.get('ID') === 2 ? null : {Text: 'Hi'});
   };
 
   test('given no view, defaults to whole table', async () => {
     await selectAndUpdate('');
-    await expectTextsToEqual(['Hi', 'Hi', 'Hi']);
+    await expectTextsToContain(['Hi', 'World', 'Hi']);
   });
 
   test('given unknown view, throws', () => {
@@ -99,7 +100,7 @@ describe('selectAndUpdate', () => {
 
   test('uses given view', async () => {
     await selectAndUpdate('No One');
-    await expectTextsToContain(['Hello', 'Hi', 'Hi']);
+    await expectTextsToContain(['Hello', 'World', 'Hi']);
   });
 });
 

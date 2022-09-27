@@ -53,12 +53,12 @@ test('listActive returns all active objects', () => {
 });
 
 // shadowOp is not executed but has similar control flow
-const expectedVendor = {entity: 'Vendor', ...givenVendor, name: 'Test 2'};
 describe.each`
   op          | shadowOp
   ${'Update'} | ${'Create'}
   ${'Read'}   | ${'Delete'}
 `('bulk', ({op, shadowOp}) => {
+  const expectedVendor = {entity: 'Vendor', ...givenVendor, name: 'Test 2'};
 
   test(`processes and executes ${op}(/${shadowOp}) data`, async () => {
     const data = op === 'Update' ? {id: vendorId, name: 'Test 2'} : vendorId;
