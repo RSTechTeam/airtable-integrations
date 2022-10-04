@@ -19629,6 +19629,7 @@ async function syncUnpaid(table, entity) {
           fields: {
             'Active': r.isActive === _common_bill_com_js__WEBPACK_IMPORTED_MODULE_0__/* .ActiveStatus.ACTIVE */ .tV.ACTIVE,
             'Approval Status': approvalStatuses.get(r.approvalStatus),
+            'Effective Amount': r.amount,
             'Payment Status': paymentStatuses.get(r.paymentStatus),
             'Paid': isPaid,
             'Paid Date': isPaid ? (0,_common_utils_js__WEBPACK_IMPORTED_MODULE_2__/* .getYyyyMmDd */ .PQ)(r.updatedTime) : null,

@@ -73,6 +73,7 @@ async function syncUnpaid(table, entity) {
           fields: {
             'Active': r.isActive === ActiveStatus.ACTIVE,
             'Approval Status': approvalStatuses.get(r.approvalStatus),
+            'Effective Amount': r.amount,
             'Payment Status': paymentStatuses.get(r.paymentStatus),
             'Paid': isPaid,
             'Paid Date': isPaid ? getYyyyMmDd(r.updatedTime) : null,
