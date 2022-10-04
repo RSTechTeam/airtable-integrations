@@ -90,6 +90,9 @@ export async function main(billComApi, airtableBase = new Base()) {
                   chartOfAccountId =
                       await getBillComId('Chart of Accounts', category[0]);
                 }
+
+                const date = item.get('Item Expense Date');
+                const description = item.get('Description');
                 billComLineItems.push({
                   entity: 'BillLineItem',
                   amount: item.get('Amount'),
@@ -97,7 +100,11 @@ export async function main(billComApi, airtableBase = new Base()) {
                   customerId:
                     await getBillComId(
                         'Internal Customers', item.get('Project')[0]),
-                  description: item.get('Description'),
+                  description:
+                    date == undefined ?
+                        description :
+                        `${date}\n${item.get('Merchant Name')}\n` +
+                            `${item.get('Merchant Address')}\n${description}`,
                 });
               });
         }
