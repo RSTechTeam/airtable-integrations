@@ -19483,9 +19483,7 @@ async function main(billComApi, airtableBase = new airtable/* Base */.XY()) {
                 {
                   vendorId: vendorId,
                   invoiceNumber: invoiceId,
-                  invoiceDate:
-                    newCheckRequest.get('Expense Date') ||
-                        (0,utils/* getYyyyMmDd */.PQ)(new Date().toISOString()),
+                  invoiceDate: newCheckRequest.get('Expense Date'),
                   dueDate: newCheckRequest.get('Due Date'),
                   description:
                     `Submitted by ${requester}` +
