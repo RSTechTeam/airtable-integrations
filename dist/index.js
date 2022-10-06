@@ -19920,7 +19920,7 @@ function billComIdFieldName(entity) {
  * @return {(!Object<undefined>|!Promise<!Object<string, *>)}
  */
 function maybeRead(entity, id) {
-  return id == undefined ? {} : billComApi.read(entity, id);
+  return id == null ? {} : billComApi.read(entity, id);
 }
 
 /**
