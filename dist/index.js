@@ -19929,6 +19929,8 @@ function maybeRead(entity, id) {
 async function main(api, billComIntegrationBase = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .Base */ .XY()) {
   billComApi = api;
 
+  const BILL_REPORTING_TABLE = 'Bill Reporting';
+
   // Initialize sync changes.
   await billComApi.primaryOrgLogin();
   const bills =
@@ -19977,7 +19979,7 @@ async function main(api, billComIntegrationBase = new _common_airtable_js__WEBPA
   // Update every existing table record based on the Bill.com data.
   const updates = [];
   await billComIntegrationBase.select(
-      'Bill Reporting',
+      BILL_REPORTING_TABLE,
       '',
       (record) => {
         const id = record.get(primaryBillComId);
@@ -19987,7 +19989,7 @@ async function main(api, billComIntegrationBase = new _common_airtable_js__WEBPA
         });
         changes.delete(id);
       });
-  await billComIntegrationBase.update(table, updates);
+  await billComIntegrationBase.update(BILL_REPORTING_TABLE, updates);
 
   // Create new table records from new entity data.
   const creates = [];
@@ -19995,7 +19997,7 @@ async function main(api, billComIntegrationBase = new _common_airtable_js__WEBPA
     data[primaryBillComId] = id;
     creates.push({fields: data});
   }
-  await billComIntegrationBase.create(table, creates);
+  await billComIntegrationBase.create(BILL_REPORTING_TABLE, creates);
 }
 
 /***/ }),

@@ -49,6 +49,8 @@ function maybeRead(entity, id) {
 export async function main(api, billComIntegrationBase = new Base()) {
   billComApi = api;
 
+  const BILL_REPORTING_TABLE = 'Bill Reporting';
+
   // Initialize sync changes.
   await billComApi.primaryOrgLogin();
   const bills =
@@ -97,7 +99,7 @@ export async function main(api, billComIntegrationBase = new Base()) {
   // Update every existing table record based on the Bill.com data.
   const updates = [];
   await billComIntegrationBase.select(
-      'Bill Reporting',
+      BILL_REPORTING_TABLE,
       '',
       (record) => {
         const id = record.get(primaryBillComId);
@@ -107,7 +109,7 @@ export async function main(api, billComIntegrationBase = new Base()) {
         });
         changes.delete(id);
       });
-  await billComIntegrationBase.update(table, updates);
+  await billComIntegrationBase.update(BILL_REPORTING_TABLE, updates);
 
   // Create new table records from new entity data.
   const creates = [];
@@ -115,5 +117,5 @@ export async function main(api, billComIntegrationBase = new Base()) {
     data[primaryBillComId] = id;
     creates.push({fields: data});
   }
-  await billComIntegrationBase.create(table, creates);
+  await billComIntegrationBase.create(BILL_REPORTING_TABLE, creates);
 }
