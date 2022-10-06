@@ -19876,8 +19876,10 @@ __nccwpck_require__.r(__webpack_exports__);
 /* harmony export */   "main": () => (/* binding */ main)
 /* harmony export */ });
 /* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(5585);
-/* harmony import */ var _common_utils_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(381);
+/* harmony import */ var _common_bill_com_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(1398);
+/* harmony import */ var _common_utils_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(381);
 /** @fileoverview Syncs Bill.com Bill Line Item data into Airtable. */
+
 
 
 
@@ -19907,7 +19909,7 @@ let billComApi;
  * @return {string}
  */
 function billComIdFieldName(entity) {
-  return `${_common_utils_js__WEBPACK_IMPORTED_MODULE_1__/* .PRIMARY_ORG */ .l3} Bill.com ${entity} ID`;
+  return `${_common_utils_js__WEBPACK_IMPORTED_MODULE_2__/* .PRIMARY_ORG */ .l3} Bill.com ${entity} ID`;
 }
 
 /**
@@ -19929,7 +19931,9 @@ async function main(api, billComIntegrationBase = new _common_airtable_js__WEBPA
 
   // Initialize sync changes.
   await billComApi.primaryOrgLogin();
-  const bills = await billComApi.listActive('Bill');
+  const bills =
+      await billComApi.listActive(
+          'Bill', [(0,_common_bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .filter */ .hX)('createdTime', '>', '2022-09-01')]);
   const changes = new Map();
   const primaryBillComId = billComIdFieldName('Line Item');
   for (const bill of bills) {
@@ -19947,7 +19951,7 @@ async function main(api, billComIntegrationBase = new _common_airtable_js__WEBPA
           {
             'Active': true,
             [primaryBillComId]: item.id,
-            'Creation Date': (0,_common_utils_js__WEBPACK_IMPORTED_MODULE_1__/* .getYyyyMmDd */ .PQ)(item.createdTime),
+            'Creation Date': (0,_common_utils_js__WEBPACK_IMPORTED_MODULE_2__/* .getYyyyMmDd */ .PQ)(item.createdTime),
             'Invoice Date': bill.invoiceDate,
             [billComIdFieldName('Vendor')]: bill.vendorId,
             'Vendor Name': vendor.name,

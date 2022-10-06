@@ -1,6 +1,7 @@
 /** @fileoverview Syncs Bill.com Bill Line Item data into Airtable. */
 
 import {Base} from '../common/airtable.js';
+import {filter} from '../common/bill_com.js';
 import {getYyyyMmDd, PRIMARY_ORG} from '../common/utils.js';
 
 /** Bill.com Bill Approval Statuses. */
@@ -50,7 +51,9 @@ export async function main(api, billComIntegrationBase = new Base()) {
 
   // Initialize sync changes.
   await billComApi.primaryOrgLogin();
-  const bills = await billComApi.listActive('Bill');
+  const bills =
+      await billComApi.listActive(
+          'Bill', [filter('createdTime', '>', '2022-09-01')]);
   const changes = new Map();
   const primaryBillComId = billComIdFieldName('Line Item');
   for (const bill of bills) {
