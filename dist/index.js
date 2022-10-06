@@ -19872,6 +19872,134 @@ async function main (api, airtableBase = new _common_airtable_js__WEBPACK_IMPORT
 
 /***/ }),
 
+/***/ 4361:
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
+
+__nccwpck_require__.r(__webpack_exports__);
+/* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
+/* harmony export */   "main": () => (/* binding */ main)
+/* harmony export */ });
+/* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(5585);
+/* harmony import */ var _common_utils_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(381);
+/** @fileoverview Syncs Bill.com Bill Line Item data into Airtable. */
+
+
+
+
+/** Bill.com Bill Approval Statuses. */
+const approvalStatuses = new Map([
+  ['0', 'Unassigned'],
+  ['1', 'Assigned'],
+  ['4', 'Approving'],
+  ['3', 'Approved'],
+  ['5', 'Denied'],
+]);
+
+/** Bill.com Bill Payment Statuses. */
+const paymentStatuses = new Map([
+  ['1', 'Open'],
+  ['4', 'Scheduled'],
+  ['0', 'Paid In Full'],
+  ['2', 'Partial Payment'],
+]);
+
+/** The Bill.com API connection. */
+let billComApi;
+
+/**
+ * @param {string} entity
+ * @return {string}
+ */
+function billComIdFieldName(entity) {
+  return `${_common_utils_js__WEBPACK_IMPORTED_MODULE_1__/* .PRIMARY_ORG */ .l3} Bill.com ${entity} ID`;
+}
+
+/**
+ * @param {string} entity
+ * @param {string} id
+ * @return {(!Object<undefined>|!Promise<!Object<string, *>)}
+ */
+function maybeRead(entity, id) {
+  return id == undefined ? {} : billComApi.read(entity, id);
+}
+
+/**
+ * @param {!Api} api
+ * @param {!Base=} billComIntegrationBase
+ * @return {!Promise<undefined>}
+ */
+async function main(api, billComIntegrationBase = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .Base */ .XY()) {
+  billComApi = api;
+
+  // Initialize sync changes.
+  await billComApi.primaryOrgLogin();
+  const bills = await billComApi.listActive('Bill');
+  const changes = new Map();
+  const primaryBillComId = billComIdFieldName('Line Item');
+  for (const bill of bills) {
+    const vendor = await billComApi.read('Vendor', bill.vendorId);
+    const docs = await billComApi.dataCall('GetDocumentPages', {id: bill.id});
+    const docsUrl = docs.documentPages.fileUrl;
+
+    for (const item of bill.billLineItems) {
+      const chartOfAccount =
+          await maybeRead('ChartOfAccount', item.chartOfAccountId);
+      const customer = await maybeRead('Customer', item.customerId);
+
+      changes.set(
+          item.id,
+          {
+            'Active': true,
+            [primaryBillComId]: item.id,
+            'Creation Date': (0,_common_utils_js__WEBPACK_IMPORTED_MODULE_1__/* .getYyyyMmDd */ .PQ)(item.createdTime),
+            'Invoice Date': bill.invoiceDate,
+            [billComIdFieldName('Vendor')]: bill.vendorId,
+            'Vendor Name': vendor.name,
+            'Vendor Address': vendor.address1,
+            'Vendor City': vendor.addressCity,
+            'Vendor State': vendor.addressState,
+            'Vendor Zip Code': vendor.addressZip,
+            'Description': item.description,
+            [billComIdFieldName('Chart of Account')]: item.chartOfAccountId,
+            'Chart of Account': chartOfAccount.name,
+            'Amount': item.amount,
+            [billComIdFieldName('Customer')]: item.customerId,
+            'Customer': customer.name,
+            'Invoice ID': bill.invoiceNumber,
+            'Supporting Documents': docsUrl == null ? null : [{url: docsUrl}],
+            'Approval Status': approvalStatuses.get(bill.approvalStatus),
+            'Payment Status': paymentStatuses.get(bill.paymentStatus),
+            [billComIdFieldName('Bill')]: bill.id,
+          });
+    }
+  }
+
+  // Update every existing table record based on the Bill.com data.
+  const updates = [];
+  await billComIntegrationBase.select(
+      'Bill Reporting',
+      '',
+      (record) => {
+        const id = record.get(primaryBillComId);
+        updates.push({
+          id: record.getId(),
+          fields: changes.has(id) ? changes.get(id) : {Active: false},
+        });
+        changes.delete(id);
+      });
+  await billComIntegrationBase.update(table, updates);
+
+  // Create new table records from new entity data.
+  const creates = [];
+  for (const [id, data] of changes) {
+    data[primaryBillComId] = id;
+    creates.push({fields: data});
+  }
+  await billComIntegrationBase.create(table, creates);
+}
+
+/***/ }),
+
 /***/ 5585:
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
 
@@ -20491,9 +20619,10 @@ __nccwpck_require__.a(__webpack_module__, async (__webpack_handle_async_dependen
 /* harmony import */ var _bill_com_integration_create_approver_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(5770);
 /* harmony import */ var _bill_com_integration_create_bill_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(1709);
 /* harmony import */ var _bill_com_integration_sync_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(365);
-/* harmony import */ var _common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(1444);
-/* harmony import */ var _common_inputs_js__WEBPACK_IMPORTED_MODULE_5__ = __nccwpck_require__(4684);
-/* harmony import */ var _common_bill_com_js__WEBPACK_IMPORTED_MODULE_6__ = __nccwpck_require__(1398);
+/* harmony import */ var _bill_com_integration_sync_bills_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(4361);
+/* harmony import */ var _common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_5__ = __nccwpck_require__(1444);
+/* harmony import */ var _common_inputs_js__WEBPACK_IMPORTED_MODULE_6__ = __nccwpck_require__(4684);
+/* harmony import */ var _common_bill_com_js__WEBPACK_IMPORTED_MODULE_7__ = __nccwpck_require__(1398);
 /** @fileoverview Entrypoint for choosing which file to run. */
 
 
@@ -20504,8 +20633,9 @@ __nccwpck_require__.a(__webpack_module__, async (__webpack_handle_async_dependen
 
 
 
+
 let imp;
-switch ((0,_common_inputs_js__WEBPACK_IMPORTED_MODULE_5__/* .fileId */ .o8)()) {
+switch ((0,_common_inputs_js__WEBPACK_IMPORTED_MODULE_6__/* .fileId */ .o8)()) {
   case 'accounting_sync':
     imp = _accounting_terminology_index_sync_js__WEBPACK_IMPORTED_MODULE_0__;
     break;
@@ -20518,12 +20648,15 @@ switch ((0,_common_inputs_js__WEBPACK_IMPORTED_MODULE_5__/* .fileId */ .o8)()) {
   case 'bill_com_integration_sync':
     imp = _bill_com_integration_sync_js__WEBPACK_IMPORTED_MODULE_3__;
     break;
+  case 'bill_com_integration_sync_bills':
+    imp = _bill_com_integration_sync_bills_js__WEBPACK_IMPORTED_MODULE_4__;
+    break;
   default:
-    (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_4__/* .error */ .vU)(`Unknown file ID ${(0,_common_inputs_js__WEBPACK_IMPORTED_MODULE_5__/* .fileId */ .o8)()}`);
+    (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_5__/* .error */ .vU)(`Unknown file ID ${(0,_common_inputs_js__WEBPACK_IMPORTED_MODULE_6__/* .fileId */ .o8)()}`);
 }
 
-const billComApi = await (0,_common_bill_com_js__WEBPACK_IMPORTED_MODULE_6__/* .getApi */ .ac)();
-await imp.main(billComApi).catch(_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_4__/* .error */ .vU);
+const billComApi = await (0,_common_bill_com_js__WEBPACK_IMPORTED_MODULE_7__/* .getApi */ .ac)();
+await imp.main(billComApi).catch(_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_5__/* .error */ .vU);
 
 __webpack_handle_async_dependencies__();
 }, 1);

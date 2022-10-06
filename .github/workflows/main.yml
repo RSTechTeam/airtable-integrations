@@ -15,6 +15,7 @@ jobs:
         file-id: [
           'accounting_sync',
           'bill_com_integration_sync',
+          'bill_com_integration_sync_bills',
           'bill_com_integration_create_bill',
           'bill_com_integration_create_approver',
         ]
