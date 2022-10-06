@@ -19536,12 +19536,8 @@ async function main(billComApi, airtableBase = new airtable/* Base */.XY()) {
           await (0,bill_com/* apiCall */.k_)('UploadAttachment', {}, data);
         }
 
-        // Get and set the link (and ID) for the newly created Bill.com Bill.
-        const getUrlResponse =
-            await billComApi.dataCall('GetObjectUrl', {objectId: newBillId});
         return {
           'Active': true,
-          'Bill.com Link': getUrlResponse.url,
           'Vendor Invoice ID': invoiceId,
           [airtable/* PRIMARY_ORG_BILL_COM_ID */.bB]: newBillId,
         };
