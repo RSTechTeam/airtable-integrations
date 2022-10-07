@@ -91,8 +91,8 @@ export async function main(api, billComIntegrationBase = new Base()) {
             'Amount': item.amount,
             [billComIdFieldName('Customer')]: item.customerId,
             'Customer':
-              customers.has(item.chartOfAccountId) ?
-                  customers.get(item.chartOfAccountId) : null,
+              customers.has(item.customerId) ?
+                  customers.get(item.customerId) : null,
             'Invoice ID': bill.invoiceNumber,
             'Supporting Documents': docsUrl == null ? null : [{url: docsUrl}],
             'Approval Status': approvalStatuses.get(bill.approvalStatus),
