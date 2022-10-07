@@ -34,11 +34,15 @@ function billComIdFieldName(entity) {
 
 /**
  * @param {string} entity
- * @param {string} id
- * @return {(!Object<undefined>|!Promise<!Object<string, *>)}
+ * @return {!Promise<!Map<string, string>>}
  */
-function maybeRead(entity, id) {
-  return id.startsWith('00') ? {} : billComApi.read(entity, id);
+async function getNames(entity) {
+  const entities = await billComApi.listActive(entity);
+  const names = new Map();
+  for (const e of entities) {
+    names.set(e.id, e.name);
+  }
+  return names;
 }
 
 /**
@@ -53,6 +57,8 @@ export async function main(api, billComIntegrationBase = new Base()) {
 
   // Initialize sync changes.
   await billComApi.primaryOrgLogin();
+  const chartOfAccounts = await getNames('ChartOfAccount');
+  const customers = await getNames('Customer');
   const bills =
       await billComApi.listActive(
           'Bill', [filter('createdTime', '>', '2022-09-20')]);
@@ -64,10 +70,6 @@ export async function main(api, billComIntegrationBase = new Base()) {
     const docsUrl = docs.documentPages.fileUrl;
 
     for (const item of bill.billLineItems) {
-      const chartOfAccount =
-          await maybeRead('ChartOfAccount', item.chartOfAccountId);
-      const customer = await maybeRead('Customer', item.customerId);
-
       changes.set(
           item.id,
           {
@@ -83,10 +85,14 @@ export async function main(api, billComIntegrationBase = new Base()) {
             'Vendor Zip Code': vendor.addressZip,
             'Description': item.description,
             [billComIdFieldName('Chart of Account')]: item.chartOfAccountId,
-            'Chart of Account': chartOfAccount.name,
+            'Chart of Account':
+              chartOfAccounts.has(item.chartOfAccountId) ?
+                  chartOfAccounts.get(item.chartOfAccountId) : null,
             'Amount': item.amount,
             [billComIdFieldName('Customer')]: item.customerId,
-            'Customer': customer.name,
+            'Customer':
+              customers.has(item.chartOfAccountId) ?
+                  customers.get(item.chartOfAccountId) : null,
             'Invoice ID': bill.invoiceNumber,
             'Supporting Documents': docsUrl == null ? null : [{url: docsUrl}],
             'Approval Status': approvalStatuses.get(bill.approvalStatus),
@@ -111,7 +117,7 @@ export async function main(api, billComIntegrationBase = new Base()) {
       });
   await billComIntegrationBase.update(BILL_REPORTING_TABLE, updates);
 
-  // Create new table records from new entity data.
+  // Create new table records from new Bill.com data.
   const creates = [];
   for (const [id, data] of changes) {
     data[primaryBillComId] = id;
