@@ -67,7 +67,7 @@ export async function main(api, billComIntegrationBase = new Base()) {
   // Initialize reference data.
   await billComApi.primaryOrgLogin();
   const vendors =
-      getEntityData(
+      await getEntityData(
           'Vendor',
           v => ({
             name: v.name,

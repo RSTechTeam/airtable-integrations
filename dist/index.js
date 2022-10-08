@@ -19949,7 +19949,7 @@ async function main(api, billComIntegrationBase = new _common_airtable_js__WEBPA
   // Initialize reference data.
   await billComApi.primaryOrgLogin();
   const vendors =
-      getEntityData(
+      await getEntityData(
           'Vendor',
           v => ({
             name: v.name,
