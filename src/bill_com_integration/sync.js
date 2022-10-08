@@ -115,8 +115,7 @@ async function sync(entity, table, syncFunc) {
       (record) => {
         const id = record.get(PRIMARY_ORG_BILL_COM_ID);
         updates.push({
-          id: record.getId(),
-          fields: changes.has(id) ? changes.get(id) : {Active: false},
+          id: record.getId(), fields: changes.get(id) || {Active: false},
         });
         changes.delete(id);
       });

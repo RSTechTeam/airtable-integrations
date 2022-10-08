@@ -161,15 +161,6 @@ export class Api {
 
   /**
    * @param {string} entity
-   * @param {string} id
-   * @return {!Promise<!Object<string, *>>}
-   */
-  read(entity, id) {
-    return this.dataCall(`Crud/Read/${entity}`, {id: id});
-  }
-
-  /**
-   * @param {string} entity
    * @param {!Object<string, string>[]=} filters
    * @return {!Promise<!Object<string, *>[]>} entity list.
    */

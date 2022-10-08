@@ -19677,8 +19677,7 @@ async function sync(entity, table, syncFunc) {
       (record) => {
         const id = record.get(_common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .PRIMARY_ORG_BILL_COM_ID */ .bB);
         updates.push({
-          id: record.getId(),
-          fields: changes.has(id) ? changes.get(id) : {Active: false},
+          id: record.getId(), fields: changes.get(id) || {Active: false},
         });
         changes.delete(id);
       });
@@ -19917,15 +19916,24 @@ function billComIdFieldName(entity) {
 
 /**
  * @param {string} entity
+ * @param {func(!Object<string, *>): *} dataFunc
+ * @return {!Promise<!Map<string, *>>}
+ */
+ async function getEntityData(entity, dataFunc) {
+  const entities = await billComApi.listActive(entity);
+  const data = new Map();
+  for (const e of entities) {
+    data.set(e.id, dataFunc(e));
+  }
+  return data;
+ }
+
+/**
+ * @param {string} entity
  * @return {!Promise<!Map<string, string>>}
  */
-async function getNames(entity) {
-  const entities = await billComApi.listActive(entity);
-  const names = new Map();
-  for (const e of entities) {
-    names.set(e.id, e.name);
-  }
-  return names;
+function getNames(entity) {
+  return getEntityData(entity, e => e.name);
 }
 
 /**
@@ -19938,17 +19946,29 @@ async function main(api, billComIntegrationBase = new _common_airtable_js__WEBPA
 
   const BILL_REPORTING_TABLE = 'Bill Reporting';
 
-  // Initialize sync changes.
+  // Initialize reference data.
   await billComApi.primaryOrgLogin();
+  const vendors =
+      getEntityData(
+          'Vendor',
+          v => ({
+            name: v.name,
+            address: v.address1,
+            city: v.addressCity,
+            state: v.addressState,
+            zip: v.addressZip,
+          }));
   const chartOfAccounts = await getNames('ChartOfAccount');
   const customers = await getNames('Customer');
+
+  // Initialize sync changes.
   const bills =
       await billComApi.listActive(
           'Bill', [(0,_common_bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .filter */ .hX)('createdTime', '>', '2022-09-20')]);
   const changes = new Map();
   const primaryBillComId = billComIdFieldName('Line Item');
   for (const bill of bills) {
-    const vendor = await billComApi.read('Vendor', bill.vendorId);
+    const vendor = vendors.get(bill.vendorId) || {};
     const docs = await billComApi.dataCall('GetDocumentPages', {id: bill.id});
     const docsUrl = docs.documentPages.fileUrl;
 
@@ -19962,20 +19982,16 @@ async function main(api, billComIntegrationBase = new _common_airtable_js__WEBPA
             'Invoice Date': bill.invoiceDate,
             [billComIdFieldName('Vendor')]: bill.vendorId,
             'Vendor Name': vendor.name,
-            'Vendor Address': vendor.address1,
-            'Vendor City': vendor.addressCity,
-            'Vendor State': vendor.addressState,
-            'Vendor Zip Code': vendor.addressZip,
+            'Vendor Address': vendor.address,
+            'Vendor City': vendor.city,
+            'Vendor State': vendor.state,
+            'Vendor Zip Code': vendor.zip,
             'Description': item.description,
             [billComIdFieldName('Chart of Account')]: item.chartOfAccountId,
-            'Chart of Account':
-              chartOfAccounts.has(item.chartOfAccountId) ?
-                  chartOfAccounts.get(item.chartOfAccountId) : null,
+            'Chart of Account': chartOfAccounts.get(item.chartOfAccountId),
             'Amount': item.amount,
             [billComIdFieldName('Customer')]: item.customerId,
-            'Customer':
-              customers.has(item.customerId) ?
-                  customers.get(item.customerId) : null,
+            'Customer': customers.get(item.customerId),
             'Invoice ID': bill.invoiceNumber,
             'Supporting Documents': docsUrl == null ? null : [{url: docsUrl}],
             'Approval Status': approvalStatuses.get(bill.approvalStatus),
@@ -19993,8 +20009,7 @@ async function main(api, billComIntegrationBase = new _common_airtable_js__WEBPA
       (record) => {
         const id = record.get(primaryBillComId);
         updates.push({
-          id: record.getId(),
-          fields: changes.has(id) ? changes.get(id) : {Active: false},
+          id: record.getId(), fields: changes.get(id) || {Active: false},
         });
         changes.delete(id);
       });
@@ -20324,15 +20339,6 @@ class Api {
     const response =
         await this.dataCall(`Crud/Create/${entity}`, entityData(entity, data));
     return response.id;
-  }
-
-  /**
-   * @param {string} entity
-   * @param {string} id
-   * @return {!Promise<!Object<string, *>>}
-   */
-  read(entity, id) {
-    return this.dataCall(`Crud/Read/${entity}`, {id: id});
   }
 
   /**
