@@ -19945,6 +19945,10 @@ async function main(api, billComIntegrationBase = new _common_airtable_js__WEBPA
   billComApi = api;
 
   const BILL_REPORTING_TABLE = 'Bill Reporting';
+  const merchantRegex =
+      new RegExp(
+          '(?<date>.+)\\n(?<name>.+)\\n(?<address>.+)\\n' +
+              '(?<city>.+) & (?<state>.+) & (?<zip>.+)\\n(?<description>.+)');
 
   // Initialize reference data.
   await billComApi.primaryOrgLogin();
@@ -19973,6 +19977,8 @@ async function main(api, billComIntegrationBase = new _common_airtable_js__WEBPA
     const docsUrl = docs.documentPages.fileUrl;
 
     for (const item of bill.billLineItems) {
+      const itemVendor = 
+          (item.description.match(merchantRegex) || {}).groups || vendor;
       changes.set(
           item.id,
           {
@@ -19981,12 +19987,12 @@ async function main(api, billComIntegrationBase = new _common_airtable_js__WEBPA
             'Creation Date': (0,_common_utils_js__WEBPACK_IMPORTED_MODULE_2__/* .getYyyyMmDd */ .PQ)(item.createdTime),
             'Invoice Date': bill.invoiceDate,
             [billComIdFieldName('Vendor')]: bill.vendorId,
-            'Vendor Name': vendor.name,
-            'Vendor Address': vendor.address,
-            'Vendor City': vendor.city,
-            'Vendor State': vendor.state,
-            'Vendor Zip Code': vendor.zip,
-            'Description': item.description,
+            'Vendor Name': itemVendor.name,
+            'Vendor Address': itemVendor.address,
+            'Vendor City': itemVendor.city,
+            'Vendor State': itemVendor.state,
+            'Vendor Zip Code': itemVendor.zip,
+            'Description': itemVendor.description || item.description,
             [billComIdFieldName('Chart of Account')]: item.chartOfAccountId,
             'Chart of Account': chartOfAccounts.get(item.chartOfAccountId),
             'Amount': item.amount,
