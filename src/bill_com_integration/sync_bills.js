@@ -1,5 +1,6 @@
 /** @fileoverview Syncs Bill.com Bill Line Item data into Airtable. */
 
+import fetch from 'node-fetch';
 import {Base} from '../common/airtable.js';
 import {filter} from '../common/bill_com.js';
 import {getYyyyMmDd, PRIMARY_ORG} from '../common/utils.js';
@@ -91,10 +92,18 @@ export async function main(api, billComIntegrationBase = new Base()) {
   const changes = new Map();
   const primaryBillComId = billComIdFieldName('Line Item');
   for (const bill of bills) {
-    const vendor = vendors.get(bill.vendorId) || {};
-    const docs = await billComApi.dataCall('GetDocumentPages', {id: bill.id});
-    const docsUrl = docs.documentPages.fileUrl;
+    
+    const pages = await billComApi.dataCall('GetDocumentPages', {id: bill.id});
+    let docs;
+    if (pages != null) {
+      const response =
+          await fetch(
+              'https://api.bill.com/HtmlServlet?' +
+                  `id=${pages.documentPages.fileUrl}&sessionId=${sessionId}`);
+      docs = [{url: response.url}];
+    }
 
+    const vendor = vendors.get(bill.vendorId) || {};
     for (const item of bill.billLineItems) {
       const itemVendor = 
           (item.description.match(merchantRegex) || {}).groups || vendor;
@@ -118,12 +127,7 @@ export async function main(api, billComIntegrationBase = new Base()) {
             [billComIdFieldName('Customer')]: item.customerId,
             'Customer': customers.get(item.customerId),
             'Invoice ID': bill.invoiceNumber,
-            'Supporting Documents':
-              docsUrl == null ?
-                  null :
-                  [{
-                    url: `https://api.bill.com/HtmlServlet?id=${docsUrl}&sessionId=${sessionId}`
-                  }],
+            'Supporting Documents': docs,
             'Approval Status': approvalStatuses.get(bill.approvalStatus),
             'Payment Status': paymentStatuses.get(bill.paymentStatus),
             [billComIdFieldName('Bill')]: bill.id,
