@@ -4,6 +4,7 @@ import fetch from 'node-fetch';
 import {Base} from '../common/airtable.js';
 import {filter} from '../common/bill_com.js';
 import {getYyyyMmDd, PRIMARY_ORG} from '../common/utils.js';
+import {log} from '../common/github_actions_core.js';
 
 /** Bill.com Bill Approval Statuses. */
 const approvalStatuses = new Map([
@@ -100,7 +101,8 @@ export async function main(api, billComIntegrationBase = new Base()) {
           await fetch(
               'https://api.bill.com/HtmlServlet?' +
                   `id=${pages.documentPages.fileUrl}&sessionId=${sessionId}`);
-      docs = [{url: await response.blob().then(URL.createObjectURL)}];
+      log(response.url);
+      docs = [{url: response.url}];
     }
 
     const vendor = vendors.get(bill.vendorId) || {};

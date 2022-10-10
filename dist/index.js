@@ -19877,11 +19877,13 @@ __nccwpck_require__.r(__webpack_exports__);
 /* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
 /* harmony export */   "main": () => (/* binding */ main)
 /* harmony export */ });
-/* harmony import */ var node_fetch__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(4028);
+/* harmony import */ var node_fetch__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(4028);
 /* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(5585);
 /* harmony import */ var _common_bill_com_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(1398);
 /* harmony import */ var _common_utils_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(381);
+/* harmony import */ var _common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(1444);
 /** @fileoverview Syncs Bill.com Bill Line Item data into Airtable. */
+
 
 
 
@@ -19980,10 +19982,11 @@ async function main(api, billComIntegrationBase = new _common_airtable_js__WEBPA
     let docs;
     if (pages != null) {
       const response =
-          await (0,node_fetch__WEBPACK_IMPORTED_MODULE_3__/* ["default"] */ .ZP)(
+          await (0,node_fetch__WEBPACK_IMPORTED_MODULE_4__/* ["default"] */ .ZP)(
               'https://api.bill.com/HtmlServlet?' +
                   `id=${pages.documentPages.fileUrl}&sessionId=${sessionId}`);
-      docs = [{url: await response.blob().then(URL.createObjectURL)}];
+      (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_3__/* .log */ .cM)(response.url);
+      docs = [{url: response.url}];
     }
 
     const vendor = vendors.get(bill.vendorId) || {};
