@@ -22,11 +22,14 @@ jobs:
     steps:
       - id: get-airtable-base-id
         run: |
-          if [ ${{ startsWith(matrix.file-id, 'accounting') }} = true ] ; then
-            id=${{ secrets.ACCOUNTING_TERMINOLOGY_INDEX_BASE_ID }}
-          else
-            id=${{ secrets.BILL_COM_INTEGRATION_BASE_ID }}
-          fi
+          case ${{ matrix.file-id }} in
+            accounting*)
+              id=${{ secrets.ACCOUNTING_TERMINOLOGY_INDEX_BASE_ID }}
+              ;;
+            *)
+              id=${{ secrets.BILL_COM_INTEGRATION_BASE_ID }}
+              ;;
+          esac
           echo "::set-output name=id::$id"
       - uses: RSTechTeam/Bill.com-Airtable-Integration@main
         with:
