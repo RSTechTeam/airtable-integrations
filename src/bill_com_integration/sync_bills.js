@@ -122,7 +122,7 @@ export async function main(api, billComIntegrationBase = new Base()) {
               docsUrl == null ?
                   null :
                   [{
-                    url: `https://api-sandbox.bill.com/HtmlServlet?id=${docsUrl}&sessionId=${sessionId}`
+                    url: `https://api.bill.com/HtmlServlet?id=${docsUrl}&sessionId=${sessionId}`
                   }],
             'Approval Status': approvalStatuses.get(bill.approvalStatus),
             'Payment Status': paymentStatuses.get(bill.paymentStatus),
