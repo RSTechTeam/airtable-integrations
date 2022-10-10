@@ -94,7 +94,7 @@ export async function main(api, billComIntegrationBase = new Base()) {
   const primaryBillComId = billComIdFieldName('Line Item');
   for (const bill of bills) {
     
-    const pages = await billComApi.dataCall('GetDocumentPages', {id: bill.id});
+    // const pages = await billComApi.dataCall('GetDocumentPages', {id: bill.id});
     // let docs;
     // if (pages != null) {
     //   const response =
@@ -104,6 +104,9 @@ export async function main(api, billComIntegrationBase = new Base()) {
     //   docs = [{url: response.url}];
     // }
 
+    const docsUrl =
+        `https://api.bill.com/is/BillImageServlet?entityId=${bill.id}&sessionId=${sessionId}`;
+    log(docsUrl);
     const vendor = vendors.get(bill.vendorId) || {};
     for (const item of bill.billLineItems) {
       const itemVendor = 
@@ -130,7 +133,7 @@ export async function main(api, billComIntegrationBase = new Base()) {
             'Invoice ID': bill.invoiceNumber,
             'Supporting Documents':
               [{
-                url: `https://api-sandbox.bill.com${pages.documentPages.fileUrl}&sessionId=${sessionId}&pageNumber=1`
+                url: docsUrl
               }],
             'Approval Status': approvalStatuses.get(bill.approvalStatus),
             'Payment Status': paymentStatuses.get(bill.paymentStatus),
