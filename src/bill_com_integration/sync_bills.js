@@ -95,15 +95,14 @@ export async function main(api, billComIntegrationBase = new Base()) {
   for (const bill of bills) {
     
     const pages = await billComApi.dataCall('GetDocumentPages', {id: bill.id});
-    let docs;
-    if (pages != null) {
-      const response =
-          await fetch(
-              'https://api.bill.com/HtmlServlet?' +
-                  `id=${pages.documentPages.fileUrl}&sessionId=${sessionId}`);
-      log(response.url);
-      docs = [{url: response.url}];
-    }
+    // let docs;
+    // if (pages != null) {
+    //   const response =
+    //       await fetch(
+    //           `https://api.bill.com/${pages.documentPages.fileUrl}` +
+    //               `&sessionId=${sessionId}`);
+    //   docs = [{url: response.url}];
+    // }
 
     const vendor = vendors.get(bill.vendorId) || {};
     for (const item of bill.billLineItems) {
@@ -129,7 +128,10 @@ export async function main(api, billComIntegrationBase = new Base()) {
             [billComIdFieldName('Customer')]: item.customerId,
             'Customer': customers.get(item.customerId),
             'Invoice ID': bill.invoiceNumber,
-            'Supporting Documents': docs,
+            'Supporting Documents':
+              [{
+                url: `https://api-sandbox.bill.com${pages.documentPages.fileUrl}&sessionId=${sessionId}`
+              }],
             'Approval Status': approvalStatuses.get(bill.approvalStatus),
             'Payment Status': paymentStatuses.get(bill.paymentStatus),
             [billComIdFieldName('Bill')]: bill.id,

@@ -19877,7 +19877,6 @@ __nccwpck_require__.r(__webpack_exports__);
 /* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
 /* harmony export */   "main": () => (/* binding */ main)
 /* harmony export */ });
-/* harmony import */ var node_fetch__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(4028);
 /* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(5585);
 /* harmony import */ var _common_bill_com_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(1398);
 /* harmony import */ var _common_utils_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(381);
@@ -19979,15 +19978,14 @@ async function main(api, billComIntegrationBase = new _common_airtable_js__WEBPA
   for (const bill of bills) {
     
     const pages = await billComApi.dataCall('GetDocumentPages', {id: bill.id});
-    let docs;
-    if (pages != null) {
-      const response =
-          await (0,node_fetch__WEBPACK_IMPORTED_MODULE_4__/* ["default"] */ .ZP)(
-              'https://api.bill.com/HtmlServlet?' +
-                  `id=${pages.documentPages.fileUrl}&sessionId=${sessionId}`);
-      (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_3__/* .log */ .cM)(response.url);
-      docs = [{url: response.url}];
-    }
+    // let docs;
+    // if (pages != null) {
+    //   const response =
+    //       await fetch(
+    //           `https://api.bill.com/${pages.documentPages.fileUrl}` +
+    //               `&sessionId=${sessionId}`);
+    //   docs = [{url: response.url}];
+    // }
 
     const vendor = vendors.get(bill.vendorId) || {};
     for (const item of bill.billLineItems) {
@@ -20013,7 +20011,10 @@ async function main(api, billComIntegrationBase = new _common_airtable_js__WEBPA
             [billComIdFieldName('Customer')]: item.customerId,
             'Customer': customers.get(item.customerId),
             'Invoice ID': bill.invoiceNumber,
-            'Supporting Documents': docs,
+            'Supporting Documents':
+              [{
+                url: `https://api-sandbox.bill.com${pages.documentPages.fileUrl}&sessionId=${sessionId}`
+              }],
             'Approval Status': approvalStatuses.get(bill.approvalStatus),
             'Payment Status': paymentStatuses.get(bill.paymentStatus),
             [billComIdFieldName('Bill')]: bill.id,
