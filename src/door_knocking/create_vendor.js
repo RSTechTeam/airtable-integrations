@@ -11,21 +11,22 @@ import {PRIMARY_ORG} from '../common/utils.js';
 export async function main(billComApi, airtableBase = new Base()) {
   await billComApi.primaryOrgLogin();
   await airtableBase.selectAndUpdate(
-      'Sign Ups',
+      'Jotform',
       'Create Bill.com Vendor',
       async (record) => {
         const vendorId =
             await billComApi.create(
                 'Vendor',
                 {
-                  name: `${record.get('Name*')} (STV)`,
-                  address1: record.get('Address*'),
-                  addressCity: record.get('City*'),
-                  addressState: record.get('State*'),
-                  addressZip: record.get('Zip Code*'),
+                  name: `${record.get('Name')} (STV)`,
+                  address1: record.get('Street Address'),
+                  address2: record.get('Street Address Line 2'),
+                  addressCity: record.get('City'),
+                  addressState: record.get('State'),
+                  addressZip: record.get('Zip Code'),
                   addressCountry: 'USA',
-                  email: record.get('Email*'),
-                  phone: record.get('Phone*'),
+                  email: record.get('E-mail Address'),
+                  phone: record.get('Mobile Phone'),
                 });
 
         return {[`${PRIMARY_ORG} Bill.com Vendor ID`]: vendorId};
