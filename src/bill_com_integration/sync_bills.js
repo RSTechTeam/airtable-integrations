@@ -100,7 +100,7 @@ export async function main(api, billComIntegrationBase = new Base()) {
           await fetch(
               'https://api.bill.com/HtmlServlet?' +
                   `id=${pages.documentPages.fileUrl}&sessionId=${sessionId}`);
-      docs = [{url: response.url}];
+      docs = [{url: await response.blob().then(URL.createObjectURL)}];
     }
 
     const vendor = vendors.get(bill.vendorId) || {};

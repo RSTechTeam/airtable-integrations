@@ -19983,7 +19983,7 @@ async function main(api, billComIntegrationBase = new _common_airtable_js__WEBPA
           await (0,node_fetch__WEBPACK_IMPORTED_MODULE_3__/* ["default"] */ .ZP)(
               'https://api.bill.com/HtmlServlet?' +
                   `id=${pages.documentPages.fileUrl}&sessionId=${sessionId}`);
-      docs = [{url: response.url}];
+      docs = [{url: await response.blob().then(URL.createObjectURL)}];
     }
 
     const vendor = vendors.get(bill.vendorId) || {};
