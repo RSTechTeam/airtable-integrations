@@ -26,14 +26,6 @@ let billComApi;
 
 /**
  * @param {string} entity
- * @return {string}
- */
-function billComIdFieldName(entity) {
-  return `${PRIMARY_ORG} Bill.com ${entity} ID`;
-}
-
-/**
- * @param {string} entity
  * @param {func(!Object<string, *>): *} dataFunc
  * @return {!Promise<!Map<string, *>>}
  */
@@ -55,6 +47,14 @@ function getNames(entity) {
 }
 
 /**
+ * @param {string} entity
+ * @return {string}
+ */
+function billComIdFieldName(entity) {
+  return `${PRIMARY_ORG} Bill.com ${entity} ID`;
+}
+
+/**
  * @param {!Api} api
  * @param {!Base=} billComIntegrationBase
  * @return {!Promise<undefined>}
@@ -70,6 +70,7 @@ export async function main(api, billComIntegrationBase = new Base()) {
 
   // Initialize reference data.
   await billComApi.primaryOrgLogin();
+  const sessionId = billComApi.getSessionId();
   const vendors =
       await getEntityData(
           'Vendor',
@@ -117,7 +118,12 @@ export async function main(api, billComIntegrationBase = new Base()) {
             [billComIdFieldName('Customer')]: item.customerId,
             'Customer': customers.get(item.customerId),
             'Invoice ID': bill.invoiceNumber,
-            'Supporting Documents': docsUrl == null ? null : [{url: docsUrl}],
+            'Supporting Documents':
+              docsUrl == null ?
+                  null :
+                  [{
+                    url: `https://api-sandbox.bill.com/HtmlServlet?id=${docsUrl}&sessionId=${sessionId}`
+                  }],
             'Approval Status': approvalStatuses.get(bill.approvalStatus),
             'Payment Status': paymentStatuses.get(bill.paymentStatus),
             [billComIdFieldName('Bill')]: bill.id,
