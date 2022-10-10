@@ -20013,7 +20013,7 @@ async function main(api, billComIntegrationBase = new _common_airtable_js__WEBPA
             'Invoice ID': bill.invoiceNumber,
             'Supporting Documents':
               [{
-                url: `https://api-sandbox.bill.com${pages.documentPages.fileUrl}&sessionId=${sessionId}`
+                url: `https://api-sandbox.bill.com${pages.documentPages.fileUrl}&sessionId=${sessionId}&pageNumber=1`
               }],
             'Approval Status': approvalStatuses.get(bill.approvalStatus),
             'Payment Status': paymentStatuses.get(bill.paymentStatus),
