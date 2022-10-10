@@ -18,6 +18,7 @@ jobs:
           'bill_com_integration_sync_bills',
           'bill_com_integration_create_bill',
           'bill_com_integration_create_approver',
+          'door_knocking_create_vendor',
         ]
     steps:
       - id: get-airtable-base-id
@@ -25,6 +26,9 @@ jobs:
           case ${{ matrix.file-id }} in
             accounting*)
               id=${{ secrets.ACCOUNTING_TERMINOLOGY_INDEX_BASE_ID }}
+              ;;
+            door_knocking*)
+              id=${{ secrets.DOOR_KNOCKING_BASE_ID }}
               ;;
             *)
               id=${{ secrets.BILL_COM_INTEGRATION_BASE_ID }}
