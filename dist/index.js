@@ -20634,6 +20634,53 @@ function getYyyyMmDd(date) {
 
 /***/ }),
 
+/***/ 3161:
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
+
+__nccwpck_require__.r(__webpack_exports__);
+/* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
+/* harmony export */   "main": () => (/* binding */ main)
+/* harmony export */ });
+/* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(5585);
+/* harmony import */ var _common_utils_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(381);
+/** @fileoverview Creates a Bill.com Vendor based on volunteer address info. */
+ 
+
+
+
+/**
+ * @param {!Api} billComApi
+ * @param {!Base=} airtableBase
+ * @return {!Promise<undefined>}
+ */
+async function main(billComApi, airtableBase = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .Base */ .XY()) {
+  await billComApi.primaryOrgLogin();
+  await airtableBase.selectAndUpdate(
+      'Jotform',
+      'Create Bill.com Vendor',
+      async (record) => {
+        const vendorId =
+            await billComApi.create(
+                'Vendor',
+                {
+                  name: `${record.get('Name')} (STV)`,
+                  address1: record.get('Street Address'),
+                  address2: record.get('Street Address Line 2'),
+                  addressCity: record.get('City'),
+                  addressState: record.get('State'),
+                  addressZip: record.get('Zip Code'),
+                  addressCountry: 'USA',
+                  email: record.get('E-mail Address'),
+                  phone: record.get('Mobile Phone'),
+                });
+
+        return {[`${_common_utils_js__WEBPACK_IMPORTED_MODULE_1__/* .PRIMARY_ORG */ .l3} Bill.com Vendor ID`]: vendorId};
+      });
+}
+
+
+/***/ }),
+
 /***/ 2337:
 /***/ ((__webpack_module__, __unused_webpack___webpack_exports__, __nccwpck_require__) => {
 
@@ -20643,9 +20690,10 @@ __nccwpck_require__.a(__webpack_module__, async (__webpack_handle_async_dependen
 /* harmony import */ var _bill_com_integration_create_bill_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(1709);
 /* harmony import */ var _bill_com_integration_sync_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(365);
 /* harmony import */ var _bill_com_integration_sync_bills_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(4361);
-/* harmony import */ var _common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_5__ = __nccwpck_require__(1444);
-/* harmony import */ var _common_inputs_js__WEBPACK_IMPORTED_MODULE_6__ = __nccwpck_require__(4684);
-/* harmony import */ var _common_bill_com_js__WEBPACK_IMPORTED_MODULE_7__ = __nccwpck_require__(1398);
+/* harmony import */ var _door_knocking_create_vendor_js__WEBPACK_IMPORTED_MODULE_5__ = __nccwpck_require__(3161);
+/* harmony import */ var _common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_6__ = __nccwpck_require__(1444);
+/* harmony import */ var _common_inputs_js__WEBPACK_IMPORTED_MODULE_7__ = __nccwpck_require__(4684);
+/* harmony import */ var _common_bill_com_js__WEBPACK_IMPORTED_MODULE_8__ = __nccwpck_require__(1398);
 /** @fileoverview Entrypoint for choosing which file to run. */
 
 
@@ -20657,8 +20705,9 @@ __nccwpck_require__.a(__webpack_module__, async (__webpack_handle_async_dependen
 
 
 
+
 let imp;
-switch ((0,_common_inputs_js__WEBPACK_IMPORTED_MODULE_6__/* .fileId */ .o8)()) {
+switch ((0,_common_inputs_js__WEBPACK_IMPORTED_MODULE_7__/* .fileId */ .o8)()) {
   case 'accounting_sync':
     imp = _accounting_terminology_index_sync_js__WEBPACK_IMPORTED_MODULE_0__;
     break;
@@ -20674,12 +20723,15 @@ switch ((0,_common_inputs_js__WEBPACK_IMPORTED_MODULE_6__/* .fileId */ .o8)()) {
   case 'bill_com_integration_sync_bills':
     imp = _bill_com_integration_sync_bills_js__WEBPACK_IMPORTED_MODULE_4__;
     break;
+  case 'door_knocking_create_vendor':
+    imp = _door_knocking_create_vendor_js__WEBPACK_IMPORTED_MODULE_5__;
+    break;
   default:
-    (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_5__/* .error */ .vU)(`Unknown file ID ${(0,_common_inputs_js__WEBPACK_IMPORTED_MODULE_6__/* .fileId */ .o8)()}`);
+    (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_6__/* .error */ .vU)(`Unknown file ID ${(0,_common_inputs_js__WEBPACK_IMPORTED_MODULE_7__/* .fileId */ .o8)()}`);
 }
 
-const billComApi = await (0,_common_bill_com_js__WEBPACK_IMPORTED_MODULE_7__/* .getApi */ .ac)();
-await imp.main(billComApi).catch(_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_5__/* .error */ .vU);
+const billComApi = await (0,_common_bill_com_js__WEBPACK_IMPORTED_MODULE_8__/* .getApi */ .ac)();
+await imp.main(billComApi).catch(_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_6__/* .error */ .vU);
 
 __webpack_handle_async_dependencies__();
 }, 1);
