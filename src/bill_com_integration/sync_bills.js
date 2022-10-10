@@ -94,19 +94,16 @@ export async function main(api, billComIntegrationBase = new Base()) {
   const primaryBillComId = billComIdFieldName('Line Item');
   for (const bill of bills) {
     
-    // const pages = await billComApi.dataCall('GetDocumentPages', {id: bill.id});
-    // let docs;
-    // if (pages != null) {
-    //   const response =
-    //       await fetch(
-    //           `https://api.bill.com/${pages.documentPages.fileUrl}` +
-    //               `&sessionId=${sessionId}`);
-    //   docs = [{url: response.url}];
-    // }
+    const pages = await billComApi.dataCall('GetDocumentPages', {id: bill.id});
+    const docs = [];
+    for (let i = 1; i <= pages.documentPages.numPages; ++i) {
+      docs.push({
+        url:
+          `https://api.bill.com/is/BillImageServlet?entityId=${bill.id}` +
+              `&sessionId=${sessionId}&pageNumber=${i}`
+      });
+    }
 
-    const docsUrl =
-        `https://api.bill.com/is/BillImageServlet?entityId=${bill.id}&sessionId=${sessionId}`;
-    log(docsUrl);
     const vendor = vendors.get(bill.vendorId) || {};
     for (const item of bill.billLineItems) {
       const itemVendor = 
@@ -131,10 +128,7 @@ export async function main(api, billComIntegrationBase = new Base()) {
             [billComIdFieldName('Customer')]: item.customerId,
             'Customer': customers.get(item.customerId),
             'Invoice ID': bill.invoiceNumber,
-            'Supporting Documents':
-              [{
-                url: docsUrl
-              }],
+            'Supporting Documents': docs,
             'Approval Status': approvalStatuses.get(bill.approvalStatus),
             'Payment Status': paymentStatuses.get(bill.paymentStatus),
             [billComIdFieldName('Bill')]: bill.id,
