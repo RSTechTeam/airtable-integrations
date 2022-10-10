@@ -1,10 +1,8 @@
 /** @fileoverview Syncs Bill.com Bill Line Item data into Airtable. */
 
-import fetch from 'node-fetch';
 import {Base} from '../common/airtable.js';
 import {filter} from '../common/bill_com.js';
 import {getYyyyMmDd, PRIMARY_ORG} from '../common/utils.js';
-import {log} from '../common/github_actions_core.js';
 
 /** Bill.com Bill Approval Statuses. */
 const approvalStatuses = new Map([
@@ -115,6 +113,7 @@ export async function main(api, billComIntegrationBase = new Base()) {
             [primaryBillComId]: item.id,
             'Creation Date': getYyyyMmDd(item.createdTime),
             'Invoice Date': bill.invoiceDate,
+            'Expense Date': itemVendor.date || bill.invoiceDate,
             [billComIdFieldName('Vendor')]: bill.vendorId,
             'Vendor Name': itemVendor.name,
             'Vendor Address': itemVendor.address,
