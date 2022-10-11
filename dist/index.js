@@ -19948,7 +19948,8 @@ async function main(api, billComIntegrationBase = new _common_airtable_js__WEBPA
   const merchantRegex =
       new RegExp(
           '(?<date>.+)\\n(?<name>.+)\\n(?<address>.+)\\n' +
-              '(?<city>.+) \| (?<state>.+) \| (?<zip>.+)\\n(?<description>.+)');
+              '(?<city>.+) \\| (?<state>.+) \\| (?<zip>.+)\\n' +
+              '(?<description>.+)');
 
   // Initialize reference data.
   await billComApi.primaryOrgLogin();
@@ -19984,6 +19985,7 @@ async function main(api, billComIntegrationBase = new _common_airtable_js__WEBPA
       });
     }
 
+    const submitterMatch = bill.description.match(/Submitted by (.+) \(/);
     const vendor = vendors.get(bill.vendorId) || {};
     for (const item of bill.billLineItems) {
       const itemVendor = 
@@ -19993,6 +19995,7 @@ async function main(api, billComIntegrationBase = new _common_airtable_js__WEBPA
           {
             'Active': true,
             [primaryBillComId]: item.id,
+            'Submitted By': submitterMatch == null ? null : submitterMatch[1],
             'Creation Date': (0,_common_utils_js__WEBPACK_IMPORTED_MODULE_2__/* .getYyyyMmDd */ .PQ)(item.createdTime),
             'Invoice Date': bill.invoiceDate,
             'Expense Date': itemVendor.date || bill.invoiceDate,

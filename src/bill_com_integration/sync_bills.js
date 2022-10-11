@@ -66,7 +66,8 @@ export async function main(api, billComIntegrationBase = new Base()) {
   const merchantRegex =
       new RegExp(
           '(?<date>.+)\\n(?<name>.+)\\n(?<address>.+)\\n' +
-              '(?<city>.+) \| (?<state>.+) \| (?<zip>.+)\\n(?<description>.+)');
+              '(?<city>.+) \\| (?<state>.+) \\| (?<zip>.+)\\n' +
+              '(?<description>.+)');
 
   // Initialize reference data.
   await billComApi.primaryOrgLogin();
@@ -102,6 +103,7 @@ export async function main(api, billComIntegrationBase = new Base()) {
       });
     }
 
+    const submitterMatch = bill.description.match(/Submitted by (.+) \(/);
     const vendor = vendors.get(bill.vendorId) || {};
     for (const item of bill.billLineItems) {
       const itemVendor = 
@@ -111,6 +113,7 @@ export async function main(api, billComIntegrationBase = new Base()) {
           {
             'Active': true,
             [primaryBillComId]: item.id,
+            'Submitted By': submitterMatch == null ? null : submitterMatch[1],
             'Creation Date': getYyyyMmDd(item.createdTime),
             'Invoice Date': bill.invoiceDate,
             'Expense Date': itemVendor.date || bill.invoiceDate,
