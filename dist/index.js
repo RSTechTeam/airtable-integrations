@@ -19948,7 +19948,7 @@ async function main(api, billComIntegrationBase = new _common_airtable_js__WEBPA
   const merchantRegex =
       new RegExp(
           '(?<date>.+)\\n(?<name>.+)\\n(?<address>.+)\\n' +
-              '(?<city>.+) & (?<state>.+) & (?<zip>.+)\\n(?<description>.+)');
+              '(?<city>.+) | (?<state>.+) | (?<zip>.+)\\n(?<description>.+)');
 
   // Initialize reference data.
   await billComApi.primaryOrgLogin();
