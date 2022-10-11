@@ -103,11 +103,13 @@ export async function main(billComApi, airtableBase = new Base()) {
                   description:
                     date == undefined ?
                         description :
-                        `${date}\n${item.get('Merchant Name')}\n` +
-                            `${item.get('Merchant Address')}\n` +
-                            `${item.get('Merchant City')} & ` +
-                            `${item.get('Merchant State')} & ` +
-                            `${item.get('Merchant Zip Code')}\n${description}`,
+                        encodeURIComponent(
+                            `${date}\n${item.get('Merchant Name')}\n` +
+                                `${item.get('Merchant Address')}\n` +
+                                `${item.get('Merchant City')} & ` +
+                                `${item.get('Merchant State')} & ` +
+                                `${item.get('Merchant Zip Code')}\n` +
+                                `${description}`),
                 });
               });
         }
