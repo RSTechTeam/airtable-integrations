@@ -102,7 +102,8 @@ export async function main(api, billComIntegrationBase = new Base()) {
       });
     }
 
-    const submitterMatch = bill.description.match(/Submitted by (.+) \(/);
+    const submitterMatch =
+        (bill.description || '').match(/Submitted by (.+) \(/);
     const vendor = vendors.get(bill.vendorId) || {};
     for (const item of bill.billLineItems) {
       const itemVendor = 

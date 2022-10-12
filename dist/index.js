@@ -19984,7 +19984,8 @@ async function main(api, billComIntegrationBase = new _common_airtable_js__WEBPA
       });
     }
 
-    const submitterMatch = bill.description.match(/Submitted by (.+) \(/);
+    const submitterMatch =
+        (bill.description || '').match(/Submitted by (.+) \(/);
     const vendor = vendors.get(bill.vendorId) || {};
     for (const item of bill.billLineItems) {
       const itemVendor = 
