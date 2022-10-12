@@ -48,6 +48,15 @@ function getNames(entity) {
 
 /**
  * @param {string} entity
+ * @param {!RegExp} regex
+ * @return {?string[]}
+ */
+function matchDescription(entity, regex) {
+  return (entity.description || '').match(regex);
+}
+
+/**
+ * @param {string} entity
  * @return {string}
  */
 function billComIdFieldName(entity) {
@@ -87,7 +96,8 @@ export async function main(api, billComIntegrationBase = new Base()) {
 
   // Initialize sync changes.
   const bills =
-      await billComApi.listActive('Bill', [filter('createdTime', '>', '2022')]);
+      await billComApi.listActive(
+          'Bill', [filter('createdTime', '>', '2022-01-01')]);
   const changes = new Map();
   const primaryBillComId = billComIdFieldName('Line Item');
   for (const bill of bills) {
@@ -102,12 +112,11 @@ export async function main(api, billComIntegrationBase = new Base()) {
       });
     }
 
-    const submitterMatch =
-        (bill.description || '').match(/Submitted by (.+) \(/);
+    const submitterMatch = matchDescription(bill, /Submitted by (.+) \(/);
     const vendor = vendors.get(bill.vendorId) || {};
     for (const item of bill.billLineItems) {
-      const itemVendor = 
-          ((item.description || '').match(merchantRegex) || {}).groups || vendor;
+      const itemVendor =
+          (matchDescription(item, merchantRegex) || {}).groups || vendor;
       changes.set(
           item.id,
           {

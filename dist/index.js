@@ -19930,6 +19930,15 @@ function getNames(entity) {
 
 /**
  * @param {string} entity
+ * @param {!RegExp} regex
+ * @return {?string[]}
+ */
+function matchDescription(entity, regex) {
+  return (entity.description || '').match(regex);
+}
+
+/**
+ * @param {string} entity
  * @return {string}
  */
 function billComIdFieldName(entity) {
@@ -19969,7 +19978,8 @@ async function main(api, billComIntegrationBase = new _common_airtable_js__WEBPA
 
   // Initialize sync changes.
   const bills =
-      await billComApi.listActive('Bill', [(0,_common_bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .filter */ .hX)('createdTime', '>', '2022')]);
+      await billComApi.listActive(
+          'Bill', [(0,_common_bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .filter */ .hX)('createdTime', '>', '2022-01-01')]);
   const changes = new Map();
   const primaryBillComId = billComIdFieldName('Line Item');
   for (const bill of bills) {
@@ -19984,12 +19994,11 @@ async function main(api, billComIntegrationBase = new _common_airtable_js__WEBPA
       });
     }
 
-    const submitterMatch =
-        (bill.description || '').match(/Submitted by (.+) \(/);
+    const submitterMatch = matchDescription(bill, /Submitted by (.+) \(/);
     const vendor = vendors.get(bill.vendorId) || {};
     for (const item of bill.billLineItems) {
-      const itemVendor = 
-          ((item.description || '').match(merchantRegex) || {}).groups || vendor;
+      const itemVendor =
+          (matchDescription(item, merchantRegex) || {}).groups || vendor;
       changes.set(
           item.id,
           {
