@@ -107,7 +107,7 @@ export async function main(api, billComIntegrationBase = new Base()) {
     const vendor = vendors.get(bill.vendorId) || {};
     for (const item of bill.billLineItems) {
       const itemVendor = 
-          (item.description.match(merchantRegex) || {}).groups || vendor;
+          ((item.description || '').match(merchantRegex) || {}).groups || vendor;
       changes.set(
           item.id,
           {
