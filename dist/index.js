@@ -19930,19 +19930,19 @@ function getNames(entity) {
 
 /**
  * @param {string} entity
+ * @return {string}
+ */
+function billComIdFieldName(entity) {
+  return `${_common_utils_js__WEBPACK_IMPORTED_MODULE_2__/* .PRIMARY_ORG */ .l3} Bill.com ${entity} ID`;
+}
+
+/**
+ * @param {string} entity
  * @param {!RegExp} regex
  * @return {?string[]}
  */
 function matchDescription(entity, regex) {
   return (entity.description || '').match(regex);
-}
-
-/**
- * @param {string} entity
- * @return {string}
- */
-function billComIdFieldName(entity) {
-  return `${_common_utils_js__WEBPACK_IMPORTED_MODULE_2__/* .PRIMARY_ORG */ .l3} Bill.com ${entity} ID`;
 }
 
 /**
@@ -19983,16 +19983,6 @@ async function main(api, billComIntegrationBase = new _common_airtable_js__WEBPA
   const changes = new Map();
   const primaryBillComId = billComIdFieldName('Line Item');
   for (const bill of bills) {
-    
-    const pages = await billComApi.dataCall('GetDocumentPages', {id: bill.id});
-    const docs = [];
-    for (let i = 1; i <= pages.documentPages.numPages; ++i) {
-      docs.push({
-        url:
-          `https://api.bill.com/is/BillImageServlet?entityId=${bill.id}` +
-              `&sessionId=${sessionId}&pageNumber=${i}`
-      });
-    }
 
     const submitterMatch = matchDescription(bill, /Submitted by (.+) \(/);
     const vendor = vendors.get(bill.vendorId) || {};
@@ -20003,7 +19993,6 @@ async function main(api, billComIntegrationBase = new _common_airtable_js__WEBPA
           item.id,
           {
             'Active': true,
-            [primaryBillComId]: item.id,
             'Submitted By': submitterMatch == null ? null : submitterMatch[1],
             'Creation Date': (0,_common_utils_js__WEBPACK_IMPORTED_MODULE_2__/* .getYyyyMmDd */ .PQ)(item.createdTime),
             'Invoice Date': bill.invoiceDate,
@@ -20021,27 +20010,43 @@ async function main(api, billComIntegrationBase = new _common_airtable_js__WEBPA
             [billComIdFieldName('Customer')]: item.customerId,
             'Customer': customers.get(item.customerId),
             'Invoice ID': bill.invoiceNumber,
-            'Supporting Documents': docs,
             'Approval Status': approvalStatuses.get(bill.approvalStatus),
             'Payment Status': paymentStatuses.get(bill.paymentStatus),
             [billComIdFieldName('Bill')]: bill.id,
+            'Last Updated Time': bill.updatedTime,
           });
     }
   }
 
   // Update every existing table record based on the Bill.com data.
   const updates = [];
-  await billComIntegrationBase.select(
+  await billComIntegrationBase.selectAndUpdate(
       BILL_REPORTING_TABLE,
       '',
-      (record) => {
+      async (record) => {
         const id = record.get(primaryBillComId);
-        updates.push({
-          id: record.getId(), fields: changes.get(id) || {Active: false},
-        });
+        if (!changes.has(id)) return {Active: false};
+
+        const update = changes.get(id);
         changes.delete(id);
+        if (record.get('Last Updated Time') === update['Last Updated Time']) {
+          return null;
+        }
+
+        const billId = update[billComIdFieldName('Bill')];
+        const pages =
+            await billComApi.dataCall('GetDocumentPages', {id: billId});
+        const docs = [];
+        for (let i = 1; i <= pages.documentPages.numPages; ++i) {
+          docs.push({
+            url:
+              `https://api.bill.com/is/BillImageServlet?entityId=${billId}` +
+                  `&sessionId=${sessionId}&pageNumber=${i}`
+          });
+        }
+        update['Supporting Documents'] = docs;
+        return update;
       });
-  await billComIntegrationBase.update(BILL_REPORTING_TABLE, updates);
 
   // Create new table records from new Bill.com data.
   const creates = [];
