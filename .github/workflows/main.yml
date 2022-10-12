@@ -34,7 +34,7 @@ jobs:
               id=${{ secrets.BILL_COM_INTEGRATION_BASE_ID }}
               ;;
           esac
-          echo "::set-output name=id::$id"
+          echo "id=$id" >> $GITHUB_OUTPUT
       - uses: RSTechTeam/Bill.com-Airtable-Integration@main
         with:
           file-id: ${{ matrix.file-id }}
