@@ -19969,7 +19969,7 @@ async function main(api, billComIntegrationBase = new _common_airtable_js__WEBPA
 
   // Initialize sync changes.
   const bills =
-      await billComApi.listActive('Bill');
+      await billComApi.listActive('Bill', [(0,_common_bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .filter */ .hX)('createdTime', '>', '2022')]);
   const changes = new Map();
   const primaryBillComId = billComIdFieldName('Line Item');
   for (const bill of bills) {
