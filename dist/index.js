@@ -18797,7 +18797,7 @@ __nccwpck_require__.r(__webpack_exports__);
 /* harmony export */   "main": () => (/* binding */ main)
 /* harmony export */ });
 /* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(5585);
-/* harmony import */ var _common_bill_com_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(1398);
+/* harmony import */ var _common_bill_com_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(9668);
 /* harmony import */ var _common_inputs_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(4684);
 /** @fileoverview Syncs Bill.com Customers from Airtable to Bill.com. */
 
@@ -18928,8 +18928,8 @@ __nccwpck_require__.d(__webpack_exports__, {
 
 // EXTERNAL MODULE: ./node_modules/node-fetch/src/index.js + 20 modules
 var src = __nccwpck_require__(4028);
-// EXTERNAL MODULE: ./src/common/bill_com.js
-var bill_com = __nccwpck_require__(1398);
+// EXTERNAL MODULE: ./src/common/bill_com.js + 2 modules
+var bill_com = __nccwpck_require__(9668);
 // EXTERNAL MODULE: ./src/common/airtable.js
 var airtable = __nccwpck_require__(5585);
 // EXTERNAL MODULE: ./src/common/utils.js + 1 modules
@@ -19557,7 +19557,7 @@ __nccwpck_require__.r(__webpack_exports__);
 /* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
 /* harmony export */   "main": () => (/* binding */ main)
 /* harmony export */ });
-/* harmony import */ var _common_bill_com_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(1398);
+/* harmony import */ var _common_bill_com_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(9668);
 /* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(5585);
 /* harmony import */ var _common_utils_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(381);
 /**
@@ -19878,7 +19878,7 @@ __nccwpck_require__.r(__webpack_exports__);
 /* harmony export */   "main": () => (/* binding */ main)
 /* harmony export */ });
 /* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(5585);
-/* harmony import */ var _common_bill_com_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(1398);
+/* harmony import */ var _common_bill_com_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(9668);
 /* harmony import */ var _common_utils_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(381);
 /** @fileoverview Syncs Bill.com Bill Line Item data into Airtable. */
 
@@ -20197,27 +20197,177 @@ class Base {
 
 /***/ }),
 
-/***/ 1398:
+/***/ 9668:
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
 
-/* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
-/* harmony export */   "tV": () => (/* binding */ ActiveStatus),
-/* harmony export */   "k_": () => (/* binding */ apiCall),
-/* harmony export */   "dA": () => (/* binding */ isActiveEnum),
-/* harmony export */   "hX": () => (/* binding */ filter),
-/* harmony export */   "ac": () => (/* binding */ getApi)
-/* harmony export */ });
-/* unused harmony exports entityData, Api */
-/* harmony import */ var node_fetch__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(4028);
-/* harmony import */ var _inputs_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(4684);
-/* harmony import */ var _airtable_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(5585);
-/* harmony import */ var _utils_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(381);
-/* harmony import */ var _github_actions_core_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(1444);
+
+// EXPORTS
+__nccwpck_require__.d(__webpack_exports__, {
+  "tV": () => (/* binding */ ActiveStatus),
+  "k_": () => (/* binding */ apiCall),
+  "hX": () => (/* binding */ filter),
+  "ac": () => (/* binding */ getApi),
+  "dA": () => (/* binding */ isActiveEnum)
+});
+
+// UNUSED EXPORTS: Api, entityData
+
+// EXTERNAL MODULE: ./node_modules/node-fetch/src/index.js + 20 modules
+var src = __nccwpck_require__(4028);
+// EXTERNAL MODULE: ./src/common/inputs.js
+var inputs = __nccwpck_require__(4684);
+;// CONCATENATED MODULE: ./node_modules/yocto-queue/index.js
+/*
+How it works:
+`this.#head` is an instance of `Node` which keeps track of its current value and nests another instance of `Node` that keeps the value that comes after it. When a value is provided to `.enqueue()`, the code needs to iterate through `this.#head`, going deeper and deeper to find the last value. However, iterating through every single item is slow. This problem is solved by saving a reference to the last value as `this.#tail` so that it can reference it to add a new value.
+*/
+
+class Node {
+	value;
+	next;
+
+	constructor(value) {
+		this.value = value;
+	}
+}
+
+class Queue {
+	#head;
+	#tail;
+	#size;
+
+	constructor() {
+		this.clear();
+	}
+
+	enqueue(value) {
+		const node = new Node(value);
+
+		if (this.#head) {
+			this.#tail.next = node;
+			this.#tail = node;
+		} else {
+			this.#head = node;
+			this.#tail = node;
+		}
+
+		this.#size++;
+	}
+
+	dequeue() {
+		const current = this.#head;
+		if (!current) {
+			return;
+		}
+
+		this.#head = this.#head.next;
+		this.#size--;
+		return current.value;
+	}
+
+	clear() {
+		this.#head = undefined;
+		this.#tail = undefined;
+		this.#size = 0;
+	}
+
+	get size() {
+		return this.#size;
+	}
+
+	* [Symbol.iterator]() {
+		let current = this.#head;
+
+		while (current) {
+			yield current.value;
+			current = current.next;
+		}
+	}
+}
+
+;// CONCATENATED MODULE: ./node_modules/p-limit/index.js
+
+
+function pLimit(concurrency) {
+	if (!((Number.isInteger(concurrency) || concurrency === Number.POSITIVE_INFINITY) && concurrency > 0)) {
+		throw new TypeError('Expected `concurrency` to be a number from 1 and up');
+	}
+
+	const queue = new Queue();
+	let activeCount = 0;
+
+	const next = () => {
+		activeCount--;
+
+		if (queue.size > 0) {
+			queue.dequeue()();
+		}
+	};
+
+	const run = async (fn, resolve, args) => {
+		activeCount++;
+
+		const result = (async () => fn(...args))();
+
+		resolve(result);
+
+		try {
+			await result;
+		} catch {}
+
+		next();
+	};
+
+	const enqueue = (fn, resolve, args) => {
+		queue.enqueue(run.bind(undefined, fn, resolve, args));
+
+		(async () => {
+			// This function needs to wait until the next microtask before comparing
+			// `activeCount` to `concurrency`, because `activeCount` is updated asynchronously
+			// when the run function is dequeued and called. The comparison in the if-statement
+			// needs to happen asynchronously as well to get an up-to-date value for `activeCount`.
+			await Promise.resolve();
+
+			if (activeCount < concurrency && queue.size > 0) {
+				queue.dequeue()();
+			}
+		})();
+	};
+
+	const generator = (fn, ...args) => new Promise(resolve => {
+		enqueue(fn, resolve, args);
+	});
+
+	Object.defineProperties(generator, {
+		activeCount: {
+			get: () => activeCount,
+		},
+		pendingCount: {
+			get: () => queue.size,
+		},
+		clearQueue: {
+			value: () => {
+				queue.clear();
+			},
+		},
+	});
+
+	return generator;
+}
+
+// EXTERNAL MODULE: ./src/common/airtable.js
+var airtable = __nccwpck_require__(5585);
+// EXTERNAL MODULE: ./src/common/utils.js + 1 modules
+var utils = __nccwpck_require__(381);
+// EXTERNAL MODULE: ./src/common/github_actions_core.js
+var github_actions_core = __nccwpck_require__(1444);
+;// CONCATENATED MODULE: ./src/common/bill_com.js
 /**
  * @fileoverview Shared code for interacting with the Bill.com API.
  * For more information, check out the API documentation:
  * https://developer.bill.com/hc/en-us/articles/360035447551-API-Structure
  */
+
 
 
 
@@ -20232,6 +20382,12 @@ class Base {
 const ActiveStatus = {ACTIVE: '1', INACTIVE: '2'};
 
 /**
+ * The concurrent rate limit for Bill.com API requests
+ * per developer key per organization.
+ */
+const rateLimit = pLimit(3);
+
+/**
  * @param {string} endpoint 
  * @param {!Object<string, *>} headers
  * @param {(string|FormData)} body
@@ -20240,15 +20396,15 @@ const ActiveStatus = {ACTIVE: '1', INACTIVE: '2'};
  */
 async function apiCall(endpoint, headers, body, test = false) {
   const response =
-      await (0,node_fetch__WEBPACK_IMPORTED_MODULE_4__/* ["default"] */ .ZP)(
+      await (0,src/* default */.ZP)(
           `https://api${test ? '-sandbox' : ''}.bill.com/` +
               `api/v2/${endpoint}.json`,
           {method: 'POST', headers: headers, body: body});
   const json = await response.json();
-  (0,_github_actions_core_js__WEBPACK_IMPORTED_MODULE_3__/* .logJson */ .u2)(endpoint, json);
+  (0,github_actions_core/* logJson */.u2)(endpoint, json);
   const data = json.response_data;
   if (json.response_status === 1) {
-    (0,_utils_js__WEBPACK_IMPORTED_MODULE_2__/* .fetchError */ .Tl)(data.error_code, endpoint, data.error_message);
+    (0,utils/* fetchError */.Tl)(data.error_code, endpoint, data.error_message);
   }
   return data;
 }
@@ -20324,12 +20480,13 @@ class Api {
    * @return {!Promise<!Object<string, *>>} endpoint-specific response_data.
    */
   call(endpoint, params) {
-    (0,_github_actions_core_js__WEBPACK_IMPORTED_MODULE_3__/* .log */ .cM)(params);
-    return apiCall(
-        endpoint,
-        {'Content-Type': 'application/x-www-form-urlencoded'},
-        `devKey=${this.getDevKey()}&sessionId=${this.sessionId_}&${params}`,
-        this.test_);
+    (0,github_actions_core/* log */.cM)(params);
+    return rateLimit(
+        () => apiCall(
+            endpoint,
+            {'Content-Type': 'application/x-www-form-urlencoded'},
+            `devKey=${this.getDevKey()}&sessionId=${this.sessionId_}&${params}`,
+            this.test_));
   }
 
   /** 
@@ -20351,7 +20508,7 @@ class Api {
    * @return {!Promise<undefined>}
    */
   primaryOrgLogin() {
-    return this.login(_utils_js__WEBPACK_IMPORTED_MODULE_2__/* .PRIMARY_ORG */ .l3);
+    return this.login(utils/* PRIMARY_ORG */.l3);
   }
 
   /**
@@ -20413,7 +20570,7 @@ class Api {
     const func =
         ['Read', 'Delete'].includes(op) ?
             (datum) => ({id: datum}) : (datum) => entityData(entity, datum);
-    return (0,_utils_js__WEBPACK_IMPORTED_MODULE_2__/* .batchAwait */ .rE)(
+    return (0,utils/* batchAwait */.rE)(
         (arr) => this.dataCall(`Bulk/Crud/${op}/${entity}`, {bulk: arr}),
         data.map(func), 100);
   }
@@ -20429,15 +20586,15 @@ class Api {
  * @return {!Promise<!Api>}
  */
 async function getApi(
-    baseId = _inputs_js__WEBPACK_IMPORTED_MODULE_0__/* .airtableOrgIdsBaseId */ .AG(),
-    apiKey = _inputs_js__WEBPACK_IMPORTED_MODULE_0__/* .airtableApiKey */ .Bd(),
-    userName = _inputs_js__WEBPACK_IMPORTED_MODULE_0__/* .billComUserName */ .jv(),
-    password = _inputs_js__WEBPACK_IMPORTED_MODULE_0__/* .billComPassword */ .Mr(),
-    devKey = _inputs_js__WEBPACK_IMPORTED_MODULE_0__/* .billComDevKey */ .Hc(),
+    baseId = inputs/* airtableOrgIdsBaseId */.AG(),
+    apiKey = inputs/* airtableApiKey */.Bd(),
+    userName = inputs/* billComUserName */.jv(),
+    password = inputs/* billComPassword */.Mr(),
+    devKey = inputs/* billComDevKey */.Hc(),
     test = false) {
 
   const orgIds = new Map();
-  await new _airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .Base */ .XY(baseId, apiKey).select(
+  await new airtable/* Base */.XY(baseId, apiKey).select(
       'Anchor Entities',
       'Org IDs',
       (r) => orgIds.set(r.get('Department'), r.get('Bill.com Org ID')));
@@ -20720,7 +20877,7 @@ __nccwpck_require__.a(__webpack_module__, async (__webpack_handle_async_dependen
 /* harmony import */ var _door_knocking_create_vendor_js__WEBPACK_IMPORTED_MODULE_5__ = __nccwpck_require__(3161);
 /* harmony import */ var _common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_6__ = __nccwpck_require__(1444);
 /* harmony import */ var _common_inputs_js__WEBPACK_IMPORTED_MODULE_7__ = __nccwpck_require__(4684);
-/* harmony import */ var _common_bill_com_js__WEBPACK_IMPORTED_MODULE_8__ = __nccwpck_require__(1398);
+/* harmony import */ var _common_bill_com_js__WEBPACK_IMPORTED_MODULE_8__ = __nccwpck_require__(9668);
 /** @fileoverview Entrypoint for choosing which file to run. */
 
 

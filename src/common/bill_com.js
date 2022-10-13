@@ -6,6 +6,7 @@
 
 import fetch from 'node-fetch';
 import * as inputs from './inputs.js';
+import pLimit from 'p-limit';
 import {Base} from './airtable.js';
 import {batchAwait, fetchError, PRIMARY_ORG} from './utils.js';
 import {log, logJson} from './github_actions_core.js';
@@ -15,6 +16,12 @@ import {log, logJson} from './github_actions_core.js';
  * @enum {string}
  */
 export const ActiveStatus = {ACTIVE: '1', INACTIVE: '2'};
+
+/**
+ * The concurrent rate limit for Bill.com API requests
+ * per developer key per organization.
+ */
+const rateLimit = pLimit(3);
 
 /**
  * @param {string} endpoint 
@@ -110,11 +117,12 @@ export class Api {
    */
   call(endpoint, params) {
     log(params);
-    return apiCall(
-        endpoint,
-        {'Content-Type': 'application/x-www-form-urlencoded'},
-        `devKey=${this.getDevKey()}&sessionId=${this.sessionId_}&${params}`,
-        this.test_);
+    return rateLimit(
+        () => apiCall(
+            endpoint,
+            {'Content-Type': 'application/x-www-form-urlencoded'},
+            `devKey=${this.getDevKey()}&sessionId=${this.sessionId_}&${params}`,
+            this.test_));
   }
 
   /** 
