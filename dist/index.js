@@ -20122,7 +20122,8 @@ class Base {
   constructor(baseId = (0,_inputs_js__WEBPACK_IMPORTED_MODULE_2__/* .airtableBaseId */ .kt)(), apiKey = (0,_inputs_js__WEBPACK_IMPORTED_MODULE_2__/* .airtableApiKey */ .Bd)()) {
 
     /** @private @const {!Base} */
-    this.base_ = new airtable__WEBPACK_IMPORTED_MODULE_0__({apiKey: apiKey}).base(baseId);
+    this.base_ =
+        new airtable__WEBPACK_IMPORTED_MODULE_0__({apiKey: apiKey, requestTimeout: 600 * 1000}).base(baseId);
   }
 
   /**

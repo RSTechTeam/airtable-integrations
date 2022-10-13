@@ -50,7 +50,8 @@ export class Base {
   constructor(baseId = airtableBaseId(), apiKey = airtableApiKey()) {
 
     /** @private @const {!Base} */
-    this.base_ = new Airtable({apiKey: apiKey}).base(baseId);
+    this.base_ =
+        new Airtable({apiKey: apiKey, requestTimeout: 600 * 1000}).base(baseId);
   }
 
   /**
