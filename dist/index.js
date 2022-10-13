@@ -20123,7 +20123,7 @@ class Base {
 
     /** @private @const {!Base} */
     this.base_ =
-        new airtable__WEBPACK_IMPORTED_MODULE_0__({apiKey: apiKey, requestTimeout: 600 * 1000}).base(baseId);
+        new airtable__WEBPACK_IMPORTED_MODULE_0__({apiKey: apiKey, requestTimeout: 1000 * 1000}).base(baseId);
   }
 
   /**

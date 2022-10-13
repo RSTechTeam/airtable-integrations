@@ -51,7 +51,7 @@ export class Base {
 
     /** @private @const {!Base} */
     this.base_ =
-        new Airtable({apiKey: apiKey, requestTimeout: 600 * 1000}).base(baseId);
+        new Airtable({apiKey: apiKey, requestTimeout: 1000 * 1000}).base(baseId);
   }
 
   /**
