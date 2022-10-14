@@ -157,9 +157,9 @@ export async function main(api, billComIntegrationBase = new Base()) {
         const fields = changes.get(id);
         changes.delete(id);
 
-        const rt = record.get('Last Updated Time');
-        const ft = fields['Last Updated Time'];
-        log(`"${rt}" =? ${ft}`);
+        const rt = record.get('Last Updated Time').substring(0, 23);
+        const ft = fields['Last Updated Time'].substring(0, 23);
+        log(`"${rt}" =? "${ft}"`);
         if (rt === ft) {
           return;
         }

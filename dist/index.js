@@ -20040,9 +20040,9 @@ async function main(api, billComIntegrationBase = new _common_airtable_js__WEBPA
         const fields = changes.get(id);
         changes.delete(id);
 
-        const rt = record.get('Last Updated Time');
-        const ft = fields['Last Updated Time'];
-        (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_3__/* .log */ .cM)(`"${rt}" =? ${ft}`);
+        const rt = record.get('Last Updated Time').substring(0, 23);
+        const ft = fields['Last Updated Time'].substring(0, 23);
+        (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_3__/* .log */ .cM)(`"${rt}" =? "${ft}"`);
         if (rt === ft) {
           return;
         }
