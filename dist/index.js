@@ -20043,11 +20043,11 @@ async function main(api, billComIntegrationBase = new _common_airtable_js__WEBPA
         const fields = changes.get(id);
         changes.delete(id);
 
-        const airtableTime = normalizeTime(record.get('Last Updated Time'));
-        const billComTime = normalizeTime(fields['Last Updated Time']);
-        if (airtableTime === billComTime) {
-          return;
-        }
+        // const airtableTime = normalizeTime(record.get('Last Updated Time'));
+        // const billComTime = normalizeTime(fields['Last Updated Time']);
+        // if (airtableTime === billComTime) {
+        //   return;
+        // }
 
         const billId = fields[billComIdFieldName('Bill')];
         const pages =
