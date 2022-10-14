@@ -3,7 +3,7 @@
 import {Base} from '../common/airtable.js';
 import {filter} from '../common/bill_com.js';
 import {getYyyyMmDd, PRIMARY_ORG} from '../common/utils.js';
-import {log} from './github_actions_core.js';
+import {log} from '../common/github_actions_core.js';
 
 /** Bill.com Bill Approval Statuses. */
 const approvalStatuses = new Map([
