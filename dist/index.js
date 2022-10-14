@@ -18796,7 +18796,7 @@ __nccwpck_require__.r(__webpack_exports__);
 /* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
 /* harmony export */   "main": () => (/* binding */ main)
 /* harmony export */ });
-/* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(5585);
+/* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(7852);
 /* harmony import */ var _common_bill_com_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(9668);
 /* harmony import */ var _common_inputs_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(4684);
 /** @fileoverview Syncs Bill.com Customers from Airtable to Bill.com. */
@@ -18873,7 +18873,7 @@ __nccwpck_require__.r(__webpack_exports__);
 /* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
 /* harmony export */   "main": () => (/* binding */ main)
 /* harmony export */ });
-/* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(5585);
+/* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(7852);
 /* harmony import */ var _common_inputs_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(4684);
 /** @fileoverview Creates a Bill.com Electronic Check Request Approver. */
 
@@ -18930,8 +18930,8 @@ __nccwpck_require__.d(__webpack_exports__, {
 var src = __nccwpck_require__(4028);
 // EXTERNAL MODULE: ./src/common/bill_com.js + 2 modules
 var bill_com = __nccwpck_require__(9668);
-// EXTERNAL MODULE: ./src/common/airtable.js
-var airtable = __nccwpck_require__(5585);
+// EXTERNAL MODULE: ./src/common/airtable.js + 1 modules
+var airtable = __nccwpck_require__(7852);
 // EXTERNAL MODULE: ./src/common/utils.js + 1 modules
 var utils = __nccwpck_require__(381);
 // EXTERNAL MODULE: ./src/common/inputs.js
@@ -19558,7 +19558,7 @@ __nccwpck_require__.r(__webpack_exports__);
 /* harmony export */   "main": () => (/* binding */ main)
 /* harmony export */ });
 /* harmony import */ var _common_bill_com_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(9668);
-/* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(5585);
+/* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(7852);
 /* harmony import */ var _common_utils_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(381);
 /**
  * @fileoverview Checks whether Bills have been paid and syncs Bill.com data
@@ -19877,7 +19877,7 @@ __nccwpck_require__.r(__webpack_exports__);
 /* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
 /* harmony export */   "main": () => (/* binding */ main)
 /* harmony export */ });
-/* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(5585);
+/* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(7852);
 /* harmony import */ var _common_bill_com_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(9668);
 /* harmony import */ var _common_utils_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(381);
 /** @fileoverview Syncs Bill.com Bill Line Item data into Airtable. */
@@ -20059,17 +20059,123 @@ async function main(api, billComIntegrationBase = new _common_airtable_js__WEBPA
 
 /***/ }),
 
-/***/ 5585:
+/***/ 7852:
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
 
-/* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
-/* harmony export */   "dK": () => (/* binding */ BILL_COM_ID_SUFFIX),
-/* harmony export */   "bB": () => (/* binding */ PRIMARY_ORG_BILL_COM_ID),
-/* harmony export */   "XY": () => (/* binding */ Base)
-/* harmony export */ });
-/* harmony import */ var airtable__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(5447);
-/* harmony import */ var _utils_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(381);
-/* harmony import */ var _inputs_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(4684);
+
+// EXPORTS
+__nccwpck_require__.d(__webpack_exports__, {
+  "dK": () => (/* binding */ BILL_COM_ID_SUFFIX),
+  "XY": () => (/* binding */ Base),
+  "bB": () => (/* binding */ PRIMARY_ORG_BILL_COM_ID)
+});
+
+// EXTERNAL MODULE: ./node_modules/airtable/lib/airtable.js
+var airtable = __nccwpck_require__(5447);
+;// CONCATENATED MODULE: ./node_modules/p-throttle/index.js
+class AbortError extends Error {
+	constructor() {
+		super('Throttled function aborted');
+		this.name = 'AbortError';
+	}
+}
+
+function pThrottle({limit, interval, strict}) {
+	if (!Number.isFinite(limit)) {
+		throw new TypeError('Expected `limit` to be a finite number');
+	}
+
+	if (!Number.isFinite(interval)) {
+		throw new TypeError('Expected `interval` to be a finite number');
+	}
+
+	const queue = new Map();
+
+	let currentTick = 0;
+	let activeCount = 0;
+
+	function windowedDelay() {
+		const now = Date.now();
+
+		if ((now - currentTick) > interval) {
+			activeCount = 1;
+			currentTick = now;
+			return 0;
+		}
+
+		if (activeCount < limit) {
+			activeCount++;
+		} else {
+			currentTick += interval;
+			activeCount = 1;
+		}
+
+		return currentTick - now;
+	}
+
+	const strictTicks = [];
+
+	function strictDelay() {
+		const now = Date.now();
+
+		if (strictTicks.length < limit) {
+			strictTicks.push(now);
+			return 0;
+		}
+
+		const earliestTime = strictTicks.shift() + interval;
+
+		if (now >= earliestTime) {
+			strictTicks.push(now);
+			return 0;
+		}
+
+		strictTicks.push(earliestTime);
+		return earliestTime - now;
+	}
+
+	const getDelay = strict ? strictDelay : windowedDelay;
+
+	return function_ => {
+		const throttled = function (...args) {
+			if (!throttled.isEnabled) {
+				return (async () => function_.apply(this, args))();
+			}
+
+			let timeout;
+			return new Promise((resolve, reject) => {
+				const execute = () => {
+					resolve(function_.apply(this, args));
+					queue.delete(timeout);
+				};
+
+				timeout = setTimeout(execute, getDelay());
+
+				queue.set(timeout, reject);
+			});
+		};
+
+		throttled.abort = () => {
+			for (const timeout of queue.keys()) {
+				clearTimeout(timeout);
+				queue.get(timeout)(new AbortError());
+			}
+
+			queue.clear();
+			strictTicks.splice(0, strictTicks.length);
+		};
+
+		throttled.isEnabled = true;
+
+		return throttled;
+	};
+}
+
+// EXTERNAL MODULE: ./src/common/utils.js + 1 modules
+var utils = __nccwpck_require__(381);
+// EXTERNAL MODULE: ./src/common/inputs.js
+var inputs = __nccwpck_require__(4684);
+;// CONCATENATED MODULE: ./src/common/airtable.js
 /** @fileoverview Utilities for interacting with Airtable. */
 
 /**
@@ -20080,11 +20186,14 @@ async function main(api, billComIntegrationBase = new _common_airtable_js__WEBPA
 
 
 
+
 /** The Bill.com ID Field name suffix. */
 const BILL_COM_ID_SUFFIX = 'Bill.com ID';
 
 /** The primary Org Bill.com ID Field name. */
-const PRIMARY_ORG_BILL_COM_ID = `${_utils_js__WEBPACK_IMPORTED_MODULE_1__/* .PRIMARY_ORG */ .l3} ${BILL_COM_ID_SUFFIX}`;
+const PRIMARY_ORG_BILL_COM_ID = `${utils/* PRIMARY_ORG */.l3} ${BILL_COM_ID_SUFFIX}`;
+
+const rateLimit = pThrottle({limit: 5, interval: 1000});
 
 /**
  * @param {!Promise<*>} promise
@@ -20109,7 +20218,7 @@ function catchError(promise, querying, table) {
  * @return {!Promise<!Array<*>>}
  */
 function batch(func, array) {
-  return (0,_utils_js__WEBPACK_IMPORTED_MODULE_1__/* .batchAsync */ .aE)(func, array, 10);
+  return (0,utils/* batchAsync */.aE)(func, array, 10);
 }
 
 /** An Airtable Base to query. */
@@ -20119,11 +20228,10 @@ class Base {
    * @param {string=} baseId
    * @param {string=} apiKey
    */
-  constructor(baseId = (0,_inputs_js__WEBPACK_IMPORTED_MODULE_2__/* .airtableBaseId */ .kt)(), apiKey = (0,_inputs_js__WEBPACK_IMPORTED_MODULE_2__/* .airtableApiKey */ .Bd)()) {
+  constructor(baseId = (0,inputs/* airtableBaseId */.kt)(), apiKey = (0,inputs/* airtableApiKey */.Bd)()) {
 
     /** @private @const {!Base} */
-    this.base_ =
-        new airtable__WEBPACK_IMPORTED_MODULE_0__({apiKey: apiKey, requestTimeout: 1000 * 1000}).base(baseId);
+    this.base_ = new airtable({apiKey: apiKey}).base(baseId);
   }
 
   /**
@@ -20168,7 +20276,8 @@ class Base {
         async (record) => {
           const fields = await fieldsFunc(record);
           if (fields == null) return null;
-          return this.update(table, [{id: record.getId(), fields: fields}]);
+          return rateLimit(
+              () => this.update(table, [{id: record.getId(), fields: fields}]));
         });
    }
 
@@ -20356,8 +20465,8 @@ function pLimit(concurrency) {
 	return generator;
 }
 
-// EXTERNAL MODULE: ./src/common/airtable.js
-var airtable = __nccwpck_require__(5585);
+// EXTERNAL MODULE: ./src/common/airtable.js + 1 modules
+var airtable = __nccwpck_require__(7852);
 // EXTERNAL MODULE: ./src/common/utils.js + 1 modules
 var utils = __nccwpck_require__(381);
 // EXTERNAL MODULE: ./src/common/github_actions_core.js
@@ -20826,7 +20935,7 @@ __nccwpck_require__.r(__webpack_exports__);
 /* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
 /* harmony export */   "main": () => (/* binding */ main)
 /* harmony export */ });
-/* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(5585);
+/* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(7852);
 /* harmony import */ var _common_utils_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(381);
 /** @fileoverview Creates a Bill.com Vendor based on volunteer address info. */
  

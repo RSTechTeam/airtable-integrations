@@ -5,6 +5,7 @@
  * https://github.com/Airtable/airtable.js
  */
 import Airtable from 'airtable';
+import pThrottle from 'p-throttle';
 import {batchAsync, PRIMARY_ORG} from './utils.js';
 import {airtableApiKey, airtableBaseId} from './inputs.js';
 
@@ -13,6 +14,8 @@ export const BILL_COM_ID_SUFFIX = 'Bill.com ID';
 
 /** The primary Org Bill.com ID Field name. */
 export const PRIMARY_ORG_BILL_COM_ID = `${PRIMARY_ORG} ${BILL_COM_ID_SUFFIX}`;
+
+const rateLimit = pThrottle({limit: 5, interval: 1000});
 
 /**
  * @param {!Promise<*>} promise
@@ -50,8 +53,7 @@ export class Base {
   constructor(baseId = airtableBaseId(), apiKey = airtableApiKey()) {
 
     /** @private @const {!Base} */
-    this.base_ =
-        new Airtable({apiKey: apiKey, requestTimeout: 1000 * 1000}).base(baseId);
+    this.base_ = new Airtable({apiKey: apiKey}).base(baseId);
   }
 
   /**
@@ -96,7 +98,8 @@ export class Base {
         async (record) => {
           const fields = await fieldsFunc(record);
           if (fields == null) return null;
-          return this.update(table, [{id: record.getId(), fields: fields}]);
+          return rateLimit(
+              () => this.update(table, [{id: record.getId(), fields: fields}]));
         });
    }
 
