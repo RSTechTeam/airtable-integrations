@@ -138,20 +138,25 @@ export async function main(api, billComIntegrationBase = new Base()) {
 
   // Update every existing table record based on the Bill.com data.
   const updates = [];
-  await billComIntegrationBase.selectAndUpdate(
+  await billComIntegrationBase.select(
       BILL_REPORTING_TABLE,
       '',
       async (record) => {
         const id = record.get(primaryBillComId);
-        if (!changes.has(id)) return {Active: false};
-
-        const update = changes.get(id);
-        changes.delete(id);
-        if (record.get('Last Updated Time') === update['Last Updated Time']) {
-          return null;
+        const update = {id: record.getId()};
+        if (!changes.has(id)) {
+          update.fields = {Active: false};
+          updates.push(update);
+          return;
         }
 
-        const billId = update[billComIdFieldName('Bill')];
+        const fields = changes.get(id);
+        changes.delete(id);
+        if (record.get('Last Updated Time') === fields['Last Updated Time']) {
+          return;
+        }
+
+        const billId = fields[billComIdFieldName('Bill')];
         const pages =
             await billComApi.dataCall('GetDocumentPages', {id: billId});
         const docs = [];
@@ -162,9 +167,11 @@ export async function main(api, billComIntegrationBase = new Base()) {
                   `&sessionId=${sessionId}&pageNumber=${i}`
           });
         }
-        update['Supporting Documents'] = docs;
-        return update;
+        fields['Supporting Documents'] = docs;
+        update.fields = fields;
+        updates.push(update);
       });
+  await billComIntegrationBase.update(BILL_REPORTING_TABLE, updates);
 
   // Create new table records from new Bill.com data.
   const creates = [];
