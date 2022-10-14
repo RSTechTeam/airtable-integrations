@@ -3,7 +3,6 @@
 import {Base} from '../common/airtable.js';
 import {filter} from '../common/bill_com.js';
 import {getYyyyMmDd, PRIMARY_ORG} from '../common/utils.js';
-import {log} from '../common/github_actions_core.js';
 
 /** Bill.com Bill Approval Statuses. */
 const approvalStatuses = new Map([
@@ -62,6 +61,10 @@ function billComIdFieldName(entity) {
  */
 function matchDescription(entity, regex) {
   return (entity.description || '').match(regex);
+}
+
+function normalizeTime(time) {
+  return time.substring(0, 23);
 }
 
 /**
@@ -157,10 +160,9 @@ export async function main(api, billComIntegrationBase = new Base()) {
         const fields = changes.get(id);
         changes.delete(id);
 
-        const rt = record.get('Last Updated Time').substring(0, 23);
-        const ft = fields['Last Updated Time'].substring(0, 23);
-        log(`"${rt}" =? "${ft}"`);
-        if (rt === ft) {
+        const airtableTime = normalizeTime(record.get('Last Updated Time'));
+        const billComTime = normalizeTime(fields['Last Updated Time']);
+        if (airtableTime === billComTime) {
           return;
         }
 
