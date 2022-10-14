@@ -3,6 +3,7 @@
 import {Base} from '../common/airtable.js';
 import {filter} from '../common/bill_com.js';
 import {getYyyyMmDd, PRIMARY_ORG} from '../common/utils.js';
+import {log} from './github_actions_core.js';
 
 /** Bill.com Bill Approval Statuses. */
 const approvalStatuses = new Map([
@@ -95,8 +96,11 @@ export async function main(api, billComIntegrationBase = new Base()) {
   const customers = await getNames('Customer');
 
   // Initialize sync changes.
+  const threshold = new Date();
+  threshold.setDate(threshold.getDate() - 7); // One week ago
   const bills =
-      await billComApi.listActive('Bill');
+      await billComApi.listActive(
+          'Bill', [filter('updatedTime', '>', getYyyyMmDd(threshold))]);
   const changes = new Map();
   const primaryBillComId = billComIdFieldName('Line Item');
   for (const bill of bills) {
@@ -151,7 +155,11 @@ export async function main(api, billComIntegrationBase = new Base()) {
 
         const fields = changes.get(id);
         changes.delete(id);
-        if (record.get('Last Updated Time') === fields['Last Updated Time']) {
+
+        const rt = record.get('Last Updated Time');
+        const ft = fields['Last Updated Time'];
+        log(`"${rt}" =? ${ft}`);
+        if (rt === ft) {
           return;
         }
 
