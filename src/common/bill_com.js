@@ -21,7 +21,7 @@ export const ActiveStatus = {ACTIVE: '1', INACTIVE: '2'};
  * The concurrent rate limit for Bill.com API requests
  * per developer key per organization.
  */
-const rateLimit = pLimit(3);
+const rateLimit = pLimit(2);
 
 /**
  * @param {string} endpoint 
