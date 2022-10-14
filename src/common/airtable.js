@@ -92,14 +92,14 @@ export class Base {
    * @return {!Promise<!Array<*>>}
    */
    selectAndUpdate(table, view, fieldsFunc) {
+    const limitedUpdate = rateLimit((updates) => this.update(table, updates));
     return this.select(
         table,
         view,
         async (record) => {
           const fields = await fieldsFunc(record);
           if (fields == null) return null;
-          return rateLimit(
-              () => this.update(table, [{id: record.getId(), fields: fields}]));
+          return limitedUpdate([{id: record.getId(), fields: fields}]);
         });
    }
 
