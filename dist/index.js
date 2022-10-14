@@ -19880,7 +19880,9 @@ __nccwpck_require__.r(__webpack_exports__);
 /* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(5585);
 /* harmony import */ var _common_bill_com_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(9668);
 /* harmony import */ var _common_utils_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(381);
+/* harmony import */ var _common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(1444);
 /** @fileoverview Syncs Bill.com Bill Line Item data into Airtable. */
+
 
 
 
@@ -20063,6 +20065,7 @@ async function main(api, billComIntegrationBase = new _common_airtable_js__WEBPA
         update.fields = fields;
         updates.push(update);
       });
+  (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_3__/* .log */ .cM)(`updates: ${updates}`);
   await billComIntegrationBase.update(BILL_REPORTING_TABLE, updates);
 
   // Create new table records from new Bill.com data.
