@@ -20867,6 +20867,7 @@ async function main(billComApi, airtableBase = new _common_airtable_js__WEBPACK_
                 'Vendor',
                 {
                   name: `${record.get('Name')} (STV)`,
+                  nameOnCheck: record.get('Name'),
                   address1: record.get('Street Address'),
                   address2: record.get('Street Address Line 2'),
                   addressCity: record.get('City'),
