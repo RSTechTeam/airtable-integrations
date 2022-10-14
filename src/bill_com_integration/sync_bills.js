@@ -96,8 +96,7 @@ export async function main(api, billComIntegrationBase = new Base()) {
 
   // Initialize sync changes.
   const bills =
-      await billComApi.listActive(
-          'Bill', [filter('createdTime', '>', '2021-01-01')]);
+      await billComApi.listActive('Bill');
   const changes = new Map();
   const primaryBillComId = billComIdFieldName('Line Item');
   for (const bill of bills) {

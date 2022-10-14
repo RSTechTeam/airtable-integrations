@@ -21,7 +21,7 @@ export const ActiveStatus = {ACTIVE: '1', INACTIVE: '2'};
  * The concurrent rate limit for Bill.com API requests
  * per developer key per organization.
  */
-const rateLimit = pLimit(2);
+const rateLimit = pLimit(3);
 
 /**
  * @param {string} endpoint 
@@ -113,7 +113,7 @@ export class Api {
   /**
    * @param {string} endpoint
    * @param {string} params
-   * @return {!Promise<!Object<string, *>>} endpoint-specific response_data.
+   * @return {!Promise<!Object<stri3g, *>>} endpoint-specific response_data.
    */
   call(endpoint, params) {
     log(params);

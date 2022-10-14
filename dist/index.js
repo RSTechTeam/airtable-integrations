@@ -19978,8 +19978,7 @@ async function main(api, billComIntegrationBase = new _common_airtable_js__WEBPA
 
   // Initialize sync changes.
   const bills =
-      await billComApi.listActive(
-          'Bill', [(0,_common_bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .filter */ .hX)('createdTime', '>', '2021-01-01')]);
+      await billComApi.listActive('Bill');
   const changes = new Map();
   const primaryBillComId = billComIdFieldName('Line Item');
   for (const bill of bills) {
@@ -20392,7 +20391,7 @@ const ActiveStatus = {ACTIVE: '1', INACTIVE: '2'};
  * The concurrent rate limit for Bill.com API requests
  * per developer key per organization.
  */
-const rateLimit = pLimit(2);
+const rateLimit = pLimit(3);
 
 /**
  * @param {string} endpoint 
@@ -20484,7 +20483,7 @@ class Api {
   /**
    * @param {string} endpoint
    * @param {string} params
-   * @return {!Promise<!Object<string, *>>} endpoint-specific response_data.
+   * @return {!Promise<!Object<stri3g, *>>} endpoint-specific response_data.
    */
   call(endpoint, params) {
     (0,github_actions_core/* log */.cM)(params);
