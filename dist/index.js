@@ -19986,9 +19986,8 @@ async function main(api, billComIntegrationBase = new _common_airtable_js__WEBPA
   const threshold = new Date();
   threshold.setDate(threshold.getDate() - 7); // One week ago
   const bills =
-      await billComApi.listActive(
-          'Bill',
-          [(0,_common_bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .filter */ .hX)('updatedTime', '>', (0,_common_utils_js__WEBPACK_IMPORTED_MODULE_2__/* .getYyyyMmDd */ .PQ)(threshold.toISOString()))]);
+      await billComApi.listActive('Bill');
+          // [filter('updatedTime', '>', getYyyyMmDd(threshold.toISOString()))]);
   const changes = new Map();
   const primaryBillComId = billComIdFieldName('Line Item');
   for (const bill of bills) {
