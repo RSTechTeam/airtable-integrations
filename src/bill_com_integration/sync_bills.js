@@ -100,7 +100,8 @@ export async function main(api, billComIntegrationBase = new Base()) {
   threshold.setDate(threshold.getDate() - 7); // One week ago
   const bills =
       await billComApi.listActive(
-          'Bill', [filter('updatedTime', '>', getYyyyMmDd(threshold))]);
+          'Bill',
+          [filter('updatedTime', '>', getYyyyMmDd(threshold.toISOString()))]);
   const changes = new Map();
   const primaryBillComId = billComIdFieldName('Line Item');
   for (const bill of bills) {
