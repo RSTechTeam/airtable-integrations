@@ -1,9 +1,7 @@
 /** @fileoverview Syncs Bill.com Bill Line Item data into Airtable. */
 
 import {Base} from '../common/airtable.js';
-import {filter} from '../common/bill_com.js';
 import {getYyyyMmDd, PRIMARY_ORG} from '../common/utils.js';
-import {log} from '../common/github_actions_core.js';
 
 /** Bill.com Bill Approval Statuses. */
 const approvalStatuses = new Map([
@@ -64,6 +62,11 @@ function matchDescription(entity, regex) {
   return (entity.description || '').match(regex);
 }
 
+/**
+ * @param {string} time - ISO 8601 formatted datetime.
+ * @return {string} Normalized datetime
+ *    for comparing across Airtable and Bill.com.
+ */
 function normalizeTime(time) {
   return time.substring(0, 23);
 }
@@ -100,11 +103,7 @@ export async function main(api, billComIntegrationBase = new Base()) {
   const customers = await getNames('Customer');
 
   // Initialize sync changes.
-  const threshold = new Date();
-  threshold.setDate(threshold.getDate() - 7); // One week ago
-  const bills =
-      await billComApi.listActive('Bill');
-          // [filter('updatedTime', '>', getYyyyMmDd(threshold.toISOString()))]);
+  const bills = await billComApi.listActive('Bill');
   const changes = new Map();
   const primaryBillComId = billComIdFieldName('Line Item');
   for (const bill of bills) {
@@ -181,7 +180,6 @@ export async function main(api, billComIntegrationBase = new Base()) {
         update.fields = fields;
         updates.push(update);
       });
-  log(`updates: ${updates}`);
   await billComIntegrationBase.update(BILL_REPORTING_TABLE, updates);
 
   // Create new table records from new Bill.com data.

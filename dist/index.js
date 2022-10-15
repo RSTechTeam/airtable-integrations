@@ -19878,12 +19878,8 @@ __nccwpck_require__.r(__webpack_exports__);
 /* harmony export */   "main": () => (/* binding */ main)
 /* harmony export */ });
 /* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(5585);
-/* harmony import */ var _common_bill_com_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(9668);
-/* harmony import */ var _common_utils_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(381);
-/* harmony import */ var _common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(1444);
+/* harmony import */ var _common_utils_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(381);
 /** @fileoverview Syncs Bill.com Bill Line Item data into Airtable. */
-
-
 
 
 
@@ -19935,7 +19931,7 @@ function getNames(entity) {
  * @return {string}
  */
 function billComIdFieldName(entity) {
-  return `${_common_utils_js__WEBPACK_IMPORTED_MODULE_2__/* .PRIMARY_ORG */ .l3} Bill.com ${entity} ID`;
+  return `${_common_utils_js__WEBPACK_IMPORTED_MODULE_1__/* .PRIMARY_ORG */ .l3} Bill.com ${entity} ID`;
 }
 
 /**
@@ -19947,6 +19943,11 @@ function matchDescription(entity, regex) {
   return (entity.description || '').match(regex);
 }
 
+/**
+ * @param {string} time - ISO 8601 formatted datetime.
+ * @return {string} Normalized datetime
+ *    for comparing across Airtable and Bill.com.
+ */
 function normalizeTime(time) {
   return time.substring(0, 23);
 }
@@ -19983,11 +19984,7 @@ async function main(api, billComIntegrationBase = new _common_airtable_js__WEBPA
   const customers = await getNames('Customer');
 
   // Initialize sync changes.
-  const threshold = new Date();
-  threshold.setDate(threshold.getDate() - 7); // One week ago
-  const bills =
-      await billComApi.listActive('Bill');
-          // [filter('updatedTime', '>', getYyyyMmDd(threshold.toISOString()))]);
+  const bills = await billComApi.listActive('Bill');
   const changes = new Map();
   const primaryBillComId = billComIdFieldName('Line Item');
   for (const bill of bills) {
@@ -20002,7 +19999,7 @@ async function main(api, billComIntegrationBase = new _common_airtable_js__WEBPA
           {
             'Active': true,
             'Submitted By': submitterMatch == null ? null : submitterMatch[1],
-            'Creation Date': (0,_common_utils_js__WEBPACK_IMPORTED_MODULE_2__/* .getYyyyMmDd */ .PQ)(item.createdTime),
+            'Creation Date': (0,_common_utils_js__WEBPACK_IMPORTED_MODULE_1__/* .getYyyyMmDd */ .PQ)(item.createdTime),
             'Invoice Date': bill.invoiceDate,
             'Expense Date': itemVendor.date || bill.invoiceDate,
             [billComIdFieldName('Vendor')]: bill.vendorId,
@@ -20064,7 +20061,6 @@ async function main(api, billComIntegrationBase = new _common_airtable_js__WEBPA
         update.fields = fields;
         updates.push(update);
       });
-  (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_3__/* .log */ .cM)(`updates: ${updates}`);
   await billComIntegrationBase.update(BILL_REPORTING_TABLE, updates);
 
   // Create new table records from new Bill.com data.
