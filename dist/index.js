@@ -19949,7 +19949,7 @@ function matchDescription(entity, regex) {
  *    for comparing across Airtable and Bill.com.
  */
 function normalizeTime(time) {
-  return time.substring(0, 23);
+  return time &&= time.substring(0, 23);
 }
 
 /**
