@@ -13,12 +13,16 @@ jobs:
       fail-fast: false
       matrix:
         file-id: [
-          'accounting_sync',
-          'bill_com_integration_sync',
-          'bill_com_integration_sync_bills',
-          'bill_com_integration_create_bill',
+          # Creates that don't reference other data
           'bill_com_integration_create_approver',
           'door_knocking_create_vendor',
+          # Sync including newlty created data
+          'accounting_sync',
+          'bill_com_integration_sync',
+          # Creates that reference synced data
+          'bill_com_integration_create_bill',
+          # Sync including more recently created data
+          'bill_com_integration_sync_bills',
         ]
     steps:
       - id: get-airtable-base-id
