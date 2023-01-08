@@ -292,6 +292,7 @@ export async function main (api, airtableBase = new Base()) {
         'City': o.addressCity,
         'State': o.addressState,
         'Zip Code': parseInt(o.addressZip),
+        'Paid via BILL': o.lastPaymentDate != null,
       }));
   await syncNameKey('ChartOfAccount', 'Chart of Accounts', 'name');
   await sync(

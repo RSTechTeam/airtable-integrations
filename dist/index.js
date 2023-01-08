@@ -19854,6 +19854,7 @@ async function main (api, airtableBase = new _common_airtable_js__WEBPACK_IMPORT
         'City': o.addressCity,
         'State': o.addressState,
         'Zip Code': parseInt(o.addressZip),
+        'Paid via BILL': o.lastPaymentDate != null,
       }));
   await syncNameKey('ChartOfAccount', 'Chart of Accounts', 'name');
   await sync(
