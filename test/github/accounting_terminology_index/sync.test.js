@@ -1,8 +1,8 @@
 import * as sync from '../../../src/accounting_terminology_index/sync.js';
 import {airtableBase, billComApi} from '../../test_utils.js';
-import {entityData, isActiveEnum} from '../../../src/common/bill_com.js';
+import {isActiveEnum} from '../../../src/common/bill_com.js';
 import {jest} from '@jest/globals';
-import {PRIMARY_ORG_BILL_COM_ID} from '../../../src/common/airtable.js';
+import {BILL_COM_ID_SUFFIX} from '../../../src/common/airtable.js';
 
 // Increasingly long because this test lists both active and inactive Customers,
 // creates a Customer every run, and Bill.com doesn't currently enable
@@ -38,15 +38,7 @@ test('main syncs Customers from Airtable to Bill.com', async () => {
   expect(testCustomers.size).toEqual(2);
 
   // Execute main.
-  const customerTable = 'Customers';
-  const nameField = 'Name';
-  await sync.main(
-      api,
-      base,
-      process.env.INTERNAL_CUSTOMER_ID,
-      customerTable,
-      '',
-      nameField);
+  await sync.main(api, base);
 
   // Check post-conditions.
   await expectListActiveNames([AIRTABLE_ONLY, ACTIVE, NEW_NAME]);
@@ -65,10 +57,10 @@ test('main syncs Customers from Airtable to Bill.com', async () => {
   }
   await api.bulk('Update', 'Customer', updates);
   await base.selectAndUpdate(
-      customerTable,
+      'Labor Charges', // Customers
       '',
       (record) => {
-        return record.get(nameField) === AIRTABLE_ONLY ?
-            {[PRIMARY_ORG_BILL_COM_ID]: ''} : null;
+        return record.get('Name') === AIRTABLE_ONLY ?
+            {[BILL_COM_ID_SUFFIX]: ''} : null;
       });
 });

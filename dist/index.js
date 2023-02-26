@@ -18798,9 +18798,7 @@ __nccwpck_require__.r(__webpack_exports__);
 /* harmony export */ });
 /* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(5585);
 /* harmony import */ var _common_bill_com_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(9668);
-/* harmony import */ var _common_inputs_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(4684);
 /** @fileoverview Syncs Bill.com Customers from Airtable to Bill.com. */
-
 
 
 
@@ -18808,59 +18806,66 @@ __nccwpck_require__.r(__webpack_exports__);
 /**
  * @param {!Api} billComApi
  * @param {!Base=} accountingBase
- * @param {string=} internalCustomerId
- * @param {string=} customerTable
- * @param {string=} syncView
- * @param {string=} nameField
  * @return {!Promise<undefined>}
  */
-async function main(
-    billComApi,
-    accountingBase = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .Base */ .XY(),
-    parentCustomerId = (0,_common_inputs_js__WEBPACK_IMPORTED_MODULE_2__/* .internalCustomerId */ .qV)(),
-    customerTable = 'Labor Charge Field (LCF) Mapping',
-    syncView = 'Bill.com Sync',
-    nameField = 'Abacus / Bill.com / QBO Code') {
+async function main(billComApi, accountingBase = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .Base */ .XY()) {
 
-  // Initialize Bill.com Customer collection.
-  await billComApi.primaryOrgLogin();
-  const billComCustomers =
-      await billComApi.list(
-          'Customer', [(0,_common_bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .filter */ .hX)('parentCustomerId', '=', parentCustomerId)]);
-  const billComCustomerIds = new Set();
-  billComCustomers.forEach(c => billComCustomerIds.add(c.id));
-
-  // Upsert every Bill.com Customer from the Bill.com Sync View.
-  const updates = [];
-  await accountingBase.selectAndUpdate(
-      customerTable,
-      syncView,
-      async (record) => {
-        const id = record.get(_common_airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .PRIMARY_ORG_BILL_COM_ID */ .bB);
-        const change = {
-          id: id,
-          name: record.get(nameField),
-          isActive: _common_bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .ActiveStatus.ACTIVE */ .tV.ACTIVE,
-          parentCustomerId: parentCustomerId,
-        };
-
-        // Insert/Create in Bill.com any record with no primary org Bill.com ID.
-        if (id == undefined) {
-          const billComId = await billComApi.create('Customer', change);
-          return {[_common_airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .PRIMARY_ORG_BILL_COM_ID */ .bB]: billComId};
-        }
-
-        // Update in Bill.com other records with a primary org Bill.com ID.
-        updates.push(change);
-        billComCustomerIds.delete(id);
-        return null;
+  // Initialize Bill.com Orgs and parent customer IDs.
+  const parentCustomerIds = new Map();
+  await accountingBase.select(
+      'MSOs',
+      'Internal Customer IDs',
+      (r) => {
+        parentCustomerIds.set(r.get('Code'), r.get('Internal Customer ID'))
       });
 
-  // Mark internal Bill.com Customers not in the Bill.com Sync View as inactive.
-  for (const id of billComCustomerIds) {
-    updates.push({id: id, isActive: _common_bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .ActiveStatus.INACTIVE */ .tV.INACTIVE});
+  // Sync for each Org/MSO.
+  for (const [mso, parentCustomerId] of parentCustomerIds) {
+
+    // Initialize Bill.com Customer collection.
+    await billComApi.login(mso);
+    const billComCustomers =
+        await billComApi.list(
+            'Customer', [(0,_common_bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .filter */ .hX)('parentCustomerId', '=', parentCustomerId)]);
+    const billComCustomerIds = new Set();
+    billComCustomers.forEach(c => billComCustomerIds.add(c.id));
+
+    // Upsert every Bill.com Customer from the Bill.com Sync View.
+    const updates = [];
+    await accountingBase.selectAndUpdate(
+        'Labor Charges',
+        'Bill.com Sync',
+        async (record) => {
+
+          // Skip records not associated with current MSO.
+          if (record.get('MSO') !== mso) return null;
+
+          const id = record.get(_common_airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .BILL_COM_ID_SUFFIX */ .dK);
+          const change = {
+            id: id,
+            name: record.get('Name'),
+            isActive: _common_bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .ActiveStatus.ACTIVE */ .tV.ACTIVE,
+            parentCustomerId: parentCustomerId,
+          };
+
+          // Insert/Create in Bill.com any record with no Bill.com ID.
+          if (id == undefined) {
+            const billComId = await billComApi.create('Customer', change);
+            return {[_common_airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .BILL_COM_ID_SUFFIX */ .dK]: billComId};
+          }
+
+          // Update in Bill.com other records with a Bill.com ID.
+          updates.push(change);
+          billComCustomerIds.delete(id);
+          return null;
+        });
+
+    // Deactivate internal Bill.com Customers not in the Bill.com Sync View.
+    for (const id of billComCustomerIds) {
+      updates.push({id: id, isActive: _common_bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .ActiveStatus.INACTIVE */ .tV.INACTIVE});
+    }
+    await billComApi.bulk('Update', 'Customer', updates);
   }
-  await billComApi.bulk('Update', 'Customer', updates);
 }
 
 
@@ -20710,7 +20715,6 @@ function logJson(endpoint, json) {
 /* harmony export */   "Hc": () => (/* binding */ billComDevKey),
 /* harmony export */   "jv": () => (/* binding */ billComUserName),
 /* harmony export */   "Mr": () => (/* binding */ billComPassword),
-/* harmony export */   "qV": () => (/* binding */ internalCustomerId),
 /* harmony export */   "WI": () => (/* binding */ ecrApproverUserProfileId),
 /* harmony export */   "Wk": () => (/* binding */ finalApproverUserId)
 /* harmony export */ });
@@ -20730,7 +20734,6 @@ const airtableOrgIdsBaseId = (0,_github_actions_core_js__WEBPACK_IMPORTED_MODULE
 const billComDevKey = (0,_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .getInput */ .Np)('bill-com-dev-key');
 const billComUserName = (0,_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .getInput */ .Np)('bill-com-user-name');
 const billComPassword = (0,_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .getInput */ .Np)('bill-com-password');
-const internalCustomerId = (0,_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .getInput */ .Np)('internal-customer-id');
 const ecrApproverUserProfileId =
   (0,_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .getInput */ .Np)('ecr-approver-user-profile-id');
 const finalApproverUserId = (0,_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .getInput */ .Np)('final-approver-user-id');

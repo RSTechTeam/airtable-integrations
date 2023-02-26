@@ -13,7 +13,6 @@ export const airtableOrgIdsBaseId = getInput('airtable-org-ids-base-id');
 export const billComDevKey = getInput('bill-com-dev-key');
 export const billComUserName = getInput('bill-com-user-name');
 export const billComPassword = getInput('bill-com-password');
-export const internalCustomerId = getInput('internal-customer-id');
 export const ecrApproverUserProfileId =
   getInput('ecr-approver-user-profile-id');
 export const finalApproverUserId = getInput('final-approver-user-id');
