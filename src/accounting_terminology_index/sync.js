@@ -43,7 +43,7 @@ export async function main(billComApi, accountingBase = new Base()) {
         async (record) => {
 
           // Skip records not associated with current MSO.
-          if (record.get('MSO') !== recordId) return null;
+          if (record.get('MSO')[0] !== recordId) return null;
 
           const id = record.get(BILL_COM_ID_SUFFIX);
           const change = {

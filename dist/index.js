@@ -18843,7 +18843,7 @@ async function main(billComApi, accountingBase = new _common_airtable_js__WEBPAC
         async (record) => {
 
           // Skip records not associated with current MSO.
-          if (record.get('MSO') !== recordId) return null;
+          if (record.get('MSO')[0] !== recordId) return null;
 
           const id = record.get(_common_airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .BILL_COM_ID_SUFFIX */ .dK);
           const change = {
