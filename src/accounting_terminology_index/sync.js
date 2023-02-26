@@ -11,16 +11,21 @@ import {ActiveStatus, filter} from '../common/bill_com.js';
 export async function main(billComApi, accountingBase = new Base()) {
 
   // Initialize Bill.com Orgs and parent customer IDs.
-  const parentCustomerIds = new Map();
+  const msoIds = new Map();
   await accountingBase.select(
       'MSOs',
       'Internal Customer IDs',
       (r) => {
-        parentCustomerIds.set(r.get('Code'), r.get('Internal Customer ID'))
+        msoIds.set(
+            r.get('Code'),
+            {
+              recordId: r.getId(),
+              parentCustomerId: r.get('Internal Customer ID'),
+            });
       });
 
   // Sync for each Org/MSO.
-  for (const [mso, parentCustomerId] of parentCustomerIds) {
+  for (const [mso, {recordId, parentCustomerId}] of msoIds) {
 
     // Initialize Bill.com Customer collection.
     await billComApi.login(mso);
@@ -38,7 +43,7 @@ export async function main(billComApi, accountingBase = new Base()) {
         async (record) => {
 
           // Skip records not associated with current MSO.
-          if (record.get('MSO') !== mso) return null;
+          if (record.get('MSO') !== recordId) return null;
 
           const id = record.get(BILL_COM_ID_SUFFIX);
           const change = {
