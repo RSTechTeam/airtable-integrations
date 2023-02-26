@@ -34,23 +34,20 @@ test('main syncs Customers from Airtable to Bill.com', async () => {
   // Check pre-conditions.
   await api.primaryOrgLogin();
   const initiallyActiveCustomers = [BILL_COM_ONLY, STALE_NAME];
-  // await expectListActiveNames(initiallyActiveCustomers);
-  // expect(testCustomers.size).toEqual(2);
+  await expectListActiveNames(initiallyActiveCustomers);
+  expect(testCustomers.size).toEqual(2);
 
   // Execute main.
   await sync.main(api, base);
 
   // Check post-conditions.
   await expectListActiveNames([AIRTABLE_ONLY, ACTIVE, NEW_NAME]);
-  // expect(testCustomers.size).toEqual(5);
-  // expect(testCustomers.get(STALE_NAME)).toEqual(testCustomers.get(NEW_NAME));
+  expect(testCustomers.size).toEqual(5);
+  expect(testCustomers.get(STALE_NAME)).toEqual(testCustomers.get(NEW_NAME));
 
   // Reset.
   testCustomers.delete(NEW_NAME);
-  const updates = [
-    {id: '0cu01RJQLJSFRPTJ6omu', name: STALE_NAME, isActive: '1'},
-    {id: '0cu01UOIFYTNHMCQ6omw', name: BILL_COM_ONLY, isActive: '1'},
-  ];
+  const updates = [];
   for (const [name, id] of testCustomers) {
     updates.push({
       id: id,
