@@ -47,7 +47,10 @@ test('main syncs Customers from Airtable to Bill.com', async () => {
 
   // Reset.
   testCustomers.delete(NEW_NAME);
-  const updates = [];
+  const updates = [
+    {id: '0cu01RJQLJSFRPTJ6omu', name: STALE_NAME, isActive: '1'},
+    {id: '0cu01UOIFYTNHMCQ6omw', name: BILL_COM_ONLY, isActive: '1'},
+  ];
   for (const [name, id] of testCustomers) {
     updates.push({
       id: id,
