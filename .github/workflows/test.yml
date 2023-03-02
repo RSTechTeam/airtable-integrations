@@ -17,5 +17,4 @@ jobs:
           BILL_COM_DEV_KEY: ${{ secrets.TEST_DEV_KEY }}
           BILL_COM_USER_NAME: ${{ secrets.BILL_COM_USER_NAME }}
           BILL_COM_PASSWORD: ${{ secrets.TEST_BILL_COM_PASSWORD }}
-          INTERNAL_CUSTOMER_ID: ${{ secrets.TEST_INTERNAL_CUSTOMER_ID }}
           APPROVER_USER_PROFILE_ID: ${{ secrets.TEST_APPROVER_USER_PROFILE_ID }}

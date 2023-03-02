@@ -48,6 +48,5 @@ jobs:
           bill-com-dev-key: ${{ secrets.BILL_COM_DEV_KEY }}
           bill-com-user-name: ${{ secrets.BILL_COM_USER_NAME }}
           bill-com-password: ${{ secrets.BILL_COM_PASSWORD }}
-          internal-customer-id: ${{ secrets.INTERNAL_CUSTOMER_ID }}
           ecr-approver-user-profile-id: ${{ secrets.ECR_APPROVER_USER_PROFILE_ID }}
           final-approver-user-id: ${{ secrets.FINAL_APPROVER_USER_ID }}

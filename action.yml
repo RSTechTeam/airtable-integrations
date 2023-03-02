@@ -22,9 +22,6 @@ inputs:
   bill-com-password:
     description: 'The Bill.com password for login'
     required: true
-  internal-customer-id:
-    description: 'The Parent Bill.com Customer ID for internal Customers'
-    required: false
   ecr-approver-user-profile-id:
     description: 'The Bill.com User Profile ID for ECR Approvers'
     required: false
