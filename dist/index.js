@@ -18848,7 +18848,7 @@ async function main(billComApi, accountingBase = new _common_airtable_js__WEBPAC
           const id = record.get(_common_airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .BILL_COM_ID_SUFFIX */ .dK);
           const change = {
             id: id,
-            name: record.get('Name'),
+            name: record.get('Local Name'),
             isActive: _common_bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .ActiveStatus.ACTIVE */ .tV.ACTIVE,
             parentCustomerId: parentCustomerId,
           };

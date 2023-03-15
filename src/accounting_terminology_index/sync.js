@@ -48,7 +48,7 @@ export async function main(billComApi, accountingBase = new Base()) {
           const id = record.get(BILL_COM_ID_SUFFIX);
           const change = {
             id: id,
-            name: record.get('Name'),
+            name: record.get('Local Name'),
             isActive: ActiveStatus.ACTIVE,
             parentCustomerId: parentCustomerId,
           };

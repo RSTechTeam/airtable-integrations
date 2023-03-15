@@ -60,7 +60,7 @@ test('main syncs Customers from Airtable to Bill.com', async () => {
       'Labor Charges', // Customers
       '',
       (record) => {
-        return record.get('Name') === AIRTABLE_ONLY ?
+        return record.get('Local Name') === AIRTABLE_ONLY ?
             {[BILL_COM_ID_SUFFIX]: ''} : null;
       });
 });
