@@ -19393,9 +19393,7 @@ let billComIntegrationBase;
 async function getBillComId(table, airtableId) {
   let billComId;
   await billComIntegrationBase.find(
-      table,
-      airtableId,
-      (record) => billComId = record.get(airtable/* PRIMARY_ORG_BILL_COM_ID */.bB));
+      table, airtableId, (record) => billComId = record.get(airtable/* MSO_BILL_COM_ID */.yG));
   return billComId;
 }
 
@@ -19442,10 +19440,7 @@ async function main(billComApi, airtableBase = new airtable/* Base */.XY()) {
               });
           await billComIntegrationBase.update(
               NEW_VENDORS_TABLE,
-              [{
-                id: newVendorId,
-                fields: {[airtable/* PRIMARY_ORG_BILL_COM_ID */.bB]: vendorId},
-              }]);
+              [{id: newVendorId, fields: {[airtable/* MSO_BILL_COM_ID */.yG]: vendorId}}]);
         } else {
           vendorId =
               await getBillComId(
@@ -19552,7 +19547,7 @@ async function main(billComApi, airtableBase = new airtable/* Base */.XY()) {
         return {
           'Active': true,
           'Vendor Invoice ID': invoiceId,
-          [airtable/* PRIMARY_ORG_BILL_COM_ID */.bB]: newBillId,
+          [airtable/* MSO_BILL_COM_ID */.yG]: newBillId,
         };
       });
 }
@@ -19635,7 +19630,9 @@ class Syncer {
     this.airtableBase_ = airtableBase;
 
     /** @private {?string} */
-    this.currentMsoRecordId_ = null;
+    this.currentMso_ = null;
+    /** @return {?string} */
+    this.getCurrentMsoRecordId = () => this.msoRecordIds_.get(this.currentMso_);
   }
 
   /**
@@ -19647,7 +19644,7 @@ class Syncer {
   async forEachMso(func) {
     for (const mso of this.msoRecordIds_.keys()) {
       await this.billComApi_.login(mso);
-      this.currentMsoRecordId_ = this.msoRecordIds_.get(mso);
+      this.currentMso_ = mso;
       await func(this, mso);
     }
   }
@@ -19660,7 +19657,7 @@ class Syncer {
    */
   async syncUnpaid(table, entity) {
     const BILL_COM_ID =
-        entity === 'Bill' ? _common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .PRIMARY_ORG_BILL_COM_ID */ .bB : _common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .BILL_COM_ID_SUFFIX */ .dK;
+        entity === 'Bill' ? _common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .MSO_BILL_COM_ID */ .yG : _common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .BILL_COM_ID_SUFFIX */ .dK;
 
     const billComIds = [];
     const airtableIds = [];
@@ -19721,6 +19718,7 @@ class Syncer {
     }
 
     // Update every existing table record based on the entity data.
+    const msoRecordId = this.getCurrentMsoRecordId();
     const updates = [];
     await this.airtableBase_.select(
         table,
@@ -19728,9 +19726,9 @@ class Syncer {
         (record) => {
 
           // Skip records not associated with current MSO.
-          if (record.get('MSO')[0] !== this.currentMsoRecordId_) return;
+          if (record.get('MSO')[0] !== msoRecordId) return;
 
-          const id = record.get(_common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .PRIMARY_ORG_BILL_COM_ID */ .bB);
+          const id = record.get(_common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .MSO_BILL_COM_ID */ .yG);
           updates.push({
             id: record.getId(), fields: changes.get(id) || {Active: false},
           });
@@ -19742,11 +19740,7 @@ class Syncer {
     const creates = [];
     for (const [id, data] of changes) {
       creates.push({
-        fields: {
-          MSO: [this.currentMsoRecordId_],
-          [_common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .PRIMARY_ORG_BILL_COM_ID */ .bB]: id,
-          ...data,
-        }
+        fields: {MSO: [msoRecordId], [_common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .MSO_BILL_COM_ID */ .yG]: id, ...data},
       });
     }
     await this.airtableBase_.create(table, creates);
@@ -19864,17 +19858,18 @@ class Syncer {
 
     // Create any active anchor entity Bill.com Customer not in Airtable;
     // Create in both RS Bill.com and Airtable.
-    await this.billComApi_.primaryOrgLogin();
+    await this.billComApi_.login(this.currentMso_);
+    const msoRecordId = this.getCurrentMsoRecordId();
     const airtableCreates = [];
     for (const [id, customer] of billComCustomerMap) {
       airtableCreates.push({
         fields: {
           Active: true,
+          MSO: [msoRecordId],
           Name: customer.name,
           Email: customer.email,
-          MSO: [this.currentMsoRecordId_],
           [BILL_COM_ID]: id,
-          [_common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .PRIMARY_ORG_BILL_COM_ID */ .bB]:
+          [_common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .MSO_BILL_COM_ID */ .yG]:
             await this.billComApi_.create('Customer', customer),
         }
       });
@@ -19989,7 +19984,7 @@ function getNames(entity) {
  * @return {string}
  */
 function billComIdFieldName(entity) {
-  return `${_common_utils_js__WEBPACK_IMPORTED_MODULE_1__/* .PRIMARY_ORG */ .l3} Bill.com ${entity} ID`;
+  return `MSO Bill.com ${entity} ID`;
 }
 
 /**
@@ -20137,12 +20132,12 @@ async function main(api, billComIntegrationBase = new _common_airtable_js__WEBPA
 
 /* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
 /* harmony export */   "dK": () => (/* binding */ BILL_COM_ID_SUFFIX),
-/* harmony export */   "bB": () => (/* binding */ PRIMARY_ORG_BILL_COM_ID),
+/* harmony export */   "yG": () => (/* binding */ MSO_BILL_COM_ID),
 /* harmony export */   "XY": () => (/* binding */ Base)
 /* harmony export */ });
 /* harmony import */ var airtable__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(5447);
-/* harmony import */ var _utils_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(381);
-/* harmony import */ var _inputs_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(4684);
+/* harmony import */ var _inputs_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(4684);
+/* harmony import */ var _utils_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(381);
 /** @fileoverview Utilities for interacting with Airtable. */
 
 /**
@@ -20157,7 +20152,7 @@ async function main(api, billComIntegrationBase = new _common_airtable_js__WEBPA
 const BILL_COM_ID_SUFFIX = 'Bill.com ID';
 
 /** The primary Org Bill.com ID Field name. */
-const PRIMARY_ORG_BILL_COM_ID = `${_utils_js__WEBPACK_IMPORTED_MODULE_1__/* .PRIMARY_ORG */ .l3} ${BILL_COM_ID_SUFFIX}`;
+const MSO_BILL_COM_ID = `MSO ${BILL_COM_ID_SUFFIX}`;
 
 /**
  * @param {!Promise<*>} promise
@@ -20182,7 +20177,7 @@ function catchError(promise, querying, table) {
  * @return {!Promise<!Array<*>>}
  */
 function batch(func, array) {
-  return (0,_utils_js__WEBPACK_IMPORTED_MODULE_1__/* .batchAsync */ .aE)(func, array, 10);
+  return (0,_utils_js__WEBPACK_IMPORTED_MODULE_2__/* .batchAsync */ .aE)(func, array, 10);
 }
 
 /** An Airtable Base to query. */
@@ -20192,7 +20187,7 @@ class Base {
    * @param {string=} baseId
    * @param {string=} apiKey
    */
-  constructor(baseId = (0,_inputs_js__WEBPACK_IMPORTED_MODULE_2__/* .airtableBaseId */ .kt)(), apiKey = (0,_inputs_js__WEBPACK_IMPORTED_MODULE_2__/* .airtableApiKey */ .Bd)()) {
+  constructor(baseId = (0,_inputs_js__WEBPACK_IMPORTED_MODULE_1__/* .airtableBaseId */ .kt)(), apiKey = (0,_inputs_js__WEBPACK_IMPORTED_MODULE_1__/* .airtableApiKey */ .Bd)()) {
 
     /** @private @const {!Base} */
     this.base_ = new airtable__WEBPACK_IMPORTED_MODULE_0__({apiKey: apiKey}).base(baseId);
@@ -20897,8 +20892,10 @@ __nccwpck_require__.r(__webpack_exports__);
 /* harmony export */   "main": () => (/* binding */ main)
 /* harmony export */ });
 /* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(5585);
+/* harmony import */ var _common_utils_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(381);
 /** @fileoverview Creates a Bill.com Vendor based on volunteer address info. */
  
+
 
 
 /**
@@ -20928,7 +20925,7 @@ async function main(billComApi, airtableBase = new _common_airtable_js__WEBPACK_
                   phone: record.get('Mobile Phone'),
                 });
 
-        return {'RS Bill.com Vendor ID': vendorId};
+        return {[`${_common_utils_js__WEBPACK_IMPORTED_MODULE_1__/* .PRIMARY_ORG */ .l3} Bill.com Vendor ID`]: vendorId};
       });
 }
 

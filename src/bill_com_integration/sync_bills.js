@@ -1,7 +1,7 @@
 /** @fileoverview Syncs Bill.com Bill Line Item data into Airtable. */
 
 import {Base} from '../common/airtable.js';
-import {getYyyyMmDd, PRIMARY_ORG} from '../common/utils.js';
+import {getYyyyMmDd} from '../common/utils.js';
 
 /** Bill.com Bill Approval Statuses. */
 const approvalStatuses = new Map([
@@ -50,7 +50,7 @@ function getNames(entity) {
  * @return {string}
  */
 function billComIdFieldName(entity) {
-  return `${PRIMARY_ORG} Bill.com ${entity} ID`;
+  return `MSO Bill.com ${entity} ID`;
 }
 
 /**

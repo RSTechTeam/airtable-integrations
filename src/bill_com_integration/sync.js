@@ -4,7 +4,7 @@
  */
 
 import {ActiveStatus, filter, isActiveEnum} from '../common/bill_com.js';
-import {Base, BILL_COM_ID_SUFFIX, PRIMARY_ORG_BILL_COM_ID} from '../common/airtable.js';
+import {Base, BILL_COM_ID_SUFFIX, MSO_BILL_COM_ID} from '../common/airtable.js';
 import {getYyyyMmDd, PRIMARY_ORG} from '../common/utils.js';
 
 /** Bill.com Bill Approval Statuses. */
@@ -63,7 +63,9 @@ class Syncer {
     this.airtableBase_ = airtableBase;
 
     /** @private {?string} */
-    this.currentMsoRecordId_ = null;
+    this.currentMso_ = null;
+    /** @return {?string} */
+    this.getCurrentMsoRecordId = () => this.msoRecordIds_.get(this.currentMso_);
   }
 
   /**
@@ -75,7 +77,7 @@ class Syncer {
   async forEachMso(func) {
     for (const mso of this.msoRecordIds_.keys()) {
       await this.billComApi_.login(mso);
-      this.currentMsoRecordId_ = this.msoRecordIds_.get(mso);
+      this.currentMso_ = mso;
       await func(this, mso);
     }
   }
@@ -88,7 +90,7 @@ class Syncer {
    */
   async syncUnpaid(table, entity) {
     const BILL_COM_ID =
-        entity === 'Bill' ? PRIMARY_ORG_BILL_COM_ID : BILL_COM_ID_SUFFIX;
+        entity === 'Bill' ? MSO_BILL_COM_ID : BILL_COM_ID_SUFFIX;
 
     const billComIds = [];
     const airtableIds = [];
@@ -149,6 +151,7 @@ class Syncer {
     }
 
     // Update every existing table record based on the entity data.
+    const msoRecordId = this.getCurrentMsoRecordId();
     const updates = [];
     await this.airtableBase_.select(
         table,
@@ -156,9 +159,9 @@ class Syncer {
         (record) => {
 
           // Skip records not associated with current MSO.
-          if (record.get('MSO')[0] !== this.currentMsoRecordId_) return;
+          if (record.get('MSO')[0] !== msoRecordId) return;
 
-          const id = record.get(PRIMARY_ORG_BILL_COM_ID);
+          const id = record.get(MSO_BILL_COM_ID);
           updates.push({
             id: record.getId(), fields: changes.get(id) || {Active: false},
           });
@@ -170,11 +173,7 @@ class Syncer {
     const creates = [];
     for (const [id, data] of changes) {
       creates.push({
-        fields: {
-          MSO: [this.currentMsoRecordId_],
-          [PRIMARY_ORG_BILL_COM_ID]: id,
-          ...data,
-        }
+        fields: {MSO: [msoRecordId], [MSO_BILL_COM_ID]: id, ...data},
       });
     }
     await this.airtableBase_.create(table, creates);
@@ -292,17 +291,18 @@ class Syncer {
 
     // Create any active anchor entity Bill.com Customer not in Airtable;
     // Create in both RS Bill.com and Airtable.
-    await this.billComApi_.primaryOrgLogin();
+    await this.billComApi_.login(this.currentMso_);
+    const msoRecordId = this.getCurrentMsoRecordId();
     const airtableCreates = [];
     for (const [id, customer] of billComCustomerMap) {
       airtableCreates.push({
         fields: {
           Active: true,
+          MSO: [msoRecordId],
           Name: customer.name,
           Email: customer.email,
-          MSO: [this.currentMsoRecordId_],
           [BILL_COM_ID]: id,
-          [PRIMARY_ORG_BILL_COM_ID]:
+          [MSO_BILL_COM_ID]:
             await this.billComApi_.create('Customer', customer),
         }
       });

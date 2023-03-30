@@ -5,14 +5,14 @@
  * https://github.com/Airtable/airtable.js
  */
 import Airtable from 'airtable';
-import {batchAsync, PRIMARY_ORG} from './utils.js';
 import {airtableApiKey, airtableBaseId} from './inputs.js';
+import {batchAsync} from './utils.js';
 
 /** The Bill.com ID Field name suffix. */
 export const BILL_COM_ID_SUFFIX = 'Bill.com ID';
 
 /** The primary Org Bill.com ID Field name. */
-export const PRIMARY_ORG_BILL_COM_ID = `${PRIMARY_ORG} ${BILL_COM_ID_SUFFIX}`;
+export const MSO_BILL_COM_ID = `MSO ${BILL_COM_ID_SUFFIX}`;
 
 /**
  * @param {!Promise<*>} promise

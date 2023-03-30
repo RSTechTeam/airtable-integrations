@@ -2,7 +2,7 @@
 
 import fetch from 'node-fetch';
 import {apiCall} from '../common/bill_com.js';
-import {Base, PRIMARY_ORG_BILL_COM_ID} from '../common/airtable.js';
+import {Base, MSO_BILL_COM_ID} from '../common/airtable.js';
 import {fetchError} from '../common/utils.js';
 import {finalApproverUserId} from '../common/inputs.js';
 import {FormData} from 'formdata-node';
@@ -18,9 +18,7 @@ let billComIntegrationBase;
 async function getBillComId(table, airtableId) {
   let billComId;
   await billComIntegrationBase.find(
-      table,
-      airtableId,
-      (record) => billComId = record.get(PRIMARY_ORG_BILL_COM_ID));
+      table, airtableId, (record) => billComId = record.get(MSO_BILL_COM_ID));
   return billComId;
 }
 
@@ -67,10 +65,7 @@ export async function main(billComApi, airtableBase = new Base()) {
               });
           await billComIntegrationBase.update(
               NEW_VENDORS_TABLE,
-              [{
-                id: newVendorId,
-                fields: {[PRIMARY_ORG_BILL_COM_ID]: vendorId},
-              }]);
+              [{id: newVendorId, fields: {[MSO_BILL_COM_ID]: vendorId}}]);
         } else {
           vendorId =
               await getBillComId(
@@ -177,7 +172,7 @@ export async function main(billComApi, airtableBase = new Base()) {
         return {
           'Active': true,
           'Vendor Invoice ID': invoiceId,
-          [PRIMARY_ORG_BILL_COM_ID]: newBillId,
+          [MSO_BILL_COM_ID]: newBillId,
         };
       });
 }
