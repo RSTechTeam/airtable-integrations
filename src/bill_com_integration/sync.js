@@ -73,7 +73,7 @@ class Syncer {
    * @return !Promise<undefined>
    */
   async forEachMso(func) {
-    for (const mso of this.msoData_.keys()) {
+    for (const mso of this.msoRecordIds_.keys()) {
       await this.billComApi_.login(mso);
       this.currentMso_ = mso;
       await func(this, mso);
