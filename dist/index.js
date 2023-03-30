@@ -18798,7 +18798,9 @@ __nccwpck_require__.r(__webpack_exports__);
 /* harmony export */ });
 /* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(5585);
 /* harmony import */ var _common_bill_com_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(9668);
+/* harmony import */ var _common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(1444);
 /** @fileoverview Syncs Bill.com Customers from Airtable to Bill.com. */
+
 
 
 
@@ -18843,6 +18845,7 @@ async function main(billComApi, accountingBase = new _common_airtable_js__WEBPAC
         async (record) => {
 
           // Skip records not associated with current MSO.
+          if (record.get('MSO') == undefined) (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_2__/* .log */ .cM)(record.get('Name'));
           if (record.get('MSO')[0] !== recordId) return null;
 
           const id = record.get(_common_airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .BILL_COM_ID_SUFFIX */ .dK);

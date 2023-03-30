@@ -2,6 +2,7 @@
 
 import {Base, BILL_COM_ID_SUFFIX} from '../common/airtable.js';
 import {ActiveStatus, filter} from '../common/bill_com.js';
+import {log} from '../common/github_actions_core.js';
 
 /**
  * @param {!Api} billComApi
@@ -43,6 +44,7 @@ export async function main(billComApi, accountingBase = new Base()) {
         async (record) => {
 
           // Skip records not associated with current MSO.
+          if (record.get('MSO') == undefined) log(record.get('Name'));
           if (record.get('MSO')[0] !== recordId) return null;
 
           const id = record.get(BILL_COM_ID_SUFFIX);
