@@ -6,7 +6,6 @@
 import {ActiveStatus, filter, isActiveEnum} from '../common/bill_com.js';
 import {Base, BILL_COM_ID_SUFFIX, PRIMARY_ORG_BILL_COM_ID} from '../common/airtable.js';
 import {getYyyyMmDd, PRIMARY_ORG} from '../common/utils.js';
-import {log} from '../common/github_actions_core.js';
 
 /** Bill.com Bill Approval Statuses. */
 const approvalStatuses = new Map([
@@ -158,7 +157,6 @@ class Syncer {
 
           // Skip records not associated with current MSO.
           const mso = this.msoRecordIds_.get(this.currentMso_);
-          if (record.get('MSO') == undefined) log(record.get('Name'));
           if (record.get('MSO')[0] !== mso) return;
 
           const id = record.get(PRIMARY_ORG_BILL_COM_ID);
@@ -173,7 +171,7 @@ class Syncer {
     const creates = [];
     for (const [id, data] of changes) {
       creates.push({
-        fields: {[PRIMARY_ORG_BILL_COM_ID]: id, MSO: [mso], ...data}});
+        fields: {MSO: [mso], [PRIMARY_ORG_BILL_COM_ID]: id, ...data}});
     }
     await this.airtableBase_.create(table, creates);
   }
@@ -292,9 +290,11 @@ class Syncer {
     // Create in both RS Bill.com and Airtable.
     await this.billComApi_.primaryOrgLogin();
     const airtableCreates = [];
+    const mso = this.msoRecordIds_.get(this.currentMso_);
     for (const [id, customer] of billComCustomerMap) {
       airtableCreates.push({
         fields: {
+          MSO: [mso],
           Active: true,
           Name: customer.name,
           Email: customer.email,
