@@ -18810,59 +18810,67 @@ __nccwpck_require__.r(__webpack_exports__);
  */
 async function main(billComApi, accountingBase = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .Base */ .XY()) {
 
-  // Sync for each Org/MSO.
+  // Initialize Bill.com Orgs and parent customer IDs.
+  const msoIds = new Map();
   await accountingBase.select(
       'MSOs',
       'Internal Customer IDs',
-      async (mso) => {
-
-        // Initialize Bill.com Customer collection.
-        await billComApi.login(mso.get('Code'));
-        const parentCustomerId = mso.get('Internal Customer ID');
-        const billComCustomers =
-            await billComApi.list(
-                'Customer',
-                [(0,_common_bill_com_js__WEBPACK_IMPORTED_MODULE_0__/* .filter */ .hX)('parentCustomerId', '=', parentCustomerId)]);
-        const billComCustomerIds = new Set();
-        billComCustomers.forEach(c => billComCustomerIds.add(c.id));
-
-        // Upsert every Bill.com Customer from the Bill.com Sync View.
-        const msoRecordId = mso.getId();
-        const updates = [];
-        await accountingBase.selectAndUpdate(
-            'Labor Charges',
-            'Bill.com Sync',
-            async (laborCharge) => {
-
-              // Skip records not associated with current MSO.
-              if (laborCharge.get('MSO')[0] !== msoRecordId) return null;
-
-              const id = laborCharge.get(_common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .BILL_COM_ID_SUFFIX */ .dK);
-              const change = {
-                id: id,
-                name: laborCharge.get('Local Name'),
-                isActive: _common_bill_com_js__WEBPACK_IMPORTED_MODULE_0__/* .ActiveStatus.ACTIVE */ .tV.ACTIVE,
-                parentCustomerId: parentCustomerId,
-              };
-
-              // Insert/Create in Bill.com any record with no Bill.com ID.
-              if (id == undefined) {
-                const billComId = await billComApi.create('Customer', change);
-                return {[_common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .BILL_COM_ID_SUFFIX */ .dK]: billComId};
-              }
-
-              // Update in Bill.com other records with a Bill.com ID.
-              updates.push(change);
-              billComCustomerIds.delete(id);
-              return null;
+      (r) => {
+        msoIds.set(
+            r.get('Code'),
+            {
+              recordId: r.getId(),
+              parentCustomerId: r.get('Internal Customer ID'),
             });
-
-        // Deactivate internal Bill.com Customers not in the Bill.com Sync View.
-        for (const id of billComCustomerIds) {
-          updates.push({id: id, isActive: _common_bill_com_js__WEBPACK_IMPORTED_MODULE_0__/* .ActiveStatus.INACTIVE */ .tV.INACTIVE});
-        }
-        await billComApi.bulk('Update', 'Customer', updates);
       });
+
+  // Sync for each Org/MSO.
+  for (const [mso, {recordId, parentCustomerId}] of msoIds) {
+
+    // Initialize Bill.com Customer collection.
+    await billComApi.login(mso);
+    const billComCustomers =
+        await billComApi.list(
+            'Customer', [(0,_common_bill_com_js__WEBPACK_IMPORTED_MODULE_0__/* .filter */ .hX)('parentCustomerId', '=', parentCustomerId)]);
+    const billComCustomerIds = new Set();
+    billComCustomers.forEach(c => billComCustomerIds.add(c.id));
+
+    // Upsert every Bill.com Customer from the Bill.com Sync View.
+    const updates = [];
+    await accountingBase.selectAndUpdate(
+        'Labor Charges',
+        'Bill.com Sync',
+        async (record) => {
+
+          // Skip records not associated with current MSO.
+          if (record.get('MSO')[0] !== recordId) return null;
+
+          const id = record.get(_common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .BILL_COM_ID_SUFFIX */ .dK);
+          const change = {
+            id: id,
+            name: record.get('Local Name'),
+            isActive: _common_bill_com_js__WEBPACK_IMPORTED_MODULE_0__/* .ActiveStatus.ACTIVE */ .tV.ACTIVE,
+            parentCustomerId: parentCustomerId,
+          };
+
+          // Insert/Create in Bill.com any record with no Bill.com ID.
+          if (id == undefined) {
+            const billComId = await billComApi.create('Customer', change);
+            return {[_common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .BILL_COM_ID_SUFFIX */ .dK]: billComId};
+          }
+
+          // Update in Bill.com other records with a Bill.com ID.
+          updates.push(change);
+          billComCustomerIds.delete(id);
+          return null;
+        });
+
+    // Deactivate internal Bill.com Customers not in the Bill.com Sync View.
+    for (const id of billComCustomerIds) {
+      updates.push({id: id, isActive: _common_bill_com_js__WEBPACK_IMPORTED_MODULE_0__/* .ActiveStatus.INACTIVE */ .tV.INACTIVE});
+    }
+    await billComApi.bulk('Update', 'Customer', updates);
+  }
 }
 
 
@@ -20889,10 +20897,8 @@ __nccwpck_require__.r(__webpack_exports__);
 /* harmony export */   "main": () => (/* binding */ main)
 /* harmony export */ });
 /* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(5585);
-/* harmony import */ var _common_utils_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(381);
 /** @fileoverview Creates a Bill.com Vendor based on volunteer address info. */
  
-
 
 
 /**
@@ -20922,7 +20928,7 @@ async function main(billComApi, airtableBase = new _common_airtable_js__WEBPACK_
                   phone: record.get('Mobile Phone'),
                 });
 
-        return {[`${_common_utils_js__WEBPACK_IMPORTED_MODULE_1__/* .PRIMARY_ORG */ .l3} Bill.com Vendor ID`]: vendorId};
+        return {'RS Bill.com Vendor ID': vendorId};
       });
 }
 

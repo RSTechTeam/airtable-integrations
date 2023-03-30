@@ -10,57 +10,65 @@ import {Base, BILL_COM_ID_SUFFIX} from '../common/airtable.js';
  */
 export async function main(billComApi, accountingBase = new Base()) {
 
-  // Sync for each Org/MSO.
+  // Initialize Bill.com Orgs and parent customer IDs.
+  const msoIds = new Map();
   await accountingBase.select(
       'MSOs',
       'Internal Customer IDs',
-      async (mso) => {
-
-        // Initialize Bill.com Customer collection.
-        await billComApi.login(mso.get('Code'));
-        const parentCustomerId = mso.get('Internal Customer ID');
-        const billComCustomers =
-            await billComApi.list(
-                'Customer',
-                [filter('parentCustomerId', '=', parentCustomerId)]);
-        const billComCustomerIds = new Set();
-        billComCustomers.forEach(c => billComCustomerIds.add(c.id));
-
-        // Upsert every Bill.com Customer from the Bill.com Sync View.
-        const msoRecordId = mso.getId();
-        const updates = [];
-        await accountingBase.selectAndUpdate(
-            'Labor Charges',
-            'Bill.com Sync',
-            async (laborCharge) => {
-
-              // Skip records not associated with current MSO.
-              if (laborCharge.get('MSO')[0] !== msoRecordId) return null;
-
-              const id = laborCharge.get(BILL_COM_ID_SUFFIX);
-              const change = {
-                id: id,
-                name: laborCharge.get('Local Name'),
-                isActive: ActiveStatus.ACTIVE,
-                parentCustomerId: parentCustomerId,
-              };
-
-              // Insert/Create in Bill.com any record with no Bill.com ID.
-              if (id == undefined) {
-                const billComId = await billComApi.create('Customer', change);
-                return {[BILL_COM_ID_SUFFIX]: billComId};
-              }
-
-              // Update in Bill.com other records with a Bill.com ID.
-              updates.push(change);
-              billComCustomerIds.delete(id);
-              return null;
+      (r) => {
+        msoIds.set(
+            r.get('Code'),
+            {
+              recordId: r.getId(),
+              parentCustomerId: r.get('Internal Customer ID'),
             });
-
-        // Deactivate internal Bill.com Customers not in the Bill.com Sync View.
-        for (const id of billComCustomerIds) {
-          updates.push({id: id, isActive: ActiveStatus.INACTIVE});
-        }
-        await billComApi.bulk('Update', 'Customer', updates);
       });
+
+  // Sync for each Org/MSO.
+  for (const [mso, {recordId, parentCustomerId}] of msoIds) {
+
+    // Initialize Bill.com Customer collection.
+    await billComApi.login(mso);
+    const billComCustomers =
+        await billComApi.list(
+            'Customer', [filter('parentCustomerId', '=', parentCustomerId)]);
+    const billComCustomerIds = new Set();
+    billComCustomers.forEach(c => billComCustomerIds.add(c.id));
+
+    // Upsert every Bill.com Customer from the Bill.com Sync View.
+    const updates = [];
+    await accountingBase.selectAndUpdate(
+        'Labor Charges',
+        'Bill.com Sync',
+        async (record) => {
+
+          // Skip records not associated with current MSO.
+          if (record.get('MSO')[0] !== recordId) return null;
+
+          const id = record.get(BILL_COM_ID_SUFFIX);
+          const change = {
+            id: id,
+            name: record.get('Local Name'),
+            isActive: ActiveStatus.ACTIVE,
+            parentCustomerId: parentCustomerId,
+          };
+
+          // Insert/Create in Bill.com any record with no Bill.com ID.
+          if (id == undefined) {
+            const billComId = await billComApi.create('Customer', change);
+            return {[BILL_COM_ID_SUFFIX]: billComId};
+          }
+
+          // Update in Bill.com other records with a Bill.com ID.
+          updates.push(change);
+          billComCustomerIds.delete(id);
+          return null;
+        });
+
+    // Deactivate internal Bill.com Customers not in the Bill.com Sync View.
+    for (const id of billComCustomerIds) {
+      updates.push({id: id, isActive: ActiveStatus.INACTIVE});
+    }
+    await billComApi.bulk('Update', 'Customer', updates);
+  }
 }
