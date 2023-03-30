@@ -19635,7 +19635,7 @@ class Syncer {
     this.airtableBase_ = airtableBase;
 
     /** @private {?string} */
-    this.currentMso_ = null;
+    this.currentMsoRecordId_ = null;
   }
 
   /**
@@ -19647,7 +19647,7 @@ class Syncer {
   async forEachMso(func) {
     for (const mso of this.msoRecordIds_.keys()) {
       await this.billComApi_.login(mso);
-      this.currentMso_ = mso;
+      this.currentMsoRecordId_ = this.msoRecordIds_.get(mso);
       await func(this, mso);
     }
   }
@@ -19721,7 +19721,6 @@ class Syncer {
     }
 
     // Update every existing table record based on the entity data.
-    const mso = this.msoRecordIds_.get(this.currentMso_);
     const updates = [];
     await this.airtableBase_.select(
         table,
@@ -19729,7 +19728,7 @@ class Syncer {
         (record) => {
 
           // Skip records not associated with current MSO.
-          if (record.get('MSO')[0] !== mso) return;
+          if (record.get('MSO')[0] !== this.currentMsoRecordId_) return;
 
           const id = record.get(_common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .PRIMARY_ORG_BILL_COM_ID */ .bB);
           updates.push({
@@ -19743,7 +19742,12 @@ class Syncer {
     const creates = [];
     for (const [id, data] of changes) {
       creates.push({
-        fields: {MSO: [mso], [_common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .PRIMARY_ORG_BILL_COM_ID */ .bB]: id, ...data}});
+        fields: {
+          MSO: [this.currentMsoRecordId_],
+          [_common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .PRIMARY_ORG_BILL_COM_ID */ .bB]: id,
+          ...data,
+        }
+      });
     }
     await this.airtableBase_.create(table, creates);
   }
@@ -19862,14 +19866,13 @@ class Syncer {
     // Create in both RS Bill.com and Airtable.
     await this.billComApi_.primaryOrgLogin();
     const airtableCreates = [];
-    const mso = this.msoRecordIds_.get(this.currentMso_);
     for (const [id, customer] of billComCustomerMap) {
       airtableCreates.push({
         fields: {
-          MSO: [mso],
           Active: true,
           Name: customer.name,
           Email: customer.email,
+          MSO: [this.currentMsoRecordId_],
           [BILL_COM_ID]: id,
           [_common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .PRIMARY_ORG_BILL_COM_ID */ .bB]:
             await this.billComApi_.create('Customer', customer),
