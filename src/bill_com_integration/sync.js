@@ -154,6 +154,11 @@ class Syncer {
         table,
         '',
         (record) => {
+
+          // Skip records not associated with current MSO.
+          const mso = this.msoRecordIds_.get(this.currentMso_);
+          if (record.get('MSO')[0] !== mso) return;
+
           const id = record.get(PRIMARY_ORG_BILL_COM_ID);
           updates.push({
             id: record.getId(), fields: changes.get(id) || {Active: false},
@@ -163,11 +168,10 @@ class Syncer {
     await this.airtableBase_.update(table, updates);
 
     // Create new table records from new entity data.
-    const mso = [this.msoRecordIds_.get(this.currentMso_)];
     const creates = [];
     for (const [id, data] of changes) {
       creates.push({
-        fields: {[PRIMARY_ORG_BILL_COM_ID]: id, MSO: mso, ...data}});
+        fields: {[PRIMARY_ORG_BILL_COM_ID]: id, MSO: [mso], ...data}});
     }
     await this.airtableBase_.create(table, creates);
   }
