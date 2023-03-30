@@ -18843,7 +18843,7 @@ async function main(billComApi, accountingBase = new _common_airtable_js__WEBPAC
         async (record) => {
 
           // Skip records not associated with current MSO.
-          if (record.get('MSO')[0] !== recordId) return null;
+          if (!(0,_common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .isSameMso */ .m5)(record, recordId)) return null;
 
           const id = record.get(_common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .BILL_COM_ID_SUFFIX */ .dK);
           const change = {
@@ -19659,12 +19659,14 @@ class Syncer {
     const BILL_COM_ID =
         entity === 'Bill' ? _common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .MSO_BILL_COM_ID */ .yG : _common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .BILL_COM_ID_SUFFIX */ .dK;
 
+    const msoRecordId = this.getCurrentMsoRecordId();
     const billComIds = [];
     const airtableIds = [];
     await this.airtableBase_.select(
         table,
         'Unpaid',
         (record) => {
+          if (!(0,_common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .isSameMso */ .m5)(record, msoRecordId)) return;
           billComIds.push(record.get(BILL_COM_ID));
           airtableIds.push(record.getId());
          });
@@ -19726,7 +19728,7 @@ class Syncer {
         (record) => {
 
           // Skip records not associated with current MSO.
-          if (record.get('MSO')[0] !== msoRecordId) return;
+          if (!(0,_common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .isSameMso */ .m5)(record, msoRecordId)) return;
 
           const id = record.get(_common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .MSO_BILL_COM_ID */ .yG);
           updates.push({
@@ -19890,8 +19892,7 @@ async function main(billComApi, airtableBase = new _common_airtable_js__WEBPACK_
       'MSOs', '', (r) => msoRecordIds.set(r.get('Code'), r.getId()));
   await new Syncer(msoRecordIds, billComApi, airtableBase).forEachMso(
       async (syncer, mso) => {
-
-        // sync('Department', 'Departments', o => ({Name: o.name, Email: o.email}))
+        await syncer.syncUnpaid('Check Requests', 'Bill');
         await syncer.sync(
             'Vendor', 'Existing Vendors',
             o => ({
@@ -19911,7 +19912,7 @@ async function main(billComApi, airtableBase = new _common_airtable_js__WEBPACK_
             }));
 
         if (mso !== _common_utils_js__WEBPACK_IMPORTED_MODULE_2__/* .PRIMARY_ORG */ .l3) return;
-        await syncer.syncUnpaid('Check Requests', 'Bill');
+        // sync('Department', 'Departments', o => ({Name: o.name, Email: o.email}))
         await syncer.syncUnpaid('Invoices', 'Invoice');
         await syncer.sync(
             'Customer', 'All Customers', o => ({Name: o.name, Email: o.email}));
@@ -20133,6 +20134,7 @@ async function main(api, billComIntegrationBase = new _common_airtable_js__WEBPA
 /* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
 /* harmony export */   "dK": () => (/* binding */ BILL_COM_ID_SUFFIX),
 /* harmony export */   "yG": () => (/* binding */ MSO_BILL_COM_ID),
+/* harmony export */   "m5": () => (/* binding */ isSameMso),
 /* harmony export */   "XY": () => (/* binding */ Base)
 /* harmony export */ });
 /* harmony import */ var airtable__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(5447);
@@ -20153,6 +20155,15 @@ const BILL_COM_ID_SUFFIX = 'Bill.com ID';
 
 /** The primary Org Bill.com ID Field name. */
 const MSO_BILL_COM_ID = `MSO ${BILL_COM_ID_SUFFIX}`;
+
+/**
+ * @param {!Record<!TField>} record
+ * @param {string} msoRecordId
+ * @return {boolean}
+ */
+function isSameMso(record, msoRecordId) {
+  return record.get('MSO')[0] === msoRecordId;
+}
 
 /**
  * @param {!Promise<*>} promise

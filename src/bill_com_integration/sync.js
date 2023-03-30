@@ -4,7 +4,7 @@
  */
 
 import {ActiveStatus, filter, isActiveEnum} from '../common/bill_com.js';
-import {Base, BILL_COM_ID_SUFFIX, MSO_BILL_COM_ID} from '../common/airtable.js';
+import {Base, BILL_COM_ID_SUFFIX, isSameMso, MSO_BILL_COM_ID} from '../common/airtable.js';
 import {getYyyyMmDd, PRIMARY_ORG} from '../common/utils.js';
 
 /** Bill.com Bill Approval Statuses. */
@@ -92,12 +92,14 @@ class Syncer {
     const BILL_COM_ID =
         entity === 'Bill' ? MSO_BILL_COM_ID : BILL_COM_ID_SUFFIX;
 
+    const msoRecordId = this.getCurrentMsoRecordId();
     const billComIds = [];
     const airtableIds = [];
     await this.airtableBase_.select(
         table,
         'Unpaid',
         (record) => {
+          if (!isSameMso(record, msoRecordId)) return;
           billComIds.push(record.get(BILL_COM_ID));
           airtableIds.push(record.getId());
          });
@@ -159,7 +161,7 @@ class Syncer {
         (record) => {
 
           // Skip records not associated with current MSO.
-          if (record.get('MSO')[0] !== msoRecordId) return;
+          if (!isSameMso(record, msoRecordId)) return;
 
           const id = record.get(MSO_BILL_COM_ID);
           updates.push({
@@ -323,8 +325,7 @@ export async function main(billComApi, airtableBase = new Base()) {
       'MSOs', '', (r) => msoRecordIds.set(r.get('Code'), r.getId()));
   await new Syncer(msoRecordIds, billComApi, airtableBase).forEachMso(
       async (syncer, mso) => {
-
-        // sync('Department', 'Departments', o => ({Name: o.name, Email: o.email}))
+        await syncer.syncUnpaid('Check Requests', 'Bill');
         await syncer.sync(
             'Vendor', 'Existing Vendors',
             o => ({
@@ -344,7 +345,7 @@ export async function main(billComApi, airtableBase = new Base()) {
             }));
 
         if (mso !== PRIMARY_ORG) return;
-        await syncer.syncUnpaid('Check Requests', 'Bill');
+        // sync('Department', 'Departments', o => ({Name: o.name, Email: o.email}))
         await syncer.syncUnpaid('Invoices', 'Invoice');
         await syncer.sync(
             'Customer', 'All Customers', o => ({Name: o.name, Email: o.email}));
