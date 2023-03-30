@@ -17,7 +17,7 @@ export async function main(billComApi, accountingBase = new Base()) {
       async (mso) => {
 
         // Initialize Bill.com Customer collection.
-        await billComApi.login(mso.getCode());
+        await billComApi.login(mso.get('Code'));
         const parentCustomerId = mso.get('Internal Customer ID');
         const billComCustomers =
             await billComApi.list(
