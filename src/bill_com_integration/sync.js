@@ -6,6 +6,7 @@
 import {ActiveStatus, filter, isActiveEnum} from '../common/bill_com.js';
 import {Base, BILL_COM_ID_SUFFIX, PRIMARY_ORG_BILL_COM_ID} from '../common/airtable.js';
 import {getYyyyMmDd, PRIMARY_ORG} from '../common/utils.js';
+import {log} from '../common/github_actions_core.js';
 
 /** Bill.com Bill Approval Statuses. */
 const approvalStatuses = new Map([
@@ -157,6 +158,7 @@ class Syncer {
 
           // Skip records not associated with current MSO.
           const mso = this.msoRecordIds_.get(this.currentMso_);
+          if (record.get('MSO') == undefined) log(record.get('Name'));
           if (record.get('MSO')[0] !== mso) return;
 
           const id = record.get(PRIMARY_ORG_BILL_COM_ID);
