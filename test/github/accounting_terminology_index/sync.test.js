@@ -7,7 +7,7 @@ import {jest} from '@jest/globals';
 // Increasingly long because this test lists both active and inactive Customers,
 // creates a Customer every run, and Bill.com doesn't currently enable
 // true deleting.
-jest.setTimeout(10000);
+jest.setTimeout(100000);
 
 test('main syncs Customers from Airtable to Bill.com', async () => {
   const api = await billComApi();
