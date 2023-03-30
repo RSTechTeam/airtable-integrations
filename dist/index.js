@@ -19721,6 +19721,7 @@ class Syncer {
     }
 
     // Update every existing table record based on the entity data.
+    const mso = this.msoRecordIds_.get(this.currentMso_);
     const updates = [];
     await this.airtableBase_.select(
         table,
@@ -19728,7 +19729,6 @@ class Syncer {
         (record) => {
 
           // Skip records not associated with current MSO.
-          const mso = this.msoRecordIds_.get(this.currentMso_);
           if (record.get('MSO')[0] !== mso) return;
 
           const id = record.get(_common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .PRIMARY_ORG_BILL_COM_ID */ .bB);
