@@ -1,8 +1,8 @@
 import * as sync from '../../../src/accounting_terminology_index/sync.js';
 import {airtableBase, billComApi} from '../../test_utils.js';
+import {BILL_COM_ID_SUFFIX} from '../../../src/common/airtable.js';
 import {isActiveEnum} from '../../../src/common/bill_com.js';
 import {jest} from '@jest/globals';
-import {BILL_COM_ID_SUFFIX} from '../../../src/common/airtable.js';
 
 // Increasingly long because this test lists both active and inactive Customers,
 // creates a Customer every run, and Bill.com doesn't currently enable

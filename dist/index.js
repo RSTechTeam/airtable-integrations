@@ -10528,7 +10528,7 @@ var baseTimes = __nccwpck_require__(3349),
     isArray = __nccwpck_require__(5997),
     isBuffer = __nccwpck_require__(3741),
     isIndex = __nccwpck_require__(576),
-    isTypedArray = __nccwpck_require__(3837);
+    isTypedArray = __nccwpck_require__(9137);
 
 /** Used for built-in method references. */
 var objectProto = Object.prototype;
@@ -12637,7 +12637,7 @@ module.exports = isSymbol;
 
 /***/ }),
 
-/***/ 3837:
+/***/ 9137:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 var baseIsTypedArray = __nccwpck_require__(6934),
@@ -13097,7 +13097,7 @@ var http = __nccwpck_require__(3685);
 var https = __nccwpck_require__(5687);
 var events = __nccwpck_require__(2361);
 var assert = __nccwpck_require__(9491);
-var util = __nccwpck_require__(3849);
+var util = __nccwpck_require__(3837);
 
 
 exports.httpOverHttp = httpOverHttp;
@@ -16063,7 +16063,7 @@ module.exports = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("url");
 
 /***/ }),
 
-/***/ 3849:
+/***/ 3837:
 /***/ ((module) => {
 
 module.exports = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("util");
@@ -18796,8 +18796,8 @@ __nccwpck_require__.r(__webpack_exports__);
 /* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
 /* harmony export */   "main": () => (/* binding */ main)
 /* harmony export */ });
-/* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(5585);
-/* harmony import */ var _common_bill_com_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(9668);
+/* harmony import */ var _common_bill_com_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(9668);
+/* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(5585);
 /** @fileoverview Syncs Bill.com Customers from Airtable to Bill.com. */
 
 
@@ -18808,7 +18808,7 @@ __nccwpck_require__.r(__webpack_exports__);
  * @param {!Base=} accountingBase
  * @return {!Promise<undefined>}
  */
-async function main(billComApi, accountingBase = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .Base */ .XY()) {
+async function main(billComApi, accountingBase = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .Base */ .XY()) {
 
   // Initialize Bill.com Orgs and parent customer IDs.
   const msoIds = new Map();
@@ -18831,7 +18831,7 @@ async function main(billComApi, accountingBase = new _common_airtable_js__WEBPAC
     await billComApi.login(mso);
     const billComCustomers =
         await billComApi.list(
-            'Customer', [(0,_common_bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .filter */ .hX)('parentCustomerId', '=', parentCustomerId)]);
+            'Customer', [(0,_common_bill_com_js__WEBPACK_IMPORTED_MODULE_0__/* .filter */ .hX)('parentCustomerId', '=', parentCustomerId)]);
     const billComCustomerIds = new Set();
     billComCustomers.forEach(c => billComCustomerIds.add(c.id));
 
@@ -18845,18 +18845,18 @@ async function main(billComApi, accountingBase = new _common_airtable_js__WEBPAC
           // Skip records not associated with current MSO.
           if (record.get('MSO')[0] !== recordId) return null;
 
-          const id = record.get(_common_airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .BILL_COM_ID_SUFFIX */ .dK);
+          const id = record.get(_common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .BILL_COM_ID_SUFFIX */ .dK);
           const change = {
             id: id,
             name: record.get('Local Name'),
-            isActive: _common_bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .ActiveStatus.ACTIVE */ .tV.ACTIVE,
+            isActive: _common_bill_com_js__WEBPACK_IMPORTED_MODULE_0__/* .ActiveStatus.ACTIVE */ .tV.ACTIVE,
             parentCustomerId: parentCustomerId,
           };
 
           // Insert/Create in Bill.com any record with no Bill.com ID.
           if (id == undefined) {
             const billComId = await billComApi.create('Customer', change);
-            return {[_common_airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .BILL_COM_ID_SUFFIX */ .dK]: billComId};
+            return {[_common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .BILL_COM_ID_SUFFIX */ .dK]: billComId};
           }
 
           // Update in Bill.com other records with a Bill.com ID.
@@ -18867,7 +18867,7 @@ async function main(billComApi, accountingBase = new _common_airtable_js__WEBPAC
 
     // Deactivate internal Bill.com Customers not in the Bill.com Sync View.
     for (const id of billComCustomerIds) {
-      updates.push({id: id, isActive: _common_bill_com_js__WEBPACK_IMPORTED_MODULE_1__/* .ActiveStatus.INACTIVE */ .tV.INACTIVE});
+      updates.push({id: id, isActive: _common_bill_com_js__WEBPACK_IMPORTED_MODULE_0__/* .ActiveStatus.INACTIVE */ .tV.INACTIVE});
     }
     await billComApi.bulk('Update', 'Customer', updates);
   }
@@ -18947,7 +18947,7 @@ var utils = __nccwpck_require__(381);
 // EXTERNAL MODULE: ./src/common/inputs.js
 var inputs = __nccwpck_require__(4684);
 // EXTERNAL MODULE: external "util"
-var external_util_ = __nccwpck_require__(3849);
+var external_util_ = __nccwpck_require__(3837);
 ;// CONCATENATED MODULE: ./node_modules/web-streams-polyfill/dist/ponyfill.mjs
 /**
  * @license

@@ -1,7 +1,7 @@
 /** @fileoverview Syncs Bill.com Customers from Airtable to Bill.com. */
 
-import {Base, BILL_COM_ID_SUFFIX} from '../common/airtable.js';
 import {ActiveStatus, filter} from '../common/bill_com.js';
+import {Base, BILL_COM_ID_SUFFIX} from '../common/airtable.js';
 
 /**
  * @param {!Api} billComApi
