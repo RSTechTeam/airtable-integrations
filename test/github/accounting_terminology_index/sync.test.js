@@ -1,6 +1,6 @@
 import * as sync from '../../../src/accounting_terminology_index/sync.js';
 import {airtableBase, billComApi} from '../../test_utils.js';
-import {BILL_COM_ID_SUFFIX} from '../../../src/common/airtable.js';
+import {MSO_BILL_COM_ID} from '../../../src/common/airtable.js';
 import {isActiveEnum} from '../../../src/common/bill_com.js';
 import {jest} from '@jest/globals';
 
@@ -61,6 +61,6 @@ test('main syncs Customers from Airtable to Bill.com', async () => {
       '',
       (record) => {
         return record.get('Local Name') === AIRTABLE_ONLY ?
-            {[BILL_COM_ID_SUFFIX]: ''} : null;
+            {[MSO_BILL_COM_ID]: ''} : null;
       });
 });
