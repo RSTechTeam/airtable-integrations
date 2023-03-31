@@ -8,7 +8,7 @@ import fetch from 'node-fetch';
 import * as inputs from './inputs.js';
 import pLimit from 'p-limit';
 import {Base} from './airtable.js';
-import {batchAwait, fetchError, PRIMARY_ORG} from './utils.js';
+import {batchAsync, fetchError, PRIMARY_ORG} from './utils.js';
 import {log, logJson} from './github_actions_core.js';
 
 /**

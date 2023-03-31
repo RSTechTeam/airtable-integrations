@@ -20649,7 +20649,7 @@ class Api {
     const func =
         ['Read', 'Delete'].includes(op) ?
             (datum) => ({id: datum}) : (datum) => entityData(entity, datum);
-    return batchAsync(
+    return (0,utils/* batchAsync */.aE)(
         (arr) => this.dataCall(`Bulk/Crud/${op}/${entity}`, {bulk: arr}),
         data.map(func), 100);
   }
