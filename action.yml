@@ -25,9 +25,6 @@ inputs:
   ecr-approver-user-profile-id:
     description: 'The Bill.com User Profile ID for ECR Approvers'
     required: false
-  final-approver-user-id:
-    description: 'The Bill.com User ID of the final Bill Approver'
-    required: false
 runs:
   using: 'node16'
   main: 'dist/index.js'

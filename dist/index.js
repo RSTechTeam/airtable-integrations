@@ -20793,7 +20793,6 @@ function logJson(endpoint, json) {
 /* harmony export */   "Mr": () => (/* binding */ billComPassword),
 /* harmony export */   "WI": () => (/* binding */ ecrApproverUserProfileId)
 /* harmony export */ });
-/* unused harmony export finalApproverUserId */
 /* harmony import */ var _github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(1444);
 /**
  * @fileoverview Lazy evaluated inputs
@@ -20812,7 +20811,6 @@ const billComUserName = (0,_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/
 const billComPassword = (0,_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .getInput */ .Np)('bill-com-password');
 const ecrApproverUserProfileId =
   (0,_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .getInput */ .Np)('ecr-approver-user-profile-id');
-const finalApproverUserId = (0,_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .getInput */ .Np)('final-approver-user-id');
 
 
 /***/ }),
