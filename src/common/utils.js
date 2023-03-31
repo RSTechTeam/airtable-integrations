@@ -59,11 +59,7 @@ export async function batchAwait(func, array, size) {
  * @return {!Promise<!Array<*>>} func results by batch
  */
 export function batchAsync(func, array, size) {
-  const promises = [];
-  for (const arr of batch(array, size)) {
-    promises.push(func(arr));
-  }
-  return Promise.all(promises);
+  return Promise.all(Array.from(batch(array, size), func));
 }
 
 /**
