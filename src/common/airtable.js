@@ -76,6 +76,11 @@ export class Base {
         'selecting', table);
   }
 
+  select2(table, view) {
+    return catchError(
+        this.base_(table).select({view: view}).all(), 'selecting', table);
+  }
+
   /**
    * @param {string} table
    * @param {!Object[]} updates

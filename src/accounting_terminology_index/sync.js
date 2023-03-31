@@ -10,25 +10,13 @@ import {Base, BILL_COM_ID_SUFFIX, isSameMso} from '../common/airtable.js';
  */
 export async function main(billComApi, accountingBase = new Base()) {
 
-  // Initialize Bill.com Orgs and parent customer IDs.
-  const msoIds = new Map();
-  await accountingBase.select(
-      'MSOs',
-      'Internal Customer IDs',
-      (r) => {
-        msoIds.set(
-            r.get('Code'),
-            {
-              recordId: r.getId(),
-              parentCustomerId: r.get('Internal Customer ID'),
-            });
-      });
-
   // Sync for each Org/MSO.
-  for (const [mso, {recordId, parentCustomerId}] of msoIds) {
+  const msos = await accountingBase.select2('MSOs', 'Internal Customer IDs');
+  for (const mso of msos) {
 
     // Initialize Bill.com Customer collection.
-    await billComApi.login(mso);
+    await billComApi.login(mso.get('Code'));
+    const parentCustomerId = mso.get('Internal Customer ID');
     const billComCustomers =
         await billComApi.list(
             'Customer', [filter('parentCustomerId', '=', parentCustomerId)]);
@@ -43,7 +31,7 @@ export async function main(billComApi, accountingBase = new Base()) {
         async (record) => {
 
           // Skip records not associated with current MSO.
-          if (!isSameMso(record, recordId)) return null;
+          if (!isSameMso(record, mso.getId())) return null;
 
           const id = record.get(BILL_COM_ID_SUFFIX);
           const change = {

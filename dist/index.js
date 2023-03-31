@@ -18810,25 +18810,13 @@ __nccwpck_require__.r(__webpack_exports__);
  */
 async function main(billComApi, accountingBase = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .Base */ .XY()) {
 
-  // Initialize Bill.com Orgs and parent customer IDs.
-  const msoIds = new Map();
-  await accountingBase.select(
-      'MSOs',
-      'Internal Customer IDs',
-      (r) => {
-        msoIds.set(
-            r.get('Code'),
-            {
-              recordId: r.getId(),
-              parentCustomerId: r.get('Internal Customer ID'),
-            });
-      });
-
   // Sync for each Org/MSO.
-  for (const [mso, {recordId, parentCustomerId}] of msoIds) {
+  const msos = await accountingBase.select2('MSOs', 'Internal Customer IDs');
+  for (const mso of msos) {
 
     // Initialize Bill.com Customer collection.
-    await billComApi.login(mso);
+    await billComApi.login(mso.get('Code'));
+    const parentCustomerId = mso.get('Internal Customer ID');
     const billComCustomers =
         await billComApi.list(
             'Customer', [(0,_common_bill_com_js__WEBPACK_IMPORTED_MODULE_0__/* .filter */ .hX)('parentCustomerId', '=', parentCustomerId)]);
@@ -18843,7 +18831,7 @@ async function main(billComApi, accountingBase = new _common_airtable_js__WEBPAC
         async (record) => {
 
           // Skip records not associated with current MSO.
-          if (!(0,_common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .isSameMso */ .m5)(record, recordId)) return null;
+          if (!(0,_common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .isSameMso */ .m5)(record, mso.getId())) return null;
 
           const id = record.get(_common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .BILL_COM_ID_SUFFIX */ .dK);
           const change = {
@@ -20216,6 +20204,11 @@ class Base {
         this.base_(table).select({view: view}).all().then(
             (records) => Promise.all(records.map(func))),
         'selecting', table);
+  }
+
+  select2(table, view) {
+    return catchError(
+        this.base_(table).select({view: view}).all(), 'selecting', table);
   }
 
   /**
