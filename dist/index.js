@@ -20649,7 +20649,7 @@ class Api {
     const func =
         ['Read', 'Delete'].includes(op) ?
             (datum) => ({id: datum}) : (datum) => entityData(entity, datum);
-    return (0,utils/* batchAsync */.aE)(
+    return (0,utils/* batchAwait */.rE)(
         (arr) => this.dataCall(`Bulk/Crud/${op}/${entity}`, {bulk: arr}),
         data.map(func), 100);
   }
@@ -20807,12 +20807,11 @@ const finalApproverUserId = (0,_github_actions_core_js__WEBPACK_IMPORTED_MODULE_
 __nccwpck_require__.d(__webpack_exports__, {
   "l3": () => (/* binding */ PRIMARY_ORG),
   "aE": () => (/* binding */ batchAsync),
+  "rE": () => (/* binding */ batchAwait),
   "Tl": () => (/* binding */ fetchError),
   "PQ": () => (/* binding */ getYyyyMmDd),
   "ss": () => (/* binding */ lazyCache)
 });
-
-// UNUSED EXPORTS: batchAwait
 
 ;// CONCATENATED MODULE: external "node:assert/strict"
 const strict_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:assert/strict");
