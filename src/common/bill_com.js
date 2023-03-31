@@ -206,7 +206,7 @@ export class Api {
     const func =
         ['Read', 'Delete'].includes(op) ?
             (datum) => ({id: datum}) : (datum) => entityData(entity, datum);
-    return batchAwait(
+    return batchAsync(
         (arr) => this.dataCall(`Bulk/Crud/${op}/${entity}`, {bulk: arr}),
         data.map(func), 100);
   }
