@@ -20206,6 +20206,12 @@ class Base {
         'selecting', table);
   }
 
+  /**
+   * @param {string} table
+   * @param {string} view
+   * @return {!Promise<!Array<!Record<!TField>>>}
+   * @todo Explore replacing select
+   */
   select2(table, view) {
     return catchError(
         this.base_(table).select({view: view}).all(), 'selecting', table);
