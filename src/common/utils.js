@@ -48,7 +48,7 @@ export async function batchAwait(func, array, size) {
     const result = await func(arr);
     results.push(result);
   }
-  return results
+  return results;
 }
 
 /**

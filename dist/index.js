@@ -18932,8 +18932,6 @@ var bill_com = __nccwpck_require__(9668);
 var airtable = __nccwpck_require__(5585);
 // EXTERNAL MODULE: ./src/common/utils.js + 1 modules
 var utils = __nccwpck_require__(381);
-// EXTERNAL MODULE: ./src/common/inputs.js
-var inputs = __nccwpck_require__(4684);
 // EXTERNAL MODULE: external "util"
 var external_util_ = __nccwpck_require__(3837);
 ;// CONCATENATED MODULE: ./node_modules/web-streams-polyfill/dist/ponyfill.mjs
@@ -19369,7 +19367,6 @@ class FormData {
 
 
 
-
 /** The Bill.com Integration Airtable Base. */
 let billComIntegrationBase;
 
@@ -19391,153 +19388,171 @@ async function getBillComId(table, airtableId) {
  * @return {!Promise<undefined>}
  */
 async function main(billComApi, airtableBase = new airtable/* Base */.XY()) {
-  const CHECK_REQUESTS_TABLE = 'Check Requests';
   const NEW_VENDORS_TABLE = 'New Vendors';
 
   billComIntegrationBase = airtableBase;
 
-  // Get new Check Requests.
-  await billComApi.primaryOrgLogin();
-  await billComIntegrationBase.selectAndUpdate(
-      CHECK_REQUESTS_TABLE,
-      'New',
-      async (newCheckRequest) => {
-        
-        // Get the Vendor to pay for whom this request was submitted.
-        let vendorId;
-        if (newCheckRequest.get('New Vendor?')) {
-          const newVendorId = newCheckRequest.get('New Vendor')[0];
-          await billComIntegrationBase.find(
-              NEW_VENDORS_TABLE,
-              newVendorId,
-              async (newVendor) => {
-                vendorId =
-                    await billComApi.create(
-                        'Vendor',
-                        {
-                          name: newVendor.get('Name'),
-                          address1: newVendor.get('Address Line 1'),
-                          address2: newVendor.get('Address Line 2'),
-                          addressCity: newVendor.get('City'),
-                          addressState: newVendor.get('State'),
-                          addressZip: newVendor.get('Zip Code').toString(),
-                          addressCountry: newVendor.get('Country'),
-                          email: newVendor.get('Email'),
-                          phone: newVendor.get('Phone'),
-                        });
-              });
-          await billComIntegrationBase.update(
-              NEW_VENDORS_TABLE,
-              [{id: newVendorId, fields: {[airtable/* MSO_BILL_COM_ID */.yG]: vendorId}}]);
-        } else {
-          vendorId =
-              await getBillComId(
-                  'Existing Vendors', newCheckRequest.get('Vendor')[0]);
-        }
+  // Sync for each Org/MSO.
+  const msos = await billComIntegrationBase.select2('MSOs', 'Final Approvers');
+  for (const mso of msos) {
 
-        // Get the Check Request Line Items.
-        const billComLineItems = [];
-        for (const itemId of newCheckRequest.get('Line Items')) {
-          await billComIntegrationBase.find(
-              'Check Request Line Items',
-              itemId,
-              async (item) => {
-                const category = item.get('Category');
-                let chartOfAccountId;
-                if (category != null) {
-                  chartOfAccountId =
-                      await getBillComId('Chart of Accounts', category[0]);
-                }
+    // Get new Check Requests.
+    const msoRecordId = mso.getId();
+    const msoCode = mso.get('Code');
+    await billComApi.login(msoCode);
+    await billComIntegrationBase.selectAndUpdate(
+        'Check Requests',
+        'New',
+        async (newCheckRequest) => {
 
-                const date = item.get('Item Expense Date');
-                const description = item.get('Description');
-                billComLineItems.push({
-                  entity: 'BillLineItem',
-                  amount: item.get('Amount'),
-                  chartOfAccountId: chartOfAccountId,
-                  customerId:
-                    await getBillComId(
-                        'Internal Customers', item.get('Project')[0]),
-                  description:
-                    date == undefined ?
-                        description :
-                        `${date}\n${item.get('Merchant Name')}\n` +
-                            `${item.get('Merchant Address')}\n` +
-                            `${item.get('Merchant City')} | ` +
-                            `${item.get('Merchant State')} | ` +
-                            `${item.get('Merchant Zip Code')}\n${description}`,
+          // Skip records not associated with current MSO.
+          // Assume records with no MSO belong to Primary Org.
+          const hasMso = newCheckRequest.get('MSO') !== undefined;
+          if ((hasMso && !(0,airtable/* isSameMso */.m5)(newCheckRequest, msoRecordId)) ||
+              (!hasMso && msoCode !== utils/* PRIMARY_ORG */.l3)) {
+            return null;
+          }
+          
+          // Get the Vendor to pay for whom this request was submitted.
+          let vendorId;
+          if (newCheckRequest.get('New Vendor?')) {
+            const newVendorId = newCheckRequest.get('New Vendor')[0];
+            await billComIntegrationBase.find(
+                NEW_VENDORS_TABLE,
+                newVendorId,
+                async (newVendor) => {
+                  vendorId =
+                      await billComApi.create(
+                          'Vendor',
+                          {
+                            name: newVendor.get('Name'),
+                            address1: newVendor.get('Address Line 1'),
+                            address2: newVendor.get('Address Line 2'),
+                            addressCity: newVendor.get('City'),
+                            addressState: newVendor.get('State'),
+                            addressZip: newVendor.get('Zip Code').toString(),
+                            addressCountry: newVendor.get('Country'),
+                            email: newVendor.get('Email'),
+                            phone: newVendor.get('Phone'),
+                          });
                 });
-              });
-        }
-
-        // Create Bill.com Bill based on Check Request.
-        const requester = newCheckRequest.get('Requester Name');
-        const invoiceId =
-            newCheckRequest.get('Vendor Invoice ID') ||
-                // Invoice number can currently be max 21 characters.
-                // For default ID, take 15 from requester name
-                // and 3 from unique part of Airtable Record ID,
-                // with 3 to pretty divide these parts.
-                `${requester.substring(0, 15)}` +
-                    ` - ${newCheckRequest.getId().substring(3, 6)}`;
-        const newBillId =
-            await billComApi.create(
-                'Bill',
-                {
-                  vendorId: vendorId,
-                  invoiceNumber: invoiceId,
-                  invoiceDate: newCheckRequest.get('Expense Date'),
-                  dueDate: newCheckRequest.get('Due Date'),
-                  description:
-                    `Submitted by ${requester}` +
-                        ` (${newCheckRequest.get('Requester Email')}).`,
-                  billLineItems: billComLineItems,
-                });
-
-        // Set the Bill's approvers.
-        const approverAirtableIds = newCheckRequest.get('Approvers') || [];
-        const approverBillComIds =
-            await Promise.all(
-                approverAirtableIds.map((aid) => getBillComId('Users', aid)));
-        approverBillComIds.push((0,inputs/* finalApproverUserId */.Wk)());
-        await billComApi.dataCall(
-            'SetApprovers',
-            {
-              objectId: newBillId,
-              entity: 'Bill',
-              approvers: approverBillComIds,
-            });
-
-        // Upload the Supporting Documents.
-        const data = new FormData();
-        data.set('devKey', billComApi.getDevKey());
-        data.set('sessionId', billComApi.getSessionId());
-        const docs = newCheckRequest.get('Supporting Documents') || [];
-        for (const doc of docs) {
-
-          // Fetch the document.
-          const response = await (0,src/* default */.ZP)(doc.url);
-          if (!response.ok) {
-            (0,utils/* fetchError */.Tl)(response.status, doc.filename, response.statusText);
+            await billComIntegrationBase.update(
+                NEW_VENDORS_TABLE,
+                [{id: newVendorId, fields: {[airtable/* MSO_BILL_COM_ID */.yG]: vendorId}}]);
+          } else {
+            vendorId =
+                await getBillComId(
+                    'Existing Vendors', newCheckRequest.get('Vendor')[0]);
           }
 
-          // Download it.
-          const file = await response.blob();
+          // Get the Check Request Line Items.
+          const billComLineItems = [];
+          for (const itemId of newCheckRequest.get('Line Items')) {
+            await billComIntegrationBase.find(
+                'Check Request Line Items',
+                itemId,
+                async (item) => {
+                  const category = item.get('Category');
+                  let chartOfAccountId;
+                  if (category != null) {
+                    chartOfAccountId =
+                        await getBillComId('Chart of Accounts', category[0]);
+                  }
 
-          // Upload it.
-          data.set('file', file, doc.filename);
-          data.set(
-              'data', JSON.stringify({id: newBillId, fileName: doc.filename}));
+                  const date = item.get('Item Expense Date');
+                  const description = item.get('Description');
+                  billComLineItems.push({
+                    entity: 'BillLineItem',
+                    amount: item.get('Amount'),
+                    chartOfAccountId: chartOfAccountId,
+                    customerId:
+                      await getBillComId(
+                          'Internal Customers', item.get('Project')[0]),
+                    description:
+                      date == undefined ?
+                          description :
+                          `${date}\n${item.get('Merchant Name')}\n` +
+                              `${item.get('Merchant Address')}\n` +
+                              `${item.get('Merchant City')} | ` +
+                              `${item.get('Merchant State')} | ` +
+                              `${item.get('Merchant Zip Code')}\n` +
+                              `${description}`,
+                  });
+                });
+          }
 
-          await (0,bill_com/* apiCall */.k_)('UploadAttachment', {}, data);
-        }
+          // Create Bill.com Bill based on Check Request.
+          const requester = newCheckRequest.get('Requester Name');
+          const invoiceId =
+              newCheckRequest.get('Vendor Invoice ID') ||
+                  // Invoice number can currently be max 21 characters.
+                  // For default ID, take 15 from requester name
+                  // and 3 from unique part of Airtable Record ID,
+                  // with 3 to pretty divide these parts.
+                  `${requester.substring(0, 15)}` +
+                      ` - ${newCheckRequest.getId().substring(3, 6)}`;
+          const newBillId =
+              await billComApi.create(
+                  'Bill',
+                  {
+                    vendorId: vendorId,
+                    invoiceNumber: invoiceId,
+                    invoiceDate: newCheckRequest.get('Expense Date'),
+                    dueDate: newCheckRequest.get('Due Date'),
+                    description:
+                      `Submitted by ${requester}` +
+                          ` (${newCheckRequest.get('Requester Email')}).`,
+                    billLineItems: billComLineItems,
+                  });
 
-        return {
-          'Active': true,
-          'Vendor Invoice ID': invoiceId,
-          [airtable/* MSO_BILL_COM_ID */.yG]: newBillId,
-        };
-      });
+          // Set the Bill's approvers.
+          const approverAirtableIds = newCheckRequest.get('Approvers') || [];
+          const approverBillComIds =
+              await Promise.all(
+                  approverAirtableIds.map((aid) => getBillComId('Users', aid)));
+          await billComApi.dataCall(
+              'SetApprovers',
+              {
+                objectId: newBillId,
+                entity: 'Bill',
+                approvers:
+                  approverBillComIds.concat(
+                      mso.get('Final Approver Bill.com IDs')),
+              });
+
+          // Upload the Supporting Documents.
+          const data = new FormData();
+          data.set('devKey', billComApi.getDevKey());
+          data.set('sessionId', billComApi.getSessionId());
+          const docs = newCheckRequest.get('Supporting Documents') || [];
+          for (const doc of docs) {
+
+            // Fetch the document.
+            const response = await (0,src/* default */.ZP)(doc.url);
+            if (!response.ok) {
+              (0,utils/* fetchError */.Tl)(response.status, doc.filename, response.statusText);
+            }
+
+            // Download it.
+            const file = await response.blob();
+
+            // Upload it.
+            data.set('file', file, doc.filename);
+            data.set(
+                'data',
+                JSON.stringify({id: newBillId, fileName: doc.filename}));
+
+            await (0,bill_com/* apiCall */.k_)('UploadAttachment', {}, data);
+          }
+
+          return {
+            'Active': true,
+            'MSO': msoRecordId,
+            'Vendor Invoice ID': invoiceId,
+            [airtable/* MSO_BILL_COM_ID */.yG]: newBillId,
+          };
+        });
+  }
 }
 
 
@@ -20776,9 +20791,9 @@ function logJson(endpoint, json) {
 /* harmony export */   "Hc": () => (/* binding */ billComDevKey),
 /* harmony export */   "jv": () => (/* binding */ billComUserName),
 /* harmony export */   "Mr": () => (/* binding */ billComPassword),
-/* harmony export */   "WI": () => (/* binding */ ecrApproverUserProfileId),
-/* harmony export */   "Wk": () => (/* binding */ finalApproverUserId)
+/* harmony export */   "WI": () => (/* binding */ ecrApproverUserProfileId)
 /* harmony export */ });
+/* unused harmony export finalApproverUserId */
 /* harmony import */ var _github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(1444);
 /**
  * @fileoverview Lazy evaluated inputs
@@ -20869,7 +20884,7 @@ async function batchAwait(func, array, size) {
     const result = await func(arr);
     results.push(result);
   }
-  return results
+  return results;
 }
 
 /**
