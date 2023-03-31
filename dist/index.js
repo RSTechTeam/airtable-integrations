@@ -18828,15 +18828,15 @@ async function main(billComApi, accountingBase = new _common_airtable_js__WEBPAC
     await accountingBase.selectAndUpdate(
         'Labor Charges',
         'Bill.com Sync',
-        async (record) => {
+        async (laborCharge) => {
 
           // Skip records not associated with current MSO.
-          if (!(0,_common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .isSameMso */ .m5)(record, mso.getId())) return null;
+          if (!(0,_common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .isSameMso */ .m5)(laborCharge, mso.getId())) return null;
 
-          const id = record.get(_common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .BILL_COM_ID_SUFFIX */ .dK);
+          const id = laborCharge.get(_common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .BILL_COM_ID_SUFFIX */ .dK);
           const change = {
             id: id,
-            name: record.get('Local Name'),
+            name: laborCharge.get('Local Name'),
             isActive: _common_bill_com_js__WEBPACK_IMPORTED_MODULE_0__/* .ActiveStatus.ACTIVE */ .tV.ACTIVE,
             parentCustomerId: parentCustomerId,
           };

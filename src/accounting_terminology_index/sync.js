@@ -28,15 +28,15 @@ export async function main(billComApi, accountingBase = new Base()) {
     await accountingBase.selectAndUpdate(
         'Labor Charges',
         'Bill.com Sync',
-        async (record) => {
+        async (laborCharge) => {
 
           // Skip records not associated with current MSO.
-          if (!isSameMso(record, mso.getId())) return null;
+          if (!isSameMso(laborCharge, mso.getId())) return null;
 
-          const id = record.get(BILL_COM_ID_SUFFIX);
+          const id = laborCharge.get(BILL_COM_ID_SUFFIX);
           const change = {
             id: id,
-            name: record.get('Local Name'),
+            name: laborCharge.get('Local Name'),
             isActive: ActiveStatus.ACTIVE,
             parentCustomerId: parentCustomerId,
           };
