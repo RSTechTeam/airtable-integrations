@@ -231,6 +231,11 @@ class Syncer {
         ALL_CUSTOMERS_TABLE,
         '',
         (record) => {
+
+          // Skip records not associated with current MSO.
+          const msoRecordId = this.getCurrentMsoRecordId();
+          if (!isSameMso(record, msoRecordId)) return;
+
           const isActive = record.get('Active');
           const id = record.get(BILL_COM_ID);
           const hasAnchorEntityId = id != undefined;
@@ -294,7 +299,6 @@ class Syncer {
     // Create any active anchor entity Bill.com Customer not in Airtable;
     // Create in both RS Bill.com and Airtable.
     await this.billComApi_.login(this.currentMso_);
-    const msoRecordId = this.getCurrentMsoRecordId();
     const airtableCreates = [];
     for (const [id, customer] of billComCustomerMap) {
       airtableCreates.push({
@@ -343,12 +347,12 @@ export async function main(billComApi, airtableBase = new Base()) {
               'Name': `${o.firstName} ${o.lastName} (${o.email})`,
               'Profile ID': o.profileId,
             }));
+        await syncer.sync(
+            'Customer', 'All Customers', o => ({Name: o.name, Email: o.email}));
 
         if (mso !== PRIMARY_ORG) return;
         // sync('Department', 'Departments', o => ({Name: o.name, Email: o.email}))
         await syncer.syncUnpaid('Invoices', 'Invoice');
-        await syncer.sync(
-            'Customer', 'All Customers', o => ({Name: o.name, Email: o.email}));
         await syncer.syncCustomers('CPASF');
         await syncer.syncCustomers('CEP');
       });
