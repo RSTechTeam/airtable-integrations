@@ -18833,7 +18833,7 @@ async function main(billComApi, accountingBase = new _common_airtable_js__WEBPAC
           // Skip records not associated with current MSO.
           if (!(0,_common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .isSameMso */ .m5)(laborCharge, mso.getId())) return null;
 
-          const id = laborCharge.get(_common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .BILL_COM_ID_SUFFIX */ .dK);
+          const id = laborCharge.get(_common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .MSO_BILL_COM_ID */ .yG);
           const change = {
             id: id,
             name: laborCharge.get('Local Name'),
@@ -18844,7 +18844,7 @@ async function main(billComApi, accountingBase = new _common_airtable_js__WEBPAC
           // Insert/Create in Bill.com any record with no Bill.com ID.
           if (id == undefined) {
             const billComId = await billComApi.create('Customer', change);
-            return {[_common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .BILL_COM_ID_SUFFIX */ .dK]: billComId};
+            return {[_common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .MSO_BILL_COM_ID */ .yG]: billComId};
           }
 
           // Update in Bill.com other records with a Bill.com ID.

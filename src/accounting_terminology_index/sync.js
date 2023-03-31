@@ -1,7 +1,7 @@
 /** @fileoverview Syncs Bill.com Customers from Airtable to Bill.com. */
 
 import {ActiveStatus, filter} from '../common/bill_com.js';
-import {Base, BILL_COM_ID_SUFFIX, isSameMso} from '../common/airtable.js';
+import {Base, isSameMso, MSO_BILL_COM_ID} from '../common/airtable.js';
 
 /**
  * @param {!Api} billComApi
@@ -33,7 +33,7 @@ export async function main(billComApi, accountingBase = new Base()) {
           // Skip records not associated with current MSO.
           if (!isSameMso(laborCharge, mso.getId())) return null;
 
-          const id = laborCharge.get(BILL_COM_ID_SUFFIX);
+          const id = laborCharge.get(MSO_BILL_COM_ID);
           const change = {
             id: id,
             name: laborCharge.get('Local Name'),
@@ -44,7 +44,7 @@ export async function main(billComApi, accountingBase = new Base()) {
           // Insert/Create in Bill.com any record with no Bill.com ID.
           if (id == undefined) {
             const billComId = await billComApi.create('Customer', change);
-            return {[BILL_COM_ID_SUFFIX]: billComId};
+            return {[MSO_BILL_COM_ID]: billComId};
           }
 
           // Update in Bill.com other records with a Bill.com ID.
