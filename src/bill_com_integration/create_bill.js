@@ -60,6 +60,7 @@ export async function main(billComApi, airtableBase = new Base()) {
                 NEW_VENDORS_TABLE,
                 newVendorId,
                 async (newVendor) => {
+                  const zipCode = newVendor.get('Zip Code');
                   vendorId =
                       await billComApi.create(
                           'Vendor',
@@ -69,7 +70,7 @@ export async function main(billComApi, airtableBase = new Base()) {
                             address2: newVendor.get('Address Line 2'),
                             addressCity: newVendor.get('City'),
                             addressState: newVendor.get('State'),
-                            addressZip: newVendor.get('Zip Code').toString(),
+                            addressZip: zipCode && zipCode.toString(),
                             addressCountry: newVendor.get('Country'),
                             email: newVendor.get('Email'),
                             phone: newVendor.get('Phone'),
