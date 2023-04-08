@@ -131,6 +131,10 @@ export async function main(billComApi, airtableBase = new Base()) {
                   // with 3 to pretty divide these parts.
                   `${requester.substring(0, 15)}` +
                       ` - ${newCheckRequest.getId().substring(3, 6)}`;
+          const notes = newCheckRequest.get('Notes');
+          const description =
+              `Submitted by ${requester}` +
+                  ` (${newCheckRequest.get('Requester Email')}).`;
           const newBillId =
               await billComApi.create(
                   'Bill',
@@ -140,8 +144,8 @@ export async function main(billComApi, airtableBase = new Base()) {
                     invoiceDate: newCheckRequest.get('Expense Date'),
                     dueDate: newCheckRequest.get('Due Date'),
                     description:
-                      `Submitted by ${requester}` +
-                          ` (${newCheckRequest.get('Requester Email')}).`,
+                      notes == undefined ?
+                          description : description + `\n\nNotes:\n${notes}`,
                     billLineItems: billComLineItems,
                   });
 
