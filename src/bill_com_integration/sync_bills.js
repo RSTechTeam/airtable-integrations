@@ -144,42 +144,38 @@ export async function main(api, billComIntegrationBase = new Base()) {
 
   // Update every existing table record based on the Bill.com data.
   const updates = [];
-  await billComIntegrationBase.select(
-      BILL_REPORTING_TABLE,
-      '',
-      async (record) => {
-        const id = record.get(primaryBillComId);
-        const update = {id: record.getId()};
-        if (!changes.has(id)) {
-          update.fields = {Active: false};
-          updates.push(update);
-          return;
-        }
+  const records =
+      await billComIntegrationBase.select2(BILL_REPORTING_TABLE, '');
+  for (const record of records) {
+    const id = record.get(primaryBillComId);
+    const update = {id: record.getId()};
+    if (!changes.has(id)) {
+      update.fields = {Active: false};
+      updates.push(update);
+      continue;
+    }
 
-        const fields = changes.get(id);
-        changes.delete(id);
+    const fields = changes.get(id);
+    changes.delete(id);
 
-        const airtableTime = normalizeTime(record.get('Last Updated Time'));
-        const billComTime = normalizeTime(fields['Last Updated Time']);
-        if (airtableTime === billComTime) {
-          return;
-        }
+    const airtableTime = normalizeTime(record.get('Last Updated Time'));
+    const billComTime = normalizeTime(fields['Last Updated Time']);
+    if (airtableTime === billComTime) continue;
 
-        const billId = fields[billComIdFieldName('Bill')];
-        const pages =
-            await billComApi.dataCall('GetDocumentPages', {id: billId});
-        const docs = [];
-        for (let i = 1; i <= pages.documentPages.numPages; ++i) {
-          docs.push({
-            url:
-              `https://api.bill.com/is/BillImageServlet?entityId=${billId}` +
-                  `&sessionId=${sessionId}&pageNumber=${i}`
-          });
-        }
-        fields['Supporting Documents'] = docs;
-        update.fields = fields;
-        updates.push(update);
+    const billId = fields[billComIdFieldName('Bill')];
+    const pages = await billComApi.dataCall('GetDocumentPages', {id: billId});
+    const docs = [];
+    for (let i = 1; i <= pages.documentPages.numPages; ++i) {
+      docs.push({
+        url:
+          `https://api.bill.com/is/BillImageServlet?entityId=${billId}` +
+              `&sessionId=${sessionId}&pageNumber=${i}`
       });
+    }
+    fields['Supporting Documents'] = docs;
+    update.fields = fields;
+    updates.push(update);
+  }
   await billComIntegrationBase.update(BILL_REPORTING_TABLE, updates);
 
   // Create new table records from new Bill.com data.
