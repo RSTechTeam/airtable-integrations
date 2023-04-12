@@ -81,7 +81,7 @@ describe('selectAndUpdate', () => {
   afterEach(resetAndExpectControlTexts);
 
   test('given no table, throws', () => {
-    expect(() => base.selectAndUpdate('', '', x => x)).toThrow();
+    return expect(base.selectAndUpdate('', '', x => x)).rejects.toThrow();
   });
 
   const selectAndUpdate = (view) => {
