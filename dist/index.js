@@ -20685,12 +20685,11 @@ async function getApi(
     devKey = inputs/* billComDevKey */.Hc(),
     test = false) {
 
-  const orgIds = new Map();
-  await new airtable/* Base */.XY(baseId, apiKey).select(
-      'Anchor Entities',
-      'Org IDs',
-      (r) => orgIds.set(r.get('Department'), r.get('Bill.com Org ID')));
-  return new Api(orgIds, userName, password, devKey, test);
+  const entities =
+      await new airtable/* Base */.XY(baseId, apiKey).select2('Anchor Entities', 'Org IDs');
+  const orgIds =
+      entities.map((e) => [e.get('Department'), e.get('Bill.com Org ID')]);
+  return new Api(new Map(orgIds), userName, password, devKey, test);
 }
 
 
