@@ -20252,15 +20252,15 @@ class Base {
    * @param {function(!Record<!TField>): !Promise<?Object<string, *>>} fieldsFunc
    * @return {!Promise<!Array<*>>}
    */
-   selectAndUpdate(table, view, fieldsFunc) {
-    return this.select(
-        table,
-        view,
-        async (record) => {
-          const fields = await fieldsFunc(record);
-          if (fields == null) return null;
-          return this.update(table, [{id: record.getId(), fields: fields}]);
-        });
+   async selectAndUpdate(table, view, fieldsFunc) {
+    const updates = [];
+    const records = await this.select2(table, view);
+    for (const record of recrods) {
+      const fields = await fieldsFunc(record);
+      if (fields == null) continue;
+      updates.push({id: record.getId(), fields: fields});
+    }
+    return this.update(table, updates);
    }
 
   /**
