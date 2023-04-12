@@ -97,9 +97,9 @@ class Syncer {
     const airtableIds = [];
     const unpaids = await this.airtableBase_.select2(table, 'Unpaid');
     for (const unpaid of unpaids) {
-      if (!isSameMso(record, msoRecordId)) continue;
-      billComIds.push(record.get(BILL_COM_ID));
-      airtableIds.push(record.getId());
+      if (!isSameMso(unpaid, msoRecordId)) continue;
+      billComIds.push(unpaid.get(BILL_COM_ID));
+      airtableIds.push(unpaid.getId());
     }
     if (billComIds.length === 0) return;
 

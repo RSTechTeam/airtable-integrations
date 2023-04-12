@@ -19672,9 +19672,9 @@ class Syncer {
     const airtableIds = [];
     const unpaids = await this.airtableBase_.select2(table, 'Unpaid');
     for (const unpaid of unpaids) {
-      if (!(0,_common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .isSameMso */ .m5)(record, msoRecordId)) continue;
-      billComIds.push(record.get(BILL_COM_ID));
-      airtableIds.push(record.getId());
+      if (!(0,_common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .isSameMso */ .m5)(unpaid, msoRecordId)) continue;
+      billComIds.push(unpaid.get(BILL_COM_ID));
+      airtableIds.push(unpaid.getId());
     }
     if (billComIds.length === 0) return;
 
