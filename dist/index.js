@@ -19670,14 +19670,12 @@ class Syncer {
     const msoRecordId = this.getCurrentMsoRecordId();
     const billComIds = [];
     const airtableIds = [];
-    await this.airtableBase_.select(
-        table,
-        'Unpaid',
-        (record) => {
-          if (!(0,_common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .isSameMso */ .m5)(record, msoRecordId)) return;
-          billComIds.push(record.get(BILL_COM_ID));
-          airtableIds.push(record.getId());
-         });
+    const unpaids = await this.airtableBase_.select2(table, 'Unpaid');
+    for (const unpaid of unpaids) {
+      if (!(0,_common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .isSameMso */ .m5)(record, msoRecordId)) continue;
+      billComIds.push(record.get(BILL_COM_ID));
+      airtableIds.push(record.getId());
+    }
     if (billComIds.length === 0) return;
 
     const bulkResponses =
@@ -19730,20 +19728,18 @@ class Syncer {
     // Update every existing table record based on the entity data.
     const msoRecordId = this.getCurrentMsoRecordId();
     const updates = [];
-    await this.airtableBase_.select(
-        table,
-        '',
-        (record) => {
+    const records = await this.airtableBase_.select2(table, '');
+    for (const record of records) {
 
-          // Skip records not associated with current MSO.
-          if (!(0,_common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .isSameMso */ .m5)(record, msoRecordId)) return;
+      // Skip records not associated with current MSO.
+      if (!(0,_common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .isSameMso */ .m5)(record, msoRecordId)) continue;
 
-          const id = record.get(_common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .MSO_BILL_COM_ID */ .yG);
-          updates.push({
-            id: record.getId(), fields: changes.get(id) || {Active: false},
-          });
-          changes.delete(id);
-        });
+      const id = record.get(_common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .MSO_BILL_COM_ID */ .yG);
+      updates.push({
+        id: record.getId(), fields: changes.get(id) || {Active: false},
+      });
+      changes.delete(id);  
+    }
     await this.airtableBase_.update(table, updates);
 
     // Create new table records from new entity data.
@@ -19798,62 +19794,60 @@ class Syncer {
         c => billComCustomerMap.set(c.id, {name: c.name, email: c.email}));
 
     // Upsert every Active RS Bill.com Customer from Airtable.
+    const msoRecordId = this.getCurrentMsoRecordId();
     const billComCreates = [];
     const airtableUpdateIds = [];
     const airtableUpdates = [];
     const billComUpdates = [];
-    await this.airtableBase_.select(
-        ALL_CUSTOMERS_TABLE,
-        '',
-        (record) => {
+    const customers = await this.airtableBase_.select2(ALL_CUSTOMERS_TABLE, '');
+    for (const customer of customers) {
 
-          // Skip records not associated with current MSO.
-          const msoRecordId = this.getCurrentMsoRecordId();
-          if (!(0,_common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .isSameMso */ .m5)(record, msoRecordId)) return;
+      // Skip records not associated with current MSO.
+      if (!(0,_common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .isSameMso */ .m5)(customer, msoRecordId)) continue;
 
-          const isActive = record.get('Active');
-          const id = record.get(BILL_COM_ID);
-          const hasAnchorEntityId = id != undefined;
-          const email = record.get('Email');
-          const name = record.get('Name');
-          const change = {
-            id: id, name: name, isActive: (0,_common_bill_com_js__WEBPACK_IMPORTED_MODULE_0__/* .isActiveEnum */ .dA)(isActive), email: email,
-          };
+      const isActive = customer.get('Active');
+      const id = customer.get(BILL_COM_ID);
+      const hasAnchorEntityId = id != undefined;
+      const email = customer.get('Email');
+      const name = customer.get('Name');
+      const change = {
+        id: id, name: name, isActive: (0,_common_bill_com_js__WEBPACK_IMPORTED_MODULE_0__/* .isActiveEnum */ .dA)(isActive), email: email,
+      };
 
-          // Skip any record that is neither active
-          // nor has an anchor entity Bill.com ID.
-          if (!isActive && !hasAnchorEntityId) return;
+      // Skip any record that is neither active
+      // nor has an anchor entity Bill.com ID.
+      if (!isActive && !hasAnchorEntityId) continue;
 
-          // Create in Bill.com any record with no anchor entity Bill.com ID.
-          if (!hasAnchorEntityId) {
+      // Create in Bill.com any record with no anchor entity Bill.com ID.
+      if (!hasAnchorEntityId) {
 
-            // Temporarily skip Customers with long names.
-            if (name.length > 41) return;
+        // Temporarily skip Customers with long names.
+        if (name.length > 41) contine;
 
-            billComCreates.push(change);
-            airtableUpdateIds.push(record.getId());
-            return;
-          }
+        billComCreates.push(change);
+        airtableUpdateIds.push(customer.getId());
+        continue;
+      }
 
-          // Set email address in Airtable if empty but present in Bill.com.
-          if (email == undefined && billComCustomerMap.has(id)) {
-            const billComEmail = billComCustomerMap.get(id).email;
-            if (billComEmail != null) {
-              change.email = billComEmail;
-              airtableUpdates.push({
-                id: record.getId(), fields: {Email: billComEmail},
-              });
-            }
-          }
+      // Set email address in Airtable if empty but present in Bill.com.
+      if (email == undefined && billComCustomerMap.has(id)) {
+        const billComEmail = billComCustomerMap.get(id).email;
+        if (billComEmail != null) {
+          change.email = billComEmail;
+          airtableUpdates.push({
+            id: customer.getId(), fields: {Email: billComEmail},
+          });
+        }
+      }
 
-          // Update in Bill.com other records with an anchor entity Bill.com ID.
-          billComCustomerMap.delete(id);
+      // Update in Bill.com other records with an anchor entity Bill.com ID.
+      billComCustomerMap.delete(id);
 
-          // Temporarily skip Customers with long names.
-          if (name.length > 41) return;
+      // Temporarily skip Customers with long names.
+      if (name.length > 41) continue;
 
-          billComUpdates.push(change);
-        });
+      billComUpdates.push(change);
+    }
 
     // Bulk execute Bill.com Creates and Updates.
     if (billComCreates.length > 0) {
@@ -19899,9 +19893,9 @@ class Syncer {
  */
 async function main(billComApi, airtableBase = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .Base */ .XY()) {
 
-  const msoRecordIds = new Map();
-  await airtableBase.select(
-      'MSOs', '', (r) => msoRecordIds.set(r.get('Code'), r.getId()));
+  const msos = await airtableBase.select2('MSOs', '');
+  const msoRecordIds =
+      new Map(msos.map((mso) => [mso.get('Code'), mso.getId()]));
   await new Syncer(msoRecordIds, billComApi, airtableBase).forEachMso(
       async (syncer, mso) => {
         await syncer.syncUnpaid('Check Requests', 'Bill');
