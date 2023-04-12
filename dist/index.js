@@ -19822,7 +19822,7 @@ class Syncer {
       if (!hasAnchorEntityId) {
 
         // Temporarily skip Customers with long names.
-        if (name.length > 41) contine;
+        if (name.length > 41) continue;
 
         billComCreates.push(change);
         airtableUpdateIds.push(customer.getId());
