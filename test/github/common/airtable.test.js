@@ -4,7 +4,7 @@ import {airtableBase} from '../../test_utils.js';
 const base = airtableBase();
 const table = 'Table 1';
 const getField = (field) => (r) => r.get(field);
-const select = (view) => base.select2(table, view);
+const select = (view) => base.select(table, view);
 const selectField = async (view, field) => {
   const records = await select(view);
   return records.map(getField(field));
@@ -14,7 +14,7 @@ const selectId = (view) => selectField(view, 'ID');
 describe('select', () => {
 
   test('given no table, throws', () => {
-    expect(() => base.select2('', '')).toThrow();
+    expect(() => base.select('', '')).toThrow();
   });
 
   test('given no view, defaults to whole table', () => {

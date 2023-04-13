@@ -95,7 +95,7 @@ class Syncer {
     const msoRecordId = this.getCurrentMsoRecordId();
     const billComIds = [];
     const airtableIds = [];
-    const unpaids = await this.airtableBase_.select2(table, 'Unpaid');
+    const unpaids = await this.airtableBase_.select(table, 'Unpaid');
     for (const unpaid of unpaids) {
       if (!isSameMso(unpaid, msoRecordId)) continue;
       billComIds.push(unpaid.get(BILL_COM_ID));
@@ -153,7 +153,7 @@ class Syncer {
     // Update every existing table record based on the entity data.
     const msoRecordId = this.getCurrentMsoRecordId();
     const updates = [];
-    const records = await this.airtableBase_.select2(table, '');
+    const records = await this.airtableBase_.select(table, '');
     for (const record of records) {
 
       // Skip records not associated with current MSO.
@@ -224,7 +224,7 @@ class Syncer {
     const airtableUpdateIds = [];
     const airtableUpdates = [];
     const billComUpdates = [];
-    const customers = await this.airtableBase_.select2(ALL_CUSTOMERS_TABLE, '');
+    const customers = await this.airtableBase_.select(ALL_CUSTOMERS_TABLE, '');
     for (const customer of customers) {
 
       // Skip records not associated with current MSO.
@@ -318,7 +318,7 @@ class Syncer {
  */
 export async function main(billComApi, airtableBase = new Base()) {
 
-  const msos = await airtableBase.select2('MSOs', '');
+  const msos = await airtableBase.select('MSOs', '');
   const msoRecordIds =
       new Map(msos.map((mso) => [mso.get('Code'), mso.getId()]));
   await new Syncer(msoRecordIds, billComApi, airtableBase).forEachMso(

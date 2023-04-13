@@ -145,7 +145,7 @@ export async function main(api, billComIntegrationBase = new Base()) {
   // Update every existing table record based on the Bill.com data.
   const updates = [];
   const records =
-      await billComIntegrationBase.select2(BILL_REPORTING_TABLE, '');
+      await billComIntegrationBase.select(BILL_REPORTING_TABLE, '');
   for (const record of records) {
     const id = record.get(primaryBillComId);
     const update = {id: record.getId()};

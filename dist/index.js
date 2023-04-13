@@ -18811,7 +18811,7 @@ __nccwpck_require__.r(__webpack_exports__);
 async function main(billComApi, accountingBase = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .Base */ .XY()) {
 
   // Sync for each Org/MSO.
-  const msos = await accountingBase.select2('MSOs', 'Internal Customer IDs');
+  const msos = await accountingBase.select('MSOs', 'Internal Customer IDs');
   for (const mso of msos) {
 
     // Initialize Bill.com Customer collection.
@@ -19393,7 +19393,7 @@ async function main(billComApi, airtableBase = new airtable/* Base */.XY()) {
   billComIntegrationBase = airtableBase;
 
   // Sync for each Org/MSO.
-  const msos = await billComIntegrationBase.select2('MSOs', 'Final Approvers');
+  const msos = await billComIntegrationBase.select('MSOs', 'Final Approvers');
   for (const mso of msos) {
 
     // Get new Check Requests.
@@ -19670,7 +19670,7 @@ class Syncer {
     const msoRecordId = this.getCurrentMsoRecordId();
     const billComIds = [];
     const airtableIds = [];
-    const unpaids = await this.airtableBase_.select2(table, 'Unpaid');
+    const unpaids = await this.airtableBase_.select(table, 'Unpaid');
     for (const unpaid of unpaids) {
       if (!(0,_common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .isSameMso */ .m5)(unpaid, msoRecordId)) continue;
       billComIds.push(unpaid.get(BILL_COM_ID));
@@ -19728,7 +19728,7 @@ class Syncer {
     // Update every existing table record based on the entity data.
     const msoRecordId = this.getCurrentMsoRecordId();
     const updates = [];
-    const records = await this.airtableBase_.select2(table, '');
+    const records = await this.airtableBase_.select(table, '');
     for (const record of records) {
 
       // Skip records not associated with current MSO.
@@ -19799,7 +19799,7 @@ class Syncer {
     const airtableUpdateIds = [];
     const airtableUpdates = [];
     const billComUpdates = [];
-    const customers = await this.airtableBase_.select2(ALL_CUSTOMERS_TABLE, '');
+    const customers = await this.airtableBase_.select(ALL_CUSTOMERS_TABLE, '');
     for (const customer of customers) {
 
       // Skip records not associated with current MSO.
@@ -19893,7 +19893,7 @@ class Syncer {
  */
 async function main(billComApi, airtableBase = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .Base */ .XY()) {
 
-  const msos = await airtableBase.select2('MSOs', '');
+  const msos = await airtableBase.select('MSOs', '');
   const msoRecordIds =
       new Map(msos.map((mso) => [mso.get('Code'), mso.getId()]));
   await new Syncer(msoRecordIds, billComApi, airtableBase).forEachMso(
@@ -20086,7 +20086,7 @@ async function main(api, billComIntegrationBase = new _common_airtable_js__WEBPA
   // Update every existing table record based on the Bill.com data.
   const updates = [];
   const records =
-      await billComIntegrationBase.select2(BILL_REPORTING_TABLE, '');
+      await billComIntegrationBase.select(BILL_REPORTING_TABLE, '');
   for (const record of records) {
     const id = record.get(primaryBillComId);
     const update = {id: record.getId()};
@@ -20207,26 +20207,12 @@ class Base {
   }
 
   /**
-   * Runs func for each record from table view.
-   * @param {string} table
-   * @param {string} view
-   * @param {function(!Record<!TField>): *} func
-   * @return {!Promise<!Array<*>>}
-   */
-  select(table, view, func) {
-    return catchError(
-        this.base_(table).select({view: view}).all().then(
-            (records) => Promise.all(records.map(func))),
-        'selecting', table);
-  }
-
-  /**
    * @param {string} table
    * @param {string} view
    * @return {!Promise<!Array<!Record<!TField>>>}
    * @todo Explore replacing select
    */
-  select2(table, view) {
+  select(table, view) {
     return catchError(
         this.base_(table).select({view: view}).all(), 'selecting', table);
   }
@@ -20686,7 +20672,7 @@ async function getApi(
     test = false) {
 
   const entities =
-      await new airtable/* Base */.XY(baseId, apiKey).select2('Anchor Entities', 'Org IDs');
+      await new airtable/* Base */.XY(baseId, apiKey).select('Anchor Entities', 'Org IDs');
   const orgIds =
       entities.map((e) => [e.get('Department'), e.get('Bill.com Org ID')]);
   return new Api(new Map(orgIds), userName, password, devKey, test);

@@ -230,7 +230,7 @@ export async function getApi(
     test = false) {
 
   const entities =
-      await new Base(baseId, apiKey).select2('Anchor Entities', 'Org IDs');
+      await new Base(baseId, apiKey).select('Anchor Entities', 'Org IDs');
   const orgIds =
       entities.map((e) => [e.get('Department'), e.get('Bill.com Org ID')]);
   return new Api(new Map(orgIds), userName, password, devKey, test);

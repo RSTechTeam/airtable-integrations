@@ -63,26 +63,12 @@ export class Base {
   }
 
   /**
-   * Runs func for each record from table view.
-   * @param {string} table
-   * @param {string} view
-   * @param {function(!Record<!TField>): *} func
-   * @return {!Promise<!Array<*>>}
-   */
-  select(table, view, func) {
-    return catchError(
-        this.base_(table).select({view: view}).all().then(
-            (records) => Promise.all(records.map(func))),
-        'selecting', table);
-  }
-
-  /**
    * @param {string} table
    * @param {string} view
    * @return {!Promise<!Array<!Record<!TField>>>}
    * @todo Explore replacing select
    */
-  select2(table, view) {
+  select(table, view) {
     return catchError(
         this.base_(table).select({view: view}).all(), 'selecting', table);
   }

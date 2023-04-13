@@ -11,7 +11,7 @@ import {Base, isSameMso, MSO_BILL_COM_ID} from '../common/airtable.js';
 export async function main(billComApi, accountingBase = new Base()) {
 
   // Sync for each Org/MSO.
-  const msos = await accountingBase.select2('MSOs', 'Internal Customer IDs');
+  const msos = await accountingBase.select('MSOs', 'Internal Customer IDs');
   for (const mso of msos) {
 
     // Initialize Bill.com Customer collection.

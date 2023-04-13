@@ -32,7 +32,7 @@ export async function main(billComApi, airtableBase = new Base()) {
   billComIntegrationBase = airtableBase;
 
   // Sync for each Org/MSO.
-  const msos = await billComIntegrationBase.select2('MSOs', 'Final Approvers');
+  const msos = await billComIntegrationBase.select('MSOs', 'Final Approvers');
   for (const mso of msos) {
 
     // Get new Check Requests.
