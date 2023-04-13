@@ -20240,7 +20240,7 @@ class Base {
    */
    async selectAndUpdate(table, view, fieldsFunc) {
     const updates = [];
-    const records = await this.select2(table, view);
+    const records = await this.select(table, view);
     for (const record of records) {
       const fields = await fieldsFunc(record);
       if (fields == null) continue;
