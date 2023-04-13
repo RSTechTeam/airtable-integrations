@@ -3,32 +3,26 @@ import {airtableBase} from '../../test_utils.js';
 
 const base = airtableBase();
 const table = 'Table 1';
-const recordIds = new Map();
 const getField = (field) => (r) => r.get(field);
-const select = (view, func) => base.select(table, view, func);
-const selectField = (view, field) => select(view, getField(field));
+const select = (view) => base.select2(table, view);
+const selectField = async (view, field) => {
+  const records = await select(view);
+  return records.map(getField(field));
+};
 const selectId = (view) => selectField(view, 'ID');
 
 describe('select', () => {
 
   test('given no table, throws', () => {
-    expect(() => base.select('', '', x => x)).toThrow();
+    expect(() => base.select2('', '')).toThrow();
   });
 
   test('given no view, defaults to whole table', () => {
-    const ids =
-        select(
-            '',
-            (r) => {
-              const id = r.get('ID');
-              recordIds.set(id, r.getId()); // Init recordIds
-              return id;
-            });
-    return expect(ids).resolves.toEqual(expect.arrayContaining([1, 2, 3]));
+    return expect(select('')).resolves.toHaveLength(3);
   });
 
   test('given unknown view, throws', () => {
-    return expect(selectId('Unknown')).rejects.toThrow();
+    return expect(select('Unknown')).rejects.toThrow();
   });
 
   test('uses given view', async () => {
@@ -38,6 +32,9 @@ describe('select', () => {
   });
 });
 
+
+const records = await select('');
+const recordIds = new Map(records.map((r) => [r.get('ID'), r.getId()]));
 const update = (tbl, text1, text2, text3) => {
   return base.update(tbl, [
     {id: recordIds.get(1), fields: {Text: text1}},
