@@ -64,10 +64,10 @@ export class Base {
 
   /**
    * @param {string} table
-   * @param {string} view
+   * @param {string=} view
    * @return {!Promise<!Array<!Record<!TField>>>}
    */
-  select(table, view) {
+  select(table, view = '') {
     return catchError(
         this.base_(table).select({view: view}).all(), 'selecting', table);
   }

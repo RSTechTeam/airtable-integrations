@@ -19718,8 +19718,7 @@ class Syncer {
     // Update every existing table record based on the entity data.
     const msoRecordId = this.getCurrentMsoRecordId();
     const updates = [];
-    const records = await this.airtableBase_.select(table, '');
-    for (const record of records) {
+    for (const record of await this.airtableBase_.select(table)) {
 
       // Skip records not associated with current MSO.
       if (!(0,_common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .isSameMso */ .m5)(record, msoRecordId)) continue;
@@ -19772,7 +19771,6 @@ class Syncer {
    * @return {!Promise<undefined>}
    */
   async syncCustomers(anchorEntity) {
-    const ALL_CUSTOMERS_TABLE = 'All Customers';
     const BILL_COM_ID = `${anchorEntity} ${_common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .BILL_COM_ID_SUFFIX */ .dK}`;
 
     await this.billComApi_.login(anchorEntity);
@@ -19789,8 +19787,7 @@ class Syncer {
     const airtableUpdateIds = [];
     const airtableUpdates = [];
     const billComUpdates = [];
-    const customers = await this.airtableBase_.select(ALL_CUSTOMERS_TABLE, '');
-    for (const customer of customers) {
+    for (const customer of await this.airtableBase_.select('All Customers')) {
 
       // Skip records not associated with current MSO.
       if (!(0,_common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .isSameMso */ .m5)(customer, msoRecordId)) continue;
@@ -19883,7 +19880,7 @@ class Syncer {
  */
 async function main(billComApi, airtableBase = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .Base */ .XY()) {
 
-  const msos = await airtableBase.select('MSOs', '');
+  const msos = await airtableBase.select('MSOs');
   const msoRecordIds =
       new Map(msos.map((mso) => [mso.get('Code'), mso.getId()]));
   await new Syncer(msoRecordIds, billComApi, airtableBase).forEachMso(
@@ -20075,8 +20072,7 @@ async function main(api, billComIntegrationBase = new _common_airtable_js__WEBPA
 
   // Update every existing table record based on the Bill.com data.
   const updates = [];
-  const records =
-      await billComIntegrationBase.select(BILL_REPORTING_TABLE, '');
+  const records = await billComIntegrationBase.select(BILL_REPORTING_TABLE);
   for (const record of records) {
     const id = record.get(primaryBillComId);
     const update = {id: record.getId()};
@@ -20198,10 +20194,10 @@ class Base {
 
   /**
    * @param {string} table
-   * @param {string} view
+   * @param {string=} view
    * @return {!Promise<!Array<!Record<!TField>>>}
    */
-  select(table, view) {
+  select(table, view = '') {
     return catchError(
         this.base_(table).select({view: view}).all(), 'selecting', table);
   }

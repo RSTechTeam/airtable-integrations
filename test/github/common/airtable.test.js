@@ -13,7 +13,7 @@ const selectId = (view) => selectField(view, 'ID');
 describe('select', () => {
 
   test('given no table, throws', () => {
-    expect(() => base.select('', '')).toThrow();
+    expect(() => base.select('')).toThrow();
   });
 
   test('given no view, defaults to whole table', () => {
