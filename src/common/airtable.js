@@ -117,10 +117,9 @@ export class Base {
    * Runs func on table record with id.
    * @param {string} table
    * @param {string} id
-   * @param {function(!Record<!TField>): *} func
-   * @return {!Promise<*>}
+   * @return {!Promise<!Record<!TField>>}
    */
-  find(table, id, func) {
-    return catchError(this.base_(table).find(id).then(func), 'finding', table);
+  find(table, id) {
+    return catchError(this.base_(table).find(id), 'finding', table);
   }
 }

@@ -3,11 +3,10 @@ import {airtableBase} from '../../test_utils.js';
 
 const base = airtableBase();
 const table = 'Table 1';
-const getField = (field) => (r) => r.get(field);
 const select = (view) => base.select(table, view);
 const selectField = async (view, field) => {
   const records = await select(view);
-  return records.map(getField(field));
+  return records.map((r) => r.get(field));
 };
 const selectId = (view) => selectField(view, 'ID');
 
@@ -129,9 +128,12 @@ describe('create', () => {
 
 describe('find', () => {
 
-  const find = (tbl, id) => base.find(tbl, recordIds.get(id), getField('ID'));
+  const find = (tbl, id) => base.find(tbl, recordIds.get(id));
 
   test('given no table, throws', () => expect(() => find('', 1)).toThrow());
   test('given no id, throws', () => expect(find(table, '')).rejects.toThrow());
-  test('finds record', () => expect(find(table, 1)).resolves.toEqual(1));
+  test('finds record', async () => {
+    const record = await find(table, 1);
+    return expect(record.get('ID')).toEqual(1);
+  });
 });

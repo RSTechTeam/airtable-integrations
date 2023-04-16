@@ -15,10 +15,8 @@ let billComIntegrationBase;
  * @return {!Promise<string>}
  */
 async function getBillComId(table, airtableId) {
-  let billComId;
-  await billComIntegrationBase.find(
-      table, airtableId, (record) => billComId = record.get(MSO_BILL_COM_ID));
-  return billComId;
+  const record = await billComIntegrationBase.find(table, airtableId);
+  return record.get(MSO_BILL_COM_ID);
 }
 
 /**
@@ -56,26 +54,24 @@ export async function main(billComApi, airtableBase = new Base()) {
           let vendorId;
           if (newCheckRequest.get('New Vendor?')) {
             const newVendorId = newCheckRequest.get('New Vendor')[0];
-            await billComIntegrationBase.find(
-                NEW_VENDORS_TABLE,
-                newVendorId,
-                async (newVendor) => {
-                  const zipCode = newVendor.get('Zip Code');
-                  vendorId =
-                      await billComApi.create(
-                          'Vendor',
-                          {
-                            name: newVendor.get('Name'),
-                            address1: newVendor.get('Address Line 1'),
-                            address2: newVendor.get('Address Line 2'),
-                            addressCity: newVendor.get('City'),
-                            addressState: newVendor.get('State'),
-                            addressZip: zipCode && zipCode.toString(),
-                            addressCountry: newVendor.get('Country'),
-                            email: newVendor.get('Email'),
-                            phone: newVendor.get('Phone'),
-                          });
-                });
+            const newVendor =
+                await billComIntegrationBase.find(
+                    NEW_VENDORS_TABLE, newVendorId);
+            const zipCode = newVendor.get('Zip Code');
+            vendorId =
+                await billComApi.create(
+                    'Vendor',
+                    {
+                      name: newVendor.get('Name'),
+                      address1: newVendor.get('Address Line 1'),
+                      address2: newVendor.get('Address Line 2'),
+                      addressCity: newVendor.get('City'),
+                      addressState: newVendor.get('State'),
+                      addressZip: zipCode && zipCode.toString(),
+                      addressCountry: newVendor.get('Country'),
+                      email: newVendor.get('Email'),
+                      phone: newVendor.get('Phone'),
+                    });
             await billComIntegrationBase.update(
                 NEW_VENDORS_TABLE,
                 [{id: newVendorId, fields: {[MSO_BILL_COM_ID]: vendorId}}]);
@@ -88,37 +84,34 @@ export async function main(billComApi, airtableBase = new Base()) {
           // Get the Check Request Line Items.
           const billComLineItems = [];
           for (const itemId of newCheckRequest.get('Line Items')) {
-            await billComIntegrationBase.find(
-                'Check Request Line Items',
-                itemId,
-                async (item) => {
-                  const category = item.get('Category');
-                  let chartOfAccountId;
-                  if (category != null) {
-                    chartOfAccountId =
-                        await getBillComId('Chart of Accounts', category[0]);
-                  }
+            const item =
+                await billComIntegrationBase.find(
+                    'Check Request Line Items', itemId);
+            const category = item.get('Category');
+            let chartOfAccountId;
+            if (category != null) {
+              chartOfAccountId =
+                  await getBillComId('Chart of Accounts', category[0]);
+            }
 
-                  const date = item.get('Item Expense Date');
-                  const description = item.get('Description');
-                  billComLineItems.push({
-                    entity: 'BillLineItem',
-                    amount: item.get('Amount'),
-                    chartOfAccountId: chartOfAccountId,
-                    customerId:
-                      await getBillComId(
-                          'Internal Customers', item.get('Project')[0]),
-                    description:
-                      date == undefined ?
-                          description :
-                          `${date}\n${item.get('Merchant Name')}\n` +
-                              `${item.get('Merchant Address')}\n` +
-                              `${item.get('Merchant City')} | ` +
-                              `${item.get('Merchant State')} | ` +
-                              `${item.get('Merchant Zip Code')}\n` +
-                              `${description}`,
-                  });
-                });
+            const date = item.get('Item Expense Date');
+            const description = item.get('Description');
+            billComLineItems.push({
+              entity: 'BillLineItem',
+              amount: item.get('Amount'),
+              chartOfAccountId: chartOfAccountId,
+              customerId:
+                await getBillComId(
+                    'Internal Customers', item.get('Project')[0]),
+              description:
+                date == undefined ?
+                    description :
+                    `${date}\n${item.get('Merchant Name')}\n` +
+                        `${item.get('Merchant Address')}\n` +
+                        `${item.get('Merchant City')} | ` +
+                        `${item.get('Merchant State')} | ` +
+                        `${item.get('Merchant Zip Code')}\n${description}`,
+            });
           }
 
           // Create Bill.com Bill based on Check Request.
