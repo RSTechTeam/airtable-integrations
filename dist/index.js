@@ -19771,6 +19771,7 @@ class Syncer {
    * @return {!Promise<undefined>}
    */
   async syncCustomers(anchorEntity) {
+    const ALL_CUSTOMERS_TABLE = 'All Customers';
     const BILL_COM_ID = `${anchorEntity} ${_common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .BILL_COM_ID_SUFFIX */ .dK}`;
 
     await this.billComApi_.login(anchorEntity);
@@ -19787,7 +19788,8 @@ class Syncer {
     const airtableUpdateIds = [];
     const airtableUpdates = [];
     const billComUpdates = [];
-    for (const customer of await this.airtableBase_.select('All Customers')) {
+    const customers = await this.airtableBase_.select(ALL_CUSTOMERS_TABLE);
+    for (const customer of customers) {
 
       // Skip records not associated with current MSO.
       if (!(0,_common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .isSameMso */ .m5)(customer, msoRecordId)) continue;
