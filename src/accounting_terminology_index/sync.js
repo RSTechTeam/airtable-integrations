@@ -20,8 +20,7 @@ export async function main(billComApi, accountingBase = new Base()) {
     const billComCustomers =
         await billComApi.list(
             'Customer', [filter('parentCustomerId', '=', parentCustomerId)]);
-    const billComCustomerIds = new Set();
-    billComCustomers.forEach(c => billComCustomerIds.add(c.id));
+    const billComCustomerIds = new Set(billComCustomers.map(c => c.id));
 
     // Upsert every Bill.com Customer from the Bill.com Sync View.
     const updates = [];

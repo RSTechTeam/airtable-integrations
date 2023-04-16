@@ -18820,8 +18820,7 @@ async function main(billComApi, accountingBase = new _common_airtable_js__WEBPAC
     const billComCustomers =
         await billComApi.list(
             'Customer', [(0,_common_bill_com_js__WEBPACK_IMPORTED_MODULE_0__/* .filter */ .hX)('parentCustomerId', '=', parentCustomerId)]);
-    const billComCustomerIds = new Set();
-    billComCustomers.forEach(c => billComCustomerIds.add(c.id));
+    const billComCustomerIds = new Set(billComCustomers.map(c => c.id));
 
     // Upsert every Bill.com Customer from the Bill.com Sync View.
     const updates = [];
@@ -19493,9 +19492,6 @@ async function main(billComApi, airtableBase = new airtable/* Base */.XY()) {
                   `${requester.substring(0, 15)}` +
                       ` - ${newCheckRequest.getId().substring(3, 6)}`;
           const notes = newCheckRequest.get('Notes');
-          const description =
-              `Submitted by ${requester}` +
-                  ` (${newCheckRequest.get('Requester Email')}).`;
           const newBillId =
               await billComApi.create(
                   'Bill',
@@ -19505,8 +19501,9 @@ async function main(billComApi, airtableBase = new airtable/* Base */.XY()) {
                     invoiceDate: newCheckRequest.get('Expense Date'),
                     dueDate: newCheckRequest.get('Due Date'),
                     description:
-                      notes == undefined ?
-                          description : description + `\n\nNotes:\n${notes}`,
+                      `Submitted by ${requester}` +
+                          ` (${newCheckRequest.get('Requester Email')}).` +
+                          (notes == undefined ? '' : `\n\nNotes:\n${notes}`),
                     billLineItems: billComLineItems,
                   });
 
@@ -20210,7 +20207,6 @@ class Base {
    * @param {string} table
    * @param {string} view
    * @return {!Promise<!Array<!Record<!TField>>>}
-   * @todo Explore replacing select
    */
   select(table, view) {
     return catchError(
@@ -20242,8 +20238,7 @@ class Base {
     const updates = [];
     for (const record of await this.select(table, view)) {
       const fields = await fieldsFunc(record);
-      if (fields == null) continue;
-      updates.push({id: record.getId(), fields: fields});
+      fields && updates.push({id: record.getId(), fields: fields});
     }
     return this.update(table, updates);
    }

@@ -66,7 +66,6 @@ export class Base {
    * @param {string} table
    * @param {string} view
    * @return {!Promise<!Array<!Record<!TField>>>}
-   * @todo Explore replacing select
    */
   select(table, view) {
     return catchError(
@@ -98,8 +97,7 @@ export class Base {
     const updates = [];
     for (const record of await this.select(table, view)) {
       const fields = await fieldsFunc(record);
-      if (fields == null) continue;
-      updates.push({id: record.getId(), fields: fields});
+      fields && updates.push({id: record.getId(), fields: fields});
     }
     return this.update(table, updates);
    }
