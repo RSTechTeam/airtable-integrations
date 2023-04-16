@@ -96,8 +96,7 @@ export class Base {
    */
    async selectAndUpdate(table, view, fieldsFunc) {
     const updates = [];
-    const records = await this.select(table, view);
-    for (const record of records) {
+    for (const record of await this.select(table, view)) {
       const fields = await fieldsFunc(record);
       if (fields == null) continue;
       updates.push({id: record.getId(), fields: fields});
