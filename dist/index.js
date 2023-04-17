@@ -20127,6 +20127,7 @@ async function main(api, billComIntegrationBase = new _common_airtable_js__WEBPA
 /* harmony export */   "m5": () => (/* binding */ isSameMso),
 /* harmony export */   "XY": () => (/* binding */ Base)
 /* harmony export */ });
+/* unused harmony export MsoBase */
 /* harmony import */ var airtable__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(5447);
 /* harmony import */ var _inputs_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(4684);
 /* harmony import */ var _utils_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(381);
@@ -20196,12 +20197,14 @@ class Base {
 
   /**
    * @param {string} table
-   * @param {string=} view
+   * @param {?string=} view
+   * @param {?string=} filterByFormula
    * @return {!Promise<!Array<!Record<!TField>>>}
    */
-  select(table, view = '') {
+  select(table, view = null, filterByFormula = null) {
+    const params = {view: view, filterByFormula: filterByFormula};
     return catchError(
-        this.base_(table).select({view: view}).all(), 'selecting', table);
+        this.base_(table).select(params).all(), 'selecting', table);
   }
 
   /**
@@ -20246,13 +20249,48 @@ class Base {
   }
 
   /**
-   * Runs func on table record with id.
    * @param {string} table
    * @param {string} id
    * @return {!Promise<!Record<!TField>>}
    */
   find(table, id) {
     return catchError(this.base_(table).find(id), 'finding', table);
+  }
+}
+
+/**
+ * An Airtable Base where each Table is partitioned by MSO,
+ * enabling per MSO selects across Tables.
+ */
+class MsoBase extends (/* unused pure expression or super */ null && (Base)) {
+
+  /**
+   * @param {string=} baseId
+   * @param {string=} apiKey
+   */
+  constructor(baseId = airtableBaseId(), apiKey = airtableApiKey()) {
+    super(baseId, apiKey);
+
+    /** @private {?string} */
+    this.currentMso_ = null;
+  }
+
+  /** @override */
+  select(table, view = null, filterByFormula = null) {
+    const msoFilter = `MSO = '${this.currentMso_}'`;
+    return super.select(
+        table,
+        view,
+        filterByFormula == null ?
+            msoFilter : `AND(${msoFilter}, ${filterByFormula})`);
+  }
+
+  /** @return {!Promise<!Iterator<!Record<!TField>>>} */
+  async* iterateMsos() {
+    for (const mso of await super.select('MSOs')) {
+      this.currentMso_ = mso.get('Code');
+      yield mso;
+    }
   }
 }
 

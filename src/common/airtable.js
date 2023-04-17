@@ -64,12 +64,14 @@ export class Base {
 
   /**
    * @param {string} table
-   * @param {string=} view
+   * @param {?string=} view
+   * @param {?string=} filterByFormula
    * @return {!Promise<!Array<!Record<!TField>>>}
    */
-  select(table, view = '') {
+  select(table, view = null, filterByFormula = null) {
+    const params = {view: view, filterByFormula: filterByFormula};
     return catchError(
-        this.base_(table).select({view: view}).all(), 'selecting', table);
+        this.base_(table).select(params).all(), 'selecting', table);
   }
 
   /**
@@ -114,12 +116,47 @@ export class Base {
   }
 
   /**
-   * Runs func on table record with id.
    * @param {string} table
    * @param {string} id
    * @return {!Promise<!Record<!TField>>}
    */
   find(table, id) {
     return catchError(this.base_(table).find(id), 'finding', table);
+  }
+}
+
+/**
+ * An Airtable Base where each Table is partitioned by MSO,
+ * enabling per MSO selects across Tables.
+ */
+export class MsoBase extends Base {
+
+  /**
+   * @param {string=} baseId
+   * @param {string=} apiKey
+   */
+  constructor(baseId = airtableBaseId(), apiKey = airtableApiKey()) {
+    super(baseId, apiKey);
+
+    /** @private {?string} */
+    this.currentMso_ = null;
+  }
+
+  /** @override */
+  select(table, view = null, filterByFormula = null) {
+    const msoFilter = `MSO = '${this.currentMso_}'`;
+    return super.select(
+        table,
+        view,
+        filterByFormula == null ?
+            msoFilter : `AND(${msoFilter}, ${filterByFormula})`);
+  }
+
+  /** @return {!Promise<!Iterator<!Record<!TField>>>} */
+  async* iterateMsos() {
+    for (const mso of await super.select('MSOs')) {
+      this.currentMso_ = mso.get('Code');
+      yield mso;
+    }
   }
 }
