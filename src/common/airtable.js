@@ -68,7 +68,7 @@ export class Base {
    * @param {?string=} filterByFormula
    * @return {!Promise<!Array<!Record<!TField>>>}
    */
-  select(table, view = null, filterByFormula = null) {
+  select(table, view = undefined, filterByFormula = undefined) {
     const params = {view: view, filterByFormula: filterByFormula};
     return catchError(
         this.base_(table).select(params).all(), 'selecting', table);
@@ -143,12 +143,12 @@ export class MsoBase extends Base {
   }
 
   /** @override */
-  select(table, view = null, filterByFormula = null) {
+  select(table, view = undefined, filterByFormula = undefined) {
     const msoFilter = `MSO = '${this.currentMso_}'`;
     return super.select(
         table,
         view,
-        filterByFormula == null ?
+        filterByFormula == undefined ?
             msoFilter : `AND(${msoFilter}, ${filterByFormula})`);
   }
 
