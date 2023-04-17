@@ -11,7 +11,7 @@ import {MSO_BILL_COM_ID, MsoBase} from '../common/airtable.js';
 export async function main(billComApi, accountingBase = new MsoBase()) {
 
   // Sync for each Org/MSO.
-  for await (const mso of accountingBase.iterateMsos()) {
+  for (const mso of await accountingBase.iterateMsos()) {
 
     // Initialize Bill.com Customer collection.
     await billComApi.login(mso.get('Code'));
