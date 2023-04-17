@@ -1,5 +1,5 @@
 import * as sync from '../../../src/accounting_terminology_index/sync.js';
-import {airtableBase, billComApi} from '../../test_utils.js';
+import {airtableBase, airtableMsoBase, billComApi} from '../../test_utils.js';
 import {MSO_BILL_COM_ID} from '../../../src/common/airtable.js';
 import {isActiveEnum} from '../../../src/common/bill_com.js';
 import {jest} from '@jest/globals';
@@ -22,7 +22,6 @@ test('main syncs Customers from Airtable to Bill.com', async () => {
             });
     expect(names).toEqual(expect.arrayContaining(expected));
   };
-  const base = airtableBase();
 
   // Test customers.
   const BILL_COM_ONLY = 'Bill.com Only Customer';
@@ -38,7 +37,7 @@ test('main syncs Customers from Airtable to Bill.com', async () => {
   expect(testCustomers.size).toEqual(2);
 
   // Execute main.
-  await sync.main(api, base);
+  await sync.main(api, airtableMsoBase());
 
   // Check post-conditions.
   await expectListActiveNames([AIRTABLE_ONLY, ACTIVE, NEW_NAME]);
@@ -56,7 +55,7 @@ test('main syncs Customers from Airtable to Bill.com', async () => {
     });
   }
   await api.bulk('Update', 'Customer', updates);
-  await base.selectAndUpdate(
+  await airtableBase().selectAndUpdate(
       'Labor Charges', // Customers
       '',
       (record) => {

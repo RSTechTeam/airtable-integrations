@@ -1,9 +1,11 @@
-import {Base} from '../src/common/airtable.js';
+import {Base, MsoBase} from '../src/common/airtable.js';
 import {getApi} from '../src/common/bill_com.js';
 
-export const airtableBase = () => {
-  return new Base(process.env.AIRTABLE_BASE_ID, process.env.AIRTABLE_API_KEY);
-};
+const airtableArgs =
+    [process.env.AIRTABLE_BASE_ID, process.env.AIRTABLE_API_KEY];
+
+export const airtableBase = () => new Base(...airtableArgs);
+export const airtableMsoBase = () => new MsoBase(...airtableArgs);
 
 export const billComApi = () => {
   return getApi(

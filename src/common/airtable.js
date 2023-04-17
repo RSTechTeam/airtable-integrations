@@ -127,7 +127,8 @@ export class Base {
 
 /**
  * An Airtable Base where each Table is partitioned by MSO,
- * enabling per MSO selects across Tables.
+ * enabling per MSO selects across Tables. Select methods should only be called
+ * while iterating via iterateMsos.
  */
 export class MsoBase extends Base {
 
@@ -153,10 +154,11 @@ export class MsoBase extends Base {
   }
 
   /** @return {!Promise<!Iterator<!Record<!TField>>>} */
-  async * iterateMsos() {
+  async* iterateMsos() {
     for (const mso of await super.select('MSOs')) {
       this.currentMso_ = mso.get('Code');
       yield mso;
     }
+    this.currentMso_ = null;
   }
 }

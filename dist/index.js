@@ -18798,25 +18798,20 @@ __nccwpck_require__.r(__webpack_exports__);
 /* harmony export */ });
 /* harmony import */ var _common_bill_com_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(9668);
 /* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(5585);
-/* harmony import */ var _common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(1444);
 /** @fileoverview Syncs Bill.com Customers from Airtable to Bill.com. */
-
 
 
 
 
 /**
  * @param {!Api} billComApi
- * @param {!Base=} accountingBase
+ * @param {!MsoBase=} accountingBase
  * @return {!Promise<undefined>}
  */
 async function main(billComApi, accountingBase = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .MsoBase */ .Fi()) {
 
   // Sync for each Org/MSO.
-  (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_2__/* .log */ .cM)('test');
-  (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_2__/* .log */ .cM)(accountingBase.iterateMsos);
-  (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_2__/* .log */ .cM)(accountingBase.iterateMsos());
-  for (const mso of await accountingBase.iterateMsos()) {
+  for await (const mso of accountingBase.iterateMsos()) {
 
     // Initialize Bill.com Customer collection.
     await billComApi.login(mso.get('Code'));
@@ -20260,7 +20255,8 @@ class Base {
 
 /**
  * An Airtable Base where each Table is partitioned by MSO,
- * enabling per MSO selects across Tables.
+ * enabling per MSO selects across Tables. Select methods should only be called
+ * while iterating via iterateMsos.
  */
 class MsoBase extends Base {
 
@@ -20286,11 +20282,12 @@ class MsoBase extends Base {
   }
 
   /** @return {!Promise<!Iterator<!Record<!TField>>>} */
-  async * iterateMsos() {
+  async* iterateMsos() {
     for (const mso of await super.select('MSOs')) {
       this.currentMso_ = mso.get('Code');
       yield mso;
     }
+    this.currentMso_ = null;
   }
 }
 

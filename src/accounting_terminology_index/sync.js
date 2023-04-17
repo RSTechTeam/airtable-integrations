@@ -2,20 +2,16 @@
 
 import {ActiveStatus, filter} from '../common/bill_com.js';
 import {MSO_BILL_COM_ID, MsoBase} from '../common/airtable.js';
-import {log} from '../common/github_actions_core.js';
 
 /**
  * @param {!Api} billComApi
- * @param {!Base=} accountingBase
+ * @param {!MsoBase=} accountingBase
  * @return {!Promise<undefined>}
  */
 export async function main(billComApi, accountingBase = new MsoBase()) {
 
   // Sync for each Org/MSO.
-  log('test');
-  log(accountingBase.iterateMsos);
-  log(accountingBase.iterateMsos());
-  for (const mso of await accountingBase.iterateMsos()) {
+  for await (const mso of accountingBase.iterateMsos()) {
 
     // Initialize Bill.com Customer collection.
     await billComApi.login(mso.get('Code'));
