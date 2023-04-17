@@ -64,11 +64,11 @@ export class Base {
 
   /**
    * @param {string} table
-   * @param {?string=} view
-   * @param {?string=} filterByFormula
+   * @param {string=} view
+   * @param {string=} filterByFormula
    * @return {!Promise<!Array<!Record<!TField>>>}
    */
-  select(table, view = undefined, filterByFormula = undefined) {
+  select(table, view = '', filterByFormula = '') {
     const params = {view: view, filterByFormula: filterByFormula};
     return catchError(
         this.base_(table).select(params).all(), 'selecting', table);
@@ -143,12 +143,12 @@ export class MsoBase extends Base {
   }
 
   /** @override */
-  select(table, view = undefined, filterByFormula = undefined) {
+  select(table, view = '', filterByFormula = '') {
     const msoFilter = `MSO = '${this.currentMso_}'`;
     return super.select(
         table,
         view,
-        filterByFormula == undefined ?
+        filterByFormula === '' ?
             msoFilter : `AND(${msoFilter}, ${filterByFormula})`);
   }
 
