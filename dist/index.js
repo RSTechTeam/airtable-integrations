@@ -18808,11 +18808,10 @@ __nccwpck_require__.r(__webpack_exports__);
  * @param {!Base=} accountingBase
  * @return {!Promise<undefined>}
  */
-async function main(billComApi, accountingBase = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .Base */ .XY()) {
+async function main(billComApi, accountingBase = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .MsoBase */ .Fi()) {
 
   // Sync for each Org/MSO.
-  const msos = await accountingBase.select('MSOs', 'Internal Customer IDs');
-  for (const mso of msos) {
+  for await (const mso of accountingBase.iterateMsos()) {
 
     // Initialize Bill.com Customer collection.
     await billComApi.login(mso.get('Code'));
@@ -18828,10 +18827,6 @@ async function main(billComApi, accountingBase = new _common_airtable_js__WEBPAC
         'Labor Charges',
         'Bill.com Sync',
         async (laborCharge) => {
-
-          // Skip records not associated with current MSO.
-          if (!(0,_common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .isSameMso */ .m5)(laborCharge, mso.getId())) return null;
-
           const id = laborCharge.get(_common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .MSO_BILL_COM_ID */ .yG);
           const change = {
             id: id,
@@ -20125,9 +20120,9 @@ async function main(api, billComIntegrationBase = new _common_airtable_js__WEBPA
 /* harmony export */   "dK": () => (/* binding */ BILL_COM_ID_SUFFIX),
 /* harmony export */   "yG": () => (/* binding */ MSO_BILL_COM_ID),
 /* harmony export */   "m5": () => (/* binding */ isSameMso),
-/* harmony export */   "XY": () => (/* binding */ Base)
+/* harmony export */   "XY": () => (/* binding */ Base),
+/* harmony export */   "Fi": () => (/* binding */ MsoBase)
 /* harmony export */ });
-/* unused harmony export MsoBase */
 /* harmony import */ var airtable__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(5447);
 /* harmony import */ var _inputs_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(4684);
 /* harmony import */ var _utils_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(381);
@@ -20262,13 +20257,13 @@ class Base {
  * An Airtable Base where each Table is partitioned by MSO,
  * enabling per MSO selects across Tables.
  */
-class MsoBase extends (/* unused pure expression or super */ null && (Base)) {
+class MsoBase extends Base {
 
   /**
    * @param {string=} baseId
    * @param {string=} apiKey
    */
-  constructor(baseId = airtableBaseId(), apiKey = airtableApiKey()) {
+  constructor(baseId = (0,_inputs_js__WEBPACK_IMPORTED_MODULE_1__/* .airtableBaseId */ .kt)(), apiKey = (0,_inputs_js__WEBPACK_IMPORTED_MODULE_1__/* .airtableApiKey */ .Bd)()) {
     super(baseId, apiKey);
 
     /** @private {?string} */

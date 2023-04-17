@@ -1,18 +1,17 @@
 /** @fileoverview Syncs Bill.com Customers from Airtable to Bill.com. */
 
 import {ActiveStatus, filter} from '../common/bill_com.js';
-import {Base, isSameMso, MSO_BILL_COM_ID} from '../common/airtable.js';
+import {MSO_BILL_COM_ID, MsoBase} from '../common/airtable.js';
 
 /**
  * @param {!Api} billComApi
  * @param {!Base=} accountingBase
  * @return {!Promise<undefined>}
  */
-export async function main(billComApi, accountingBase = new Base()) {
+export async function main(billComApi, accountingBase = new MsoBase()) {
 
   // Sync for each Org/MSO.
-  const msos = await accountingBase.select('MSOs', 'Internal Customer IDs');
-  for (const mso of msos) {
+  for await (const mso of accountingBase.iterateMsos()) {
 
     // Initialize Bill.com Customer collection.
     await billComApi.login(mso.get('Code'));
@@ -28,10 +27,6 @@ export async function main(billComApi, accountingBase = new Base()) {
         'Labor Charges',
         'Bill.com Sync',
         async (laborCharge) => {
-
-          // Skip records not associated with current MSO.
-          if (!isSameMso(laborCharge, mso.getId())) return null;
-
           const id = laborCharge.get(MSO_BILL_COM_ID);
           const change = {
             id: id,
