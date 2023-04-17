@@ -18811,7 +18811,7 @@ __nccwpck_require__.r(__webpack_exports__);
 async function main(billComApi, accountingBase = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .MsoBase */ .Fi()) {
 
   // Sync for each Org/MSO.
-  for (const mso of await accountingBase.iterateMsos()) {
+  for await (const mso of accountingBase.iterateMsos()) {
 
     // Initialize Bill.com Customer collection.
     await billComApi.login(mso.get('Code'));
@@ -20281,7 +20281,7 @@ class MsoBase extends Base {
   }
 
   /** @return {!Promise<!Iterator<!Record<!TField>>>} */
-  async* iterateMsos() {
+  async * iterateMsos() {
     for (const mso of await super.select('MSOs')) {
       this.currentMso_ = mso.get('Code');
       yield mso;

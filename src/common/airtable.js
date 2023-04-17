@@ -153,7 +153,7 @@ export class MsoBase extends Base {
   }
 
   /** @return {!Promise<!Iterator<!Record<!TField>>>} */
-  async* iterateMsos() {
+  async * iterateMsos() {
     for (const mso of await super.select('MSOs')) {
       this.currentMso_ = mso.get('Code');
       yield mso;
