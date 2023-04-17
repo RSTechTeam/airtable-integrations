@@ -20245,7 +20245,7 @@ class MsoBase extends Base {
 
   /** @override */
   select(table, view = '', filterByFormula = '') {
-    const msoFilter = `MSO = '${this.currentMso_}'`;
+    const msoFilter = `MSO = '${this.currentMso_.get('Code')}'`;
     return super.select(
         table,
         view,
