@@ -19605,41 +19605,22 @@ function vendorName(name, city, state) {
   return (city == null && state == null) ? name : `${name} (${city}, ${state})`;
 }
 
-/** A helper for syncing data between Airtable and Bill.com. */
+/**
+ * A helper for syncing data between Airtable and Bill.com.
+ * Only use while iterating airtableBase.
+ */
 class Syncer {
 
   /**
-   * @param {!Map<string, string>} msoRecordIds
    * @param {!Api} billComApi
-   * @param {!Base=} airtableBase
+   * @param {!MsoBase=} airtableBase
    */
-  constructor(msoRecordIds, billComApi, airtableBase = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .Base */ .XY()) {
+  constructor(billComApi, airtableBase = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .MsoBase */ .Fi()) {
 
-    /** @private @const {!Map<string, string>} */
-    this.msoRecordIds_ = msoRecordIds;
     /** @private @const {!Api} */
     this.billComApi_ = billComApi;
-    /** @private @const {!Base} */
+    /** @private @const {!MsoBase} */
     this.airtableBase_ = airtableBase;
-
-    /** @private {?string} */
-    this.currentMso_ = null;
-    /** @return {?string} */
-    this.getCurrentMsoRecordId = () => this.msoRecordIds_.get(this.currentMso_);
-  }
-
-  /**
-   * Coordinates syncing for each MSO. All subsequent sync* methods
-   * should only be called within param func.
-   * @param {function(!Syncer, string): !Promise<undefined>} func
-   * @return !Promise<undefined>
-   */
-  async forEachMso(func) {
-    for (const mso of this.msoRecordIds_.keys()) {
-      await this.billComApi_.login(mso);
-      this.currentMso_ = mso;
-      await func(this, mso);
-    }
   }
 
   /**
@@ -19652,12 +19633,10 @@ class Syncer {
     const BILL_COM_ID =
         entity === 'Bill' ? _common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .MSO_BILL_COM_ID */ .yG : _common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .BILL_COM_ID_SUFFIX */ .dK;
 
-    const msoRecordId = this.getCurrentMsoRecordId();
     const billComIds = [];
     const airtableIds = [];
     const unpaids = await this.airtableBase_.select(table, 'Unpaid');
     for (const unpaid of unpaids) {
-      if (!(0,_common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .isSameMso */ .m5)(unpaid, msoRecordId)) continue;
       billComIds.push(unpaid.get(BILL_COM_ID));
       airtableIds.push(unpaid.getId());
     }
@@ -19711,13 +19690,8 @@ class Syncer {
     }
 
     // Update every existing table record based on the entity data.
-    const msoRecordId = this.getCurrentMsoRecordId();
     const updates = [];
     for (const record of await this.airtableBase_.select(table)) {
-
-      // Skip records not associated with current MSO.
-      if (!(0,_common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .isSameMso */ .m5)(record, msoRecordId)) continue;
-
       const id = record.get(_common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .MSO_BILL_COM_ID */ .yG);
       updates.push({
         id: record.getId(), fields: changes.get(id) || {Active: false},
@@ -19727,6 +19701,7 @@ class Syncer {
     await this.airtableBase_.update(table, updates);
 
     // Create new table records from new entity data.
+    const msoRecordId = this.airtableBase_.getCurrentMso().getId();
     const creates = [];
     for (const [id, data] of changes) {
       creates.push({
@@ -19778,17 +19753,12 @@ class Syncer {
         c => billComCustomerMap.set(c.id, {name: c.name, email: c.email}));
 
     // Upsert every Active RS Bill.com Customer from Airtable.
-    const msoRecordId = this.getCurrentMsoRecordId();
     const billComCreates = [];
     const airtableUpdateIds = [];
     const airtableUpdates = [];
     const billComUpdates = [];
     const customers = await this.airtableBase_.select(ALL_CUSTOMERS_TABLE);
     for (const customer of customers) {
-
-      // Skip records not associated with current MSO.
-      if (!(0,_common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .isSameMso */ .m5)(customer, msoRecordId)) continue;
-
       const isActive = customer.get('Active');
       const id = customer.get(BILL_COM_ID);
       const hasAnchorEntityId = id != undefined;
@@ -19850,8 +19820,10 @@ class Syncer {
     await this.airtableBase_.update(ALL_CUSTOMERS_TABLE, airtableUpdates);
 
     // Create any active anchor entity Bill.com Customer not in Airtable;
-    // Create in both RS Bill.com and Airtable.
-    await this.billComApi_.login(this.currentMso_);
+    // Create in both MSO Bill.com and Airtable.
+    const currentMso = this.airtableBase_.getCurrentMso();
+    await this.billComApi_.login(currentMso.get('Code'));
+    const msoRecordId = currentMso.getId();
     const airtableCreates = [];
     for (const [id, customer] of billComCustomerMap) {
       airtableCreates.push({
@@ -19872,43 +19844,41 @@ class Syncer {
 
 /**
  * @param {!Api} billComApi
- * @param {!Base=} airtableBase
+ * @param {!MsoBase=} airtableBase
  * @return {!Promise<undefined>}
  */
-async function main(billComApi, airtableBase = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .Base */ .XY()) {
+async function main(billComApi, airtableBase = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .MsoBase */ .Fi()) {
+  const syncer = new Syncer(billComApi, airtableBase);
+  for await (const mso of airtableBase.iterateMsos()) {
+    const msoCode = mso.get('Code');
+    await billComApi.login(msoCode);
+    await syncer.syncUnpaid('Check Requests', 'Bill');
+    await syncer.sync(
+        'Vendor', 'Existing Vendors',
+        o => ({
+          'Name': vendorName(o.name, o.addressCity, o.addressState),
+          'Address': o.address1,
+          'City': o.addressCity,
+          'State': o.addressState,
+          'Zip Code': parseInt(o.addressZip),
+          'Paid via BILL': o.lastPaymentDate != null,
+        }));
+    await syncer.syncNameKey('ChartOfAccount', 'Chart of Accounts', 'name');
+    await syncer.sync(
+        'User', 'Users',
+        o => ({
+          'Name': `${o.firstName} ${o.lastName} (${o.email})`,
+          'Profile ID': o.profileId,
+        }));
+    await syncer.sync(
+        'Customer', 'All Customers', o => ({Name: o.name, Email: o.email}));
 
-  const msos = await airtableBase.select('MSOs');
-  const msoRecordIds =
-      new Map(msos.map((mso) => [mso.get('Code'), mso.getId()]));
-  await new Syncer(msoRecordIds, billComApi, airtableBase).forEachMso(
-      async (syncer, mso) => {
-        await syncer.syncUnpaid('Check Requests', 'Bill');
-        await syncer.sync(
-            'Vendor', 'Existing Vendors',
-            o => ({
-              'Name': vendorName(o.name, o.addressCity, o.addressState),
-              'Address': o.address1,
-              'City': o.addressCity,
-              'State': o.addressState,
-              'Zip Code': parseInt(o.addressZip),
-              'Paid via BILL': o.lastPaymentDate != null,
-            }));
-        await syncer.syncNameKey('ChartOfAccount', 'Chart of Accounts', 'name');
-        await syncer.sync(
-            'User', 'Users',
-            o => ({
-              'Name': `${o.firstName} ${o.lastName} (${o.email})`,
-              'Profile ID': o.profileId,
-            }));
-        await syncer.sync(
-            'Customer', 'All Customers', o => ({Name: o.name, Email: o.email}));
-
-        if (mso !== _common_utils_js__WEBPACK_IMPORTED_MODULE_2__/* .PRIMARY_ORG */ .l3) return;
-        // sync('Department', 'Departments', o => ({Name: o.name, Email: o.email}))
-        await syncer.syncUnpaid('Invoices', 'Invoice');
-        await syncer.syncCustomers('CPASF');
-        await syncer.syncCustomers('CEP');
-      });
+    if (msoCode !== _common_utils_js__WEBPACK_IMPORTED_MODULE_2__/* .PRIMARY_ORG */ .l3) return;
+    // sync('Department', 'Departments', o => ({Name: o.name, Email: o.email}))
+    await syncer.syncUnpaid('Invoices', 'Invoice');
+    await syncer.syncCustomers('CPASF');
+    await syncer.syncCustomers('CEP');
+  }
 }
 
 
@@ -20267,8 +20237,10 @@ class MsoBase extends Base {
   constructor(baseId = (0,_inputs_js__WEBPACK_IMPORTED_MODULE_1__/* .airtableBaseId */ .kt)(), apiKey = (0,_inputs_js__WEBPACK_IMPORTED_MODULE_1__/* .airtableApiKey */ .Bd)()) {
     super(baseId, apiKey);
 
-    /** @private {?string} */
+    /** @private {?Record<!TField>} */
     this.currentMso_ = null;
+    /** @return {?Record<!TField>} */
+    this.getCurrentMso = () => this.currentMso_;
   }
 
   /** @override */
@@ -20283,9 +20255,8 @@ class MsoBase extends Base {
 
   /** @return {!Promise<!Iterator<!Record<!TField>>>} */
   async* iterateMsos() {
-    for (const mso of await super.select('MSOs')) {
-      this.currentMso_ = mso.get('Code');
-      yield mso;
+    for (this.currentMso_ of await super.select('MSOs')) {
+      yield this.currentMso_;
     }
     this.currentMso_ = null;
   }

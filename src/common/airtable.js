@@ -139,8 +139,10 @@ export class MsoBase extends Base {
   constructor(baseId = airtableBaseId(), apiKey = airtableApiKey()) {
     super(baseId, apiKey);
 
-    /** @private {?string} */
+    /** @private {?Record<!TField>} */
     this.currentMso_ = null;
+    /** @return {?Record<!TField>} */
+    this.getCurrentMso = () => this.currentMso_;
   }
 
   /** @override */
@@ -155,9 +157,8 @@ export class MsoBase extends Base {
 
   /** @return {!Promise<!Iterator<!Record<!TField>>>} */
   async* iterateMsos() {
-    for (const mso of await super.select('MSOs')) {
-      this.currentMso_ = mso.get('Code');
-      yield mso;
+    for (this.currentMso_ of await super.select('MSOs')) {
+      yield this.currentMso_;
     }
     this.currentMso_ = null;
   }
