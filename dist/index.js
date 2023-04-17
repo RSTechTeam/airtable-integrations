@@ -18798,7 +18798,9 @@ __nccwpck_require__.r(__webpack_exports__);
 /* harmony export */ });
 /* harmony import */ var _common_bill_com_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(9668);
 /* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(5585);
+/* harmony import */ var _common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(1444);
 /** @fileoverview Syncs Bill.com Customers from Airtable to Bill.com. */
+
 
 
 
@@ -18811,6 +18813,9 @@ __nccwpck_require__.r(__webpack_exports__);
 async function main(billComApi, accountingBase = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .MsoBase */ .Fi()) {
 
   // Sync for each Org/MSO.
+  (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_2__/* .log */ .cM)('test');
+  (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_2__/* .log */ .cM)(accountingBase.iterateMsos);
+  (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_2__/* .log */ .cM)(accountingBase.iterateMsos());
   for (const mso of await accountingBase.iterateMsos()) {
 
     // Initialize Bill.com Customer collection.
