@@ -56,7 +56,7 @@ test('main syncs Customers from Airtable to Bill.com', async () => {
   }
   await api.bulk('Update', 'Customer', updates);
   await airtableBase().selectAndUpdate(
-      'Labor Charges', // Customers
+      'Internal Customers',
       '',
       (record) => {
         return record.get('Local Name') === AIRTABLE_ONLY ?

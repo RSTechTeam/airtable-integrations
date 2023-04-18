@@ -18821,16 +18821,16 @@ async function main(billComApi, accountingBase = new _common_airtable_js__WEBPAC
             'Customer', [(0,_common_bill_com_js__WEBPACK_IMPORTED_MODULE_0__/* .filter */ .hX)('parentCustomerId', '=', parentCustomerId)]);
     const billComCustomerIds = new Set(billComCustomers.map(c => c.id));
 
-    // Upsert every Bill.com Customer from the Bill.com Sync View.
+    // Upsert every Bill.com Customer in the Internal Customers Table.
     const updates = [];
     await accountingBase.selectAndUpdate(
-        'Labor Charges',
-        'Bill.com Sync',
-        async (laborCharge) => {
-          const id = laborCharge.get(_common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .MSO_BILL_COM_ID */ .yG);
+        'Internal Customers',
+        '',
+        async (customer) => {
+          const id = customer.get(_common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .MSO_BILL_COM_ID */ .yG);
           const change = {
             id: id,
-            name: laborCharge.get('Local Name'),
+            name: customer.get('Local Name'),
             isActive: _common_bill_com_js__WEBPACK_IMPORTED_MODULE_0__/* .ActiveStatus.ACTIVE */ .tV.ACTIVE,
             parentCustomerId: parentCustomerId,
           };
@@ -18847,7 +18847,7 @@ async function main(billComApi, accountingBase = new _common_airtable_js__WEBPAC
           return null;
         });
 
-    // Deactivate internal Bill.com Customers not in the Bill.com Sync View.
+    // Deactivate internal Bill.com Customers not in the Table.
     for (const id of billComCustomerIds) {
       updates.push({id: id, isActive: _common_bill_com_js__WEBPACK_IMPORTED_MODULE_0__/* .ActiveStatus.INACTIVE */ .tV.INACTIVE});
     }

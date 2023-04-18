@@ -21,16 +21,16 @@ export async function main(billComApi, accountingBase = new MsoBase()) {
             'Customer', [filter('parentCustomerId', '=', parentCustomerId)]);
     const billComCustomerIds = new Set(billComCustomers.map(c => c.id));
 
-    // Upsert every Bill.com Customer from the Bill.com Sync View.
+    // Upsert every Bill.com Customer in the Internal Customers Table.
     const updates = [];
     await accountingBase.selectAndUpdate(
-        'Labor Charges',
-        'Bill.com Sync',
-        async (laborCharge) => {
-          const id = laborCharge.get(MSO_BILL_COM_ID);
+        'Internal Customers',
+        '',
+        async (customer) => {
+          const id = customer.get(MSO_BILL_COM_ID);
           const change = {
             id: id,
-            name: laborCharge.get('Local Name'),
+            name: customer.get('Local Name'),
             isActive: ActiveStatus.ACTIVE,
             parentCustomerId: parentCustomerId,
           };
@@ -47,7 +47,7 @@ export async function main(billComApi, accountingBase = new MsoBase()) {
           return null;
         });
 
-    // Deactivate internal Bill.com Customers not in the Bill.com Sync View.
+    // Deactivate internal Bill.com Customers not in the Table.
     for (const id of billComCustomerIds) {
       updates.push({id: id, isActive: ActiveStatus.INACTIVE});
     }

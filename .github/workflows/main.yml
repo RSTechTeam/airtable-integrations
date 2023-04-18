@@ -28,9 +28,6 @@ jobs:
       - id: get-airtable-base-id
         run: |
           case ${{ matrix.file-id }} in
-            accounting*)
-              id=${{ secrets.ACCOUNTING_TERMINOLOGY_INDEX_BASE_ID }}
-              ;;
             door_knocking*)
               id=${{ secrets.DOOR_KNOCKING_BASE_ID }}
               ;;
