@@ -17,7 +17,7 @@ jobs:
           'bill_com_integration_create_approver',
           'door_knocking_create_vendor',
           # Sync including newlty created data
-          'accounting_sync',
+          'bill_com_integration_sync_internal_customers',
           'bill_com_integration_sync',
           # Creates that reference synced data
           'bill_com_integration_create_bill',

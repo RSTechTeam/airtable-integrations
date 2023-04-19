@@ -10528,7 +10528,7 @@ var baseTimes = __nccwpck_require__(3349),
     isArray = __nccwpck_require__(5997),
     isBuffer = __nccwpck_require__(3741),
     isIndex = __nccwpck_require__(576),
-    isTypedArray = __nccwpck_require__(9137);
+    isTypedArray = __nccwpck_require__(3837);
 
 /** Used for built-in method references. */
 var objectProto = Object.prototype;
@@ -12637,7 +12637,7 @@ module.exports = isSymbol;
 
 /***/ }),
 
-/***/ 9137:
+/***/ 3837:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 var baseIsTypedArray = __nccwpck_require__(6934),
@@ -13097,7 +13097,7 @@ var http = __nccwpck_require__(3685);
 var https = __nccwpck_require__(5687);
 var events = __nccwpck_require__(2361);
 var assert = __nccwpck_require__(9491);
-var util = __nccwpck_require__(3837);
+var util = __nccwpck_require__(3849);
 
 
 exports.httpOverHttp = httpOverHttp;
@@ -16063,7 +16063,7 @@ module.exports = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("url");
 
 /***/ }),
 
-/***/ 3837:
+/***/ 3849:
 /***/ ((module) => {
 
 module.exports = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("util");
@@ -18789,75 +18789,6 @@ function fixResponseChunkedTransferBadEnding(request, errorCallback) {
 
 /***/ }),
 
-/***/ 8617:
-/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
-
-__nccwpck_require__.r(__webpack_exports__);
-/* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
-/* harmony export */   "main": () => (/* binding */ main)
-/* harmony export */ });
-/* harmony import */ var _common_bill_com_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(9668);
-/* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(5585);
-/** @fileoverview Syncs Bill.com Customers from Airtable to Bill.com. */
-
-
-
-
-/**
- * @param {!Api} billComApi
- * @param {!MsoBase=} accountingBase
- * @return {!Promise<undefined>}
- */
-async function main(billComApi, accountingBase = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .MsoBase */ .Fi()) {
-
-  // Sync for each Org/MSO.
-  for await (const mso of accountingBase.iterateMsos()) {
-
-    // Initialize Bill.com Customer collection.
-    await billComApi.login(mso.get('Code'));
-    const parentCustomerId = mso.get('Internal Customer ID');
-    const billComCustomers =
-        await billComApi.list(
-            'Customer', [(0,_common_bill_com_js__WEBPACK_IMPORTED_MODULE_0__/* .filter */ .hX)('parentCustomerId', '=', parentCustomerId)]);
-    const billComCustomerIds = new Set(billComCustomers.map(c => c.id));
-
-    // Upsert every Bill.com Customer in the Internal Customers Table.
-    const updates = [];
-    await accountingBase.selectAndUpdate(
-        'Internal Customers',
-        '',
-        async (customer) => {
-          const id = customer.get(_common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .MSO_BILL_COM_ID */ .yG);
-          const change = {
-            id: id,
-            name: customer.get('Local Name'),
-            isActive: _common_bill_com_js__WEBPACK_IMPORTED_MODULE_0__/* .ActiveStatus.ACTIVE */ .tV.ACTIVE,
-            parentCustomerId: parentCustomerId,
-          };
-
-          // Insert/Create in Bill.com any record with no Bill.com ID.
-          if (id == undefined) {
-            const billComId = await billComApi.create('Customer', change);
-            return {[_common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .MSO_BILL_COM_ID */ .yG]: billComId};
-          }
-
-          // Update in Bill.com other records with a Bill.com ID.
-          updates.push(change);
-          billComCustomerIds.delete(id);
-          return null;
-        });
-
-    // Deactivate internal Bill.com Customers not in the Table.
-    for (const id of billComCustomerIds) {
-      updates.push({id: id, isActive: _common_bill_com_js__WEBPACK_IMPORTED_MODULE_0__/* .ActiveStatus.INACTIVE */ .tV.INACTIVE});
-    }
-    await billComApi.bulk('Update', 'Customer', updates);
-  }
-}
-
-
-/***/ }),
-
 /***/ 5770:
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
 
@@ -18927,7 +18858,7 @@ var airtable = __nccwpck_require__(5585);
 // EXTERNAL MODULE: ./src/common/utils.js + 1 modules
 var utils = __nccwpck_require__(381);
 // EXTERNAL MODULE: external "util"
-var external_util_ = __nccwpck_require__(3837);
+var external_util_ = __nccwpck_require__(3849);
 ;// CONCATENATED MODULE: ./node_modules/web-streams-polyfill/dist/ponyfill.mjs
 /**
  * @license
@@ -20083,6 +20014,75 @@ async function main(api, billComIntegrationBase = new _common_airtable_js__WEBPA
 
 /***/ }),
 
+/***/ 4603:
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
+
+__nccwpck_require__.r(__webpack_exports__);
+/* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
+/* harmony export */   "main": () => (/* binding */ main)
+/* harmony export */ });
+/* harmony import */ var _common_bill_com_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(9668);
+/* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(5585);
+/** @fileoverview Syncs Bill.com Customers from Airtable to Bill.com. */
+
+
+
+
+/**
+ * @param {!Api} billComApi
+ * @param {!MsoBase=} accountingBase
+ * @return {!Promise<undefined>}
+ */
+async function main(billComApi, accountingBase = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .MsoBase */ .Fi()) {
+
+  // Sync for each Org/MSO.
+  for await (const mso of accountingBase.iterateMsos()) {
+
+    // Initialize Bill.com Customer collection.
+    await billComApi.login(mso.get('Code'));
+    const parentCustomerId = mso.get('Internal Customer ID');
+    const billComCustomers =
+        await billComApi.list(
+            'Customer', [(0,_common_bill_com_js__WEBPACK_IMPORTED_MODULE_0__/* .filter */ .hX)('parentCustomerId', '=', parentCustomerId)]);
+    const billComCustomerIds = new Set(billComCustomers.map(c => c.id));
+
+    // Upsert every Bill.com Customer in the Internal Customers Table.
+    const updates = [];
+    await accountingBase.selectAndUpdate(
+        'Internal Customers',
+        '',
+        async (customer) => {
+          const id = customer.get(_common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .MSO_BILL_COM_ID */ .yG);
+          const change = {
+            id: id,
+            name: customer.get('Local Name'),
+            isActive: _common_bill_com_js__WEBPACK_IMPORTED_MODULE_0__/* .ActiveStatus.ACTIVE */ .tV.ACTIVE,
+            parentCustomerId: parentCustomerId,
+          };
+
+          // Insert/Create in Bill.com any record with no Bill.com ID.
+          if (id == undefined) {
+            const billComId = await billComApi.create('Customer', change);
+            return {[_common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .MSO_BILL_COM_ID */ .yG]: billComId};
+          }
+
+          // Update in Bill.com other records with a Bill.com ID.
+          updates.push(change);
+          billComCustomerIds.delete(id);
+          return null;
+        });
+
+    // Deactivate internal Bill.com Customers not in the Table.
+    for (const id of billComCustomerIds) {
+      updates.push({id: id, isActive: _common_bill_com_js__WEBPACK_IMPORTED_MODULE_0__/* .ActiveStatus.INACTIVE */ .tV.INACTIVE});
+    }
+    await billComApi.bulk('Update', 'Customer', updates);
+  }
+}
+
+
+/***/ }),
+
 /***/ 5585:
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
 
@@ -20929,11 +20929,11 @@ async function main(billComApi, airtableBase = new _common_airtable_js__WEBPACK_
 /***/ ((__webpack_module__, __unused_webpack___webpack_exports__, __nccwpck_require__) => {
 
 __nccwpck_require__.a(__webpack_module__, async (__webpack_handle_async_dependencies__) => {
-/* harmony import */ var _accounting_terminology_index_sync_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(8617);
-/* harmony import */ var _bill_com_integration_create_approver_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(5770);
-/* harmony import */ var _bill_com_integration_create_bill_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(1709);
-/* harmony import */ var _bill_com_integration_sync_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(365);
-/* harmony import */ var _bill_com_integration_sync_bills_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(4361);
+/* harmony import */ var _bill_com_integration_create_approver_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(5770);
+/* harmony import */ var _bill_com_integration_create_bill_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(1709);
+/* harmony import */ var _bill_com_integration_sync_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(365);
+/* harmony import */ var _bill_com_integration_sync_bills_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(4361);
+/* harmony import */ var _bill_com_integration_sync_internal_customers_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(4603);
 /* harmony import */ var _door_knocking_create_vendor_js__WEBPACK_IMPORTED_MODULE_5__ = __nccwpck_require__(3161);
 /* harmony import */ var _common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_6__ = __nccwpck_require__(1444);
 /* harmony import */ var _common_inputs_js__WEBPACK_IMPORTED_MODULE_7__ = __nccwpck_require__(4684);
@@ -20952,20 +20952,20 @@ __nccwpck_require__.a(__webpack_module__, async (__webpack_handle_async_dependen
 
 let imp;
 switch ((0,_common_inputs_js__WEBPACK_IMPORTED_MODULE_7__/* .fileId */ .o8)()) {
-  case 'accounting_sync':
-    imp = _accounting_terminology_index_sync_js__WEBPACK_IMPORTED_MODULE_0__;
-    break;
   case 'bill_com_integration_create_approver':
-    imp = _bill_com_integration_create_approver_js__WEBPACK_IMPORTED_MODULE_1__;
+    imp = _bill_com_integration_create_approver_js__WEBPACK_IMPORTED_MODULE_0__;
     break;
   case 'bill_com_integration_create_bill':
-    imp = _bill_com_integration_create_bill_js__WEBPACK_IMPORTED_MODULE_2__;
+    imp = _bill_com_integration_create_bill_js__WEBPACK_IMPORTED_MODULE_1__;
     break;
   case 'bill_com_integration_sync':
-    imp = _bill_com_integration_sync_js__WEBPACK_IMPORTED_MODULE_3__;
+    imp = _bill_com_integration_sync_js__WEBPACK_IMPORTED_MODULE_2__;
     break;
   case 'bill_com_integration_sync_bills':
-    imp = _bill_com_integration_sync_bills_js__WEBPACK_IMPORTED_MODULE_4__;
+    imp = _bill_com_integration_sync_bills_js__WEBPACK_IMPORTED_MODULE_3__;
+    break;
+  case 'bill_com_integration_sync_internal_customers':
+    imp = _bill_com_integration_sync_internal_customers_js__WEBPACK_IMPORTED_MODULE_4__;
     break;
   case 'door_knocking_create_vendor':
     imp = _door_knocking_create_vendor_js__WEBPACK_IMPORTED_MODULE_5__;

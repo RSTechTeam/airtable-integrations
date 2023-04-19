@@ -1,4 +1,4 @@
-import * as sync from '../../../src/accounting_terminology_index/sync.js';
+import * as sync from '../../../src/bill_com_integration/sync_internal_customers.js';
 import {airtableBase, airtableMsoBase, billComApi} from '../../test_utils.js';
 import {MSO_BILL_COM_ID} from '../../../src/common/airtable.js';
 import {isActiveEnum} from '../../../src/common/bill_com.js';
