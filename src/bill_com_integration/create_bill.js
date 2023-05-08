@@ -5,6 +5,7 @@ import {apiCall} from '../common/bill_com.js';
 import {Base, isSameMso, MSO_BILL_COM_ID} from '../common/airtable.js';
 import {fetchError, PRIMARY_ORG} from '../common/utils.js';
 import {FormData} from 'formdata-node';
+import {log} from '../common/github_actions_core.js';
 
 /** The Bill.com Integration Airtable Base. */
 let billComIntegrationBase;
@@ -170,6 +171,7 @@ export async function main(billComApi, airtableBase = new Base()) {
 
             // Download it.
             const file = await response.blob();
+            log(file.type);
 
             // Upload it.
             data.set('file', file, doc.filename);
