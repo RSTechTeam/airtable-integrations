@@ -20495,6 +20495,9 @@ function isActiveEnum(isActive) {
  * @return {!Object<string, !Object<string, *>>}
  */
 function entityData(entity, data) {
+
+  // Copy to avoid changing passed argument.
+  data = {...data};
   data.name &&= encodeURIComponent(data.name);
   return {obj: {entity: entity, ...data}};
 }
