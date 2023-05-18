@@ -19384,7 +19384,7 @@ async function main(billComApi, airtableBase = new airtable/* Base */.XY()) {
             }
 
             const date = item.get('Item Expense Date');
-            const description = item.get('Description');
+            const description = encodeURIComponent(item.get('Description'));
             billComLineItems.push({
               entity: 'BillLineItem',
               amount: item.get('Amount'),
