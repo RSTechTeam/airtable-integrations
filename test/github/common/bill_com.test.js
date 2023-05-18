@@ -20,7 +20,7 @@ test('dataCall successfully makes API call with json data', () => {
   return expect(response).resolves.not.toBeNull();
 });
 
-const givenVendor = {name: 'Test', email: 'test@abc.xyz'};
+const givenVendor = {name: 'Test&', email: 'test@abc.xyz'};
 const expectVendor = (got, expected) => expect(got).toMatchObject(expected);
 let vendorId;
 
