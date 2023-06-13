@@ -19943,6 +19943,7 @@ async function main(api, billComIntegrationBase = new _common_airtable_js__WEBPA
     for (const item of bill.billLineItems) {
       const itemVendor =
           (matchDescription(item, merchantRegex) || {}).groups || vendor;
+      const approvalStatus = approvalStatuses.get(bill.approvalStatus);
       changes.set(
           item.id,
           {
@@ -19964,7 +19965,8 @@ async function main(api, billComIntegrationBase = new _common_airtable_js__WEBPA
             [billComIdFieldName('Customer')]: item.customerId,
             'Customer': customers.get(item.customerId),
             'Invoice ID': bill.invoiceNumber,
-            'Approval Status': approvalStatuses.get(bill.approvalStatus),
+            'Approval Status': approvalStatus,
+            'Approved': approvalStatus === 'Approved',
             'Payment Status': paymentStatuses.get(bill.paymentStatus),
             [billComIdFieldName('Bill')]: bill.id,
             'Last Updated Time': bill.updatedTime,
