@@ -19986,7 +19986,7 @@ async function main(api, billComIntegrationBase = new _common_airtable_js__WEBPA
     const updates = [];
     const records =
         await billComIntegrationBase.select(
-            BILL_REPORTING_TABLE, '', `Org = ${orgCode}`);
+            BILL_REPORTING_TABLE, '', `Org = '${orgCode}'`);
     for (const record of records) {
       const id = record.get(primaryBillComId);
       const update = {id: record.getId()};
