@@ -121,6 +121,7 @@ export async function main(api, billComIntegrationBase = new Base()) {
         const itemVendor =
             (matchDescription(item, merchantRegex) || {}).groups || vendor;
         const approvalStatus = approvalStatuses.get(bill.approvalStatus);
+        const paymentStatus = paymentStatuses.get(bill.paymentStatus);
         changes.set(
             item.id,
             {
@@ -145,7 +146,8 @@ export async function main(api, billComIntegrationBase = new Base()) {
               'Invoice ID': bill.invoiceNumber,
               'Approval Status': approvalStatus,
               'Approved': approvalStatus === 'Approved',
-              'Payment Status': paymentStatuses.get(bill.paymentStatus),
+              'Payment Status': paymentStatus,
+              'Paid': paymentStatus === 'Paid In Full',
               [billComIdFieldName('Bill')]: bill.id,
               'Last Updated Time': bill.updatedTime,
             });
