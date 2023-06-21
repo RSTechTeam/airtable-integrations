@@ -19283,11 +19283,8 @@ class FormData {
 
 
 
-// EXTERNAL MODULE: ./src/common/github_actions_core.js
-var github_actions_core = __nccwpck_require__(1444);
 ;// CONCATENATED MODULE: ./src/bill_com_integration/create_bill.js
 /** @fileoverview Creates a Bill.com Bill based on a new Check Request. */
-
 
 
 
@@ -19459,7 +19456,6 @@ async function main(billComApi, airtableBase = new airtable/* Base */.XY()) {
 
             // Download it.
             const file = await response.blob();
-            (0,github_actions_core/* log */.cM)(file.type);
 
             // Upload it.
             data.set('file', file, doc.filename);
