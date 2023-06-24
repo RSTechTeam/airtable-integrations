@@ -50,7 +50,7 @@ function getNames(entity) {
  * @return {string}
  */
 function billComIdFieldName(entity) {
-  return `MSO Bill.com ${entity} ID`;
+  return `Org Bill.com ${entity} ID`;
 }
 
 /**
@@ -86,104 +86,117 @@ export async function main(api, billComIntegrationBase = new Base()) {
               '(?<city>.+) \\| (?<state>.+) \\| (?<zip>.+)\\n' +
               '(?<description>.+)');
 
-  // Initialize reference data.
-  await billComApi.primaryOrgLogin();
-  const sessionId = billComApi.getSessionId();
-  const vendors =
-      await getEntityData(
-          'Vendor',
-          v => ({
-            name: v.name,
-            address: v.address1,
-            city: v.addressCity,
-            state: v.addressState,
-            zip: v.addressZip,
-          }));
-  const chartOfAccounts = await getNames('ChartOfAccount');
-  const customers = await getNames('Customer');
+  const orgs =
+      await billComIntegrationBase.select(
+          'Anchor Entities', BILL_REPORTING_TABLE);
+  for (const org of orgs) {
 
-  // Initialize sync changes.
-  const bills = await billComApi.listActive('Bill');
-  const changes = new Map();
-  const primaryBillComId = billComIdFieldName('Line Item');
-  for (const bill of bills) {
+    // Initialize reference data.
+    const orgCode = org.get('Department');
+    const orgId = org.getId();
+    await billComApi.login(orgCode);
+    const sessionId = billComApi.getSessionId();
+    const vendors =
+        await getEntityData(
+            'Vendor',
+            v => ({
+              name: v.name,
+              address: v.address1,
+              city: v.addressCity,
+              state: v.addressState,
+              zip: v.addressZip,
+            }));
+    const chartOfAccounts = await getNames('ChartOfAccount');
+    const customers = await getNames('Customer');
 
-    const submitterMatch = matchDescription(bill, /Submitted by (.+) \(/);
-    const vendor = vendors.get(bill.vendorId) || {};
-    for (const item of bill.billLineItems) {
-      const itemVendor =
-          (matchDescription(item, merchantRegex) || {}).groups || vendor;
-      const approvalStatus = approvalStatuses.get(bill.approvalStatus);
-      changes.set(
-          item.id,
-          {
-            'Active': true,
-            'Submitted By': submitterMatch == null ? null : submitterMatch[1],
-            'Creation Date': getYyyyMmDd(item.createdTime),
-            'Invoice Date': bill.invoiceDate,
-            'Expense Date': itemVendor.date || bill.invoiceDate,
-            [billComIdFieldName('Vendor')]: bill.vendorId,
-            'Vendor Name': itemVendor.name,
-            'Vendor Address': itemVendor.address,
-            'Vendor City': itemVendor.city,
-            'Vendor State': itemVendor.state,
-            'Vendor Zip Code': itemVendor.zip,
-            'Description': itemVendor.description || item.description,
-            [billComIdFieldName('Chart of Account')]: item.chartOfAccountId,
-            'Chart of Account': chartOfAccounts.get(item.chartOfAccountId),
-            'Amount': item.amount,
-            [billComIdFieldName('Customer')]: item.customerId,
-            'Customer': customers.get(item.customerId),
-            'Invoice ID': bill.invoiceNumber,
-            'Approval Status': approvalStatus,
-            'Approved': approvalStatus === 'Approved',
-            'Payment Status': paymentStatuses.get(bill.paymentStatus),
-            [billComIdFieldName('Bill')]: bill.id,
-            'Last Updated Time': bill.updatedTime,
-          });
+    // Initialize sync changes.
+    const bills = await billComApi.listActive('Bill');
+    const changes = new Map();
+    const primaryBillComId = billComIdFieldName('Line Item');
+    for (const bill of bills) {
+
+      const submitterMatch = matchDescription(bill, /Submitted by (.+) \(/);
+      const vendor = vendors.get(bill.vendorId) || {};
+      for (const item of bill.billLineItems) {
+        const itemVendor =
+            (matchDescription(item, merchantRegex) || {}).groups || vendor;
+        const approvalStatus = approvalStatuses.get(bill.approvalStatus);
+        const paymentStatus = paymentStatuses.get(bill.paymentStatus);
+        changes.set(
+            item.id,
+            {
+              'Active': true,
+              'Org': [orgId],
+              'Submitted By': submitterMatch == null ? null : submitterMatch[1],
+              'Creation Date': getYyyyMmDd(item.createdTime),
+              'Invoice Date': bill.invoiceDate,
+              'Expense Date': itemVendor.date || bill.invoiceDate,
+              [billComIdFieldName('Vendor')]: bill.vendorId,
+              'Vendor Name': itemVendor.name,
+              'Vendor Address': itemVendor.address,
+              'Vendor City': itemVendor.city,
+              'Vendor State': itemVendor.state,
+              'Vendor Zip Code': itemVendor.zip,
+              'Description': itemVendor.description || item.description,
+              [billComIdFieldName('Chart of Account')]: item.chartOfAccountId,
+              'Chart of Account': chartOfAccounts.get(item.chartOfAccountId),
+              'Amount': item.amount,
+              [billComIdFieldName('Customer')]: item.customerId,
+              'Customer': customers.get(item.customerId),
+              'Invoice ID': bill.invoiceNumber,
+              'Approval Status': approvalStatus,
+              'Approved': approvalStatus === 'Approved',
+              'Payment Status': paymentStatus,
+              'Paid': paymentStatus === 'Paid In Full',
+              [billComIdFieldName('Bill')]: bill.id,
+              'Last Updated Time': bill.updatedTime,
+            });
+      }
     }
-  }
 
-  // Update every existing table record based on the Bill.com data.
-  const updates = [];
-  const records = await billComIntegrationBase.select(BILL_REPORTING_TABLE);
-  for (const record of records) {
-    const id = record.get(primaryBillComId);
-    const update = {id: record.getId()};
-    if (!changes.has(id)) {
-      update.fields = {Active: false};
+    // Update every existing table record based on the Bill.com data.
+    const updates = [];
+    const records =
+        await billComIntegrationBase.select(
+            BILL_REPORTING_TABLE, '', `Org = '${orgCode}'`);
+    for (const record of records) {
+      const id = record.get(primaryBillComId);
+      const update = {id: record.getId()};
+      if (!changes.has(id)) {
+        update.fields = {Active: false};
+        updates.push(update);
+        continue;
+      }
+
+      const fields = changes.get(id);
+      changes.delete(id);
+
+      const airtableTime = normalizeTime(record.get('Last Updated Time'));
+      const billComTime = normalizeTime(fields['Last Updated Time']);
+      if (airtableTime === billComTime) continue;
+
+      const billId = fields[billComIdFieldName('Bill')];
+      const pages = await billComApi.dataCall('GetDocumentPages', {id: billId});
+      const docs = [];
+      for (let i = 1; i <= pages.documentPages.numPages; ++i) {
+        docs.push({
+          url:
+            `https://api.bill.com/is/BillImageServlet?entityId=${billId}` +
+                `&sessionId=${sessionId}&pageNumber=${i}`
+        });
+      }
+      fields['Supporting Documents'] = docs;
+      update.fields = fields;
       updates.push(update);
-      continue;
     }
+    await billComIntegrationBase.update(BILL_REPORTING_TABLE, updates);
 
-    const fields = changes.get(id);
-    changes.delete(id);
-
-    const airtableTime = normalizeTime(record.get('Last Updated Time'));
-    const billComTime = normalizeTime(fields['Last Updated Time']);
-    if (airtableTime === billComTime) continue;
-
-    const billId = fields[billComIdFieldName('Bill')];
-    const pages = await billComApi.dataCall('GetDocumentPages', {id: billId});
-    const docs = [];
-    for (let i = 1; i <= pages.documentPages.numPages; ++i) {
-      docs.push({
-        url:
-          `https://api.bill.com/is/BillImageServlet?entityId=${billId}` +
-              `&sessionId=${sessionId}&pageNumber=${i}`
-      });
+    // Create new table records from new Bill.com data.
+    const creates = [];
+    for (const [id, data] of changes) {
+      data[primaryBillComId] = id;
+      creates.push({fields: data});
     }
-    fields['Supporting Documents'] = docs;
-    update.fields = fields;
-    updates.push(update);
+    await billComIntegrationBase.create(BILL_REPORTING_TABLE, creates);
   }
-  await billComIntegrationBase.update(BILL_REPORTING_TABLE, updates);
-
-  // Create new table records from new Bill.com data.
-  const creates = [];
-  for (const [id, data] of changes) {
-    data[primaryBillComId] = id;
-    creates.push({fields: data});
-  }
-  await billComIntegrationBase.create(BILL_REPORTING_TABLE, creates);
 }
