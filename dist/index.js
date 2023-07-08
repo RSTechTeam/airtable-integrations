@@ -19920,6 +19920,7 @@ async function main(api, billComIntegrationBase = new _common_airtable_js__WEBPA
     // Initialize reference data.
     const orgCode = org.get('Local Code');
     const orgId = org.getId();
+    const mso = orgCode === 'BOOM' ? 'BOOM' : 'RS';
     await billComApi.login(orgCode);
     const sessionId = billComApi.getSessionId();
     const vendors =
@@ -19984,7 +19985,7 @@ async function main(api, billComIntegrationBase = new _common_airtable_js__WEBPA
     const updates = [];
     const records =
         await billComIntegrationBase.select(
-            BILL_REPORTING_TABLE, '', `Org = '${orgCode} (RS)'`);
+            BILL_REPORTING_TABLE, '', `Org = '${orgCode} (${mso})'`);
     for (const record of records) {
       const id = record.get(primaryBillComId);
       const update = {id: record.getId()};
