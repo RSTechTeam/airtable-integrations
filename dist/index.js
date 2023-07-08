@@ -19918,7 +19918,7 @@ async function main(api, billComIntegrationBase = new _common_airtable_js__WEBPA
   for (const org of orgs) {
 
     // Initialize reference data.
-    const orgCode = org.get('Department');
+    const orgCode = org.get('Local Code');
     const orgId = org.getId();
     await billComApi.login(orgCode);
     const sessionId = billComApi.getSessionId();
@@ -19984,7 +19984,7 @@ async function main(api, billComIntegrationBase = new _common_airtable_js__WEBPA
     const updates = [];
     const records =
         await billComIntegrationBase.select(
-            BILL_REPORTING_TABLE, '', `Org = '${orgCode}'`);
+            BILL_REPORTING_TABLE, '', `Org = '${orgCode} (RS)'`);
     for (const record of records) {
       const id = record.get(primaryBillComId);
       const update = {id: record.getId()};
@@ -20682,7 +20682,7 @@ async function getApi(
   const entities =
       await new airtable/* Base */.XY(baseId, apiKey).select('Anchor Entities', 'Org IDs');
   const orgIds =
-      entities.map((e) => [e.get('Department'), e.get('Bill.com Org ID')]);
+      entities.map((e) => [e.get('Local Code'), e.get('Bill.com Org ID')]);
   return new Api(new Map(orgIds), userName, password, devKey, test);
 }
 

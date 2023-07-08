@@ -92,7 +92,7 @@ export async function main(api, billComIntegrationBase = new Base()) {
   for (const org of orgs) {
 
     // Initialize reference data.
-    const orgCode = org.get('Department');
+    const orgCode = org.get('Local Code');
     const orgId = org.getId();
     await billComApi.login(orgCode);
     const sessionId = billComApi.getSessionId();
@@ -158,7 +158,7 @@ export async function main(api, billComIntegrationBase = new Base()) {
     const updates = [];
     const records =
         await billComIntegrationBase.select(
-            BILL_REPORTING_TABLE, '', `Org = '${orgCode}'`);
+            BILL_REPORTING_TABLE, '', `Org = '${orgCode} (RS)'`);
     for (const record of records) {
       const id = record.get(primaryBillComId);
       const update = {id: record.getId()};
