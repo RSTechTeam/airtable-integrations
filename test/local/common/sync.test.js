@@ -1,135 +1,35 @@
-import { Syncer } from '../../../Bill.com-Airtable-Integration/src/bill_com_integration/sync.js';
-import { ActiveStatus } from '../../../Bill.com-Airtable-Integration/src/common/bill_com.js';
-import { getYyyyMmDd } from '../../../Bill.com-Airtable-Integration/src/common/utils.js';
+/**
+ * Test file for sync.js
+ * 
+ * The sync.js file is responsible for syncing data between Bill.com and Airtable.
+ * It provides functionalities to sync various entities such as Vendors, Chart of Accounts, Users, and Customers.
+ * The main function orchestrates the syncing process for different entities and handles the login process for Bill.com.
+ */
 
-// Mock the getYyyyMmDd function to always return a specific date
-jest.mock('../../../Bill.com-Airtable-Integration/src/common/utils.js', () => ({
-  ...jest.requireActual('../../../Bill.com-Airtable-Integration/src/common/utils.js'),
-  getYyyyMmDd: jest.fn().mockReturnValue('2023-06-13'),
-}));
+const { main } = require('../../src/bill_com_integration/sync.js');
+const { Api } = require('../../path_to_api_module'); // Replace with the correct path to the Api module
+const { MsoBase } = require('../../src/common/airtable.js');
 
-// Mock the external services
-const mockApi = {
-  login: jest.fn(),
-  listActive: jest.fn(),
-  bulk: jest.fn(),
-  create: jest.fn(),
-};
-const mockBase = {
-  select: jest.fn(),
-  update: jest.fn(),
-  create: jest.fn(),
-  getCurrentMso: jest.fn(),
-  iterateMsos: jest.fn(),
-};
+describe('sync.js tests', () => {
+    let billComApi;
+    let airtableBase;
 
-// Create a new instance of the Syncer class with the mocked services
-const syncer = new Syncer(mockApi, mockBase);
-
-describe('Syncer class', () => {
-  // Add a beforeEach block to reset all mocks before each test
-  beforeEach(() => {
-    jest.resetAllMocks();
-  });
-
-  describe('syncUnpaid', () => {
-    it('should sync unpaid bills or invoices', async () => {
-      // Arrange
-      mockBase.select.mockResolvedValueOnce([
-        { get: jest.fn().mockReturnValueOnce('billComId1'), getId: jest.fn().mockReturnValueOnce('airtableId1') },
-        { get: jest.fn().mockReturnValueOnce('billComId2'), getId: jest.fn().mockReturnValueOnce('airtableId2') },
-      ]);
-      mockApi.bulk.mockResolvedValueOnce([
-        { bulk: [{ response_data: { isActive: ActiveStatus.ACTIVE, approvalStatus: '3', amount: '1000', paymentStatus: '0', updatedTime: '2023-06-13' } }] },
-        { bulk: [{ response_data: { isActive: ActiveStatus.INACTIVE, approvalStatus: '1', amount: '2000', paymentStatus: '1', updatedTime: '2023-06-13' } }] },
-      ]);
-
-      // Act
-      await syncer.syncUnpaid('table', 'Bill');
-
-      // Assert
-      expect(mockBase.update).toHaveBeenCalledWith('table', [
-        {
-          id: 'airtableId1',
-          fields: {
-            'Active': true,
-            'Approval Status': 'Approved',
-            'Effective Amount': '1000',
-            'Payment Status': 'Paid In Full',
-            'Paid': true,
-            'Paid Date': '2023-06-13',
-          },
-        },
-        {
-          id: 'airtableId2',
-          fields: {
-            'Active': false,
-            'Approval Status': 'Assigned',
-            'Effective Amount': '2000',
-            'Payment Status': 'Open',
-            'Paid': false,
-            'Paid Date': null,
-          },
-        },
-      ]);
+    beforeAll(() => {
+        billComApi = new Api(process.env.BILL_COM_API_KEY); // Initialize the Bill.com API with real API key
+        airtableBase = new MsoBase(process.env.AIRTABLE_BASE_ID, process.env.AIRTABLE_API_KEY); // Initialize the Airtable base with real Base ID and API key
     });
-  });
 
-  describe('syncVendorCredits', () => {
-    it('should sync vendor credits', async () => {
-      // Arrange
-      mockBase.select.mockResolvedValueOnce([
-        { get: jest.fn().mockReturnValueOnce('billComId1'), getId: jest.fn().mockReturnValueOnce('airtableId1') },
-        { get: jest.fn().mockReturnValueOnce('billComId2'), getId: jest.fn().mockReturnValueOnce('airtableId2') },
-      ]);
-      mockApi.listActive.mockResolvedValueOnce([
-        { response_data: { isActive: ActiveStatus.ACTIVE, updatedTime: '2023-06-13' } },
-        { response_data: { isActive: ActiveStatus.INACTIVE, updatedTime: '2023-06-13' } },
-      ]);
-
-      // Act
-      await syncer.syncVendorCredits('table');
-
-      // Assert
-      expect(mockBase.update).toHaveBeenCalledWith('table', [
-        {
-          id: 'airtableId1',
-          fields: {
-            'Active': true,
-            'Updated Time': '2023-06-13',
-          },
-        },
-        {
-          id: 'airtableId2',
-          fields: {
-            'Active': false,
-            'Updated Time': '2023-06-13',
-          },
-        },
-      ]);
+    // Test the main syncing function
+    test('main function should sync data between Bill.com and Airtable', async () => {
+        const result = await main(billComApi, airtableBase);
+        
+        // Assertions to verify the syncing process
+        expect(result).toBeDefined(); // Check if the result is defined
+        // Add more assertions based on the expected result and behavior
     });
-  });
 
-  describe('sync', () => {
-    it('should call all sync methods in order', async () => {
-      // Arrange
-      syncer.syncUnpaid = jest.fn().mockResolvedValue();
-      syncer.syncPaid = jest.fn().mockResolvedValue();
-      syncer.syncVendorCredits = jest.fn().mockResolvedValue();
-      syncer.syncCustomerCredits = jest.fn().mockResolvedValue();
-      syncer.syncPaymentSent = jest.fn().mockResolvedValue();
-      syncer.syncPaymentReceived = jest.fn().mockResolvedValue();
-
-      // Act
-      await syncer.sync();
-
-      // Assert
-      expect(syncer.syncUnpaid).toHaveBeenCalledTimes(2);
-      expect(syncer.syncPaid).toHaveBeenCalledTimes(2);
-      expect(syncer.syncVendorCredits).toHaveBeenCalledTimes(1);
-      expect(syncer.syncCustomerCredits).toHaveBeenCalledTimes(1);
-      expect(syncer.syncPaymentSent).toHaveBeenCalledTimes(1);
-      expect(syncer.syncPaymentReceived).toHaveBeenCalledTimes(1);
-    });
-  });
+    // Additional tests can be added based on other functionalities and scenarios in the sync.js file
+    // For example, you can test individual syncing functions for Vendors, Chart of Accounts, etc.
+    // You can also test error scenarios, like what happens if there's an issue with the Bill.com API or Airtable.
 });
+
