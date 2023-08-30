@@ -19357,6 +19357,8 @@ async function main(billComApi, airtableBase = new airtable/* Base */.XY()) {
                       addressCountry: newVendor.get('Country'),
                       email: newVendor.get('Email'),
                       phone: newVendor.get('Phone'),
+                      track1099: newVendor.get('1099 Vendor?'),
+                      taxId: newVendor.get('Tax ID'),
                     });
             await billComIntegrationBase.update(
                 NEW_VENDORS_TABLE,
