@@ -19292,8 +19292,38 @@ class FormData {
 
 
 
+/** The Bill.com API connection. */
+let billComApi;
+
 /** The Bill.com Integration Airtable Base. */
 let billComIntegrationBase;
+
+/**
+ * @param {?Object<string, *>} attachments
+ * @param {string} id - The Bill.com ID of the object to attach the document.
+ * @return {!Promise<undefined>}
+ */
+async function uploadAttachments(attachments, id) {
+  const data = new FormData();
+  data.set('devKey', billComApi.getDevKey());
+  data.set('sessionId', billComApi.getSessionId());
+  for (const attachment of (attachments || [])) {
+
+    // Fetch the attachment.
+    const response = await (0,src/* default */.ZP)(attachment.url);
+    if (!response.ok) {
+      (0,utils/* fetchError */.Tl)(response.status, attachment.filename, response.statusText);
+    }
+
+    // Download it.
+    const file = await response.blob();
+
+    // Upload it.
+    data.set('file', file, attachment.filename);
+    data.set('data', JSON.stringify({id: id, fileName: attachment.filename}));
+    await (0,bill_com/* apiCall */.k_)('UploadAttachment', {}, data);
+  }
+}
 
 /**
  * @param {string} table
@@ -19306,13 +19336,14 @@ async function getBillComId(table, airtableId) {
 }
 
 /**
- * @param {!Api} billComApi
+ * @param {!Api} api
  * @param {!Base=} airtableBase
  * @return {!Promise<undefined>}
  */
-async function main(billComApi, airtableBase = new airtable/* Base */.XY()) {
+async function main(api, airtableBase = new airtable/* Base */.XY()) {
   const NEW_VENDORS_TABLE = 'New Vendors';
 
+  billComApi = api;
   billComIntegrationBase = airtableBase;
 
   // Sync for each Org/MSO.
@@ -19444,29 +19475,8 @@ async function main(billComApi, airtableBase = new airtable/* Base */.XY()) {
               });
 
           // Upload the Supporting Documents.
-          const data = new FormData();
-          data.set('devKey', billComApi.getDevKey());
-          data.set('sessionId', billComApi.getSessionId());
-          const docs = newCheckRequest.get('Supporting Documents') || [];
-          for (const doc of docs) {
-
-            // Fetch the document.
-            const response = await (0,src/* default */.ZP)(doc.url);
-            if (!response.ok) {
-              (0,utils/* fetchError */.Tl)(response.status, doc.filename, response.statusText);
-            }
-
-            // Download it.
-            const file = await response.blob();
-
-            // Upload it.
-            data.set('file', file, doc.filename);
-            data.set(
-                'data',
-                JSON.stringify({id: newBillId, fileName: doc.filename}));
-
-            await (0,bill_com/* apiCall */.k_)('UploadAttachment', {}, data);
-          }
+          await uploadAttachments(
+              newCheckRequest.get('Supporting Documents'), newBillId);
 
           return {
             'Active': true,
@@ -20566,7 +20576,7 @@ class Api {
   /**
    * @param {string} endpoint
    * @param {string} params
-   * @return {!Promise<!Object<stri3g, *>>} endpoint-specific response_data.
+   * @return {!Promise<!Object<string, *>>} endpoint-specific response_data.
    */
   call(endpoint, params) {
     (0,github_actions_core/* log */.cM)(params);

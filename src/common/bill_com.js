@@ -116,7 +116,7 @@ export class Api {
   /**
    * @param {string} endpoint
    * @param {string} params
-   * @return {!Promise<!Object<stri3g, *>>} endpoint-specific response_data.
+   * @return {!Promise<!Object<string, *>>} endpoint-specific response_data.
    */
   call(endpoint, params) {
     log(params);
