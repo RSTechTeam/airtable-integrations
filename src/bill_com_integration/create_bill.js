@@ -108,6 +108,7 @@ export async function main(api, airtableBase = new Base()) {
             await billComIntegrationBase.update(
                 NEW_VENDORS_TABLE,
                 [{id: newVendorId, fields: {[MSO_BILL_COM_ID]: vendorId}}]);
+            await uploadAttachments(newVendor.get('W-9 Form'), vendorId);
           } else {
             vendorId =
                 await getBillComId(
