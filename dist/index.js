@@ -19633,6 +19633,13 @@ class Syncer {
       changes.set(e.id, change);
     }
 
+    if (entity === 'Vendor') {
+      for (const [id, change] of changes) {
+        const urls = await this.billComApi_.getDocumentPages(id);
+        change.Documents = urls.map(url => ({url: url}));
+      }
+    }
+
     // Update every existing table record based on the entity data.
     const updates = [];
     for (const record of await this.airtableBase_.select(table)) {
@@ -20485,17 +20492,24 @@ const ActiveStatus = {ACTIVE: '1', INACTIVE: '2'};
 const rateLimit = pLimit(3);
 
 /**
+ * @param {boolean=} test
+ * @return {string}
+ */
+function baseUrl(test = false) {
+  return `https://api${test ? '-sandbox' : ''}.bill.com`;
+}
+
+/**
  * @param {string} endpoint 
  * @param {!Object<string, *>} headers
  * @param {(string|FormData)} body
- * @param {boolean=} test
+ * @param {boolean} test
  * @return {!Promise<!Object<string, *>>} endpoint-specific response_data.
  */
-async function apiCall(endpoint, headers, body, test = false) {
+async function apiCall(endpoint, headers, body, test) {
   const response =
       await (0,src/* default */.ZP)(
-          `https://api${test ? '-sandbox' : ''}.bill.com/` +
-              `api/v2/${endpoint}.json`,
+          `${baseUrl(test)}/api/v2/${endpoint}.json`,
           {method: 'POST', headers: headers, body: body});
   const json = await response.json();
   (0,github_actions_core/* logJson */.u2)(endpoint, json);
@@ -20657,6 +20671,20 @@ class Api {
   listActive(entity, filters = []) {
     filters.push(filter('isActive', '=', ActiveStatus.ACTIVE));
     return this.list(entity, filters);
+  }
+  
+  /**
+   * @param {string} id
+   * @return {string[]} The document URLs.
+   */
+  async getDocumentPages(id) {
+    const pages = await this.dataCall('GetDocumentPages', {id: id});
+    const urlPrefix = baseUrl(this.test_) + pages.documentPages.fileUrl;
+    const docs = [];
+    for (let i = 1; i <= pages.documentPages.numPages; ++i) {
+      docs.push(urlPrefix + `&sessionId=${this.sessionId_}&pageNumber=${i}`);
+    }
+    return docs;
   }
 
   /**
