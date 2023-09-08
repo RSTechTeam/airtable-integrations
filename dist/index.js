@@ -19633,12 +19633,13 @@ class Syncer {
       changes.set(e.id, change);
     }
 
-    if (entity === 'Vendor') {
-      for (const [id, change] of changes) {
-        const urls = await this.billComApi_.getDocumentPages(id);
-        change.Documents = urls.map(url => ({url: url}));
-      }
-    }
+    // Reconsider when BILL supports retrieving Vendor documents.
+    // if (entity === 'Vendor') {
+    //   for (const [id, change] of changes) {
+    //     const urls = await this.billComApi_.getDocumentPages(id);
+    //     change.Documents = urls.map(url => ({url: url}));
+    //   }
+    // }
 
     // Update every existing table record based on the entity data.
     const updates = [];
