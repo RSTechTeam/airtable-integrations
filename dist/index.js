@@ -19283,8 +19283,11 @@ class FormData {
 
 
 
+// EXTERNAL MODULE: ./src/common/github_actions_core.js
+var github_actions_core = __nccwpck_require__(1444);
 ;// CONCATENATED MODULE: ./src/bill_com_integration/create_bill.js
 /** @fileoverview Creates a Bill.com Bill based on a new Check Request. */
+
 
 
 
@@ -19333,6 +19336,10 @@ async function uploadAttachments(attachments, id) {
 async function getBillComId(table, airtableId) {
   const record = await billComIntegrationBase.find(table, airtableId);
   return record.get(airtable/* MSO_BILL_COM_ID */.yG);
+}
+
+function createBill(bill) {
+  return billComApi.create('Bill', bill);
 }
 
 /**
@@ -19434,7 +19441,7 @@ async function main(api, airtableBase = new airtable/* Base */.XY()) {
             });
           }
 
-          // Create Bill.com Bill based on Check Request.
+          // Compile Bill.com Bill based on Check Request.
           const requester = newCheckRequest.get('Requester Name');
           const invoiceId =
               newCheckRequest.get('Vendor Invoice ID') ||
@@ -19445,20 +19452,34 @@ async function main(api, airtableBase = new airtable/* Base */.XY()) {
                   `${requester.substring(0, 15)}` +
                       ` - ${newCheckRequest.getId().substring(3, 6)}`;
           const notes = newCheckRequest.get('Notes');
-          const newBillId =
-              await billComApi.create(
-                  'Bill',
-                  {
-                    vendorId: vendorId,
-                    invoiceNumber: invoiceId,
-                    invoiceDate: newCheckRequest.get('Expense Date'),
-                    dueDate: newCheckRequest.get('Due Date'),
-                    description:
-                      `Submitted by ${requester}` +
-                          ` (${newCheckRequest.get('Requester Email')}).` +
-                          (notes == undefined ? '' : `\n\nNotes:\n${notes}`),
-                    billLineItems: billComLineItems,
-                  });
+          const bill = {
+            vendorId: vendorId,
+            invoiceNumber: invoiceId,
+            invoiceDate: newCheckRequest.get('Expense Date'),
+            dueDate: newCheckRequest.get('Due Date'),
+            description:
+              `Submitted by ${requester}` +
+                  ` (${newCheckRequest.get('Requester Email')}).` +
+                  (notes == undefined ? '' : `\n\nNotes:\n${notes}`),
+            billLineItems: billComLineItems,
+          };
+
+          // Create the Bill.
+          let newBillId;
+          for (let i = 1; newBillId == undefined; ++i) {
+            try {
+              newBillId = await billComApi.create('Bill', bill);
+            } catch (err) {
+
+              // Handle duplicate Vendor Invoice ID.
+              if (err.message.includes('BDC_1171')) {
+                (0,github_actions_core/* warn */.ZK)(err.message);
+                bill.invoiceNumber = `${invoiceId} (${i})`;
+                continue;
+              }
+              throw err;
+            }
+          }
 
           // Set the Bill's approvers.
           const approverAirtableIds = newCheckRequest.get('Approvers') || [];
@@ -20737,6 +20758,7 @@ async function getApi(
 
 /* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
 /* harmony export */   "cM": () => (/* binding */ log),
+/* harmony export */   "ZK": () => (/* binding */ warn),
 /* harmony export */   "Np": () => (/* binding */ getInput),
 /* harmony export */   "vU": () => (/* binding */ error),
 /* harmony export */   "u2": () => (/* binding */ logJson)
@@ -20757,6 +20779,9 @@ async function getApi(
 
 /** @type {function(string)} */
 const log = _actions_core__WEBPACK_IMPORTED_MODULE_0__.info;
+
+/** @type {function(string)} */
+const warn = _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning;
 
 /**
  * @param {string} input

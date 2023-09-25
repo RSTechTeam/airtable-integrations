@@ -5,6 +5,7 @@ import {apiCall} from '../common/bill_com.js';
 import {Base, isSameMso, MSO_BILL_COM_ID} from '../common/airtable.js';
 import {fetchError, PRIMARY_ORG} from '../common/utils.js';
 import {FormData} from 'formdata-node';
+import {warn} from '../common/github_actions_core.js';
 
 /** The Bill.com API connection. */
 let billComApi;
@@ -47,6 +48,10 @@ async function uploadAttachments(attachments, id) {
 async function getBillComId(table, airtableId) {
   const record = await billComIntegrationBase.find(table, airtableId);
   return record.get(MSO_BILL_COM_ID);
+}
+
+function createBill(bill) {
+  return billComApi.create('Bill', bill);
 }
 
 /**
@@ -148,7 +153,7 @@ export async function main(api, airtableBase = new Base()) {
             });
           }
 
-          // Create Bill.com Bill based on Check Request.
+          // Compile Bill.com Bill based on Check Request.
           const requester = newCheckRequest.get('Requester Name');
           const invoiceId =
               newCheckRequest.get('Vendor Invoice ID') ||
@@ -159,20 +164,34 @@ export async function main(api, airtableBase = new Base()) {
                   `${requester.substring(0, 15)}` +
                       ` - ${newCheckRequest.getId().substring(3, 6)}`;
           const notes = newCheckRequest.get('Notes');
-          const newBillId =
-              await billComApi.create(
-                  'Bill',
-                  {
-                    vendorId: vendorId,
-                    invoiceNumber: invoiceId,
-                    invoiceDate: newCheckRequest.get('Expense Date'),
-                    dueDate: newCheckRequest.get('Due Date'),
-                    description:
-                      `Submitted by ${requester}` +
-                          ` (${newCheckRequest.get('Requester Email')}).` +
-                          (notes == undefined ? '' : `\n\nNotes:\n${notes}`),
-                    billLineItems: billComLineItems,
-                  });
+          const bill = {
+            vendorId: vendorId,
+            invoiceNumber: invoiceId,
+            invoiceDate: newCheckRequest.get('Expense Date'),
+            dueDate: newCheckRequest.get('Due Date'),
+            description:
+              `Submitted by ${requester}` +
+                  ` (${newCheckRequest.get('Requester Email')}).` +
+                  (notes == undefined ? '' : `\n\nNotes:\n${notes}`),
+            billLineItems: billComLineItems,
+          };
+
+          // Create the Bill.
+          let newBillId;
+          for (let i = 1; newBillId == undefined; ++i) {
+            try {
+              newBillId = await billComApi.create('Bill', bill);
+            } catch (err) {
+
+              // Handle duplicate Vendor Invoice ID.
+              if (err.message.includes('BDC_1171')) {
+                warn(err.message);
+                bill.invoiceNumber = `${invoiceId} (${i})`;
+                continue;
+              }
+              throw err;
+            }
+          }
 
           // Set the Bill's approvers.
           const approverAirtableIds = newCheckRequest.get('Approvers') || [];

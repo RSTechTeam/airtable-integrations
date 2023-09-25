@@ -13,6 +13,9 @@ import {lazyCache} from './utils.js'
 /** @type {function(string)} */
 export const log = core.info;
 
+/** @type {function(string)} */
+export const warn = core.warning;
+
 /**
  * @param {string} input
  * @return {function(): string} required input value
