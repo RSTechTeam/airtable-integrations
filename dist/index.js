@@ -19506,7 +19506,7 @@ async function main(api, airtableBase = new airtable/* Base */.XY()) {
           return {
             'Active': true,
             'MSO': [msoRecordId],
-            'Vendor Invoice ID': invoiceId,
+            'Vendor Invoice ID': bill.invoiceNumber,
             [airtable/* MSO_BILL_COM_ID */.yG]: newBillId,
           };
         });

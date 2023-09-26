@@ -218,7 +218,7 @@ export async function main(api, airtableBase = new Base()) {
           return {
             'Active': true,
             'MSO': [msoRecordId],
-            'Vendor Invoice ID': invoiceId,
+            'Vendor Invoice ID': bill.invoiceNumber,
             [MSO_BILL_COM_ID]: newBillId,
           };
         });
