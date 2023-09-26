@@ -50,10 +50,6 @@ async function getBillComId(table, airtableId) {
   return record.get(MSO_BILL_COM_ID);
 }
 
-function createBill(bill) {
-  return billComApi.create('Bill', bill);
-}
-
 /**
  * @param {!Api} api
  * @param {!Base=} airtableBase

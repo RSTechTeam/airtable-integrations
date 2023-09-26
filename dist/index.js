@@ -19338,10 +19338,6 @@ async function getBillComId(table, airtableId) {
   return record.get(airtable/* MSO_BILL_COM_ID */.yG);
 }
 
-function createBill(bill) {
-  return billComApi.create('Bill', bill);
-}
-
 /**
  * @param {!Api} api
  * @param {!Base=} airtableBase
