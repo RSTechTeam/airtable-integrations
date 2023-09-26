@@ -93,27 +93,30 @@ export async function main(api, airtableBase = new Base()) {
             const newVendor =
                 await billComIntegrationBase.find(
                     NEW_VENDORS_TABLE, newVendorId);
-            const zipCode = newVendor.get('Zip Code');
-            vendorId =
-                await billComApi.create(
-                    'Vendor',
-                    {
-                      name: newVendor.get('Name'),
-                      address1: newVendor.get('Address Line 1'),
-                      address2: newVendor.get('Address Line 2'),
-                      addressCity: newVendor.get('City'),
-                      addressState: newVendor.get('State'),
-                      addressZip: zipCode && zipCode.toString(),
-                      addressCountry: newVendor.get('Country'),
-                      email: newVendor.get('Email'),
-                      phone: newVendor.get('Phone'),
-                      track1099: newVendor.get('1099 Vendor?'),
-                      taxId: newVendor.get('Tax ID'),
-                    });
-            await billComIntegrationBase.update(
-                NEW_VENDORS_TABLE,
-                [{id: newVendorId, fields: {[MSO_BILL_COM_ID]: vendorId}}]);
-            await uploadAttachments(newVendor.get('W-9 Form'), vendorId);
+            vendorId = newVendor.get(MSO_BILL_COM_ID);
+            if (vendorId == null) {
+              const zipCode = newVendor.get('Zip Code');
+              vendorId =
+                  await billComApi.create(
+                      'Vendor',
+                      {
+                        name: newVendor.get('Name'),
+                        address1: newVendor.get('Address Line 1'),
+                        address2: newVendor.get('Address Line 2'),
+                        addressCity: newVendor.get('City'),
+                        addressState: newVendor.get('State'),
+                        addressZip: zipCode && zipCode.toString(),
+                        addressCountry: newVendor.get('Country'),
+                        email: newVendor.get('Email'),
+                        phone: newVendor.get('Phone'),
+                        track1099: newVendor.get('1099 Vendor?'),
+                        taxId: newVendor.get('Tax ID'),
+                      });
+              await billComIntegrationBase.update(
+                  NEW_VENDORS_TABLE,
+                  [{id: newVendorId, fields: {[MSO_BILL_COM_ID]: vendorId}}]);
+              await uploadAttachments(newVendor.get('W-9 Form'), vendorId);
+            }
           } else {
             vendorId =
                 await getBillComId(
