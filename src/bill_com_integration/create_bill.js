@@ -187,7 +187,7 @@ export async function main(api, airtableBase = new Base()) {
             } catch (err) {
 
               // Handle duplicate Vendor Invoice ID.
-              if (err.message.includes('BDC_1171')) {
+              if (err.message.includes('BDC_5370')) {
                 warn(err.message);
                 bill.invoiceNumber = `${invoiceId} (${i})`;
                 continue;
