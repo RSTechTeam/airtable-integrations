@@ -19456,7 +19456,7 @@ async function main(api, airtableBase = new airtable/* Base */.XY()) {
                   // with 3 to pretty divide these parts.
                   `${requester.substring(0, 15)}` +
                       ` - ${newCheckRequest.getId().substring(3, 6)}`;
-          const notes = newCheckRequest.get('Notes');
+          const notes = encodeURIComponent(newCheckRequest.get('Notes'));
           const bill = {
             vendorId: await getVendorId(newCheckRequest),
             invoiceNumber: invoiceId,
