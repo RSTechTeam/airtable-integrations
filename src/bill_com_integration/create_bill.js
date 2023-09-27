@@ -51,12 +51,55 @@ async function getBillComId(table, airtableId) {
 }
 
 /**
+ * @param {!Record<!TField>} checkRequest
+ * @return {!Promise<string>} vendorId
+ */
+async function getVendorId(checkRequest) {
+  const NEW_VENDORS_TABLE = 'New Vendors';
+
+  // Get existing Vendor ID.
+  if (!checkRequest.get('New Vendor?')) {
+    return getBillComId('Existing Vendors', checkRequest.get('Vendor')[0]);
+  }
+
+  // Check if new Vendor and ID were already created.
+  const newVendorId = checkRequest.get('New Vendor')[0];
+  const newVendor =
+      await billComIntegrationBase.find(NEW_VENDORS_TABLE, newVendorId);
+  let vendorId = newVendor.get(MSO_BILL_COM_ID);
+  if (vendorId != null) return vendorId;
+
+  // Create new Vendor and ID.
+  const zipCode = newVendor.get('Zip Code');
+  vendorId =
+      await billComApi.create(
+          'Vendor',
+          {
+            name: newVendor.get('Name'),
+            address1: newVendor.get('Address Line 1'),
+            address2: newVendor.get('Address Line 2'),
+            addressCity: newVendor.get('City'),
+            addressState: newVendor.get('State'),
+            addressZip: zipCode && zipCode.toString(),
+            addressCountry: newVendor.get('Country'),
+            email: newVendor.get('Email'),
+            phone: newVendor.get('Phone'),
+            track1099: newVendor.get('1099 Vendor?'),
+            taxId: newVendor.get('Tax ID'),
+          });
+  await billComIntegrationBase.update(
+      NEW_VENDORS_TABLE,
+      [{id: newVendorId, fields: {[MSO_BILL_COM_ID]: vendorId}}]);
+  await uploadAttachments(newVendor.get('W-9 Form'), vendorId);
+  return vendorId;
+}
+
+/**
  * @param {!Api} api
  * @param {!Base=} airtableBase
  * @return {!Promise<undefined>}
  */
 export async function main(api, airtableBase = new Base()) {
-  const NEW_VENDORS_TABLE = 'New Vendors';
 
   billComApi = api;
   billComIntegrationBase = airtableBase;
@@ -80,43 +123,6 @@ export async function main(api, airtableBase = new Base()) {
           if ((hasMso && !isSameMso(newCheckRequest, msoRecordId)) ||
               (!hasMso && msoCode !== PRIMARY_ORG)) {
             return null;
-          }
-          
-          // Get the Vendor to pay for whom this request was submitted.
-          let vendorId;
-          if (newCheckRequest.get('New Vendor?')) {
-            const newVendorId = newCheckRequest.get('New Vendor')[0];
-            const newVendor =
-                await billComIntegrationBase.find(
-                    NEW_VENDORS_TABLE, newVendorId);
-            vendorId = newVendor.get(MSO_BILL_COM_ID);
-            if (vendorId == null) {
-              const zipCode = newVendor.get('Zip Code');
-              vendorId =
-                  await billComApi.create(
-                      'Vendor',
-                      {
-                        name: newVendor.get('Name'),
-                        address1: newVendor.get('Address Line 1'),
-                        address2: newVendor.get('Address Line 2'),
-                        addressCity: newVendor.get('City'),
-                        addressState: newVendor.get('State'),
-                        addressZip: zipCode && zipCode.toString(),
-                        addressCountry: newVendor.get('Country'),
-                        email: newVendor.get('Email'),
-                        phone: newVendor.get('Phone'),
-                        track1099: newVendor.get('1099 Vendor?'),
-                        taxId: newVendor.get('Tax ID'),
-                      });
-              await billComIntegrationBase.update(
-                  NEW_VENDORS_TABLE,
-                  [{id: newVendorId, fields: {[MSO_BILL_COM_ID]: vendorId}}]);
-              await uploadAttachments(newVendor.get('W-9 Form'), vendorId);
-            }
-          } else {
-            vendorId =
-                await getBillComId(
-                    'Existing Vendors', newCheckRequest.get('Vendor')[0]);
           }
 
           // Get the Check Request Line Items.
@@ -164,7 +170,7 @@ export async function main(api, airtableBase = new Base()) {
                       ` - ${newCheckRequest.getId().substring(3, 6)}`;
           const notes = newCheckRequest.get('Notes');
           const bill = {
-            vendorId: vendorId,
+            vendorId: await getVendorId(newCheckRequest),
             invoiceNumber: invoiceId,
             invoiceDate: newCheckRequest.get('Expense Date'),
             dueDate: newCheckRequest.get('Due Date'),
