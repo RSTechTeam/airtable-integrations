@@ -20159,12 +20159,14 @@ async function main(billComApi, accountingBase = new _common_airtable_js__WEBPAC
 /* harmony import */ var airtable__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(5447);
 /* harmony import */ var _inputs_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(4684);
 /* harmony import */ var _utils_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(381);
+/* harmony import */ var _common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(1444);
 /** @fileoverview Utilities for interacting with Airtable. */
 
 /**
  * The official Airtable JavaScript library.
  * https://github.com/Airtable/airtable.js
  */
+
 
 
 
@@ -20185,17 +20187,23 @@ function isSameMso(record, msoRecordId) {
 }
 
 /**
+ * @param {string} querying e.g., selecting, updating, etc
+ * @param {string} table
+ * @param {!Error} err
+ */
+function throwError(querying, table, err) {
+  throw new Error(
+      `Error ${querying} records in Airtable Table ${table}: ${err}`);
+}
+
+/**
  * @param {!Promise<*>} promise
  * @param {string} querying e.g., selecting, updating, etc
  * @param {string} table
  * @return {!Promise<*>}
  */
 function catchError(promise, querying, table) {
-  return promise.catch(
-      (err) => {
-        throw new Error(
-            `Error ${querying} records in Airtable Table ${table}: ${err}`);
-      });
+  return promise.catch(err => throwError(querying, table, err));
 }
 
 /**
@@ -20258,11 +20266,19 @@ class Base {
    */
    async selectAndUpdate(table, view, fieldsFunc) {
     const updates = [];
+    let firstErr;
     for (const record of await this.select(table, view)) {
-      const fields = await fieldsFunc(record);
-      fields && updates.push({id: record.getId(), fields: fields});
+      try {
+        const fields = await fieldsFunc(record);
+        fields && updates.push({id: record.getId(), fields: fields});
+      } catch (err) {
+        (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_3__/* .warn */ .ZK)(err.message);
+        firstErr ||= err;
+      }
     }
-    return this.update(table, updates);
+    const update = await this.update(table, updates);
+    firstErr && throwError('selectAndUpdating', table, firstErr);
+    return update;
    }
 
   /**
