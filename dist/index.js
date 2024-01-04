@@ -19460,7 +19460,7 @@ async function main(api, airtableBase = new airtable/* Base */.XY()) {
           const bill = {
             vendorId: await getVendorId(newCheckRequest),
             invoiceNumber: invoiceId,
-            invoiceDate: newCheckRequest.get('Expense Date'),
+            invoiceDate: newCheckRequest.get('Invoice Date'),
             dueDate: newCheckRequest.get('Due Date'),
             description:
               `Submitted by ${requester}` +
