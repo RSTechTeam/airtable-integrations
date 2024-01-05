@@ -20064,7 +20064,7 @@ async function main(api, billComIntegrationBase = new _common_airtable_js__WEBPA
         if (!response.ok) {
           (0,_common_utils_js__WEBPACK_IMPORTED_MODULE_1__/* .fetchError */ .Tl)(response.status, billId, response.statusText);
         }
-        docs.push(URL.createObjectURL(await response.blob()));
+        docs.push(Buffer.from(await response.arrayBuffer()).toString('base64'));
 
         // docs.push({
         //   url:

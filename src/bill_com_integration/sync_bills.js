@@ -190,7 +190,7 @@ export async function main(api, billComIntegrationBase = new Base()) {
         if (!response.ok) {
           fetchError(response.status, billId, response.statusText);
         }
-        docs.push(URL.createObjectURL(await response.blob()));
+        docs.push(Buffer.from(await response.arrayBuffer()).toString('base64'));
 
         // docs.push({
         //   url:
