@@ -1,8 +1,7 @@
 /** @fileoverview Syncs Bill.com Bill Line Item data into Airtable. */
 
-import fetch from 'node-fetch';
 import {Base} from '../common/airtable.js';
-import {fetchError, getYyyyMmDd} from '../common/utils.js';
+import {getYyyyMmDd} from '../common/utils.js';
 
 /** Bill.com Bill Approval Statuses. */
 const approvalStatuses = new Map([
@@ -181,22 +180,11 @@ export async function main(api, billComIntegrationBase = new Base()) {
       const pages = await billComApi.dataCall('GetDocumentPages', {id: billId});
       const docs = [];
       for (let i = 1; i <= pages.documentPages.numPages; ++i) {
-        const response =
-            await fetch(
-                `https://api.bill.com/is/BillImageServlet?entityId=${billId}` +
-                    `&pageNumber=${i}`,
-                {method: 'GET', headers: {sessionId: sessionId}});
-
-        if (!response.ok) {
-          fetchError(response.status, billId, response.statusText);
-        }
-        docs.push(Buffer.from(await response.arrayBuffer()).toString('base64'));
-
-        // docs.push({
-        //   url:
-        //     `https://api.bill.com/is/BillImageServlet?entityId=${billId}` +
-        //         `&sessionId=${sessionId}&pageNumber=${i}`
-        // });
+        docs.push({
+          url:
+            `https://api.bill.com/is/BillImageServlet?entityId=${billId}` +
+                `&sessionId=${sessionId}&pageNumber=${i}`
+        });
       }
       fields['Supporting Documents'] = docs;
       update.fields = fields;
