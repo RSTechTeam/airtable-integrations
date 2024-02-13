@@ -190,18 +190,18 @@ export async function main(api, airtableBase = new MsoBase()) {
           }
 
           // Set the Bill's approvers.
-          const approverAirtableIds = newCheckRequest.get('Approvers') || [];
-          const approverBillComIds =
-              await Promise.all(
-                  approverAirtableIds.map((aid) => getBillComId('Users', aid)));
+          const approvers =
+              newCheckRequest.get('Approvers') ||
+                  mso.get('Default Approvers') || [];              
           await billComApi.dataCall(
               'SetApprovers',
               {
                 objectId: newBillId,
                 entity: 'Bill',
                 approvers:
-                  approverBillComIds.concat(
-                      mso.get('Final Approver Bill.com IDs')),
+                  await Promise.all(
+                      approvers.concat(mso.get('Final Approvers')).map(
+                          a => getBillComId('Users', a))),
               });
 
           // Upload the Supporting Documents.
