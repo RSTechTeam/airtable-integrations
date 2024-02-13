@@ -105,7 +105,7 @@ export async function main(api, airtableBase = new MsoBase()) {
   billComIntegrationBase = airtableBase;
 
   // Sync for each Org/MSO.
-  for (const mso of billComIntegrationBase.iterateMsos()) {
+  for await (const mso of billComIntegrationBase.iterateMsos()) {
 
     // Get new Check Requests.
     const msoRecordId = mso.getId();
