@@ -2,9 +2,9 @@
 
 import fetch from 'node-fetch';
 import {apiCall} from '../common/bill_com.js';
-import {Base, isSameMso, MSO_BILL_COM_ID} from '../common/airtable.js';
-import {fetchError, PRIMARY_ORG} from '../common/utils.js';
+import {fetchError} from '../common/utils.js';
 import {FormData} from 'formdata-node';
+import {MsoBase, MSO_BILL_COM_ID} from '../common/airtable.js';
 import {warn} from '../common/github_actions_core.js';
 
 /** The Bill.com API connection. */
@@ -96,17 +96,16 @@ async function getVendorId(checkRequest) {
 
 /**
  * @param {!Api} api
- * @param {!Base=} airtableBase
+ * @param {!MsoBase=} airtableBase
  * @return {!Promise<undefined>}
  */
-export async function main(api, airtableBase = new Base()) {
+export async function main(api, airtableBase = new MsoBase()) {
 
   billComApi = api;
   billComIntegrationBase = airtableBase;
 
   // Sync for each Org/MSO.
-  const msos = await billComIntegrationBase.select('MSOs', 'Final Approvers');
-  for (const mso of msos) {
+  for (const mso of billComIntegrationBase.iterateMsos()) {
 
     // Get new Check Requests.
     const msoRecordId = mso.getId();
@@ -116,14 +115,6 @@ export async function main(api, airtableBase = new Base()) {
         'Check Requests',
         'New',
         async (newCheckRequest) => {
-
-          // Skip records not associated with current MSO.
-          // Assume records with no MSO belong to Primary Org.
-          const hasMso = newCheckRequest.get('MSO') !== undefined;
-          if ((hasMso && !isSameMso(newCheckRequest, msoRecordId)) ||
-              (!hasMso && msoCode !== PRIMARY_ORG)) {
-            return null;
-          }
 
           // Get the Check Request Line Items.
           const billComLineItems = [];

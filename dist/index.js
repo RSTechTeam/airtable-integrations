@@ -18853,8 +18853,6 @@ __nccwpck_require__.d(__webpack_exports__, {
 var src = __nccwpck_require__(4028);
 // EXTERNAL MODULE: ./src/common/bill_com.js + 2 modules
 var bill_com = __nccwpck_require__(9668);
-// EXTERNAL MODULE: ./src/common/airtable.js
-var airtable = __nccwpck_require__(5585);
 // EXTERNAL MODULE: ./src/common/utils.js + 1 modules
 var utils = __nccwpck_require__(381);
 // EXTERNAL MODULE: external "util"
@@ -19283,6 +19281,8 @@ class FormData {
 
 
 
+// EXTERNAL MODULE: ./src/common/airtable.js
+var airtable = __nccwpck_require__(5585);
 // EXTERNAL MODULE: ./src/common/github_actions_core.js
 var github_actions_core = __nccwpck_require__(1444);
 ;// CONCATENATED MODULE: ./src/bill_com_integration/create_bill.js
@@ -19384,17 +19384,16 @@ async function getVendorId(checkRequest) {
 
 /**
  * @param {!Api} api
- * @param {!Base=} airtableBase
+ * @param {!MsoBase=} airtableBase
  * @return {!Promise<undefined>}
  */
-async function main(api, airtableBase = new airtable/* Base */.XY()) {
+async function main(api, airtableBase = new airtable/* MsoBase */.Fi()) {
 
   billComApi = api;
   billComIntegrationBase = airtableBase;
 
   // Sync for each Org/MSO.
-  const msos = await billComIntegrationBase.select('MSOs', 'Final Approvers');
-  for (const mso of msos) {
+  for (const mso of billComIntegrationBase.iterateMsos()) {
 
     // Get new Check Requests.
     const msoRecordId = mso.getId();
@@ -19404,14 +19403,6 @@ async function main(api, airtableBase = new airtable/* Base */.XY()) {
         'Check Requests',
         'New',
         async (newCheckRequest) => {
-
-          // Skip records not associated with current MSO.
-          // Assume records with no MSO belong to Primary Org.
-          const hasMso = newCheckRequest.get('MSO') !== undefined;
-          if ((hasMso && !(0,airtable/* isSameMso */.m5)(newCheckRequest, msoRecordId)) ||
-              (!hasMso && msoCode !== utils/* PRIMARY_ORG */.l3)) {
-            return null;
-          }
 
           // Get the Check Request Line Items.
           const billComLineItems = [];
@@ -20152,7 +20143,6 @@ async function main(billComApi, accountingBase = new _common_airtable_js__WEBPAC
 /* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
 /* harmony export */   "dK": () => (/* binding */ BILL_COM_ID_SUFFIX),
 /* harmony export */   "yG": () => (/* binding */ MSO_BILL_COM_ID),
-/* harmony export */   "m5": () => (/* binding */ isSameMso),
 /* harmony export */   "XY": () => (/* binding */ Base),
 /* harmony export */   "Fi": () => (/* binding */ MsoBase)
 /* harmony export */ });
@@ -20176,15 +20166,6 @@ const BILL_COM_ID_SUFFIX = 'Bill.com ID';
 
 /** The primary Org Bill.com ID Field name. */
 const MSO_BILL_COM_ID = `MSO ${BILL_COM_ID_SUFFIX}`;
-
-/**
- * @param {!Record<!TField>} record
- * @param {string} msoRecordId
- * @return {boolean}
- */
-function isSameMso(record, msoRecordId) {
-  return record.get('MSO')[0] === msoRecordId;
-}
 
 /**
  * @param {string} querying e.g., selecting, updating, etc

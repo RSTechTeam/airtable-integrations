@@ -16,15 +16,6 @@ export const BILL_COM_ID_SUFFIX = 'Bill.com ID';
 export const MSO_BILL_COM_ID = `MSO ${BILL_COM_ID_SUFFIX}`;
 
 /**
- * @param {!Record<!TField>} record
- * @param {string} msoRecordId
- * @return {boolean}
- */
-export function isSameMso(record, msoRecordId) {
-  return record.get('MSO')[0] === msoRecordId;
-}
-
-/**
  * @param {string} querying e.g., selecting, updating, etc
  * @param {string} table
  * @param {!Error} err
