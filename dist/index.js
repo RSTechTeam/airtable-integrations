@@ -19861,8 +19861,10 @@ __nccwpck_require__.r(__webpack_exports__);
 /* harmony export */   "main": () => (/* binding */ main)
 /* harmony export */ });
 /* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(5585);
-/* harmony import */ var _common_utils_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(381);
+/* harmony import */ var _common_inputs_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(4684);
+/* harmony import */ var _common_utils_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(381);
 /** @fileoverview Syncs Bill.com Bill Line Item data into Airtable. */
+
 
 
 
@@ -19993,7 +19995,7 @@ async function main(api, billComIntegrationBase = new _common_airtable_js__WEBPA
               'Active': true,
               'Org': [orgId],
               'Submitted By': submitterMatch == null ? null : submitterMatch[1],
-              'Creation Date': (0,_common_utils_js__WEBPACK_IMPORTED_MODULE_1__/* .getYyyyMmDd */ .PQ)(item.createdTime),
+              'Creation Date': (0,_common_utils_js__WEBPACK_IMPORTED_MODULE_2__/* .getYyyyMmDd */ .PQ)(item.createdTime),
               'Invoice Date': bill.invoiceDate,
               'Expense Date': itemVendor.date || bill.invoiceDate,
               [billComIdFieldName('Vendor')]: bill.vendorId,
@@ -20046,8 +20048,8 @@ async function main(api, billComIntegrationBase = new _common_airtable_js__WEBPA
       for (let i = 1; i <= pages.documentPages.numPages; ++i) {
         docs.push({
           url:
-            `https://api.bill.com/is/BillImageServlet?entityId=${billId}` +
-                `&sessionId=${sessionId}&pageNumber=${i}`
+            `${_common_inputs_js__WEBPACK_IMPORTED_MODULE_1__/* .billComTransformUrl */ .hF}?sessionId=${sessionId}&entityId=${billId}` +
+                `&pageNumber=${i}`
         });
       }
       fields['Supporting Documents'] = docs;
@@ -20849,6 +20851,7 @@ function logJson(endpoint, json) {
 /* harmony export */   "Hc": () => (/* binding */ billComDevKey),
 /* harmony export */   "jv": () => (/* binding */ billComUserName),
 /* harmony export */   "Mr": () => (/* binding */ billComPassword),
+/* harmony export */   "hF": () => (/* binding */ billComTransformUrl),
 /* harmony export */   "WI": () => (/* binding */ ecrApproverUserProfileId)
 /* harmony export */ });
 /* harmony import */ var _github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(1444);
@@ -20867,6 +20870,7 @@ const airtableOrgIdsBaseId = (0,_github_actions_core_js__WEBPACK_IMPORTED_MODULE
 const billComDevKey = (0,_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .getInput */ .Np)('bill-com-dev-key');
 const billComUserName = (0,_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .getInput */ .Np)('bill-com-user-name');
 const billComPassword = (0,_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .getInput */ .Np)('bill-com-password');
+const billComTransformUrl = (0,_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .getInput */ .Np)('bill-com-transform-url');
 const ecrApproverUserProfileId =
   (0,_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .getInput */ .Np)('ecr-approver-user-profile-id');
 

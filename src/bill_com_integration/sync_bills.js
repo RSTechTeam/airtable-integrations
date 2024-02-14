@@ -1,6 +1,7 @@
 /** @fileoverview Syncs Bill.com Bill Line Item data into Airtable. */
 
 import {Base} from '../common/airtable.js';
+import {billComTransformUrl} from '../common/inputs.js';
 import {getYyyyMmDd} from '../common/utils.js';
 
 /** Bill.com Bill Approval Statuses. */
@@ -182,8 +183,8 @@ export async function main(api, billComIntegrationBase = new Base()) {
       for (let i = 1; i <= pages.documentPages.numPages; ++i) {
         docs.push({
           url:
-            `https://api.bill.com/is/BillImageServlet?entityId=${billId}` +
-                `&sessionId=${sessionId}&pageNumber=${i}`
+            `${billComTransformUrl}?sessionId=${sessionId}&entityId=${billId}` +
+                `&pageNumber=${i}`
         });
       }
       fields['Supporting Documents'] = docs;

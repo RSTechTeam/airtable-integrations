@@ -16,7 +16,7 @@ jobs:
           # Creates that don't reference other data
           'bill_com_integration_create_approver',
           'door_knocking_create_vendor',
-          # Sync including newlty created data
+          # Sync including newly created data
           'bill_com_integration_sync_internal_customers',
           'bill_com_integration_sync',
           # Creates that reference synced data
@@ -45,4 +45,5 @@ jobs:
           bill-com-dev-key: ${{ secrets.BILL_COM_DEV_KEY }}
           bill-com-user-name: ${{ secrets.BILL_COM_USER_NAME }}
           bill-com-password: ${{ secrets.BILL_COM_PASSWORD }}
+          bill-com-transform-url: ${{ secrets.BILL_COM_TRANSFORM_URL }}
           ecr-approver-user-profile-id: ${{ secrets.ECR_APPROVER_USER_PROFILE_ID }}

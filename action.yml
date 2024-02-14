@@ -22,6 +22,9 @@ inputs:
   bill-com-password:
     description: 'The Bill.com password for login'
     required: true
+  bill-com-transform-url:
+    description: 'The URL that facilitates Bill.com document retrieval HTTP transformations'
+    required: false
   ecr-approver-user-profile-id:
     description: 'The Bill.com User Profile ID for ECR Approvers'
     required: false
