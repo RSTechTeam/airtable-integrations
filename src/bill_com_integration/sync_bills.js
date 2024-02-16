@@ -183,9 +183,9 @@ export async function main(api, billComIntegrationBase = new Base()) {
       const docs = [];
       for (let i = 1; i <= pages.documentPages.numPages; ++i) {
         const url =
-            `${billComTransformUrl}?sessionId=${sessionId}&entityId=${billId}` +
-                `&pageNumber=${i}`;
-        fetch(url); // Warm cache.
+            `${billComTransformUrl()}?entityId=${billId}` +
+                `&sessionId=${sessionId}&pageNumber=${i}`;
+        // fetch(url); // Warm cache.
         docs.push({url: url});
       }
       fields['Supporting Documents'] = docs;

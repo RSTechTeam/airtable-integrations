@@ -19860,7 +19860,6 @@ __nccwpck_require__.r(__webpack_exports__);
 /* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
 /* harmony export */   "main": () => (/* binding */ main)
 /* harmony export */ });
-/* harmony import */ var node_fetch__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(4028);
 /* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(5585);
 /* harmony import */ var _common_inputs_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(4684);
 /* harmony import */ var _common_utils_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(381);
@@ -20049,9 +20048,9 @@ async function main(api, billComIntegrationBase = new _common_airtable_js__WEBPA
       const docs = [];
       for (let i = 1; i <= pages.documentPages.numPages; ++i) {
         const url =
-            `${_common_inputs_js__WEBPACK_IMPORTED_MODULE_1__/* .billComTransformUrl */ .hF}?sessionId=${sessionId}&entityId=${billId}` +
-                `&pageNumber=${i}`;
-        (0,node_fetch__WEBPACK_IMPORTED_MODULE_3__/* ["default"] */ .ZP)(url); // Warm cache.
+            `${(0,_common_inputs_js__WEBPACK_IMPORTED_MODULE_1__/* .billComTransformUrl */ .hF)()}?entityId=${billId}` +
+                `&sessionId=${sessionId}&pageNumber=${i}`;
+        // fetch(url); // Warm cache.
         docs.push({url: url});
       }
       fields['Supporting Documents'] = docs;
