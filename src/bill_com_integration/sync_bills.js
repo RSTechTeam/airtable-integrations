@@ -181,11 +181,11 @@ export async function main(api, billComIntegrationBase = new Base()) {
       const pages = await billComApi.dataCall('GetDocumentPages', {id: billId});
       const docs = [];
       for (let i = 1; i <= pages.documentPages.numPages; ++i) {
-        docs.push({
-          url:
+        const url =
             `${billComTransformUrl}?sessionId=${sessionId}&entityId=${billId}` +
-                `&pageNumber=${i}`
-        });
+                `&pageNumber=${i}`;
+        fetch(url); // Warm cache.
+        docs.push({url: url});
       }
       fields['Supporting Documents'] = docs;
       update.fields = fields;

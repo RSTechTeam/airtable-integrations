@@ -20046,11 +20046,11 @@ async function main(api, billComIntegrationBase = new _common_airtable_js__WEBPA
       const pages = await billComApi.dataCall('GetDocumentPages', {id: billId});
       const docs = [];
       for (let i = 1; i <= pages.documentPages.numPages; ++i) {
-        docs.push({
-          url:
+        const url =
             `${_common_inputs_js__WEBPACK_IMPORTED_MODULE_1__/* .billComTransformUrl */ .hF}?sessionId=${sessionId}&entityId=${billId}` +
-                `&pageNumber=${i}`
-        });
+                `&pageNumber=${i}`;
+        fetch(url); // Warm cache.
+        docs.push({url: url});
       }
       fields['Supporting Documents'] = docs;
       update.fields = fields;
