@@ -1,5 +1,6 @@
 /** @fileoverview Syncs Bill.com Bill Line Item data into Airtable. */
 
+import fetch from 'node-fetch';
 import {Base} from '../common/airtable.js';
 import {billComTransformUrl} from '../common/inputs.js';
 import {getYyyyMmDd} from '../common/utils.js';
