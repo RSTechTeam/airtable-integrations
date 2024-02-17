@@ -72,6 +72,11 @@ function normalizeTime(time) {
   return time &&= time.substring(0, 23);
 }
 
+/**
+ * @param {string} sessionId
+ * @param {string} billId
+ * @return {string[]} billId document URLs
+ */
 async function getDocuments(sessionId, billId) {
   const pages = await billComApi.dataCall('GetDocumentPages', {id: billId});
   const docs = [];
