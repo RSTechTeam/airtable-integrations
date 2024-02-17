@@ -19869,7 +19869,6 @@ __nccwpck_require__.r(__webpack_exports__);
 
 
 
-
 /** Bill.com Bill Approval Statuses. */
 const approvalStatuses = new Map([
   ['0', 'Unassigned'],
@@ -19936,6 +19935,19 @@ function matchDescription(entity, regex) {
  */
 function normalizeTime(time) {
   return time &&= time.substring(0, 23);
+}
+
+async function getDocuments(sessionId, billId) {
+  const pages = await billComApi.dataCall('GetDocumentPages', {id: billId});
+  const docs = [];
+  for (let i = 1; i <= pages.documentPages.numPages; ++i) {
+    docs.push({
+      url: 
+        `${(0,_common_inputs_js__WEBPACK_IMPORTED_MODULE_1__/* .billComTransformUrl */ .hF)()}?sessionId=${sessionId}&entityId=${billId}` +
+            `&pageNumber=${i}`
+    });
+  }
+  return docs;
 }
 
 /**
@@ -20043,17 +20055,8 @@ async function main(api, billComIntegrationBase = new _common_airtable_js__WEBPA
       const billComTime = normalizeTime(fields['Last Updated Time']);
       if (airtableTime === billComTime) continue;
 
-      const billId = fields[billComIdFieldName('Bill')];
-      const pages = await billComApi.dataCall('GetDocumentPages', {id: billId});
-      const docs = [];
-      for (let i = 1; i <= pages.documentPages.numPages; ++i) {
-        const url =
-            `${(0,_common_inputs_js__WEBPACK_IMPORTED_MODULE_1__/* .billComTransformUrl */ .hF)()}?entityId=${billId}` +
-                `&sessionId=${sessionId}&pageNumber=${i}`;
-        //fetch(url); // Warm cache.
-        docs.push({url: url});
-      }
-      fields['Supporting Documents'] = docs;
+      fields['Supporting Documents'] =
+          getDocuments(sessionId, fields[billComIdFieldName('Bill')]);
       update.fields = fields;
       updates.push(update);
     }
@@ -20062,8 +20065,14 @@ async function main(api, billComIntegrationBase = new _common_airtable_js__WEBPA
     // Create new table records from new Bill.com data.
     const creates = [];
     for (const [id, data] of changes) {
-      data[primaryBillComId] = id;
-      creates.push({fields: data});
+      creates.push({
+        fields: {
+          [primaryBillComId]: id,
+          'Supporting Documents':
+            getDocuments(sessionId, data[billComIdFieldName('Bill')]),
+          ...data,
+        }
+      });
     }
     await billComIntegrationBase.create(BILL_REPORTING_TABLE, creates);
   }
