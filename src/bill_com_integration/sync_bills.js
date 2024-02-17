@@ -191,7 +191,7 @@ export async function main(api, billComIntegrationBase = new Base()) {
       if (airtableTime === billComTime) continue;
 
       fields['Supporting Documents'] =
-          getDocuments(sessionId, fields[billComIdFieldName('Bill')]);
+          await getDocuments(sessionId, fields[billComIdFieldName('Bill')]);
       update.fields = fields;
       updates.push(update);
     }
@@ -204,7 +204,7 @@ export async function main(api, billComIntegrationBase = new Base()) {
         fields: {
           [primaryBillComId]: id,
           'Supporting Documents':
-            getDocuments(sessionId, data[billComIdFieldName('Bill')]),
+            await getDocuments(sessionId, data[billComIdFieldName('Bill')]),
           ...data,
         }
       });

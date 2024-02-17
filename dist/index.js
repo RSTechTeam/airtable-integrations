@@ -20056,7 +20056,7 @@ async function main(api, billComIntegrationBase = new _common_airtable_js__WEBPA
       if (airtableTime === billComTime) continue;
 
       fields['Supporting Documents'] =
-          getDocuments(sessionId, fields[billComIdFieldName('Bill')]);
+          await getDocuments(sessionId, fields[billComIdFieldName('Bill')]);
       update.fields = fields;
       updates.push(update);
     }
@@ -20069,7 +20069,7 @@ async function main(api, billComIntegrationBase = new _common_airtable_js__WEBPA
         fields: {
           [primaryBillComId]: id,
           'Supporting Documents':
-            getDocuments(sessionId, data[billComIdFieldName('Bill')]),
+            await getDocuments(sessionId, data[billComIdFieldName('Bill')]),
           ...data,
         }
       });
