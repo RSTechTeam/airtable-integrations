@@ -1,4 +1,4 @@
-import * as createApprover from '../../../../src/bill_com_integration/create_approver.js';
+import * as createApprover from '../../../../src/bill_com/bill_com_integration/create_approver.js';
 import {airtableBase, billComApi} from '../../../test_utils.js';
 import {filter} from '../../../../src/bill_com/common/bill_com.js';
 
