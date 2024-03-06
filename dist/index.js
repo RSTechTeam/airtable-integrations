@@ -15943,14 +15943,6 @@ module.exports.implForWrapper = function (wrapper) {
 
 /***/ }),
 
-/***/ 2044:
-/***/ ((module) => {
-
-module.exports = eval("require")("../common/airtable.js");
-
-
-/***/ }),
-
 /***/ 5347:
 /***/ ((module) => {
 
@@ -20635,7 +20627,7 @@ __nccwpck_require__.r(__webpack_exports__);
 /* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
 /* harmony export */   "main": () => (/* binding */ main)
 /* harmony export */ });
-/* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(2044);
+/* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(5585);
 /* harmony import */ var _common_utils_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(381);
 /** @fileoverview Creates a Bill.com Vendor based on volunteer address info. */
  
@@ -20647,7 +20639,7 @@ __nccwpck_require__.r(__webpack_exports__);
  * @param {!Base=} airtableBase
  * @return {!Promise<undefined>}
  */
-async function main(billComApi, airtableBase = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_0__.Base()) {
+async function main(billComApi, airtableBase = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .Base */ .XY()) {
   await billComApi.primaryOrgLogin();
   await airtableBase.selectAndUpdate(
       'Jotform',
