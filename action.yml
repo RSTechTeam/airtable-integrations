@@ -1,5 +1,5 @@
 name: 'Bill.com x Airtable Action'
-description: 'Run a Javascript program that uses airtable.js and bill_com.js'
+description: 'Run a Javascript program that uses a Bill.com integration'
 inputs:
   file-id:
     description: 'The Javascript file ID'
@@ -30,4 +30,4 @@ inputs:
     required: false
 runs:
   using: 'node20'
-  main: 'dist/index.js'
+  main: 'dist/bill_com/index.js'

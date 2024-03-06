@@ -3,18 +3,15 @@
   "version": "1.0.0",
   "type": "module",
   "description": "",
-  "main": "src/index.js",
+  "workspaces": ["./packages/*"],
   "scripts": {
     "prepare": "husky install",
-    "ncc-build": "ncc build src/index.js --license licenses.txt",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/RSTechTeam/airtable-integrations.git"
   },
-  "keywords": [],
-  "author": "",
   "license": "ISC",
   "bugs": {
     "url": "https://github.com/RSTechTeam/airtable-integrations/issues"
@@ -22,10 +19,7 @@
   "homepage": "https://github.com/RSTechTeam/airtable-integrations#readme",
   "dependencies": {
     "@actions/core": "^1.9.0",
-    "airtable": "^0.11.4",
-    "formdata-node": "^4.3.3",
-    "node-fetch": "^3.2.6",
-    "p-limit": "^4.0.0"
+    "airtable": "^0.11.4"
   },
   "devDependencies": {
     "husky": "^8.0.1",
