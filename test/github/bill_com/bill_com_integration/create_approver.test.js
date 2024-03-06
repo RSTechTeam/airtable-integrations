@@ -1,6 +1,6 @@
 import * as createApprover from '../../../../src/bill_com/bill_com_integration/create_approver.js';
 import {airtableBase, billComApi} from '../../../test_utils.js';
-import {filter} from '../../../../src/bill_com/common/bill_com.js';
+import {filter} from '../../../../src/bill_com/common/api.js';
 
 test('main creates Bill.com Approver User', async () => {
   const testStartTime = new Date().toISOString();
