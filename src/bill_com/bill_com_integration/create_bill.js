@@ -1,7 +1,7 @@
 /** @fileoverview Creates a Bill.com Bill based on a new Check Request. */
 
 import fetch from 'node-fetch';
-import {apiCall} from '../common/bill_com.js';
+import {apiCall} from '../common/api.js';
 import {fetchError} from '../../common/utils.js';
 import {FormData} from 'formdata-node';
 import {MsoBase, MSO_BILL_COM_ID} from '../../common/airtable.js';

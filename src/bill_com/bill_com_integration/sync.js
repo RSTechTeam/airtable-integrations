@@ -3,7 +3,7 @@
  * (e.g., Vendors, Chart of Accounts) into Airtable.
  */
 
-import {ActiveStatus, filter, isActiveEnum} from '../common/bill_com.js';
+import {ActiveStatus, filter, isActiveEnum} from '../common/api.js';
 import {BILL_COM_ID_SUFFIX, MSO_BILL_COM_ID, MsoBase} from '../../common/airtable.js';
 import {getYyyyMmDd, PRIMARY_ORG} from '../../common/utils.js';
 

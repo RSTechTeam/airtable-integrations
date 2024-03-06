@@ -8,7 +8,7 @@ import * as billComIntegrationSyncInternalCustomers from './bill_com/bill_com_in
 import * as doorKnockingCreateVendor from './bill_com/door_knocking/create_vendor.js';
 import {error} from './common/github_actions_core.js';
 import {fileId} from './bill_com/common/inputs.js';
-import {getApi} from './bill_com/common/bill_com.js';
+import {getApi} from './bill_com/common/api.js';
 
 let imp;
 switch (fileId()) {
