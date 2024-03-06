@@ -1,4 +1,4 @@
-name: Main Workflow
+name: Bill.com Workflow
 on:
   schedule:
     - cron: '*/15 * * * *'
@@ -36,7 +36,7 @@ jobs:
               ;;
           esac
           echo "id=$id" >> $GITHUB_OUTPUT
-      - uses: RSTechTeam/airtable-integrations@main
+      - uses: RSTechTeam/airtable-integrations/.github/actions/bill_com@main
         with:
           file-id: ${{ matrix.file-id }}
           airtable-api-key: ${{ secrets.AIRTABLE_API_KEY }}
