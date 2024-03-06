@@ -1,5 +1,5 @@
 import * as sync from '../../../../src/bill_com/bill_com_integration/sync_internal_customers.js';
-import {airtableBase, airtableMsoBase, billComApi} from '../../../test_utils.js';
+import {airtableBase, airtableMsoBase, billComApi} from '../../../../test_utils.js';
 import {MSO_BILL_COM_ID} from '../../../../src/common/airtable.js';
 import {isActiveEnum} from '../../../../src/bill_com/common/bill_com.js';
 import {jest} from '@jest/globals';

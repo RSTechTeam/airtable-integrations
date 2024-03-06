@@ -1,5 +1,5 @@
-import * as billCom from '../../../src/common/bill_com.js';
-import {billComApi} from '../../test_utils.js';
+import * as billCom from '../../../../src/common/bill_com.js';
+import {billComApi} from '../../../test_utils.js';
 
 let api;
 
