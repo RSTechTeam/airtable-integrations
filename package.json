@@ -1,5 +1,5 @@
 {
-  "name": "bill.com-airtable-integration",
+  "name": "airtable-integrations",
   "version": "1.0.0",
   "type": "module",
   "description": "",
@@ -11,15 +11,15 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/RSMvmtTech/Bill.com-Airtable-Integration.git"
+    "url": "git+https://github.com/RSTechTeam/airtable-integrations.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/RSTechTeam/Bill.com-Airtable-Integration/issues"
+    "url": "https://github.com/RSTechTeam/airtable-integrations/issues"
   },
-  "homepage": "https://github.com/RSTechTeam/Bill.com-Airtable-Integration#readme",
+  "homepage": "https://github.com/RSTechTeam/airtable-integrations#readme",
   "dependencies": {
     "@actions/core": "^1.9.0",
     "airtable": "^0.11.4",

@@ -36,7 +36,7 @@ jobs:
               ;;
           esac
           echo "id=$id" >> $GITHUB_OUTPUT
-      - uses: RSTechTeam/Bill.com-Airtable-Integration@main
+      - uses: RSTechTeam/airtable-integrations@main
         with:
           file-id: ${{ matrix.file-id }}
           airtable-api-key: ${{ secrets.AIRTABLE_API_KEY }}
