@@ -1,4 +1,4 @@
-import * as billCom from '../../../src/common/bill_com.js';
+import * as billCom from '../../../../src/bill_com/common/bill_com.js';
 
 describe('apiCall', () => {
 

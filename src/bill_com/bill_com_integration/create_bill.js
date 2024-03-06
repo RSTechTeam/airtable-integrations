@@ -2,10 +2,10 @@
 
 import fetch from 'node-fetch';
 import {apiCall} from '../common/bill_com.js';
-import {fetchError} from '../common/utils.js';
+import {fetchError} from '../../common/utils.js';
 import {FormData} from 'formdata-node';
-import {MsoBase, MSO_BILL_COM_ID} from '../common/airtable.js';
-import {warn} from '../common/github_actions_core.js';
+import {MsoBase, MSO_BILL_COM_ID} from '../../common/airtable.js';
+import {warn} from '../../common/github_actions_core.js';
 
 /** The Bill.com API connection. */
 let billComApi;

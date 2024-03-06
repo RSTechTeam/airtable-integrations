@@ -7,9 +7,10 @@
 import fetch from 'node-fetch';
 import * as inputs from './inputs.js';
 import pLimit from 'p-limit';
-import {Base} from './airtable.js';
-import {batchAwait, fetchError, PRIMARY_ORG} from './utils.js';
-import {log, logJson} from './github_actions_core.js';
+import {airtableApiKey} from '../../common/inputs.js';
+import {Base} from '../../common/airtable.js';
+import {batchAwait, fetchError, PRIMARY_ORG} from '../../common/utils.js';
+import {log, logJson} from '../../common/github_actions_core.js';
 
 /**
  * Mirrors Bill.com's isActive enum.
@@ -247,7 +248,7 @@ export class Api {
  */
 export async function getApi(
     baseId = inputs.airtableOrgIdsBaseId(),
-    apiKey = inputs.airtableApiKey(),
+    apiKey = airtableApiKey(),
     userName = inputs.billComUserName(),
     password = inputs.billComPassword(),
     devKey = inputs.billComDevKey(),

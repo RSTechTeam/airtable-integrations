@@ -1,5 +1,5 @@
 import {Base, MsoBase} from '../src/common/airtable.js';
-import {getApi} from '../src/common/bill_com.js';
+import {getApi} from '../src/bill_com/common/bill_com.js';
 
 const airtableArgs =
     [process.env.AIRTABLE_BASE_ID, process.env.AIRTABLE_API_KEY];

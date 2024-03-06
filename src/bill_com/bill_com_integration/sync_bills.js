@@ -1,8 +1,8 @@
 /** @fileoverview Syncs Bill.com Bill Line Item data into Airtable. */
 
-import {Base} from '../common/airtable.js';
+import {Base} from '../../common/airtable.js';
 import {billComTransformUrl} from '../common/inputs.js';
-import {getYyyyMmDd} from '../common/utils.js';
+import {getYyyyMmDd} from '../../common/utils.js';
 
 /** Bill.com Bill Approval Statuses. */
 const approvalStatuses = new Map([

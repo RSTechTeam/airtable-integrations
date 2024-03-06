@@ -7,7 +7,7 @@
 import Airtable from 'airtable';
 import {airtableApiKey, airtableBaseId} from './inputs.js';
 import {batchAsync} from './utils.js';
-import {warn} from '../common/github_actions_core.js';
+import {warn} from './github_actions_core.js';
 
 /** The Bill.com ID Field name suffix. */
 export const BILL_COM_ID_SUFFIX = 'Bill.com ID';
