@@ -6,6 +6,7 @@
   "workspaces": ["./packages/*"],
   "scripts": {
     "prepare": "husky install",
+    "ncc-build": "func() { ncc build src/\"$1\"/index.js -o .github/actions/\"$1\"; }; func",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js"
   },
   "repository": {

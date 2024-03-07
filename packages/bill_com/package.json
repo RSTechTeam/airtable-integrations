@@ -5,7 +5,7 @@
   "description": "",
   "main": "../../src/bill_com/index.js",
   "scripts": {
-    "ncc-build": "ncc build ../../src/bill_com/index.js -o ../../.github/actions/bill_com"
+    "ncc-build": "cd .. && npm run ncc-build -- bill_com"
   },
   "dependencies": {
     "formdata-node": "^4.3.3",
