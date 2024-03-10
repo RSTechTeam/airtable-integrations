@@ -1,6 +1,6 @@
 /**
  * @fileoverview Lazy evaluated inputs
- * @see action.yml
+ * @see bill_com/action.yml
  */
 
 import {getInput} from '../../common/github_actions_core.js';

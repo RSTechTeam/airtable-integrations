@@ -1,0 +1,13 @@
+{
+  "name": "abacus",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "",
+  "main": "../../src/abacus/index.js",
+  "scripts": {
+    "ncc-build": "cd .. && npm run ncc-build -- abacus"
+  },
+  "dependencies": {
+    "papaparse": "^5.4.1"
+  }
+}
