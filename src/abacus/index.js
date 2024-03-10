@@ -36,6 +36,7 @@ const expenseRecords =
 // Create Papa Parse Config.
 const airtableFields = Array.from(mapping.values());
 const upsertPromises = [];
+let firstChunk;
 const parseConfig = {
   header: true,
   transformHeader: (header, index) => airtableFields[index],
@@ -52,20 +53,18 @@ const parseConfig = {
         return value;
       }
     },
-  beforeFirstChunk:
-
-    // Validate header.
-    (results, parser) => {
-      log('first');
-      log(results);
-      const gotHeader = results.meta.fields;
-      if (JSON.stringify(gotHeader) !== JSON.stringify(airtableFields)) {
-        error(`Got header: ${gotHeader}\nWant header: ${airtableFields}`);
-      }
-    },
   chunk:
     (results, parser) => {
-      log('rep');
+      
+      // Validate header during first chunk.
+      if (firstChunk) {
+        firstChunk = false;
+        const gotHeader = results.meta.fields;
+        if (JSON.stringify(gotHeader) !== JSON.stringify(airtableFields)) {
+          error(`Got header: ${gotHeader}\nWant header: ${airtableFields}`);
+        }
+      }
+
       const updates = [];
       const creates = [];
       for (const row of results.data) {
@@ -106,6 +105,7 @@ for (const csv of importRecord.get('CSVs')) {
   }
   log('body');
   log(JSON.stringify(response.body));
+  firstChunk = true;
   Papa.parse(response.body, parseConfig);
 }
 await Promise.all(upsertPromises);

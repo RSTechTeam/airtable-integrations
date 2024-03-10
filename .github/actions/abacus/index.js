@@ -20763,6 +20763,7 @@ const expenseRecords =
 // Create Papa Parse Config.
 const airtableFields = Array.from(mapping.values());
 const upsertPromises = [];
+let firstChunk;
 const parseConfig = {
   header: true,
   transformHeader: (header, index) => airtableFields[index],
@@ -20779,20 +20780,18 @@ const parseConfig = {
         return value;
       }
     },
-  beforeFirstChunk:
-
-    // Validate header.
-    (results, parser) => {
-      (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_3__/* .log */ .cM)('first');
-      (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_3__/* .log */ .cM)(results);
-      const gotHeader = results.meta.fields;
-      if (JSON.stringify(gotHeader) !== JSON.stringify(airtableFields)) {
-        (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_3__/* .error */ .vU)(`Got header: ${gotHeader}\nWant header: ${airtableFields}`);
-      }
-    },
   chunk:
     (results, parser) => {
-      (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_3__/* .log */ .cM)('rep');
+      
+      // Validate header during first chunk.
+      if (firstChunk) {
+        firstChunk = false;
+        const gotHeader = results.meta.fields;
+        if (JSON.stringify(gotHeader) !== JSON.stringify(airtableFields)) {
+          (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_3__/* .error */ .vU)(`Got header: ${gotHeader}\nWant header: ${airtableFields}`);
+        }
+      }
+
       const updates = [];
       const creates = [];
       for (const row of results.data) {
@@ -20833,6 +20832,7 @@ for (const csv of importRecord.get('CSVs')) {
   }
   (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_3__/* .log */ .cM)('body');
   (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_3__/* .log */ .cM)(JSON.stringify(response.body));
+  firstChunk = true;
   papaparse__WEBPACK_IMPORTED_MODULE_0__.parse(response.body, parseConfig);
 }
 await Promise.all(upsertPromises);
