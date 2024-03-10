@@ -1,9 +1,11 @@
 /** @fileoverview Imports an Abacus CSV update into Airtable. */
 
+import fetch from 'node-fetch';
 import Papa from 'papaparse';
 import {airtableImportRecordId} from './inputs.js';
 import {Base} from '../common/airtable.js';
 import {error} from '../common/github_actions_core.js';
+import {fetchError} from '../common/utils.js';
 
 /** Abacus Airtable Table name. */
 const ABACUS_TABLE = 'Abacus';
@@ -37,7 +39,6 @@ const importRecord =
     await expenseSources.find('Imports', airtableImportRecordId());
 const upsertPromises = [];
 const parseConfig = {
-  download: true,
   header: true,
   transformHeader: (header, index) => airtableFields[index],
   transform:
@@ -97,6 +98,10 @@ const parseConfig = {
 
 // Parse CSVs with above Config.
 for (const csv of importRecord.get('CSVs')) {
-  Papa.parse(csv.url, parseConfig);
+  const response = await fetch(csv.url);
+  if (!response.ok) {
+    fetchError(response.status, csv.filename, response.statusText);
+  }
+  Papa.parse(response.body, parseConfig);
 }
 await Promise.all(upsertPromises);

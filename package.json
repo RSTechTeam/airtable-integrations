@@ -20,7 +20,8 @@
   "homepage": "https://github.com/RSTechTeam/airtable-integrations#readme",
   "dependencies": {
     "@actions/core": "^1.9.0",
-    "airtable": "^0.11.4"
+    "airtable": "^0.11.4",
+    "node-fetch": "^3.2.6"
   },
   "devDependencies": {
     "husky": "^8.0.1",

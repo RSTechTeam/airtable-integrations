@@ -9,7 +9,6 @@
   },
   "dependencies": {
     "formdata-node": "^4.3.3",
-    "node-fetch": "^3.2.6",
     "p-limit": "^4.0.0"
   }
 }
