@@ -20762,8 +20762,8 @@ const expenseRecords =
 
 // Create Papa Parse Config.
 const airtableFields = Array.from(mapping.values());
-const upsertPromises = [];
 let firstChunk;
+let upsertPromises = [];
 const parseConfig = {
   header: true,
   transformHeader: (header, index) => airtableFields[index],
