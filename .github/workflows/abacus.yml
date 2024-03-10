@@ -1,9 +1,11 @@
 name: Abacus Workflow
 on:
+  repository_dispatch:
+    types: [abacus_csv]
   workflow_dispatch:
     inputs:
       airtable-import-record-id:
-        description: 'The ID of the Airtable Record whose CSVs shhould be parsed and integrated'
+        description: 'Airtable Import Record ID'
         required: true
         type: string
 jobs:
@@ -14,4 +16,5 @@ jobs:
         with:
           airtable-api-key: ${{ secrets.AIRTABLE_API_KEY }}
           airtable-base-id: ${{ secrets.EXPENSE_SOURCES_BASE_ID }}
-          airtable-import-record-id: ${{ inputs.airtable-import-record-id }}
+          airtable-import-record-id:
+            ${{ github.event.client_payload.airtable-import-record-id || inputs.airtable-import-record-id }}
