@@ -13784,7 +13784,7 @@ const expenseRecords =
 // Create Papa Parse Config.
 const airtableFields = Array.from(mapping.values());
 const importRecord =
-    await expenseSources.find('Imports', _inputs_js__WEBPACK_IMPORTED_MODULE_1__/* .airtableImportRecordId */ .p);
+    await expenseSources.find('Imports', (0,_inputs_js__WEBPACK_IMPORTED_MODULE_1__/* .airtableImportRecordId */ .p)());
 const upsertPromises = [];
 const parseConfig = {
   download: true,
