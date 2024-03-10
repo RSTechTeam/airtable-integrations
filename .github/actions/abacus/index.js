@@ -20797,7 +20797,7 @@ const parseConfig = {
       const updates = [];
       const creates = [];
       for (const row of results.data) {
-
+        (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_3__/* .log */ .cM)(results);
         // Handle Paid/Debit Status,
         // completing Abacus CSV row alignment with Airtable Fields.
         const debitStatus = row['Paid'];
@@ -20829,6 +20829,7 @@ for (const csv of importRecord.get('CSVs')) {
   if (!response.ok) {
     (0,_common_utils_js__WEBPACK_IMPORTED_MODULE_4__/* .fetchError */ .Tl)(response.status, csv.filename, response.statusText);
   }
+  (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_3__/* .log */ .cM)(response.body);
   papaparse__WEBPACK_IMPORTED_MODULE_0__.parse(response.body, parseConfig);
 }
 await Promise.all(upsertPromises);
@@ -21067,11 +21068,12 @@ class MsoBase extends (/* unused pure expression or super */ null && (Base)) {
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
 
 /* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
+/* harmony export */   "cM": () => (/* binding */ log),
 /* harmony export */   "ZK": () => (/* binding */ warn),
 /* harmony export */   "Np": () => (/* binding */ getInput),
 /* harmony export */   "vU": () => (/* binding */ error)
 /* harmony export */ });
-/* unused harmony exports log, logJson */
+/* unused harmony export logJson */
 /* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(6024);
 /* harmony import */ var _utils_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(381);
 /**

@@ -4,7 +4,7 @@ import fetch from 'node-fetch';
 import Papa from 'papaparse';
 import {airtableImportRecordId} from './inputs.js';
 import {Base} from '../common/airtable.js';
-import {error} from '../common/github_actions_core.js';
+import {error, log} from '../common/github_actions_core.js';
 import {fetchError} from '../common/utils.js';
 
 /** Abacus Airtable Table name. */
@@ -70,7 +70,7 @@ const parseConfig = {
       const updates = [];
       const creates = [];
       for (const row of results.data) {
-
+        log(results);
         // Handle Paid/Debit Status,
         // completing Abacus CSV row alignment with Airtable Fields.
         const debitStatus = row['Paid'];
@@ -102,6 +102,7 @@ for (const csv of importRecord.get('CSVs')) {
   if (!response.ok) {
     fetchError(response.status, csv.filename, response.statusText);
   }
+  log(response.body);
   Papa.parse(response.body, parseConfig);
 }
 await Promise.all(upsertPromises);
