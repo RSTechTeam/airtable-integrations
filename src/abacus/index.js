@@ -77,7 +77,7 @@ const parseConfig = {
 
         // Load upsert.
         const upsert = {fields: row};
-        const existingRecordId = expenseRecords.get('Expense ID');
+        const existingRecordId = expenseRecords.get(row['Expense ID']);
         if (existingRecordId) {
           updates.push({id: existingRecordId, ...upsert});
           continue
