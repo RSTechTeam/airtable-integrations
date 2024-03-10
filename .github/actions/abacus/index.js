@@ -20783,6 +20783,7 @@ const parseConfig = {
 
     // Validate header.
     (results, parser) => {
+      (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_3__/* .log */ .cM)('first');
       (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_3__/* .log */ .cM)(results);
       const gotHeader = results.meta.fields;
       if (JSON.stringify(gotHeader) !== JSON.stringify(airtableFields)) {
@@ -20791,6 +20792,7 @@ const parseConfig = {
     },
   chunk:
     (results, parser) => {
+      (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_3__/* .log */ .cM)('rep');
       const updates = [];
       const creates = [];
       for (const row of results.data) {
@@ -20818,7 +20820,7 @@ const parseConfig = {
             expenseSources.create(ABACUS_TABLE, creates),
           ]);
     },
-  error: (error, file) => error(error),
+  error: (err, file) => (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_3__/* .error */ .vU)(err),
 };
 
 // Parse CSVs with above Config.
@@ -20829,6 +20831,7 @@ for (const csv of importRecord.get('CSVs')) {
   if (!response.ok) {
     (0,_common_utils_js__WEBPACK_IMPORTED_MODULE_4__/* .fetchError */ .Tl)(response.status, csv.filename, response.statusText);
   }
+  (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_3__/* .log */ .cM)('body');
   (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_3__/* .log */ .cM)(JSON.stringify(response.body));
   papaparse__WEBPACK_IMPORTED_MODULE_0__.parse(response.body, parseConfig);
 }

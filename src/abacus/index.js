@@ -56,6 +56,7 @@ const parseConfig = {
 
     // Validate header.
     (results, parser) => {
+      log('first');
       log(results);
       const gotHeader = results.meta.fields;
       if (JSON.stringify(gotHeader) !== JSON.stringify(airtableFields)) {
@@ -64,6 +65,7 @@ const parseConfig = {
     },
   chunk:
     (results, parser) => {
+      log('rep');
       const updates = [];
       const creates = [];
       for (const row of results.data) {
@@ -91,7 +93,7 @@ const parseConfig = {
             expenseSources.create(ABACUS_TABLE, creates),
           ]);
     },
-  error: (error, file) => error(error),
+  error: (err, file) => error(err),
 };
 
 // Parse CSVs with above Config.
@@ -102,6 +104,7 @@ for (const csv of importRecord.get('CSVs')) {
   if (!response.ok) {
     fetchError(response.status, csv.filename, response.statusText);
   }
+  log('body');
   log(JSON.stringify(response.body));
   Papa.parse(response.body, parseConfig);
 }
