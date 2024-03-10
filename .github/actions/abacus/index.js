@@ -20762,8 +20762,6 @@ const expenseRecords =
 
 // Create Papa Parse Config.
 const airtableFields = Array.from(mapping.values());
-const importRecord =
-    await expenseSources.find('Imports', (0,_inputs_js__WEBPACK_IMPORTED_MODULE_1__/* .airtableImportRecordId */ .p)());
 const upsertPromises = [];
 const parseConfig = {
   header: true,
@@ -20785,11 +20783,10 @@ const parseConfig = {
 
     // Validate header.
     (results, parser) => {
+      (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_3__/* .log */ .cM)(results);
       const gotHeader = results.meta.fields;
       if (JSON.stringify(gotHeader) !== JSON.stringify(airtableFields)) {
-        (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_3__/* .error */ .vU)(
-            `Error processing import record ${importRecord.getId()}.\n` +
-                ` Got header: ${gotHeader}\nWant header: ${airtableFields}`);
+        (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_3__/* .error */ .vU)(`Got header: ${gotHeader}\nWant header: ${airtableFields}`);
       }
     },
   chunk:
@@ -20821,15 +20818,18 @@ const parseConfig = {
             expenseSources.create(ABACUS_TABLE, creates),
           ]);
     },
+  error: (error, file) => error(error),
 };
 
 // Parse CSVs with above Config.
+const importRecord =
+    await expenseSources.find('Imports', (0,_inputs_js__WEBPACK_IMPORTED_MODULE_1__/* .airtableImportRecordId */ .p)());
 for (const csv of importRecord.get('CSVs')) {
   const response = await (0,node_fetch__WEBPACK_IMPORTED_MODULE_5__/* ["default"] */ .ZP)(csv.url);
   if (!response.ok) {
     (0,_common_utils_js__WEBPACK_IMPORTED_MODULE_4__/* .fetchError */ .Tl)(response.status, csv.filename, response.statusText);
   }
-  (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_3__/* .log */ .cM)(response.body);
+  (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_3__/* .log */ .cM)(JSON.stringify(response.body));
   papaparse__WEBPACK_IMPORTED_MODULE_0__.parse(response.body, parseConfig);
 }
 await Promise.all(upsertPromises);

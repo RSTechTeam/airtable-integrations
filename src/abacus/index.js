@@ -35,8 +35,6 @@ const expenseRecords =
 
 // Create Papa Parse Config.
 const airtableFields = Array.from(mapping.values());
-const importRecord =
-    await expenseSources.find('Imports', airtableImportRecordId());
 const upsertPromises = [];
 const parseConfig = {
   header: true,
@@ -58,11 +56,10 @@ const parseConfig = {
 
     // Validate header.
     (results, parser) => {
+      log(results);
       const gotHeader = results.meta.fields;
       if (JSON.stringify(gotHeader) !== JSON.stringify(airtableFields)) {
-        error(
-            `Error processing import record ${importRecord.getId()}.\n` +
-                ` Got header: ${gotHeader}\nWant header: ${airtableFields}`);
+        error(`Got header: ${gotHeader}\nWant header: ${airtableFields}`);
       }
     },
   chunk:
@@ -94,15 +91,18 @@ const parseConfig = {
             expenseSources.create(ABACUS_TABLE, creates),
           ]);
     },
+  error: (error, file) => error(error),
 };
 
 // Parse CSVs with above Config.
+const importRecord =
+    await expenseSources.find('Imports', airtableImportRecordId());
 for (const csv of importRecord.get('CSVs')) {
   const response = await fetch(csv.url);
   if (!response.ok) {
     fetchError(response.status, csv.filename, response.statusText);
   }
-  log(response.body);
+  log(JSON.stringify(response.body));
   Papa.parse(response.body, parseConfig);
 }
 await Promise.all(upsertPromises);
