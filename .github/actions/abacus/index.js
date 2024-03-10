@@ -20774,12 +20774,10 @@ const parseConfig = {
         return Number(value);
       case 'Approved':
         return value > '';
-      case 'Debit Date':
-        return value === '' ? undefined : value;
 
       // Paid/Debit Status splits to 2 Fields, so handle later (in chunk).
       default:
-        return value;
+        return value === '' ? undefined : value;
       }
     },
   chunk:
