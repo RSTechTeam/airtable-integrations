@@ -20901,9 +20901,12 @@ class MsoBase extends Base {
             msoFilter : `AND(${msoFilter}, ${filterByFormula})`);
   }
 
-  /** @return {!Promise<!Iterator<!Record<!TField>>>} */
-  async* iterateMsos() {
-    for (this.currentMso_ of await super.select('MSOs')) {
+  /**
+   * @param {string=} view
+   * @return {!Promise<!Iterator<!Record<!TField>>>}
+   */
+  async* iterateMsos(view = 'Org IDs') {
+    for (this.currentMso_ of await super.select('MSOs', view)) {
       yield this.currentMso_;
     }
     this.currentMso_ = null;
