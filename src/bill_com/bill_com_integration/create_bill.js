@@ -100,13 +100,7 @@ async function getVendorId(checkRequest) {
  * @return {?string[]} approvers MSO Bill.com IDs
  */
 function getApproverIds(record, type = '') {
-  log('guy');
-  log(type);
-  const field = `${type}${type ? '' : ' '}Approver ${MSO_BILL_COM_ID}s`;
-  log(field);
-  const ids = record.get(field);
-  log(ids);
-  return ids;
+  return record.get(`${type}${type ? ' ' : ''}Approver ${MSO_BILL_COM_ID}s`);
 }
 
 /**
