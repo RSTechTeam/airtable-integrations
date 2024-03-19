@@ -19988,7 +19988,7 @@ async function main(api, billComIntegrationBase = new _common_airtable_js__WEBPA
     // Initialize reference data.
     const orgCode = org.get('Local Code');
     const orgId = org.getId();
-    const mso = orgCode === 'BOOM' ? 'BOOM' : 'RS';
+    const mso = orgCode.startsWith('C') ? 'RS' : orgCode;
     await billComApi.login(orgCode);
     const sessionId = billComApi.getSessionId();
     const vendors =
