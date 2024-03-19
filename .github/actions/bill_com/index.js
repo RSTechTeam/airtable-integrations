@@ -19840,6 +19840,7 @@ async function main(billComApi, airtableBase = new _common_airtable_js__WEBPACK_
           'Paid via BILL': o.lastPaymentDate != null,
         }));
     await syncer.syncNameKey('ChartOfAccount', 'Chart of Accounts', 'name');
+    await syncer.syncNameKey('Profile', 'User Role Profiles', 'name');
     await syncer.sync(
         'User', 'Users',
         o => ({
