@@ -14,6 +14,16 @@ let billComApi;
 let billComIntegrationBase;
 
 /**
+ * @param {string} table
+ * @param {string} airtableId
+ * @return {!Promise<string>}
+ */
+async function getBillComId(table, airtableId) {
+  const record = await billComIntegrationBase.find(table, airtableId);
+  return record.get(MSO_BILL_COM_ID);
+}
+
+/**
  * @param {?Object<string, *>} attachments
  * @param {string} id - The Bill.com ID of the object to attach the document.
  * @return {!Promise<undefined>}
@@ -38,16 +48,6 @@ async function uploadAttachments(attachments, id) {
     data.set('data', JSON.stringify({id: id, fileName: attachment.filename}));
     await apiCall('UploadAttachment', {}, data);
   }
-}
-
-/**
- * @param {string} table
- * @param {string} airtableId
- * @return {!Promise<string>}
- */
-async function getBillComId(table, airtableId) {
-  const record = await billComIntegrationBase.find(table, airtableId);
-  return record.get(MSO_BILL_COM_ID);
 }
 
 /**
@@ -92,6 +92,16 @@ async function getVendorId(checkRequest) {
       [{id: newVendorId, fields: {[MSO_BILL_COM_ID]: vendorId}}]);
   await uploadAttachments(newVendor.get('W-9 Form'), vendorId);
   return vendorId;
+}
+
+/**
+ * @param {!Record<!TField>} record
+ * @param {string=} type - |Default|Final
+ * @return {?string[]} approvers MSO Bill.com IDs
+ */
+function getApproverIds(record, type = '') {
+  const field = `${type}${type ? '' : ' '}Approvers ${MSO_BILL_COM_ID}s`;
+  return record.get(field)?.split(', ');
 }
 
 /**
@@ -191,17 +201,14 @@ export async function main(api, airtableBase = new MsoBase()) {
 
           // Set the Bill's approvers.
           const approvers =
-              newCheckRequest.get('Approvers') ||
-                  mso.get('Default Approvers') || [];              
+              getApproverIds(newCheckRequest) ||
+                  getApproverIds(mso, 'Default') || [];             
           await billComApi.dataCall(
               'SetApprovers',
               {
                 objectId: newBillId,
                 entity: 'Bill',
-                approvers:
-                  await Promise.all(
-                      approvers.concat(mso.get('Final Approvers')).map(
-                          a => getBillComId('Users', a))),
+                approvers: approvers.concat(getApproverIds(mso, 'Final')),
               });
 
           // Upload the Supporting Documents.
