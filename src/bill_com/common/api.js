@@ -84,6 +84,9 @@ export function filter(field, op, value) {
   return {field: field, op: op, value: value};
 }
 
+/** @type {!Object<string, string>} */
+export const activeFilter = filter('isActive', '=', ActiveStatus.ACTIVE);
+
 /** A connection to the Bill.com API. */
 export class Api {
 
@@ -202,7 +205,7 @@ export class Api {
    * @return {!Promise<!Object<string, *>[]>} entity list.
    */
   listActive(entity, filters = []) {
-    filters.push(filter('isActive', '=', ActiveStatus.ACTIVE));
+    filters.push(activeFilter);
     return this.list(entity, filters);
   }
   

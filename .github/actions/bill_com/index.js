@@ -19638,18 +19638,19 @@ class Syncer {
    * @param {string} table - A corresponding Airtable Table name.
    * @param {function(!Object<string, *>): !Object<string, *>} syncFunc
    *   - Determines what entity data will be synced to table.
+   * @param {boolean=} useActiveFilter
    * @return {!Promise<undefined>}
    */
-  async sync(entity, table, syncFunc) {  
+  async sync(entity, table, syncFunc, useActiveFilter = true) {  
 
     // Initialize sync changes.
-    const maybeFilter = [];
+    const filters = useActiveFilter ? [_common_api_js__WEBPACK_IMPORTED_MODULE_0__/* .activeFilter */ .LT] : [];
     if (entity === 'ChartOfAccount') {
       // Expenses or Income.
-      maybeFilter.push((0,_common_api_js__WEBPACK_IMPORTED_MODULE_0__/* .filter */ .hX)('accountType', 'in', '7,9'));
+      filters.push((0,_common_api_js__WEBPACK_IMPORTED_MODULE_0__/* .filter */ .hX)('accountType', 'in', '7,9'));
     }
-    const billComEntities =
-        await this.billComApi_.listActive(entity, maybeFilter);
+
+    const billComEntities = await this.billComApi_.list(entity, filters);
     const changes = new Map();
     for (const e of billComEntities) {
       const change = syncFunc(e);
@@ -19840,7 +19841,8 @@ async function main(billComApi, airtableBase = new _common_airtable_js__WEBPACK_
           'Paid via BILL': o.lastPaymentDate != null,
         }));
     await syncer.syncNameKey('ChartOfAccount', 'Chart of Accounts', 'name');
-    await syncer.syncNameKey('Profile', 'User Role Profiles', 'name');
+    await syncer.sync(
+        'Profile', 'User Role Profiles', o => ({Name: o.name}), false);
     await syncer.sync(
         'User', 'Users',
         o => ({
@@ -20169,6 +20171,7 @@ async function main(billComApi, accountingBase = new _common_airtable_js__WEBPAC
 // EXPORTS
 __nccwpck_require__.d(__webpack_exports__, {
   "tV": () => (/* binding */ ActiveStatus),
+  "LT": () => (/* binding */ activeFilter),
   "k_": () => (/* binding */ apiCall),
   "hX": () => (/* binding */ filter),
   "ac": () => (/* binding */ getApi),
@@ -20415,6 +20418,9 @@ function filter(field, op, value) {
   return {field: field, op: op, value: value};
 }
 
+/** @type {!Object<string, string>} */
+const activeFilter = filter('isActive', '=', ActiveStatus.ACTIVE);
+
 /** A connection to the Bill.com API. */
 class Api {
 
@@ -20533,7 +20539,7 @@ class Api {
    * @return {!Promise<!Object<string, *>[]>} entity list.
    */
   listActive(entity, filters = []) {
-    filters.push(filter('isActive', '=', ActiveStatus.ACTIVE));
+    filters.push(activeFilter);
     return this.list(entity, filters);
   }
   

@@ -3,7 +3,7 @@
  * (e.g., Vendors, Chart of Accounts) into Airtable.
  */
 
-import {ActiveStatus, filter, isActiveEnum} from '../common/api.js';
+import {ActiveStatus, activeFilter, filter, isActiveEnum} from '../common/api.js';
 import {BILL_COM_ID_SUFFIX, MSO_BILL_COM_ID, MsoBase} from '../../common/airtable.js';
 import {getYyyyMmDd, PRIMARY_ORG} from '../../common/utils.js';
 
@@ -110,18 +110,19 @@ class Syncer {
    * @param {string} table - A corresponding Airtable Table name.
    * @param {function(!Object<string, *>): !Object<string, *>} syncFunc
    *   - Determines what entity data will be synced to table.
+   * @param {boolean=} useActiveFilter
    * @return {!Promise<undefined>}
    */
-  async sync(entity, table, syncFunc) {  
+  async sync(entity, table, syncFunc, useActiveFilter = true) {  
 
     // Initialize sync changes.
-    const maybeFilter = [];
+    const filters = useActiveFilter ? [activeFilter] : [];
     if (entity === 'ChartOfAccount') {
       // Expenses or Income.
-      maybeFilter.push(filter('accountType', 'in', '7,9'));
+      filters.push(filter('accountType', 'in', '7,9'));
     }
-    const billComEntities =
-        await this.billComApi_.listActive(entity, maybeFilter);
+
+    const billComEntities = await this.billComApi_.list(entity, filters);
     const changes = new Map();
     for (const e of billComEntities) {
       const change = syncFunc(e);
@@ -312,7 +313,8 @@ export async function main(billComApi, airtableBase = new MsoBase()) {
           'Paid via BILL': o.lastPaymentDate != null,
         }));
     await syncer.syncNameKey('ChartOfAccount', 'Chart of Accounts', 'name');
-    await syncer.syncNameKey('Profile', 'User Role Profiles', 'name');
+    await syncer.sync(
+        'Profile', 'User Role Profiles', o => ({Name: o.name}), false);
     await syncer.sync(
         'User', 'Users',
         o => ({
