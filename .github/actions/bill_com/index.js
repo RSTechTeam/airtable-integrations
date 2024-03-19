@@ -19388,7 +19388,7 @@ async function getVendorId(checkRequest) {
  * @return {?string[]} approvers MSO Bill.com IDs
  */
 function getApproverIds(record, type = '') {
-  const field = `${type}${type ? '' : ' '}Approvers ${airtable/* MSO_BILL_COM_ID */.yG}s`;
+  const field = `${type}${type ? '' : ' '}Approver ${airtable/* MSO_BILL_COM_ID */.yG}s`;
   return record.get(field)?.split(', ');
 }
 
@@ -19852,7 +19852,7 @@ async function main(billComApi, airtableBase = new _common_airtable_js__WEBPACK_
     await syncer.sync(
         'Customer', 'All Customers', o => ({Name: o.name, Email: o.email}));
 
-    if (msoCode !== _common_utils_js__WEBPACK_IMPORTED_MODULE_2__/* .PRIMARY_ORG */ .l3) return;
+    if (msoCode !== _common_utils_js__WEBPACK_IMPORTED_MODULE_2__/* .PRIMARY_ORG */ .l3) continue;
     // sync('Department', 'Departments', o => ({Name: o.name, Email: o.email}))
     await syncer.syncUnpaid('Invoices', 'Invoice');
     await syncer.syncCustomers('CPASF');

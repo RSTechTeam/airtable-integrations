@@ -324,7 +324,7 @@ export async function main(billComApi, airtableBase = new MsoBase()) {
     await syncer.sync(
         'Customer', 'All Customers', o => ({Name: o.name, Email: o.email}));
 
-    if (msoCode !== PRIMARY_ORG) return;
+    if (msoCode !== PRIMARY_ORG) continue;
     // sync('Department', 'Departments', o => ({Name: o.name, Email: o.email}))
     await syncer.syncUnpaid('Invoices', 'Invoice');
     await syncer.syncCustomers('CPASF');

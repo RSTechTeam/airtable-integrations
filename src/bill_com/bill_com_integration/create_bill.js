@@ -100,7 +100,7 @@ async function getVendorId(checkRequest) {
  * @return {?string[]} approvers MSO Bill.com IDs
  */
 function getApproverIds(record, type = '') {
-  const field = `${type}${type ? '' : ' '}Approvers ${MSO_BILL_COM_ID}s`;
+  const field = `${type}${type ? '' : ' '}Approver ${MSO_BILL_COM_ID}s`;
   return record.get(field)?.split(', ');
 }
 
