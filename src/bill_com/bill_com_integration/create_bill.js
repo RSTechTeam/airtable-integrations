@@ -5,7 +5,7 @@ import {apiCall} from '../common/api.js';
 import {fetchError} from '../../common/utils.js';
 import {FormData} from 'formdata-node';
 import {MsoBase, MSO_BILL_COM_ID} from '../../common/airtable.js';
-import {warn} from '../../common/github_actions_core.js';
+import {log, warn} from '../../common/github_actions_core.js';
 
 /** The Bill.com API connection. */
 let billComApi;
@@ -100,7 +100,13 @@ async function getVendorId(checkRequest) {
  * @return {?string[]} approvers MSO Bill.com IDs
  */
 function getApproverIds(record, type = '') {
-  return record.get(`${type}${type ? '' : ' '}Approver ${MSO_BILL_COM_ID}s`);
+  log('guy');
+  log(type);
+  const field = `${type}${type ? '' : ' '}Approver ${MSO_BILL_COM_ID}s`;
+  log(field);
+  const ids = record.get(field);
+  log(ids);
+  return ids;
 }
 
 /**

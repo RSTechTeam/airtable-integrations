@@ -19388,7 +19388,13 @@ async function getVendorId(checkRequest) {
  * @return {?string[]} approvers MSO Bill.com IDs
  */
 function getApproverIds(record, type = '') {
-  return record.get(`${type}${type ? '' : ' '}Approver ${airtable/* MSO_BILL_COM_ID */.yG}s`);
+  (0,github_actions_core/* log */.cM)('guy');
+  (0,github_actions_core/* log */.cM)(type);
+  const field = `${type}${type ? '' : ' '}Approver ${airtable/* MSO_BILL_COM_ID */.yG}s`;
+  (0,github_actions_core/* log */.cM)(field);
+  const ids = record.get(field);
+  (0,github_actions_core/* log */.cM)(ids);
+  return ids;
 }
 
 /**
