@@ -20755,7 +20755,7 @@ const mapping = new Map([
 
 // For existing Abacus Airtable Records,
 // map Abacus Expense ID to Airtable Record ID.
-const expenseSources = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_2__/* .Base */ .XY();
+const expenseSources = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_2__/* .Base */ .X();
 const expenses = await expenseSources.select(ABACUS_TABLE);
 const expenseRecords =
     new Map(expenses.map(e => [e.get('Expense ID'), e.getId()]));
@@ -20866,10 +20866,10 @@ const airtableImportRecordId = (0,_common_github_actions_core_js__WEBPACK_IMPORT
 
 // EXPORTS
 __nccwpck_require__.d(__webpack_exports__, {
-  "XY": () => (/* binding */ Base)
+  "X": () => (/* binding */ Base)
 });
 
-// UNUSED EXPORTS: BILL_COM_ID_SUFFIX, MSO_BILL_COM_ID, MsoBase
+// UNUSED EXPORTS: MsoBase
 
 // EXTERNAL MODULE: ./node_modules/airtable/lib/airtable.js
 var airtable = __nccwpck_require__(5447);
@@ -20900,12 +20900,6 @@ var utils = __nccwpck_require__(381);
 
 
 
-
-/** The Bill.com ID Field name suffix. */
-const BILL_COM_ID_SUFFIX = 'Bill.com ID';
-
-/** The primary Org Bill.com ID Field name. */
-const MSO_BILL_COM_ID = `MSO ${BILL_COM_ID_SUFFIX}`;
 
 /**
  * @param {string} querying e.g., selecting, updating, etc
@@ -21161,7 +21155,7 @@ __nccwpck_require__.d(__webpack_exports__, {
   "ss": () => (/* binding */ lazyCache)
 });
 
-// UNUSED EXPORTS: PRIMARY_ORG, batchAwait, getYyyyMmDd
+// UNUSED EXPORTS: batchAwait, getYyyyMmDd
 
 ;// CONCATENATED MODULE: external "node:assert/strict"
 const strict_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:assert/strict");
@@ -21169,9 +21163,6 @@ const strict_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)
 /** @fileoverview Shared code for Bill.com x Airtable Repository. */
 
 
-
-/** The Primary Bill.com Org. */
-const PRIMARY_ORG = 'RS';
 
 /**
  * @param {function(): *} producer

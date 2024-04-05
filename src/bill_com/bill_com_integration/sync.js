@@ -4,8 +4,10 @@
  */
 
 import {ActiveStatus, activeFilter, filter, isActiveEnum} from '../common/api.js';
-import {BILL_COM_ID_SUFFIX, MSO_BILL_COM_ID, MsoBase} from '../../common/airtable.js';
-import {getYyyyMmDd, PRIMARY_ORG} from '../../common/utils.js';
+import {BILL_COM_ID_SUFFIX, MSO_BILL_COM_ID} from '../common/constants.js';
+import {getYyyyMmDd} from '../../common/utils.js';
+import {MsoBase} from '../../common/airtable.js';
+import {PRIMARY_ORG} from '../common/constants.js';
 
 /** Bill.com Bill Approval Statuses. */
 const approvalStatuses = new Map([

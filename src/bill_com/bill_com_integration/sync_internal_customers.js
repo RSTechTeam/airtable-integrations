@@ -1,7 +1,8 @@
 /** @fileoverview Syncs Bill.com Customers from Airtable to Bill.com. */
 
 import {ActiveStatus, filter} from '../common/api.js';
-import {MSO_BILL_COM_ID, MsoBase} from '../../common/airtable.js';
+import {MSO_BILL_COM_ID} from '../common/constants.js';
+import {MsoBase} from '../../common/airtable.js';
 
 /**
  * @param {!Api} billComApi

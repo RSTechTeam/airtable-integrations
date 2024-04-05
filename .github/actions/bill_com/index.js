@@ -18813,7 +18813,7 @@ __nccwpck_require__.r(__webpack_exports__);
  */
 async function main(
     billComApi,
-    billComIntegrationBase = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .Base */ .XY(),
+    billComIntegrationBase = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .Base */ .X(),
     approverUserProfileId = (0,_common_inputs_js__WEBPACK_IMPORTED_MODULE_1__/* .ecrApproverUserProfileId */ .WI)(),
     approverTable = 'New Bill.com Approvers',
     createView = 'New') {
@@ -19281,12 +19281,15 @@ class FormData {
 
 
 
+// EXTERNAL MODULE: ./src/bill_com/common/constants.js
+var constants = __nccwpck_require__(9447);
 // EXTERNAL MODULE: ./src/common/airtable.js
 var airtable = __nccwpck_require__(5585);
 // EXTERNAL MODULE: ./src/common/github_actions_core.js
 var github_actions_core = __nccwpck_require__(1444);
 ;// CONCATENATED MODULE: ./src/bill_com/bill_com_integration/create_bill.js
 /** @fileoverview Creates a Bill.com Bill based on a new Check Request. */
+
 
 
 
@@ -19308,7 +19311,7 @@ let billComIntegrationBase;
  */
 async function getBillComId(table, airtableId) {
   const record = await billComIntegrationBase.find(table, airtableId);
-  return record.get(airtable/* MSO_BILL_COM_ID */.yG);
+  return record.get(constants/* MSO_BILL_COM_ID */.yG);
 }
 
 /**
@@ -19354,7 +19357,7 @@ async function getVendorId(checkRequest) {
   const newVendorId = checkRequest.get('New Vendor')[0];
   const newVendor =
       await billComIntegrationBase.find(NEW_VENDORS_TABLE, newVendorId);
-  let vendorId = newVendor.get(airtable/* MSO_BILL_COM_ID */.yG);
+  let vendorId = newVendor.get(constants/* MSO_BILL_COM_ID */.yG);
   if (vendorId != null) return vendorId;
 
   // Create new Vendor and ID.
@@ -19377,7 +19380,7 @@ async function getVendorId(checkRequest) {
           });
   await billComIntegrationBase.update(
       NEW_VENDORS_TABLE,
-      [{id: newVendorId, fields: {[airtable/* MSO_BILL_COM_ID */.yG]: vendorId}}]);
+      [{id: newVendorId, fields: {[constants/* MSO_BILL_COM_ID */.yG]: vendorId}}]);
   await uploadAttachments(newVendor.get('W-9 Form'), vendorId);
   return vendorId;
 }
@@ -19388,7 +19391,7 @@ async function getVendorId(checkRequest) {
  * @return {?string[]} approvers MSO Bill.com IDs
  */
 function getApproverIds(record, type = '') {
-  return record.get(`${type}${type ? ' ' : ''}Approver ${airtable/* MSO_BILL_COM_ID */.yG}s`);
+  return record.get(`${type}${type ? ' ' : ''}Approver ${constants/* MSO_BILL_COM_ID */.yG}s`);
 }
 
 /**
@@ -19396,7 +19399,7 @@ function getApproverIds(record, type = '') {
  * @param {!MsoBase=} airtableBase
  * @return {!Promise<undefined>}
  */
-async function main(api, airtableBase = new airtable/* MsoBase */.Fi()) {
+async function main(api, airtableBase = new airtable/* MsoBase */.F()) {
 
   billComApi = api;
   billComIntegrationBase = airtableBase;
@@ -19506,7 +19509,7 @@ async function main(api, airtableBase = new airtable/* MsoBase */.Fi()) {
             'Active': true,
             'MSO': [msoRecordId],
             'Vendor Invoice ID': bill.invoiceNumber,
-            [airtable/* MSO_BILL_COM_ID */.yG]: newBillId,
+            [constants/* MSO_BILL_COM_ID */.yG]: newBillId,
           };
         });
   }
@@ -19523,12 +19526,15 @@ __nccwpck_require__.r(__webpack_exports__);
 /* harmony export */   "main": () => (/* binding */ main)
 /* harmony export */ });
 /* harmony import */ var _common_api_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(6362);
-/* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(5585);
+/* harmony import */ var _common_constants_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(9447);
 /* harmony import */ var _common_utils_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(381);
+/* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(5585);
 /**
  * @fileoverview Checks whether Bills have been paid and syncs Bill.com data
  * (e.g., Vendors, Chart of Accounts) into Airtable.
  */
+
+
 
 
 
@@ -19582,7 +19588,7 @@ class Syncer {
    * @param {!Api} billComApi
    * @param {!MsoBase=} airtableBase
    */
-  constructor(billComApi, airtableBase = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .MsoBase */ .Fi()) {
+  constructor(billComApi, airtableBase = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_3__/* .MsoBase */ .F()) {
 
     /** @private @const {!Api} */
     this.billComApi_ = billComApi;
@@ -19598,7 +19604,7 @@ class Syncer {
    */
   async syncUnpaid(table, entity) {
     const BILL_COM_ID =
-        entity === 'Bill' ? _common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .MSO_BILL_COM_ID */ .yG : _common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .BILL_COM_ID_SUFFIX */ .dK;
+        entity === 'Bill' ? _common_constants_js__WEBPACK_IMPORTED_MODULE_1__/* .MSO_BILL_COM_ID */ .yG : _common_constants_js__WEBPACK_IMPORTED_MODULE_1__/* .BILL_COM_ID_SUFFIX */ .dK;
 
     const billComIds = [];
     const airtableIds = [];
@@ -19668,7 +19674,7 @@ class Syncer {
     // Update every existing table record based on the entity data.
     const updates = [];
     for (const record of await this.airtableBase_.select(table)) {
-      const id = record.get(_common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .MSO_BILL_COM_ID */ .yG);
+      const id = record.get(_common_constants_js__WEBPACK_IMPORTED_MODULE_1__/* .MSO_BILL_COM_ID */ .yG);
       updates.push({
         id: record.getId(), fields: changes.get(id) || {Active: false},
       });
@@ -19681,7 +19687,7 @@ class Syncer {
     const creates = [];
     for (const [id, data] of changes) {
       creates.push({
-        fields: {MSO: [msoRecordId], [_common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .MSO_BILL_COM_ID */ .yG]: id, ...data},
+        fields: {MSO: [msoRecordId], [_common_constants_js__WEBPACK_IMPORTED_MODULE_1__/* .MSO_BILL_COM_ID */ .yG]: id, ...data},
       });
     }
     await this.airtableBase_.create(table, creates);
@@ -19718,7 +19724,7 @@ class Syncer {
    */
   async syncCustomers(anchorEntity) {
     const ALL_CUSTOMERS_TABLE = 'All Customers';
-    const BILL_COM_ID = `${anchorEntity} ${_common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .BILL_COM_ID_SUFFIX */ .dK}`;
+    const BILL_COM_ID = `${anchorEntity} ${_common_constants_js__WEBPACK_IMPORTED_MODULE_1__/* .BILL_COM_ID_SUFFIX */ .dK}`;
 
     await this.billComApi_.login(anchorEntity);
 
@@ -19809,7 +19815,7 @@ class Syncer {
           Name: customer.name,
           Email: customer.email,
           [BILL_COM_ID]: id,
-          [_common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .MSO_BILL_COM_ID */ .yG]:
+          [_common_constants_js__WEBPACK_IMPORTED_MODULE_1__/* .MSO_BILL_COM_ID */ .yG]:
             await this.billComApi_.create('Customer', customer),
         }
       });
@@ -19823,7 +19829,7 @@ class Syncer {
  * @param {!MsoBase=} airtableBase
  * @return {!Promise<undefined>}
  */
-async function main(billComApi, airtableBase = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .MsoBase */ .Fi()) {
+async function main(billComApi, airtableBase = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_3__/* .MsoBase */ .F()) {
   const syncer = new Syncer(billComApi, airtableBase);
   for await (const mso of airtableBase.iterateMsos()) {
     const msoCode = mso.get('Code');
@@ -19851,7 +19857,7 @@ async function main(billComApi, airtableBase = new _common_airtable_js__WEBPACK_
     await syncer.sync(
         'Customer', 'All Customers', o => ({Name: o.name, Email: o.email}));
 
-    if (msoCode !== _common_utils_js__WEBPACK_IMPORTED_MODULE_2__/* .PRIMARY_ORG */ .l3) continue;
+    if (msoCode !== _common_constants_js__WEBPACK_IMPORTED_MODULE_1__/* .PRIMARY_ORG */ .l3) continue;
     // sync('Department', 'Departments', o => ({Name: o.name, Email: o.email}))
     await syncer.syncUnpaid('Invoices', 'Invoice');
     await syncer.syncCustomers('CPASF');
@@ -19969,7 +19975,7 @@ async function getDocuments(sessionId, billId) {
  * @param {!Base=} billComIntegrationBase
  * @return {!Promise<undefined>}
  */
-async function main(api, billComIntegrationBase = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .Base */ .XY()) {
+async function main(api, billComIntegrationBase = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .Base */ .X()) {
   billComApi = api;
 
   const BILL_REPORTING_TABLE = 'Bill Reporting';
@@ -20102,8 +20108,10 @@ __nccwpck_require__.r(__webpack_exports__);
 /* harmony export */   "main": () => (/* binding */ main)
 /* harmony export */ });
 /* harmony import */ var _common_api_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(6362);
-/* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(5585);
+/* harmony import */ var _common_constants_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(9447);
+/* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(5585);
 /** @fileoverview Syncs Bill.com Customers from Airtable to Bill.com. */
+
 
 
 
@@ -20113,7 +20121,7 @@ __nccwpck_require__.r(__webpack_exports__);
  * @param {!MsoBase=} accountingBase
  * @return {!Promise<undefined>}
  */
-async function main(billComApi, accountingBase = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .MsoBase */ .Fi()) {
+async function main(billComApi, accountingBase = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_2__/* .MsoBase */ .F()) {
 
   // Sync for each Org/MSO.
   for await (const mso of accountingBase.iterateMsos()) {
@@ -20132,7 +20140,7 @@ async function main(billComApi, accountingBase = new _common_airtable_js__WEBPAC
         'Internal Customers',
         '',
         async (customer) => {
-          const id = customer.get(_common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .MSO_BILL_COM_ID */ .yG);
+          const id = customer.get(_common_constants_js__WEBPACK_IMPORTED_MODULE_1__/* .MSO_BILL_COM_ID */ .yG);
           const change = {
             id: id,
             name: customer.get('Local Name'),
@@ -20143,7 +20151,7 @@ async function main(billComApi, accountingBase = new _common_airtable_js__WEBPAC
           // Insert/Create in Bill.com any record with no Bill.com ID.
           if (id == undefined) {
             const billComId = await billComApi.create('Customer', change);
-            return {[_common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .MSO_BILL_COM_ID */ .yG]: billComId};
+            return {[_common_constants_js__WEBPACK_IMPORTED_MODULE_1__/* .MSO_BILL_COM_ID */ .yG]: billComId};
           }
 
           // Update in Bill.com other records with a Bill.com ID.
@@ -20330,12 +20338,15 @@ var airtable = __nccwpck_require__(5585);
 var utils = __nccwpck_require__(381);
 // EXTERNAL MODULE: ./src/common/github_actions_core.js
 var github_actions_core = __nccwpck_require__(1444);
+// EXTERNAL MODULE: ./src/bill_com/common/constants.js
+var constants = __nccwpck_require__(9447);
 ;// CONCATENATED MODULE: ./src/bill_com/common/api.js
 /**
  * @fileoverview Shared code for interacting with the Bill.com API.
  * For more information, check out the API documentation:
  * https://developer.bill.com/hc/en-us/articles/360035447551-API-Structure
  */
+
 
 
 
@@ -20491,7 +20502,7 @@ class Api {
    * @return {!Promise<undefined>}
    */
   primaryOrgLogin() {
-    return this.login(utils/* PRIMARY_ORG */.l3);
+    return this.login(constants/* PRIMARY_ORG */.l3);
   }
 
   /**
@@ -20591,11 +20602,33 @@ async function getApi(
     test = false) {
 
   const entities =
-      await new airtable/* Base */.XY(baseId, apiKey).select('Anchor Entities', 'Org IDs');
+      await new airtable/* Base */.X(baseId, apiKey).select('Anchor Entities', 'Org IDs');
   const orgIds =
       entities.map((e) => [e.get('Local Code'), e.get('Bill.com Org ID')]);
   return new Api(new Map(orgIds), userName, password, devKey, test);
 }
+
+
+/***/ }),
+
+/***/ 9447:
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
+
+/* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
+/* harmony export */   "l3": () => (/* binding */ PRIMARY_ORG),
+/* harmony export */   "dK": () => (/* binding */ BILL_COM_ID_SUFFIX),
+/* harmony export */   "yG": () => (/* binding */ MSO_BILL_COM_ID)
+/* harmony export */ });
+/** @fileoverview Bill.com x Airtable constants. */
+
+/** The Primary Org. */
+const PRIMARY_ORG = 'RS';
+
+/** The Airtable Bill.com ID Field name suffix. */
+const BILL_COM_ID_SUFFIX = 'Bill.com ID';
+
+/** The MSO Bill.com ID Field name. */
+const MSO_BILL_COM_ID = `MSO ${BILL_COM_ID_SUFFIX}`;
 
 
 /***/ }),
@@ -20641,7 +20674,7 @@ __nccwpck_require__.r(__webpack_exports__);
 /* harmony export */   "main": () => (/* binding */ main)
 /* harmony export */ });
 /* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(5585);
-/* harmony import */ var _common_utils_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(381);
+/* harmony import */ var _common_constants_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(9447);
 /** @fileoverview Creates a Bill.com Vendor based on volunteer address info. */
  
 
@@ -20652,7 +20685,7 @@ __nccwpck_require__.r(__webpack_exports__);
  * @param {!Base=} airtableBase
  * @return {!Promise<undefined>}
  */
-async function main(billComApi, airtableBase = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .Base */ .XY()) {
+async function main(billComApi, airtableBase = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .Base */ .X()) {
   await billComApi.primaryOrgLogin();
   await airtableBase.selectAndUpdate(
       'Jotform',
@@ -20674,7 +20707,7 @@ async function main(billComApi, airtableBase = new _common_airtable_js__WEBPACK_
                   phone: record.get('Mobile Phone'),
                 });
 
-        return {[`${_common_utils_js__WEBPACK_IMPORTED_MODULE_1__/* .PRIMARY_ORG */ .l3} Bill.com Vendor ID`]: vendorId};
+        return {[`${_common_constants_js__WEBPACK_IMPORTED_MODULE_1__/* .PRIMARY_ORG */ .l3} Bill.com Vendor ID`]: vendorId};
       });
 }
 
@@ -20742,10 +20775,8 @@ __webpack_handle_async_dependencies__();
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
 
 /* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
-/* harmony export */   "dK": () => (/* binding */ BILL_COM_ID_SUFFIX),
-/* harmony export */   "yG": () => (/* binding */ MSO_BILL_COM_ID),
-/* harmony export */   "XY": () => (/* binding */ Base),
-/* harmony export */   "Fi": () => (/* binding */ MsoBase)
+/* harmony export */   "X": () => (/* binding */ Base),
+/* harmony export */   "F": () => (/* binding */ MsoBase)
 /* harmony export */ });
 /* harmony import */ var airtable__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(5447);
 /* harmony import */ var _inputs_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(4684);
@@ -20761,12 +20792,6 @@ __webpack_handle_async_dependencies__();
 
 
 
-
-/** The Bill.com ID Field name suffix. */
-const BILL_COM_ID_SUFFIX = 'Bill.com ID';
-
-/** The primary Org Bill.com ID Field name. */
-const MSO_BILL_COM_ID = `MSO ${BILL_COM_ID_SUFFIX}`;
 
 /**
  * @param {string} querying e.g., selecting, updating, etc
@@ -21040,7 +21065,6 @@ const airtableBaseId = (0,_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/*
 
 // EXPORTS
 __nccwpck_require__.d(__webpack_exports__, {
-  "l3": () => (/* binding */ PRIMARY_ORG),
   "aE": () => (/* binding */ batchAsync),
   "rE": () => (/* binding */ batchAwait),
   "Tl": () => (/* binding */ fetchError),
@@ -21054,9 +21078,6 @@ const strict_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)
 /** @fileoverview Shared code for Bill.com x Airtable Repository. */
 
 
-
-/** The Primary Bill.com Org. */
-const PRIMARY_ORG = 'RS';
 
 /**
  * @param {function(): *} producer

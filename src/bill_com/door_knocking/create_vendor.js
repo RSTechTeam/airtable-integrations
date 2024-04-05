@@ -1,7 +1,7 @@
 /** @fileoverview Creates a Bill.com Vendor based on volunteer address info. */
  
 import {Base} from '../../common/airtable.js';
-import {PRIMARY_ORG} from '../../common/utils.js';
+import {PRIMARY_ORG} from '../common/constants.js';
 
 /**
  * @param {!Api} billComApi

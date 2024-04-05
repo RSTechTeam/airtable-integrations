@@ -9,12 +9,6 @@ import {airtableApiKey, airtableBaseId} from './inputs.js';
 import {batchAsync} from './utils.js';
 import {warn} from './github_actions_core.js';
 
-/** The Bill.com ID Field name suffix. */
-export const BILL_COM_ID_SUFFIX = 'Bill.com ID';
-
-/** The primary Org Bill.com ID Field name. */
-export const MSO_BILL_COM_ID = `MSO ${BILL_COM_ID_SUFFIX}`;
-
 /**
  * @param {string} querying e.g., selecting, updating, etc
  * @param {string} table

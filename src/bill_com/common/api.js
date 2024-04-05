@@ -9,8 +9,9 @@ import * as inputs from './inputs.js';
 import pLimit from 'p-limit';
 import {airtableApiKey} from '../../common/inputs.js';
 import {Base} from '../../common/airtable.js';
-import {batchAwait, fetchError, PRIMARY_ORG} from '../../common/utils.js';
+import {batchAwait, fetchError} from '../../common/utils.js';
 import {log, logJson} from '../../common/github_actions_core.js';
+import {PRIMARY_ORG} from './constants.js';
 
 /**
  * Mirrors Bill.com's isActive enum.
