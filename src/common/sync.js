@@ -1,12 +1,16 @@
 /** @fileoverview Utilities for syncing data from one datasource to another. */
 
 /**
+ * Returns the changes that would occur when syncing source data to a
+ * destination datasource, using the given key mapping. Note: does not check
+ * whether the destination data is already consistent with the source.
  * @param {!Map<string, !Object<string, *>>} source
  *    The priveleged datasource considered to be the Source of Truth.
  * @param {!Map<string, string>} mapping
  *    A mapping from source ID to destination ID.
- * @param {Set=} destinationIds
- *    A set of destination IDs to supplement those included in the mapping.
+ * @param {Set<string>=} destinationIds
+ *    A (super)set of destination IDs to use instead of mapping values when
+ *     computing removes.
  * @return {!Object<string, (!Map|!Set)>}
  *    An Object with 3 fields:
  *      1) updates - A Map keyed by destination IDs
@@ -16,7 +20,7 @@
  *      3) removes - A Set of destination IDs
  *        (for objects only in the destination).
  */
-export function syncChanges(source, mapping, desinationIds = null) {
+export function syncChanges(source, mapping, destinationIds = null) {
   const UPDATES = 'updates';
   const CREATES = 'creates';
 
@@ -24,11 +28,14 @@ export function syncChanges(source, mapping, desinationIds = null) {
       Map.groupBy(source, ([id,]) => mapping.has(id) ? UPDATES : CREATES);
   const updates =
       new Map(
-          upserts.get(UPDATES).map(
+          (upserts.get(UPDATES) || []).map(
               ([id, update]) => [mapping.get(id), update]));
   return {
     updates,
-    creates: new Map(upserts.get(CREATES)),
-    removes: (destinationIds || new Set(mapping.values())).difference(updates),
+    creates: new Map(upserts.get(CREATES) || []),
+    removes:
+      new Set(
+          Array.from((destinationIds?.values() || mapping.values())).filter(
+              x => !updates.has(x))),
   };
 }
