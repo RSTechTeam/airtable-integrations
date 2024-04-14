@@ -68,3 +68,12 @@ export function mapEntriesAndValues(map, entriesFunc, set, valuesFunc) {
     ...Array.from(set.values(), valuesFunc),
   ];
 }
+
+/**
+ * @param {string} id
+ * @param {!Object<string, *>} update
+ * @return {!Object<string, *>} Airtable formatted Record update
+ */
+export function airtableRecordUpdate(id, update) {
+  return {id, fields: update};
+}

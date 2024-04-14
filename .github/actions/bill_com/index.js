@@ -19525,10 +19525,10 @@ __nccwpck_require__.r(__webpack_exports__);
 /* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
 /* harmony export */   "main": () => (/* binding */ main)
 /* harmony export */ });
+/* harmony import */ var _common_sync_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(3599);
 /* harmony import */ var _common_api_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(6362);
 /* harmony import */ var _common_constants_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(9447);
 /* harmony import */ var _common_utils_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(381);
-/* harmony import */ var _common_sync_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(3599);
 /* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(5585);
 /**
  * @fileoverview Checks whether Bills have been paid and syncs Bill.com data
@@ -19629,9 +19629,7 @@ class Syncer {
         });
     await this.airtableBase_.update(
         table,
-        (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .mapEntries */ .V7)(
-            (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .syncChanges */ .U4)(source, mapping).updates,
-            (id, update) => ({id, fields: update})));
+        (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .mapEntries */ .V7)((0,_common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .syncChanges */ .U4)(source, mapping).updates, _common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .airtableRecordUpdate */ .vw));
   }
 
   /**
@@ -19690,7 +19688,7 @@ class Syncer {
     await this.airtableBase_.update(
         table,
         (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .mapEntriesAndValues */ .lr)(
-            updates, (id, update) => ({id, fields: update}),
+            updates, _common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .airtableRecordUpdate */ .vw,
             removes, id => ({id, fields: {Active: false}})));
   }
 
@@ -21079,7 +21077,8 @@ const airtableBaseId = (0,_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/*
 /* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
 /* harmony export */   "U4": () => (/* binding */ syncChanges),
 /* harmony export */   "V7": () => (/* binding */ mapEntries),
-/* harmony export */   "lr": () => (/* binding */ mapEntriesAndValues)
+/* harmony export */   "lr": () => (/* binding */ mapEntriesAndValues),
+/* harmony export */   "vw": () => (/* binding */ airtableRecordUpdate)
 /* harmony export */ });
 /** @fileoverview Utilities for syncing data from one datasource to another. */
 
@@ -21150,6 +21149,15 @@ function mapEntriesAndValues(map, entriesFunc, set, valuesFunc) {
     ...mapEntries(map, entriesFunc),
     ...Array.from(set.values(), valuesFunc),
   ];
+}
+
+/**
+ * @param {string} id
+ * @param {!Object<string, *>} update
+ * @return {!Object<string, *>} Airtable formatted Record update
+ */
+function airtableRecordUpdate(id, update) {
+  return {id, fields: update};
 }
 
 
