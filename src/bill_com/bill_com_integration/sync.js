@@ -8,6 +8,7 @@ import {BILL_COM_ID_SUFFIX, MSO_BILL_COM_ID} from '../common/constants.js';
 import {getYyyyMmDd} from '../../common/utils.js';
 import {MsoBase} from '../../common/airtable.js';
 import {PRIMARY_ORG} from '../common/constants.js';
+import {syncChanges} from '../../common/sync.js';
 
 /** Bill.com Bill Approval Statuses. */
 const approvalStatuses = new Map([
@@ -140,26 +141,32 @@ class Syncer {
     //   }
     // }
 
-    // Update every existing table record based on the entity data.
-    const updates = [];
-    for (const record of await this.airtableBase_.select(table)) {
-      const id = record.get(MSO_BILL_COM_ID);
-      updates.push({
-        id: record.getId(), fields: changes.get(id) || {Active: false},
-      });
-      changes.delete(id);  
-    }
-    await this.airtableBase_.update(table, updates);
+    const airtableRecords = await this.airtableBase_.select(table);
+    const {updates, creates, removes} =
+        syncChanges(
+            // Source
+            changes,
+            // Mapping
+            new Map(
+                airtableRecords.map(r => [r.get(MSO_BILL_COM_ID), r.getId()])),
+            // Destination IDs
+            new Set(airtableRecords.map(r => r.getId())));
 
-    // Create new table records from new entity data.
     const msoRecordId = this.airtableBase_.getCurrentMso().getId();
-    const creates = [];
-    for (const [id, data] of changes) {
-      creates.push({
-        fields: {MSO: [msoRecordId], [MSO_BILL_COM_ID]: id, ...data},
-      });
-    }
-    await this.airtableBase_.create(table, creates);
+    await this.airtableBase_.create(
+        table,
+        Array.from(
+            creates.entries(),
+            ([id, create]) => ({
+              fields: {MSO: [msoRecordId], [MSO_BILL_COM_ID]: id, ...create},
+            })));
+    const airtableUpdates =
+        Array.from(updates.entries(), ([id, update]) => ({id, fields: update}));
+    await this.airtableBase_.update(
+        table,
+        airtableUpdates.concat(
+            Array.from(
+                removes.values(), id => ({id, fields: {Active: false}}))));
   }
 
   /**
