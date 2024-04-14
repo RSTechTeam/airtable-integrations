@@ -6,16 +6,6 @@ import {MsoBase} from '../../common/airtable.js';
 import {syncChanges} from '../../common/sync.js';
 
 /**
- * @see Array.fromAsync
- * @param {!Iterator<*>} arrayLike
- * @param {function(*): !Promise<*>} mapFn
- * @return {!Promise<Array<*>>}
- */
-function arrayFromAsync(arrayLike, mapFn) {
-  return Promise.all(Array.from(arrayLike, mapFn));
-}
-
-/**
  * @param {!Api} billComApi
  * @param {!MsoBase=} airtableBase
  * @return {!Promise<undefined>}
@@ -51,22 +41,24 @@ export async function main(billComApi, airtableBase = new MsoBase()) {
             new Map(mapping),
             // Destination IDs
             new Set(
-                await arrayFromAsync(
-                    billComApi.list(
+                Array.from(
+                    await billComApi.list(
                         'Customer',
                         [filter('parentCustomerId', '=', parentCustomerId)]),
                     c => c.id)));
 
     await airtableBase.update(
         AIRTABLE_CUSTOMERS_TABLE,
-        await arrayFromAsync(
-            creates.entries(),
-            async ([id, create]) => ({
-              id,
-              fields: {
-                [MSO_BILL_COM_ID]: await billComApi.create('Customer', create),
-              },
-            })));
+        await Promise.all(
+            Array.from(
+                creates.entries(),
+                async ([id, create]) => ({
+                  id,
+                  fields: {
+                    [MSO_BILL_COM_ID]:
+                      await billComApi.create('Customer', create),
+                  },
+                }))));
     const billComUpdates =
         Array.from(updates.entries(), ([id, update]) => ({id, ...update}));
     await billComApi.bulk(

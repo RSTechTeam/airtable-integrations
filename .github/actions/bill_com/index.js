@@ -20127,16 +20127,6 @@ __nccwpck_require__.r(__webpack_exports__);
 
 
 /**
- * @see Array.fromAsync
- * @param {!Iterator<*>} arrayLike
- * @param {function(*): !Promise<*>} mapFn
- * @return {!Promise<Array<*>>}
- */
-function arrayFromAsync(arrayLike, mapFn) {
-  return Promise.all(Array.from(arrayLike, mapFn));
-}
-
-/**
  * @param {!Api} billComApi
  * @param {!MsoBase=} airtableBase
  * @return {!Promise<undefined>}
@@ -20172,22 +20162,24 @@ async function main(billComApi, airtableBase = new _common_airtable_js__WEBPACK_
             new Map(mapping),
             // Destination IDs
             new Set(
-                await arrayFromAsync(
-                    billComApi.list(
+                Array.from(
+                    await billComApi.list(
                         'Customer',
                         [(0,_common_api_js__WEBPACK_IMPORTED_MODULE_0__/* .filter */ .hX)('parentCustomerId', '=', parentCustomerId)]),
                     c => c.id)));
 
     await airtableBase.update(
         AIRTABLE_CUSTOMERS_TABLE,
-        await arrayFromAsync(
-            creates.entries(),
-            async ([id, create]) => ({
-              id,
-              fields: {
-                [_common_constants_js__WEBPACK_IMPORTED_MODULE_1__/* .MSO_BILL_COM_ID */ .yG]: await billComApi.create('Customer', create),
-              },
-            })));
+        await Promise.all(
+            Array.from(
+                creates.entries(),
+                async ([id, create]) => ({
+                  id,
+                  fields: {
+                    [_common_constants_js__WEBPACK_IMPORTED_MODULE_1__/* .MSO_BILL_COM_ID */ .yG]:
+                      await billComApi.create('Customer', create),
+                  },
+                }))));
     const billComUpdates =
         Array.from(updates.entries(), ([id, update]) => ({id, ...update}));
     await billComApi.bulk(
