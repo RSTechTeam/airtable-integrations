@@ -54,6 +54,8 @@ export function mapEntries(map, func) {
 }
 
 /**
+ * Maps the given functions on the respective ~iterables
+ * and concatenates the results.
  * @param {!Map<*, !Object<string, *>>} map
  * @param {function(*, !Object<string, *>): *} entriesFunc
  * @param {!Set<*>} set
