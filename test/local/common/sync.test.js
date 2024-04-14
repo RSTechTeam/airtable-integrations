@@ -1,6 +1,8 @@
 import * as sync from '../../../src/common/sync.js';
 import {jest} from '@jest/globals';
 
+const stringify = JSON.stringify;
+
 describe.each`
   source                             | mapping                 | expected
   ${[]}                              | ${[]}                   | ${{u: [], c: [], r: []}}
@@ -10,8 +12,8 @@ describe.each`
 `('syncChanges', ({source, mapping, expected}) => {
 
   test(
-      `given args (${JSON.stringify(source)}, ${JSON.stringify(mapping)}),` +
-          ` returns ${JSON.stringify(expected)}`,
+      `given args (${stringify(source)}, ${stringify(mapping)}),` +
+          ` returns ${stringify(expected)}`,
       () => {
         expect(sync.syncChanges(new Map(source), new Map(mapping))).toEqual({
           updates: new Map(expected.u),
@@ -33,4 +35,38 @@ describe.each`
       })
     })
   }
+});
+
+const concat = (s1, s2) => s1 + s2;
+
+describe.each`
+  given                       | expected
+  ${[]}                       | ${[]}
+  ${[['a', '1']]}             | ${['a1']}
+  ${[['a', '1'], ['b', '2']]} | ${['a1', 'b2']}
+`('mapEntries', ({given, expected}) => {
+  test(`given ${stringify(given)}, returns ${stringify(expected)}`, () => {
+    expect(sync.mapEntries(new Map(given), concat)).toEqual(expected);
+  });
+});
+
+describe.each`
+  map                         | set           | expected
+  ${[]}                       | ${[]}         | ${[]}
+  ${[]}                       | ${['a']}      | ${['A']}
+  ${[['a', '1']]}             | ${[]}         | ${['a1']}
+  ${[['a', '1']]}             | ${['a']}      | ${['a1', 'A']}
+  ${[['a', '1'], ['b', '2']]} | ${['a', 'b']} | ${['a1', 'b2', 'A', 'B']}
+`('mapEntriesAndValues', ({map, set, expected}) => {
+
+  const upperCase = s => s.toUpperCase();
+  test(
+      `given args (${stringify(map)}, ${stringify(set)}),` +
+          ` returns ${stringify(expected)}`,
+      () => {
+        const got =
+            sync.mapEntriesAndValues(
+                new Map(map), concat, new Set(set), upperCase)
+        expect(got).toEqual(expected);
+      });
 });
