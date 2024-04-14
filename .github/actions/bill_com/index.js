@@ -20100,17 +20100,69 @@ async function main(api, billComIntegrationBase = new _common_airtable_js__WEBPA
 
 /***/ }),
 
-/***/ 7842:
+/***/ 6721:
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
 
+// ESM COMPAT FLAG
 __nccwpck_require__.r(__webpack_exports__);
-/* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
-/* harmony export */   "main": () => (/* binding */ main)
-/* harmony export */ });
-/* harmony import */ var _common_api_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(6362);
-/* harmony import */ var _common_constants_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(9447);
-/* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(5585);
+
+// EXPORTS
+__nccwpck_require__.d(__webpack_exports__, {
+  "main": () => (/* binding */ main)
+});
+
+// EXTERNAL MODULE: ./src/bill_com/common/api.js + 2 modules
+var api = __nccwpck_require__(6362);
+// EXTERNAL MODULE: ./src/bill_com/common/constants.js
+var constants = __nccwpck_require__(9447);
+// EXTERNAL MODULE: ./src/common/airtable.js
+var airtable = __nccwpck_require__(5585);
+;// CONCATENATED MODULE: ./src/common/sync.js
+/** @fileoverview Utilities for syncing data from one datasource to another. */
+
+/**
+ * Returns the changes that would occur when syncing source data to a
+ * destination datasource, using the given key mapping. Note: does not check
+ * whether the destination data is already consistent with the source.
+ * @param {!Map<string, !Object<string, *>>} source
+ *    The priveleged datasource considered to be the Source of Truth.
+ * @param {!Map<string, string>} mapping
+ *    A mapping from source ID to destination ID.
+ * @param {Set<string>=} destinationIds
+ *    A (super)set of destination IDs to use instead of mapping values when
+ *     computing removes.
+ * @return {!Object<string, (!Map|!Set)>}
+ *    An Object with 3 fields:
+ *      1) updates - A Map keyed by destination IDs
+ *        (for objects in both datasources);
+ *      2) creates - A Map keyed by source IDs
+ *        (for objects only in the source);
+ *      3) removes - A Set of destination IDs
+ *        (for objects only in the destination).
+ */
+function syncChanges(source, mapping, destinationIds = null) {
+  const UPDATES = 'updates';
+  const CREATES = 'creates';
+
+  const upserts =
+      Map.groupBy(source, ([id,]) => mapping.has(id) ? UPDATES : CREATES);
+  const updates =
+      new Map(
+          (upserts.get(UPDATES) || []).map(
+              ([id, update]) => [mapping.get(id), update]));
+  return {
+    updates,
+    creates: new Map(upserts.get(CREATES) || []),
+    removes:
+      new Set(
+          Array.from((destinationIds?.values() || mapping.values())).filter(
+              x => !updates.has(x))),
+  };
+}
+
+;// CONCATENATED MODULE: ./src/bill_com/bill_com_integration/sync_internal_customers.js
 /** @fileoverview Syncs Bill.com Customers from Airtable to Bill.com. */
+
 
 
 
@@ -20118,53 +20170,64 @@ __nccwpck_require__.r(__webpack_exports__);
 
 /**
  * @param {!Api} billComApi
- * @param {!MsoBase=} accountingBase
+ * @param {!MsoBase=} airtableBase
  * @return {!Promise<undefined>}
  */
-async function main(billComApi, accountingBase = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_2__/* .MsoBase */ .F()) {
+async function main(billComApi, airtableBase = new airtable/* MsoBase */.F()) {
+  const AIRTABLE_CUSTOMERS_TABLE = 'Internal Customers';
 
   // Sync for each Org/MSO.
-  for await (const mso of accountingBase.iterateMsos()) {
+  for await (const mso of airtableBase.iterateMsos()) {
 
-    // Initialize Bill.com Customer collection.
     await billComApi.login(mso.get('Code'));
     const parentCustomerId = mso.get('Internal Customer ID');
-    const billComCustomers =
-        await billComApi.list(
-            'Customer', [(0,_common_api_js__WEBPACK_IMPORTED_MODULE_0__/* .filter */ .hX)('parentCustomerId', '=', parentCustomerId)]);
-    const billComCustomerIds = new Set(billComCustomers.map(c => c.id));
+    const airtableCustomers =
+        await airtableBase.select(AIRTABLE_CUSTOMERS_TABLE);
 
-    // Upsert every Bill.com Customer in the Internal Customers Table.
-    const updates = [];
-    await accountingBase.selectAndUpdate(
-        'Internal Customers',
-        '',
-        async (customer) => {
-          const id = customer.get(_common_constants_js__WEBPACK_IMPORTED_MODULE_1__/* .MSO_BILL_COM_ID */ .yG);
-          const change = {
-            id: id,
-            name: customer.get('Local Name'),
-            isActive: _common_api_js__WEBPACK_IMPORTED_MODULE_0__/* .ActiveStatus.ACTIVE */ .tV.ACTIVE,
-            parentCustomerId: parentCustomerId,
-          };
+    const {updates, creates, removes} =
+        syncChanges(
+            // Source
+            new Map(
+                airtableCustomers.map(
+                    c => [
+                      c.getId(),
+                      {
+                        name: c.get('Local Name'),
+                        isActive: api/* ActiveStatus.ACTIVE */.tV.ACTIVE,
+                        parentCustomerId: parentCustomerId,
+                      },
+                    ])),
+            // Mapping
+            new Map(
+                airtableCustomers.map(
+                    c => [c.getId(), c.get(constants/* MSO_BILL_COM_ID */.yG)])),
+            // Destination IDs
+            new Set(
+              await Array.fromAsync(
+                  billComApi.list(
+                      'Customer',
+                      [(0,api/* filter */.hX)('parentCustomerId', '=', parentCustomerId)])),
+                  c => c.id));
 
-          // Insert/Create in Bill.com any record with no Bill.com ID.
-          if (id == undefined) {
-            const billComId = await billComApi.create('Customer', change);
-            return {[_common_constants_js__WEBPACK_IMPORTED_MODULE_1__/* .MSO_BILL_COM_ID */ .yG]: billComId};
-          }
-
-          // Update in Bill.com other records with a Bill.com ID.
-          updates.push(change);
-          billComCustomerIds.delete(id);
-          return null;
-        });
-
-    // Deactivate internal Bill.com Customers not in the Table.
-    for (const id of billComCustomerIds) {
-      updates.push({id: id, isActive: _common_api_js__WEBPACK_IMPORTED_MODULE_0__/* .ActiveStatus.INACTIVE */ .tV.INACTIVE});
-    }
-    await billComApi.bulk('Update', 'Customer', updates);
+    await airtableBase.update(
+        AIRTABLE_CUSTOMERS_TABLE,
+        await Array.fromAsync(
+            creates.entries(),
+            async ([id, create]) => ({
+              id,
+              fields: {
+                [constants/* MSO_BILL_COM_ID */.yG]: await billComApi.create('Customer', create),
+              },
+            })));
+    const billComUpdates =
+        Array.from(updates.entries(), ([id, update]) => ({id, ...update}));
+    await billComApi.bulk(
+        'Update',
+        'Customer',
+        billComUpdates.concat(
+            Array.from(
+                removes.values(),
+                id => ({id, isActive: api/* ActiveStatus.INACTIVE */.tV.INACTIVE}))));
   }
 }
 
@@ -20722,7 +20785,7 @@ __nccwpck_require__.a(__webpack_module__, async (__webpack_handle_async_dependen
 /* harmony import */ var _bill_com_integration_create_bill_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(9953);
 /* harmony import */ var _bill_com_integration_sync_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(9902);
 /* harmony import */ var _bill_com_integration_sync_bills_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(8655);
-/* harmony import */ var _bill_com_integration_sync_internal_customers_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(7842);
+/* harmony import */ var _bill_com_integration_sync_internal_customers_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(6721);
 /* harmony import */ var _door_knocking_create_vendor_js__WEBPACK_IMPORTED_MODULE_5__ = __nccwpck_require__(318);
 /* harmony import */ var _common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_6__ = __nccwpck_require__(1444);
 /* harmony import */ var _common_inputs_js__WEBPACK_IMPORTED_MODULE_7__ = __nccwpck_require__(1872);

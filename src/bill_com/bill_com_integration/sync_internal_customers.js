@@ -3,55 +3,67 @@
 import {ActiveStatus, filter} from '../common/api.js';
 import {MSO_BILL_COM_ID} from '../common/constants.js';
 import {MsoBase} from '../../common/airtable.js';
+import {syncChanges} from '../../common/sync.js';
 
 /**
  * @param {!Api} billComApi
- * @param {!MsoBase=} accountingBase
+ * @param {!MsoBase=} airtableBase
  * @return {!Promise<undefined>}
  */
-export async function main(billComApi, accountingBase = new MsoBase()) {
+export async function main(billComApi, airtableBase = new MsoBase()) {
+  const AIRTABLE_CUSTOMERS_TABLE = 'Internal Customers';
 
   // Sync for each Org/MSO.
-  for await (const mso of accountingBase.iterateMsos()) {
+  for await (const mso of airtableBase.iterateMsos()) {
 
-    // Initialize Bill.com Customer collection.
     await billComApi.login(mso.get('Code'));
     const parentCustomerId = mso.get('Internal Customer ID');
-    const billComCustomers =
-        await billComApi.list(
-            'Customer', [filter('parentCustomerId', '=', parentCustomerId)]);
-    const billComCustomerIds = new Set(billComCustomers.map(c => c.id));
+    const airtableCustomers =
+        await airtableBase.select(AIRTABLE_CUSTOMERS_TABLE);
 
-    // Upsert every Bill.com Customer in the Internal Customers Table.
-    const updates = [];
-    await accountingBase.selectAndUpdate(
-        'Internal Customers',
-        '',
-        async (customer) => {
-          const id = customer.get(MSO_BILL_COM_ID);
-          const change = {
-            id: id,
-            name: customer.get('Local Name'),
-            isActive: ActiveStatus.ACTIVE,
-            parentCustomerId: parentCustomerId,
-          };
+    const {updates, creates, removes} =
+        syncChanges(
+            // Source
+            new Map(
+                airtableCustomers.map(
+                    c => [
+                      c.getId(),
+                      {
+                        name: c.get('Local Name'),
+                        isActive: ActiveStatus.ACTIVE,
+                        parentCustomerId: parentCustomerId,
+                      },
+                    ])),
+            // Mapping
+            new Map(
+                airtableCustomers.map(
+                    c => [c.getId(), c.get(MSO_BILL_COM_ID)])),
+            // Destination IDs
+            new Set(
+              await Array.fromAsync(
+                  billComApi.list(
+                      'Customer',
+                      [filter('parentCustomerId', '=', parentCustomerId)])),
+                  c => c.id));
 
-          // Insert/Create in Bill.com any record with no Bill.com ID.
-          if (id == undefined) {
-            const billComId = await billComApi.create('Customer', change);
-            return {[MSO_BILL_COM_ID]: billComId};
-          }
-
-          // Update in Bill.com other records with a Bill.com ID.
-          updates.push(change);
-          billComCustomerIds.delete(id);
-          return null;
-        });
-
-    // Deactivate internal Bill.com Customers not in the Table.
-    for (const id of billComCustomerIds) {
-      updates.push({id: id, isActive: ActiveStatus.INACTIVE});
-    }
-    await billComApi.bulk('Update', 'Customer', updates);
+    await airtableBase.update(
+        AIRTABLE_CUSTOMERS_TABLE,
+        await Array.fromAsync(
+            creates.entries(),
+            async ([id, create]) => ({
+              id,
+              fields: {
+                [MSO_BILL_COM_ID]: await billComApi.create('Customer', create),
+              },
+            })));
+    const billComUpdates =
+        Array.from(updates.entries(), ([id, update]) => ({id, ...update}));
+    await billComApi.bulk(
+        'Update',
+        'Customer',
+        billComUpdates.concat(
+            Array.from(
+                removes.values(),
+                id => ({id, isActive: ActiveStatus.INACTIVE}))));
   }
 }
