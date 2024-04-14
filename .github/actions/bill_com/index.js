@@ -20164,8 +20164,11 @@ function syncChanges(source, mapping, destinationIds = null) {
   };
 }
 
+// EXTERNAL MODULE: ./src/common/github_actions_core.js
+var github_actions_core = __nccwpck_require__(1444);
 ;// CONCATENATED MODULE: ./src/bill_com/bill_com_integration/sync_internal_customers.js
 /** @fileoverview Syncs Bill.com Customers from Airtable to Bill.com. */
+
 
 
 
@@ -20223,6 +20226,8 @@ async function main(billComApi, airtableBase = new airtable/* MsoBase */.F()) {
                         [(0,api/* filter */.hX)('parentCustomerId', '=', parentCustomerId)]),
                     c => c.id)));
 
+    (0,github_actions_core/* log */.cM)('test');
+    (0,github_actions_core/* log */.cM)(creates);
     await airtableBase.update(
         AIRTABLE_CUSTOMERS_TABLE,
         await arrayFromAsync(

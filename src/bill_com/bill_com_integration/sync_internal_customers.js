@@ -4,6 +4,7 @@ import {ActiveStatus, filter} from '../common/api.js';
 import {MSO_BILL_COM_ID} from '../common/constants.js';
 import {MsoBase} from '../../common/airtable.js';
 import {syncChanges} from '../../common/sync.js';
+import {log} from '../../common/github_actions_core.js';
 
 /**
  * @see Array.fromAsync
@@ -56,6 +57,8 @@ export async function main(billComApi, airtableBase = new MsoBase()) {
                         [filter('parentCustomerId', '=', parentCustomerId)]),
                     c => c.id)));
 
+    log('test');
+    log(creates);
     await airtableBase.update(
         AIRTABLE_CUSTOMERS_TABLE,
         await arrayFromAsync(
