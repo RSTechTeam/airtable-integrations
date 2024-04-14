@@ -70,3 +70,9 @@ describe.each`
         expect(got).toEqual(expected);
       });
 });
+
+test('airtableRecordUpdate', () => {
+  const id = 'rec1';
+  const update = {'Field': 'value'};
+  expect(sync.airtableRecordUpdate(id, update)).toEqual({id, fields: update});
+});
