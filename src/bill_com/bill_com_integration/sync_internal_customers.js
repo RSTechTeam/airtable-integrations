@@ -6,6 +6,16 @@ import {MsoBase} from '../../common/airtable.js';
 import {syncChanges} from '../../common/sync.js';
 
 /**
+ * @see Array.fromAsync
+ * @param {!Iterator<*>} arrayLike
+ * @param {function(*): !Promise<*>} mapFn
+ * @return {!Promise<Array<*>>}
+ */
+function arrayFromAsync(arrayLike, mapFn) {
+  return Promise.all(Array.from(arrayLike, mapFn));
+}
+
+/**
  * @param {!Api} billComApi
  * @param {!MsoBase=} airtableBase
  * @return {!Promise<undefined>}
@@ -40,15 +50,15 @@ export async function main(billComApi, airtableBase = new MsoBase()) {
                     c => [c.getId(), c.get(MSO_BILL_COM_ID)])),
             // Destination IDs
             new Set(
-              await Array.fromAsync(
-                  billComApi.list(
-                      'Customer',
-                      [filter('parentCustomerId', '=', parentCustomerId)])),
-                  c => c.id));
+                await arrayFromAsync(
+                    billComApi.list(
+                        'Customer',
+                        [filter('parentCustomerId', '=', parentCustomerId)]),
+                    c => c.id)));
 
     await airtableBase.update(
         AIRTABLE_CUSTOMERS_TABLE,
-        await Array.fromAsync(
+        await arrayFromAsync(
             creates.entries(),
             async ([id, create]) => ({
               id,

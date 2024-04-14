@@ -20169,6 +20169,16 @@ function syncChanges(source, mapping, destinationIds = null) {
 
 
 /**
+ * @see Array.fromAsync
+ * @param {!Iterator<*>} arrayLike
+ * @param {function(*): !Promise<*>} mapFn
+ * @return {!Promise<Array<*>>}
+ */
+function arrayFromAsync(arrayLike, mapFn) {
+  return Promise.all(Array.from(arrayLike, mapFn));
+}
+
+/**
  * @param {!Api} billComApi
  * @param {!MsoBase=} airtableBase
  * @return {!Promise<undefined>}
@@ -20203,15 +20213,15 @@ async function main(billComApi, airtableBase = new airtable/* MsoBase */.F()) {
                     c => [c.getId(), c.get(constants/* MSO_BILL_COM_ID */.yG)])),
             // Destination IDs
             new Set(
-              await Array.fromAsync(
-                  billComApi.list(
-                      'Customer',
-                      [(0,api/* filter */.hX)('parentCustomerId', '=', parentCustomerId)])),
-                  c => c.id));
+                await arrayFromAsync(
+                    billComApi.list(
+                        'Customer',
+                        [(0,api/* filter */.hX)('parentCustomerId', '=', parentCustomerId)]),
+                    c => c.id)));
 
     await airtableBase.update(
         AIRTABLE_CUSTOMERS_TABLE,
-        await Array.fromAsync(
+        await arrayFromAsync(
             creates.entries(),
             async ([id, create]) => ({
               id,
