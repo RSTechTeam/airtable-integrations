@@ -1,9 +1,9 @@
 /** @fileoverview Syncs Bill.com Customers from Airtable to Bill.com. */
 
 import {ActiveStatus, filter} from '../common/api.js';
+import {mapEntries, mapEntriesAndValues, syncChanges} from '../../common/sync.js';
 import {MSO_BILL_COM_ID} from '../common/constants.js';
 import {MsoBase} from '../../common/airtable.js';
-import {syncChanges} from '../../common/sync.js';
 
 /**
  * @param {!Api} billComApi
@@ -50,23 +50,20 @@ export async function main(billComApi, airtableBase = new MsoBase()) {
     await airtableBase.update(
         AIRTABLE_CUSTOMERS_TABLE,
         await Promise.all(
-            Array.from(
-                creates.entries(),
-                async ([id, create]) => ({
+            mapEntries(
+                creates,
+                async (id, create) => ({
                   id,
                   fields: {
                     [MSO_BILL_COM_ID]:
                       await billComApi.create('Customer', create),
                   },
                 }))));
-    const billComUpdates =
-        Array.from(updates.entries(), ([id, update]) => ({id, ...update}));
     await billComApi.bulk(
         'Update',
         'Customer',
-        billComUpdates.concat(
-            Array.from(
-                removes.values(),
-                id => ({id, isActive: ActiveStatus.INACTIVE}))));
+        mapEntriesAndValues(
+            updates, (id, update) => ({id, ...update}),
+            removes, id => ({id, isActive: ActiveStatus.INACTIVE})));
   }
 }

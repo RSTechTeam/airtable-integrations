@@ -6,9 +6,9 @@
 import {ActiveStatus, activeFilter, filter, isActiveEnum} from '../common/api.js';
 import {BILL_COM_ID_SUFFIX, MSO_BILL_COM_ID} from '../common/constants.js';
 import {getYyyyMmDd} from '../../common/utils.js';
+import {mapEntries, mapEntriesAndValues, syncChanges} from '../../common/sync.js';
 import {MsoBase} from '../../common/airtable.js';
 import {PRIMARY_ORG} from '../common/constants.js';
-import {syncChanges} from '../../common/sync.js';
 
 /** Bill.com Bill Approval Statuses. */
 const approvalStatuses = new Map([
@@ -155,18 +155,16 @@ class Syncer {
     const msoRecordId = this.airtableBase_.getCurrentMso().getId();
     await this.airtableBase_.create(
         table,
-        Array.from(
-            creates.entries(),
-            ([id, create]) => ({
+        mapEntries(
+            creates,
+            (id, create) => ({
               fields: {MSO: [msoRecordId], [MSO_BILL_COM_ID]: id, ...create},
             })));
-    const airtableUpdates =
-        Array.from(updates.entries(), ([id, update]) => ({id, fields: update}));
     await this.airtableBase_.update(
         table,
-        airtableUpdates.concat(
-            Array.from(
-                removes.values(), id => ({id, fields: {Active: false}}))));
+        mapEntriesAndValues(
+            updates, (id, update) => ({id, fields: update}),
+            removes, id => ({id, fields: {Active: false}})));
   }
 
   /**

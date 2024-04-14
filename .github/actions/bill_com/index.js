@@ -19528,8 +19528,8 @@ __nccwpck_require__.r(__webpack_exports__);
 /* harmony import */ var _common_api_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(6362);
 /* harmony import */ var _common_constants_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(9447);
 /* harmony import */ var _common_utils_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(381);
-/* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(5585);
 /* harmony import */ var _common_sync_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(3599);
+/* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(5585);
 /**
  * @fileoverview Checks whether Bills have been paid and syncs Bill.com data
  * (e.g., Vendors, Chart of Accounts) into Airtable.
@@ -19675,7 +19675,7 @@ class Syncer {
 
     const airtableRecords = await this.airtableBase_.select(table);
     const {updates, creates, removes} =
-        (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .syncChanges */ .U)(
+        (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .syncChanges */ .U4)(
             // Source
             changes,
             // Mapping
@@ -19687,18 +19687,16 @@ class Syncer {
     const msoRecordId = this.airtableBase_.getCurrentMso().getId();
     await this.airtableBase_.create(
         table,
-        Array.from(
-            creates.entries(),
-            ([id, create]) => ({
+        (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .mapEntries */ .V7)(
+            creates,
+            (id, create) => ({
               fields: {MSO: [msoRecordId], [_common_constants_js__WEBPACK_IMPORTED_MODULE_1__/* .MSO_BILL_COM_ID */ .yG]: id, ...create},
             })));
-    const airtableUpdates =
-        Array.from(updates.entries(), ([id, update]) => ({id, fields: update}));
     await this.airtableBase_.update(
         table,
-        airtableUpdates.concat(
-            Array.from(
-                removes.values(), id => ({id, fields: {Active: false}}))));
+        (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .mapEntriesAndValues */ .lr)(
+            updates, (id, update) => ({id, fields: update}),
+            removes, id => ({id, fields: {Active: false}})));
   }
 
   /**
@@ -20116,9 +20114,9 @@ __nccwpck_require__.r(__webpack_exports__);
 /* harmony export */   "main": () => (/* binding */ main)
 /* harmony export */ });
 /* harmony import */ var _common_api_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(6362);
+/* harmony import */ var _common_sync_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(3599);
 /* harmony import */ var _common_constants_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(9447);
 /* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(5585);
-/* harmony import */ var _common_sync_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(3599);
 /** @fileoverview Syncs Bill.com Customers from Airtable to Bill.com. */
 
 
@@ -20146,7 +20144,7 @@ async function main(billComApi, airtableBase = new _common_airtable_js__WEBPACK_
         airtableCustomers.map(c => [c.getId(), c.get(_common_constants_js__WEBPACK_IMPORTED_MODULE_1__/* .MSO_BILL_COM_ID */ .yG)]).filter(
             ([, billComId]) => billComId);
     const {updates, creates, removes} =
-        (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_3__/* .syncChanges */ .U)(
+        (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_3__/* .syncChanges */ .U4)(
             // Source
             new Map(
                 airtableCustomers.map(
@@ -20171,24 +20169,21 @@ async function main(billComApi, airtableBase = new _common_airtable_js__WEBPACK_
     await airtableBase.update(
         AIRTABLE_CUSTOMERS_TABLE,
         await Promise.all(
-            Array.from(
-                creates.entries(),
-                async ([id, create]) => ({
+            (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_3__/* .mapEntries */ .V7)(
+                creates,
+                async (id, create) => ({
                   id,
                   fields: {
                     [_common_constants_js__WEBPACK_IMPORTED_MODULE_1__/* .MSO_BILL_COM_ID */ .yG]:
                       await billComApi.create('Customer', create),
                   },
                 }))));
-    const billComUpdates =
-        Array.from(updates.entries(), ([id, update]) => ({id, ...update}));
     await billComApi.bulk(
         'Update',
         'Customer',
-        billComUpdates.concat(
-            Array.from(
-                removes.values(),
-                id => ({id, isActive: _common_api_js__WEBPACK_IMPORTED_MODULE_0__/* .ActiveStatus.INACTIVE */ .tV.INACTIVE}))));
+        (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_3__/* .mapEntriesAndValues */ .lr)(
+            updates, (id, update) => ({id, ...update}),
+            removes, id => ({id, isActive: _common_api_js__WEBPACK_IMPORTED_MODULE_0__/* .ActiveStatus.INACTIVE */ .tV.INACTIVE})));
   }
 }
 
@@ -21087,7 +21082,9 @@ const airtableBaseId = (0,_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/*
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
 
 /* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
-/* harmony export */   "U": () => (/* binding */ syncChanges)
+/* harmony export */   "U4": () => (/* binding */ syncChanges),
+/* harmony export */   "V7": () => (/* binding */ mapEntries),
+/* harmony export */   "lr": () => (/* binding */ mapEntriesAndValues)
 /* harmony export */ });
 /** @fileoverview Utilities for syncing data from one datasource to another. */
 
@@ -21133,6 +21130,26 @@ function syncChanges(source, mapping, destinationIds = null) {
           Array.from((destinationIds?.values() || mapping.values())).filter(
               x => !updates.has(x))),
   };
+}
+
+/**
+ * @param {!Map<string, !Object<string, *>>} map
+ * @param {function(string, !Object<string, *>): *} func
+ * @return {!Array<*>}
+ */
+function mapEntries(map, func) {
+  return Array.from(map.entries(), ([key, value]) => func(key, value));
+}
+
+/**
+ * @param {!Map<string, !Object<string, *>>} map
+ * @param {function(string, !Object<string, *>): *} entriesFunc
+ * @param {!Set<string>} set
+ * @param {function(string): *} valuesFunc
+ * @return {!Array<*>}
+ */
+function mapEntriesAndValues(map, entriesFunc, set, valuesFunc) {
+  return mapEntries(map, entriesFunc).concat(Array.from(set.values(), func));
 }
 
 

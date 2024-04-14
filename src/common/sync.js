@@ -43,3 +43,23 @@ export function syncChanges(source, mapping, destinationIds = null) {
               x => !updates.has(x))),
   };
 }
+
+/**
+ * @param {!Map<string, !Object<string, *>>} map
+ * @param {function(string, !Object<string, *>): *} func
+ * @return {!Array<*>}
+ */
+export function mapEntries(map, func) {
+  return Array.from(map.entries(), ([key, value]) => func(key, value));
+}
+
+/**
+ * @param {!Map<string, !Object<string, *>>} map
+ * @param {function(string, !Object<string, *>): *} entriesFunc
+ * @param {!Set<string>} set
+ * @param {function(string): *} valuesFunc
+ * @return {!Array<*>}
+ */
+export function mapEntriesAndValues(map, entriesFunc, set, valuesFunc) {
+  return mapEntries(map, entriesFunc).concat(Array.from(set.values(), func));
+}
