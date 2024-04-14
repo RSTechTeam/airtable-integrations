@@ -24,15 +24,19 @@ export function syncChanges(source, mapping, destinationIds = null) {
   const UPDATES = 'updates';
   const CREATES = 'creates';
 
-  const upserts =
-      Map.groupBy(source, ([id,]) => mapping.has(id) ? UPDATES : CREATES);
+  // Group source upserts by updates and creates.
+  const upserts = new Map([[UPDATES, []], [CREATES, []]]);
+  source.forEach(
+      (upsert, id, map) => {
+        upserts.get(mapping.has(id) ? UPDATES : CREATES).push([id, upsert]);
+      });
   const updates =
       new Map(
-          (upserts.get(UPDATES) || []).map(
+          upserts.get(UPDATES).map(
               ([id, update]) => [mapping.get(id), update]));
   return {
     updates,
-    creates: new Map(upserts.get(CREATES) || []),
+    creates: new Map(upserts.get(CREATES)),
     removes:
       new Set(
           Array.from((destinationIds?.values() || mapping.values())).filter(
