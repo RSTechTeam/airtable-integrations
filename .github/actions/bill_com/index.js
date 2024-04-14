@@ -21092,11 +21092,11 @@ const airtableBaseId = (0,_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/*
  * Returns the changes that would occur when syncing source data to a
  * destination datasource, using the given key mapping. Note: does not check
  * whether the destination data is already consistent with the source.
- * @param {!Map<string, !Object<string, *>>} source
+ * @param {!Map<*, !Object<string, *>>} source
  *    The priveleged datasource considered to be the Source of Truth.
- * @param {!Map<string, string>} mapping
+ * @param {!Map<*, string>} mapping
  *    A mapping from source ID to destination ID.
- * @param {Set<string>=} destinationIds
+ * @param {Set<*>=} destinationIds
  *    A (super)set of destination IDs to use instead of mapping values when
  *     computing removes.
  * @return {!Object<string, (!Map|!Set)>}
@@ -21133,8 +21133,8 @@ function syncChanges(source, mapping, destinationIds = null) {
 }
 
 /**
- * @param {!Map<string, !Object<string, *>>} map
- * @param {function(string, !Object<string, *>): *} func
+ * @param {!Map<*, !Object<string, *>>} map
+ * @param {function(*, !Object<string, *>): *} func
  * @return {!Array<*>}
  */
 function mapEntries(map, func) {
@@ -21142,10 +21142,10 @@ function mapEntries(map, func) {
 }
 
 /**
- * @param {!Map<string, !Object<string, *>>} map
- * @param {function(string, !Object<string, *>): *} entriesFunc
- * @param {!Set<string>} set
- * @param {function(string): *} valuesFunc
+ * @param {!Map<*, !Object<string, *>>} map
+ * @param {function(*, !Object<string, *>): *} entriesFunc
+ * @param {!Set<*>} set
+ * @param {function(*): *} valuesFunc
  * @return {!Array<*>}
  */
 function mapEntriesAndValues(map, entriesFunc, set, valuesFunc) {
