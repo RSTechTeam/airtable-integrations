@@ -4,9 +4,9 @@
  * Returns the changes that would occur when syncing source data to a
  * destination datasource, using the given key mapping. Note: does not check
  * whether the destination data is already consistent with the source.
- * @param {!Map<*, !Object<string, *>>} source
+ * @param {!Map<*, *>} source
  *    The priveleged datasource considered to be the Source of Truth.
- * @param {!Map<*, string>} mapping
+ * @param {!Map<*, *>} mapping
  *    A mapping from source ID to destination ID.
  * @param {Set<*>=} destinationIds
  *    A (super)set of destination IDs to use instead of mapping values when
@@ -45,8 +45,8 @@ export function syncChanges(source, mapping, destinationIds = null) {
 }
 
 /**
- * @param {!Map<*, !Object<string, *>>} map
- * @param {function(*, !Object<string, *>): *} func
+ * @param {!Map<*, *>} map
+ * @param {function(*, *): *} func
  * @return {!Array<*>}
  */
 export function mapEntries(map, func) {
@@ -56,8 +56,8 @@ export function mapEntries(map, func) {
 /**
  * Maps the given functions on the respective ~iterables
  * and concatenates the results.
- * @param {!Map<*, !Object<string, *>>} map
- * @param {function(*, !Object<string, *>): *} entriesFunc
+ * @param {!Map<*, *>} map
+ * @param {function(*, *): *} entriesFunc
  * @param {!Set<*>} set
  * @param {function(*): *} valuesFunc
  * @return {!Array<*>}
