@@ -61,5 +61,6 @@ export function mapEntries(map, func) {
  * @return {!Array<*>}
  */
 export function mapEntriesAndValues(map, entriesFunc, set, valuesFunc) {
-  return mapEntries(map, entriesFunc).concat(Array.from(set.values(), func));
+  return mapEntries(map, entriesFunc).concat(
+      Array.from(set.values(), valuesFunc));
 }
