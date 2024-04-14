@@ -21146,8 +21146,10 @@ function mapEntries(map, func) {
  * @return {!Array<*>}
  */
 function mapEntriesAndValues(map, entriesFunc, set, valuesFunc) {
-  return mapEntries(map, entriesFunc).concat(
-      Array.from(set.values(), valuesFunc));
+  return [
+    ...mapEntries(map, entriesFunc),
+    ...Array.from(set.values(), valuesFunc),
+  ];
 }
 
 
