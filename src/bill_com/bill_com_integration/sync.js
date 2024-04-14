@@ -73,38 +73,33 @@ class Syncer {
    * @return {!Promise<undefined>}
    */
   async syncUnpaid(table, entity) {
+    const unpaids = await this.airtableBase_.select(table, 'Unpaid');
+    if (unpaids.length === 0) return;
+
     const BILL_COM_ID =
         entity === 'Bill' ? MSO_BILL_COM_ID : BILL_COM_ID_SUFFIX;
-
-    const billComIds = [];
-    const airtableIds = [];
-    const unpaids = await this.airtableBase_.select(table, 'Unpaid');
-    for (const unpaid of unpaids) {
-      billComIds.push(unpaid.get(BILL_COM_ID));
-      airtableIds.push(unpaid.getId());
-    }
-    if (billComIds.length === 0) return;
-
-    const bulkResponses =
-        await this.billComApi_.bulk('Read', entity, billComIds);
-    const updates = [];
+    const mapping = new Map(unpaids.map(r => [r.get(BILL_COM_ID), r.getId()]));
+    const source = new Map();
     processBulkResponses(
-        bulkResponses,
+        await this.billComApi_.bulk('Read', entity, Array.from(mapping.keys())),
         (r, i) => {
           const isPaid = r.paymentStatus === '0';
-          updates.push({
-            id: airtableIds[i],
-            fields: {
-              'Active': r.isActive === ActiveStatus.ACTIVE,
-              'Approval Status': approvalStatuses.get(r.approvalStatus),
-              'Effective Amount': r.amount,
-              'Payment Status': paymentStatuses.get(r.paymentStatus),
-              'Paid': isPaid,
-              'Paid Date': isPaid ? getYyyyMmDd(r.updatedTime) : null,
-            },
-          });
+          source.set(
+              r.id,
+              {
+                'Active': r.isActive === ActiveStatus.ACTIVE,
+                'Approval Status': approvalStatuses.get(r.approvalStatus),
+                'Effective Amount': r.amount,
+                'Payment Status': paymentStatuses.get(r.paymentStatus),
+                'Paid': isPaid,
+                'Paid Date': isPaid ? getYyyyMmDd(r.updatedTime) : null,
+              });
         });
-    await this.airtableBase_.update(table, updates);
+    await this.airtableBase_.update(
+        table,
+        mapEntries(
+            syncChanges(source, mapping).updates,
+            (id, update) => ({id, fields: update})));
   }
 
   /**
