@@ -73,31 +73,32 @@ class Syncer {
    * @return {!Promise<undefined>}
    */
   async syncUnpaid(table, entity) {
-    const unpaids = await this.airtableBase_.select(table, 'Unpaid');
-    if (unpaids.length === 0) return;
+    const airtableUnpaids = await this.airtableBase_.select(table, 'Unpaid');
+    if (airtableUnpaids.length === 0) return;
 
     const BILL_COM_ID =
         entity === 'Bill' ? MSO_BILL_COM_ID : BILL_COM_ID_SUFFIX;
-    const mapping = new Map(unpaids.map(r => [r.get(BILL_COM_ID), r.getId()]));
-    const source = new Map();
-    processBulkResponses(
-        await this.billComApi_.bulk('Read', entity, Array.from(mapping.keys())),
-        (r, i) => {
-          const isPaid = r.paymentStatus === '0';
-          source.set(
-              r.id,
-              {
-                'Active': r.isActive === ActiveStatus.ACTIVE,
-                'Approval Status': approvalStatuses.get(r.approvalStatus),
-                'Effective Amount': r.amount,
-                'Payment Status': paymentStatuses.get(r.paymentStatus),
-                'Paid': isPaid,
-                'Paid Date': isPaid ? getYyyyMmDd(r.updatedTime) : null,
-              });
-        });
+    const mapping =
+        new Map(airtableUnpaids.map(r => [r.get(BILL_COM_ID), r.getId()]));
+    const billComUpdates =
+        await this.billComApi_.bulk('Read', entity, Array.from(mapping.keys()));
     await this.airtableBase_.update(
         table,
-        mapEntries(syncChanges(source, mapping).updates, airtableRecordUpdate));
+        billComUpdates.flat().map(
+            u => {
+              const isPaid = u.paymentStatus === '0';
+              return {
+                id: mapping.get(u.id),
+                fields: {
+                  'Active': u.isActive === ActiveStatus.ACTIVE,
+                  'Approval Status': approvalStatuses.get(u.approvalStatus),
+                  'Effective Amount': u.amount,
+                  'Payment Status': paymentStatuses.get(u.paymentStatus),
+                  'Paid': isPaid,
+                  'Paid Date': isPaid ? getYyyyMmDd(u.updatedTime) : null,
+                },
+              }
+            }));
   }
 
   /**

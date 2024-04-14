@@ -19605,31 +19605,32 @@ class Syncer {
    * @return {!Promise<undefined>}
    */
   async syncUnpaid(table, entity) {
-    const unpaids = await this.airtableBase_.select(table, 'Unpaid');
-    if (unpaids.length === 0) return;
+    const airtableUnpaids = await this.airtableBase_.select(table, 'Unpaid');
+    if (airtableUnpaids.length === 0) return;
 
     const BILL_COM_ID =
         entity === 'Bill' ? _common_constants_js__WEBPACK_IMPORTED_MODULE_1__/* .MSO_BILL_COM_ID */ .yG : _common_constants_js__WEBPACK_IMPORTED_MODULE_1__/* .BILL_COM_ID_SUFFIX */ .dK;
-    const mapping = new Map(unpaids.map(r => [r.get(BILL_COM_ID), r.getId()]));
-    const source = new Map();
-    processBulkResponses(
-        await this.billComApi_.bulk('Read', entity, Array.from(mapping.keys())),
-        (r, i) => {
-          const isPaid = r.paymentStatus === '0';
-          source.set(
-              r.id,
-              {
-                'Active': r.isActive === _common_api_js__WEBPACK_IMPORTED_MODULE_0__/* .ActiveStatus.ACTIVE */ .tV.ACTIVE,
-                'Approval Status': approvalStatuses.get(r.approvalStatus),
-                'Effective Amount': r.amount,
-                'Payment Status': paymentStatuses.get(r.paymentStatus),
-                'Paid': isPaid,
-                'Paid Date': isPaid ? (0,_common_utils_js__WEBPACK_IMPORTED_MODULE_2__/* .getYyyyMmDd */ .PQ)(r.updatedTime) : null,
-              });
-        });
+    const mapping =
+        new Map(airtableUnpaids.map(r => [r.get(BILL_COM_ID), r.getId()]));
+    const billComUpdates =
+        await this.billComApi_.bulk('Read', entity, Array.from(mapping.keys()));
     await this.airtableBase_.update(
         table,
-        (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .mapEntries */ .V7)((0,_common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .syncChanges */ .U4)(source, mapping).updates, _common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .airtableRecordUpdate */ .vw));
+        billComUpdates.flat().map(
+            u => {
+              const isPaid = u.paymentStatus === '0';
+              return {
+                id: mapping.get(u.id),
+                fields: {
+                  'Active': u.isActive === _common_api_js__WEBPACK_IMPORTED_MODULE_0__/* .ActiveStatus.ACTIVE */ .tV.ACTIVE,
+                  'Approval Status': approvalStatuses.get(u.approvalStatus),
+                  'Effective Amount': u.amount,
+                  'Payment Status': paymentStatuses.get(u.paymentStatus),
+                  'Paid': isPaid,
+                  'Paid Date': isPaid ? (0,_common_utils_js__WEBPACK_IMPORTED_MODULE_2__/* .getYyyyMmDd */ .PQ)(u.updatedTime) : null,
+                },
+              }
+            }));
   }
 
   /**
