@@ -19616,20 +19616,21 @@ class Syncer {
         await this.billComApi_.bulk('Read', entity, Array.from(mapping.keys()));
     await this.airtableBase_.update(
         table,
-        billComUpdates.flat().map(
+        billComUpdates.flatMap(u => u.bulk).map(
             u => {
-              const isPaid = u.paymentStatus === '0';
+              const data = u.response_data;
+              const isPaid = data.paymentStatus === '0';
               return {
-                id: mapping.get(u.id),
+                id: mapping.get(data.id),
                 fields: {
-                  'Active': u.isActive === _common_api_js__WEBPACK_IMPORTED_MODULE_0__/* .ActiveStatus.ACTIVE */ .tV.ACTIVE,
-                  'Approval Status': approvalStatuses.get(u.approvalStatus),
-                  'Effective Amount': u.amount,
-                  'Payment Status': paymentStatuses.get(u.paymentStatus),
+                  'Active': data.isActive === _common_api_js__WEBPACK_IMPORTED_MODULE_0__/* .ActiveStatus.ACTIVE */ .tV.ACTIVE,
+                  'Approval Status': approvalStatuses.get(data.approvalStatus),
+                  'Effective Amount': data.amount,
+                  'Payment Status': paymentStatuses.get(data.paymentStatus),
                   'Paid': isPaid,
-                  'Paid Date': isPaid ? (0,_common_utils_js__WEBPACK_IMPORTED_MODULE_2__/* .getYyyyMmDd */ .PQ)(u.updatedTime) : null,
+                  'Paid Date': isPaid ? (0,_common_utils_js__WEBPACK_IMPORTED_MODULE_2__/* .getYyyyMmDd */ .PQ)(data.updatedTime) : null,
                 },
-              }
+              };
             }));
   }
 

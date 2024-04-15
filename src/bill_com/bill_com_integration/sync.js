@@ -84,20 +84,21 @@ class Syncer {
         await this.billComApi_.bulk('Read', entity, Array.from(mapping.keys()));
     await this.airtableBase_.update(
         table,
-        billComUpdates.flat().map(
+        billComUpdates.flatMap(u => u.bulk).map(
             u => {
-              const isPaid = u.paymentStatus === '0';
+              const data = u.response_data;
+              const isPaid = data.paymentStatus === '0';
               return {
-                id: mapping.get(u.id),
+                id: mapping.get(data.id),
                 fields: {
-                  'Active': u.isActive === ActiveStatus.ACTIVE,
-                  'Approval Status': approvalStatuses.get(u.approvalStatus),
-                  'Effective Amount': u.amount,
-                  'Payment Status': paymentStatuses.get(u.paymentStatus),
+                  'Active': data.isActive === ActiveStatus.ACTIVE,
+                  'Approval Status': approvalStatuses.get(data.approvalStatus),
+                  'Effective Amount': data.amount,
+                  'Payment Status': paymentStatuses.get(data.paymentStatus),
                   'Paid': isPaid,
-                  'Paid Date': isPaid ? getYyyyMmDd(u.updatedTime) : null,
+                  'Paid Date': isPaid ? getYyyyMmDd(data.updatedTime) : null,
                 },
-              }
+              };
             }));
   }
 
