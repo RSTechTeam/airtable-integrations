@@ -169,16 +169,17 @@ export async function main(api, airtableBase = new MsoBase()) {
                   // with 3 to pretty divide these parts.
                   `${requester.substring(0, 15)}` +
                       ` - ${newCheckRequest.getId().substring(3, 6)}`;
-          const notes = encodeURIComponent(newCheckRequest.get('Notes'));
+          const notes = newCheckRequest.get('Notes');
           const bill = {
             vendorId: await getVendorId(newCheckRequest),
             invoiceNumber: encodeURIComponent(invoiceId),
             invoiceDate: newCheckRequest.get('Invoice Date'),
             dueDate: newCheckRequest.get('Due Date'),
             description:
-              `Submitted by ${requester}` +
-                  ` (${newCheckRequest.get('Requester Email')}).` +
-                  (notes == undefined ? '' : `\n\nNotes:\n${notes}`),
+              encodeURIComponent(
+                  `Submitted by ${requester}` +
+                      ` (${newCheckRequest.get('Requester Email')}).` +
+                      (notes == undefined ? '' : `\n\nNotes:\n${notes}`)),
             billLineItems: billComLineItems,
           };
 
