@@ -19466,10 +19466,10 @@ async function main(api, airtableBase = new airtable/* MsoBase */.F()) {
             invoiceDate: newCheckRequest.get('Invoice Date'),
             dueDate: newCheckRequest.get('Due Date'),
             description:
-              encodeURIComponent(
-                  `Submitted by ${requester}` +
-                      ` (${newCheckRequest.get('Requester Email')}).` +
-                      (notes == undefined ? '' : `\n\nNotes:\n${notes}`)),
+              `Submitted by ${requester}` +
+                  ` (${newCheckRequest.get('Requester Email')}).` +
+                  (notes == undefined ?
+                      '' : `\n\nNotes:\n${encodeURIComponent(notes)}`),
             billLineItems: billComLineItems,
           };
 
