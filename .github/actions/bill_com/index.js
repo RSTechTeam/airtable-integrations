@@ -19730,99 +19730,94 @@ class Syncer {
 
     await this.billComApi_.login(anchorEntity);
 
-    // Initialize Bill.com Customer collections.
-    const billComCustomers = await this.billComApi_.listActive('Customer');
-    const billComCustomerMap = new Map();
-    billComCustomers.forEach(
-        c => billComCustomerMap.set(c.id, {name: c.name, email: c.email}));
+    // Upsert MSO Bill.com Customers (in Airtable) into Anchor Entity Bill.com.
+    const airtableCustomers =
+        await this.airtableBase_.select(ALL_CUSTOMERS_TABLE);
+    const sourceAirtableCustomers =
+        airtableCustomers.filter(
+            // Skip any record that is neither active
+            // nor has an anchor entity Bill.com ID.
+            c => (c.get('Active') || c.get(BILL_COM_ID)) &&
+                // And temporarily skip Customers with long names.
+                c.get('Name').length < 42);
+    const {updates: billComUpdates, creates: billComCreates} =
+        (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .syncChanges */ .U4)(
+            // Source
+            new Map(
+                sourceAirtableCustomers.map(
+                    c => [
+                      c.getId(),
+                      {
+                        name: c.get('Name'),
+                        isActive: (0,_common_api_js__WEBPACK_IMPORTED_MODULE_0__/* .isActiveEnum */ .dA)(c.get('Active')),
+                        email: c.get('Email'),
+                      },
+                    ])),
+            // Mapping
+            new Map(
+                sourceAirtableCustomers.map(
+                    c => [c.getId(), c.get(BILL_COM_ID)])));
+    await this.billComApi_.bulk(
+        'Update',
+        'Customer',
+        (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .mapEntries */ .V7)(billComUpdates, (id, update) => ({id, ...update})));
 
-    // Upsert every Active RS Bill.com Customer from Airtable.
-    const billComCreates = [];
-    const airtableUpdateIds = [];
-    const airtableUpdates = [];
-    const billComUpdates = [];
-    const customers = await this.airtableBase_.select(ALL_CUSTOMERS_TABLE);
-    for (const customer of customers) {
-      const isActive = customer.get('Active');
-      const id = customer.get(BILL_COM_ID);
-      const hasAnchorEntityId = id != undefined;
-      const email = customer.get('Email');
-      const name = customer.get('Name');
-      const change = {
-        id: id, name: name, isActive: (0,_common_api_js__WEBPACK_IMPORTED_MODULE_0__/* .isActiveEnum */ .dA)(isActive), email: email,
-      };
+    // Upsert Anchor Entity Bill.com Customers into MSO Bill.com (and Airtable).
+    const hasEmailAirtableCustomers =
+        new Set(
+            airtableCustomers.filter(c => !!c.get('Email')).map(
+                c => c.get(BILL_COM_ID)));
+    const billComCustomers =
+        (await this.billComApi_.listActive('Customer')).filter(
+            // Skip updates where email already exists.
+            c => !hasEmailAirtableCustomers.has(c.id));
+    const {updates: airtableUpdates, creates: airtableCreates} =
+        (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .syncChanges */ .U4)(
+            // Source
+            new Map(
+                billComCustomers.map(
+                    c => [c.id, {name: c.name, email: c.email}])),
+            // Mapping
+            new Map(
+                airtableCustomers.map(c => [c.get(BILL_COM_ID), c.getId()])));
 
-      // Skip any record that is neither active
-      // nor has an anchor entity Bill.com ID.
-      if (!isActive && !hasAnchorEntityId) continue;
-
-      // Create in Bill.com any record with no anchor entity Bill.com ID.
-      if (!hasAnchorEntityId) {
-
-        // Temporarily skip Customers with long names.
-        if (name.length > 41) continue;
-
-        billComCreates.push(change);
-        airtableUpdateIds.push(customer.getId());
-        continue;
-      }
-
-      // Set email address in Airtable if empty but present in Bill.com.
-      if (email == undefined && billComCustomerMap.has(id)) {
-        const billComEmail = billComCustomerMap.get(id).email;
-        if (billComEmail != null) {
-          change.email = billComEmail;
-          airtableUpdates.push({
-            id: customer.getId(), fields: {Email: billComEmail},
-          });
-        }
-      }
-
-      // Update in Bill.com other records with an anchor entity Bill.com ID.
-      billComCustomerMap.delete(id);
-
-      // Temporarily skip Customers with long names.
-      if (name.length > 41) continue;
-
-      billComUpdates.push(change);
-    }
-
-    // Bulk execute Bill.com Creates and Updates.
-    if (billComCreates.length > 0) {
-      const bulkResponses =
-          await this.billComApi_.bulk('Create', 'Customer', billComCreates);
-      processBulkResponses(
-          bulkResponses,
-          (r, i) => {
-            airtableUpdates.push({
-              id: airtableUpdateIds[i],
-              fields: {[BILL_COM_ID]: r.id},
-            });
-          });
-    }
-    await this.billComApi_.bulk('Update', 'Customer', billComUpdates);
-    await this.airtableBase_.update(ALL_CUSTOMERS_TABLE, airtableUpdates);
+    await this.airtableBase_.update(
+        [
+          ...(await Promise.all(
+              (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .mapEntries */ .V7)(
+                  billComCreates,
+                  async (id, create) => ({
+                    id,
+                    fields: {
+                      [BILL_COM_ID]:
+                        await billComApi.create('Customer', create),
+                    },
+                  })))),
+          ...airtableUpdates.map(
+              ([id, update]) => ({id, fields: {Email: update.email}})),
+        ]);
 
     // Create any active anchor entity Bill.com Customer not in Airtable;
     // Create in both MSO Bill.com and Airtable.
     const currentMso = this.airtableBase_.getCurrentMso();
     await this.billComApi_.login(currentMso.get('Code'));
     const msoRecordId = currentMso.getId();
-    const airtableCreates = [];
-    for (const [id, customer] of billComCustomerMap) {
-      airtableCreates.push({
-        fields: {
-          Active: true,
-          MSO: [msoRecordId],
-          Name: customer.name,
-          Email: customer.email,
-          [BILL_COM_ID]: id,
-          [_common_constants_js__WEBPACK_IMPORTED_MODULE_1__/* .MSO_BILL_COM_ID */ .yG]:
-            await this.billComApi_.create('Customer', customer),
-        }
-      });
-    }
-    await this.airtableBase_.create(ALL_CUSTOMERS_TABLE, airtableCreates);
+    await this.airtableBase_.create(
+        ALL_CUSTOMERS_TABLE,
+        await Promise.all(
+            (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .mapEntries */ .V7)(
+                airtableCreates,
+                async (id, create) => ({
+                  fields: {
+                    Active: true,
+                    MSO: [msoRecordId],
+                    Name: create.name,
+                    Email: create.email,
+                    [BILL_COM_ID]: id,
+                    [_common_constants_js__WEBPACK_IMPORTED_MODULE_1__/* .MSO_BILL_COM_ID */ .yG]:
+                      await this.billComApi_.create('Customer', create),
+                  }
+                }))));
   }
 }
 
