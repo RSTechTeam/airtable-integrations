@@ -260,7 +260,8 @@ class Syncer {
                         await billComApi.create('Customer', create),
                     },
                   })))),
-          ...airtableUpdates.map(
+          ...mapEntries(
+              airtableUpdates,
               ([id, update]) => ({id, fields: {Email: update.email}})),
         ]);
 
