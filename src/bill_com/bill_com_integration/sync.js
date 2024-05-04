@@ -269,6 +269,7 @@ class Syncer {
               (id, update) => ({id, fields: {Email: update.email}})),
         ];
     log(updates);
+    log(updates.length);
     await this.airtableBase_.update(updates);
 
     // Create any active anchor entity Bill.com Customer not in Airtable;

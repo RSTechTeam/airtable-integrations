@@ -19803,6 +19803,7 @@ class Syncer {
               (id, update) => ({id, fields: {Email: update.email}})),
         ];
     (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_3__/* .log */ .cM)(updates);
+    (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_3__/* .log */ .cM)(updates.length);
     await this.airtableBase_.update(updates);
 
     // Create any active anchor entity Bill.com Customer not in Airtable;
@@ -20840,6 +20841,7 @@ function catchError(promise, querying, table) {
  * @return {!Promise<!Array<*>>}
  */
 function batch(func, array) {
+  (0,_github_actions_core_js__WEBPACK_IMPORTED_MODULE_3__/* .log */ .cM)(array);
   return (0,_utils_js__WEBPACK_IMPORTED_MODULE_2__/* .batchAsync */ .aE)(func, array, 10);
 }
 

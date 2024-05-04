@@ -20930,6 +20930,7 @@ function catchError(promise, querying, table) {
  * @return {!Promise<!Array<*>>}
  */
 function batch(func, array) {
+  (0,github_actions_core/* log */.cM)(array);
   return (0,utils/* batchAsync */.aE)(func, array, 10);
 }
 
@@ -21066,11 +21067,12 @@ class MsoBase extends (/* unused pure expression or super */ null && (Base)) {
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
 
 /* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
+/* harmony export */   "cM": () => (/* binding */ log),
 /* harmony export */   "ZK": () => (/* binding */ warn),
 /* harmony export */   "Np": () => (/* binding */ getInput),
 /* harmony export */   "vU": () => (/* binding */ error)
 /* harmony export */ });
-/* unused harmony exports log, logJson */
+/* unused harmony export logJson */
 /* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(6024);
 /* harmony import */ var _utils_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(381);
 /**
