@@ -19526,17 +19526,15 @@ __nccwpck_require__.r(__webpack_exports__);
 /* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
 /* harmony export */   "main": () => (/* binding */ main)
 /* harmony export */ });
-/* harmony import */ var _common_sync_js__WEBPACK_IMPORTED_MODULE_5__ = __nccwpck_require__(3599);
+/* harmony import */ var _common_sync_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(3599);
 /* harmony import */ var _common_api_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(6362);
 /* harmony import */ var _common_constants_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(9447);
 /* harmony import */ var _common_utils_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(381);
-/* harmony import */ var _common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(1444);
-/* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(5585);
+/* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(5585);
 /**
  * @fileoverview Checks whether Bills have been paid and syncs Bill.com data
  * (e.g., Vendors, Chart of Accounts) into Airtable.
  */
-
 
 
 
@@ -19593,7 +19591,7 @@ class Syncer {
    * @param {!Api} billComApi
    * @param {!MsoBase=} airtableBase
    */
-  constructor(billComApi, airtableBase = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_4__/* .MsoBase */ .F()) {
+  constructor(billComApi, airtableBase = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_3__/* .MsoBase */ .F()) {
 
     /** @private @const {!Api} */
     this.billComApi_ = billComApi;
@@ -19673,7 +19671,7 @@ class Syncer {
 
     const airtableRecords = await this.airtableBase_.select(table);
     const {updates, creates, removes} =
-        (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_5__/* .syncChanges */ .U4)(
+        (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .syncChanges */ .U4)(
             // Source
             changes,
             // Mapping
@@ -19685,15 +19683,15 @@ class Syncer {
     const msoRecordId = this.airtableBase_.getCurrentMso().getId();
     await this.airtableBase_.create(
         table,
-        (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_5__/* .mapEntries */ .V7)(
+        (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .mapEntries */ .V7)(
             creates,
             (id, create) => ({
               fields: {MSO: [msoRecordId], [_common_constants_js__WEBPACK_IMPORTED_MODULE_1__/* .MSO_BILL_COM_ID */ .yG]: id, ...create},
             })));
     await this.airtableBase_.update(
         table,
-        (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_5__/* .mapEntriesAndValues */ .lr)(
-            updates, _common_sync_js__WEBPACK_IMPORTED_MODULE_5__/* .airtableRecordUpdate */ .vw,
+        (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .mapEntriesAndValues */ .lr)(
+            updates, _common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .airtableRecordUpdate */ .vw,
             removes, id => ({id, fields: {Active: false}})));
   }
 
@@ -19743,7 +19741,7 @@ class Syncer {
                 // And temporarily skip Customers with long names.
                 c.get('Name').length < 42);
     const {updates: billComUpdates, creates: billComCreates} =
-        (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_5__/* .syncChanges */ .U4)(
+        (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .syncChanges */ .U4)(
             // Source
             new Map(
                 sourceAirtableCustomers.map(
@@ -19762,7 +19760,7 @@ class Syncer {
     await this.billComApi_.bulk(
         'Update',
         'Customer',
-        (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_5__/* .mapEntries */ .V7)(billComUpdates, (id, update) => ({id, ...update})));
+        (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .mapEntries */ .V7)(billComUpdates, (id, update) => ({id, ...update})));
 
     // Upsert Anchor Entity Bill.com Customers into MSO Bill.com (and Airtable).
     const hasEmailAirtableCustomers =
@@ -19774,7 +19772,7 @@ class Syncer {
             // Skip updates where email already exists.
             c => !hasEmailAirtableCustomers.has(c.id));
     const {updates: airtableUpdates, creates: airtableCreates} =
-        (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_5__/* .syncChanges */ .U4)(
+        (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .syncChanges */ .U4)(
             // Source
             new Map(
                 billComCustomers.map(
@@ -19783,13 +19781,11 @@ class Syncer {
             new Map(
                 airtableCustomers.map(c => [c.get(BILL_COM_ID), c.getId()])));
 
-    (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_3__/* .log */ .cM)('test');
-    (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_3__/* .log */ .cM)(Array.from(billComCreates));
-    (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_3__/* .log */ .cM)(Array.from(airtableUpdates));
-    const updates =
+    await this.airtableBase_.update(
+        ALL_CUSTOMERS_TABLE,
         [
           ...(await Promise.all(
-              (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_5__/* .mapEntries */ .V7)(
+              (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .mapEntries */ .V7)(
                   billComCreates,
                   async (id, create) => ({
                     id,
@@ -19798,13 +19794,10 @@ class Syncer {
                         await billComApi.create('Customer', create),
                     },
                   })))),
-          ...(0,_common_sync_js__WEBPACK_IMPORTED_MODULE_5__/* .mapEntries */ .V7)(
+          ...(0,_common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .mapEntries */ .V7)(
               airtableUpdates,
               (id, update) => ({id, fields: {Email: update.email}})),
-        ];
-    (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_3__/* .log */ .cM)(updates);
-    (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_3__/* .log */ .cM)(updates.length);
-    await this.airtableBase_.update(updates);
+        ]);
 
     // Create any active anchor entity Bill.com Customer not in Airtable;
     // Create in both MSO Bill.com and Airtable.
@@ -19814,7 +19807,7 @@ class Syncer {
     await this.airtableBase_.create(
         ALL_CUSTOMERS_TABLE,
         await Promise.all(
-            (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_5__/* .mapEntries */ .V7)(
+            (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .mapEntries */ .V7)(
                 airtableCreates,
                 async (id, create) => ({
                   fields: {
@@ -19835,7 +19828,7 @@ class Syncer {
  * @param {!MsoBase=} airtableBase
  * @return {!Promise<undefined>}
  */
-async function main(billComApi, airtableBase = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_4__/* .MsoBase */ .F()) {
+async function main(billComApi, airtableBase = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_3__/* .MsoBase */ .F()) {
   const syncer = new Syncer(billComApi, airtableBase);
   for await (const mso of airtableBase.iterateMsos()) {
     const msoCode = mso.get('Code');
@@ -20841,7 +20834,6 @@ function catchError(promise, querying, table) {
  * @return {!Promise<!Array<*>>}
  */
 function batch(func, array) {
-  (0,_github_actions_core_js__WEBPACK_IMPORTED_MODULE_3__/* .log */ .cM)(array);
   return (0,_utils_js__WEBPACK_IMPORTED_MODULE_2__/* .batchAsync */ .aE)(func, array, 10);
 }
 

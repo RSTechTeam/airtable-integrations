@@ -7,7 +7,6 @@ import {airtableRecordUpdate, mapEntries, mapEntriesAndValues, syncChanges} from
 import {ActiveStatus, activeFilter, filter, isActiveEnum} from '../common/api.js';
 import {BILL_COM_ID_SUFFIX, MSO_BILL_COM_ID} from '../common/constants.js';
 import {getYyyyMmDd} from '../../common/utils.js';
-import {log} from '../../common/github_actions_core.js';
 import {MsoBase} from '../../common/airtable.js';
 import {PRIMARY_ORG} from '../common/constants.js';
 
@@ -249,10 +248,8 @@ class Syncer {
             new Map(
                 airtableCustomers.map(c => [c.get(BILL_COM_ID), c.getId()])));
 
-    log('test');
-    log(Array.from(billComCreates));
-    log(Array.from(airtableUpdates));
-    const updates =
+    await this.airtableBase_.update(
+        ALL_CUSTOMERS_TABLE,
         [
           ...(await Promise.all(
               mapEntries(
@@ -267,10 +264,7 @@ class Syncer {
           ...mapEntries(
               airtableUpdates,
               (id, update) => ({id, fields: {Email: update.email}})),
-        ];
-    log(updates);
-    log(updates.length);
-    await this.airtableBase_.update(updates);
+        ]);
 
     // Create any active anchor entity Bill.com Customer not in Airtable;
     // Create in both MSO Bill.com and Airtable.

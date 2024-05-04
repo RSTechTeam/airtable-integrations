@@ -7,7 +7,7 @@
 import Airtable from 'airtable';
 import {airtableApiKey, airtableBaseId} from './inputs.js';
 import {batchAsync} from './utils.js';
-import {log, warn} from './github_actions_core.js';
+import {warn} from './github_actions_core.js';
 
 /**
  * @param {string} querying e.g., selecting, updating, etc
@@ -38,7 +38,6 @@ function catchError(promise, querying, table) {
  * @return {!Promise<!Array<*>>}
  */
 function batch(func, array) {
-  log(array);
   return batchAsync(func, array, 10);
 }
 
