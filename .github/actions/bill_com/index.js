@@ -19795,7 +19795,7 @@ class Syncer {
                   })))),
           ...(0,_common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .mapEntries */ .V7)(
               airtableUpdates,
-              ([id, update]) => ({id, fields: {Email: update.email}})),
+              (id, update) => ({id, fields: {Email: update.email}})),
         ]);
 
     // Create any active anchor entity Bill.com Customer not in Airtable;
