@@ -141,7 +141,7 @@ export async function main(api, airtableBase = new MsoBase()) {
 
             const date = item.get('Item Expense Date');
             const description = encodeURIComponent(item.get('Description'));
-            billComLineItems.push({
+            const lineItem = {
               entity: 'BillLineItem',
               amount: item.get('Amount'),
               chartOfAccountId: chartOfAccountId,
@@ -156,7 +156,17 @@ export async function main(api, airtableBase = new MsoBase()) {
                         `${item.get('Merchant City')} | ` +
                         `${item.get('Merchant State')} | ` +
                         `${item.get('Merchant Zip Code')}\n${description}`,
-            });
+            };
+
+            const project =
+                await billComIntegrationBase.find(
+                    'Internal Customers', item.get('Project')[0]);
+            if (mso.get('Use Customers?')) {
+              lineItem.customerId = project.get(MSO_BILL_COM_ID);
+            } else {
+              lineItem.actgClassId = project.get('MSO Bill.com Class ID');
+            }
+            billComLineItems.push(lineItem);
           }
 
           // Compile Bill.com Bill based on Check Request.
