@@ -15,6 +15,7 @@ export async function main(billComApi, airtableBase = new MsoBase()) {
 
   // Sync for each Org/MSO.
   for await (const mso of airtableBase.iterateMsos()) {
+    if (!mso.get('Use Customers?')) continue;
 
     await billComApi.login(mso.get('Code'));
     const parentCustomerId = mso.get('Internal Customer ID');
