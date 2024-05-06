@@ -130,8 +130,8 @@ class Syncer {
 
     // Construct full Class names.
     if (entity === 'ActgClass') {
-      for (const [id, change] of changes) {
-        for (const p = change.Parent; changes.has(p); p = p.Parent) {
+      for (const [, change] of changes) {
+        for (let p = change.Parent; changes.has(p); p = p.Parent) {
           change.Name = p.Name + ':' + change.Name;
         }
         delete change.Parent;
