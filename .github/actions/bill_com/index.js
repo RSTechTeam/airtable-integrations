@@ -19454,7 +19454,7 @@ async function main(api, airtableBase = new airtable/* MsoBase */.F()) {
             if (mso.get('Use Customers?')) {
               lineItem.customerId = project.get(constants/* MSO_BILL_COM_ID */.yG);
             } else {
-              lineItem.actgClassId = project.get('MSO Bill.com Class ID');
+              lineItem.actgClassId = project.get('MSO Bill.com Class ID')[0];
             }
             billComLineItems.push(lineItem);
           }

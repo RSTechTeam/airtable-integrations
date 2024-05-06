@@ -164,7 +164,7 @@ export async function main(api, airtableBase = new MsoBase()) {
             if (mso.get('Use Customers?')) {
               lineItem.customerId = project.get(MSO_BILL_COM_ID);
             } else {
-              lineItem.actgClassId = project.get('MSO Bill.com Class ID');
+              lineItem.actgClassId = project.get('MSO Bill.com Class ID')[0];
             }
             billComLineItems.push(lineItem);
           }
