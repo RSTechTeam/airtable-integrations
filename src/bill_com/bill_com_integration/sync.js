@@ -222,7 +222,7 @@ class Syncer {
         syncChanges(
             // Source
             new Map(
-                sourceAirtableCustomers.map(
+                sourceAirtableCustomers.filter(c => c.get(BILL_COM_ID)).map(
                     c => [
                       c.getId(),
                       {
