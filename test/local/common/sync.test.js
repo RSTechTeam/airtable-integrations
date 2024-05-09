@@ -37,19 +37,6 @@ describe.each`
   }
 });
 
-const concat = (s1, s2) => s1 + s2;
-
-describe.each`
-  given                       | expected
-  ${[]}                       | ${[]}
-  ${[['a', '1']]}             | ${['a1']}
-  ${[['a', '1'], ['b', '2']]} | ${['a1', 'b2']}
-`('mapEntries', ({given, expected}) => {
-  test(`given ${stringify(given)}, returns ${stringify(expected)}`, () => {
-    expect(sync.mapEntries(new Map(given), concat)).toEqual(expected);
-  });
-});
-
 describe.each`
   map                         | set           | expected
   ${[]}                       | ${[]}         | ${[]}
@@ -66,7 +53,7 @@ describe.each`
       () => {
         const got =
             sync.mapEntriesAndValues(
-                new Map(map), concat, new Set(set), upperCase)
+                new Map(map), (s1, s2) => s1 + s2, new Set(set), upperCase)
         expect(got).toEqual(expected);
       });
 });

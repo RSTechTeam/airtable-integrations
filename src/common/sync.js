@@ -45,15 +45,6 @@ export function syncChanges(source, mapping, destinationIds = null) {
 }
 
 /**
- * @param {!Map<*, *>} map
- * @param {function(*, *): *} func
- * @return {!Array<*>}
- */
-export function mapEntries(map, func) {
-  return Array.from(map.entries(), ([key, value]) => func(key, value));
-}
-
-/**
  * Maps the given functions on the respective ~iterables
  * and concatenates the results.
  * @param {!Map<*, *>} map
@@ -64,7 +55,7 @@ export function mapEntries(map, func) {
  */
 export function mapEntriesAndValues(map, entriesFunc, set, valuesFunc) {
   return [
-    ...mapEntries(map, entriesFunc),
+    ...Array.from(map, ([key, value]) => entriesFunc(key, value)),
     ...Array.from(set.values(), valuesFunc),
   ];
 }

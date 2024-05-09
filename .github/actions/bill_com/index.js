@@ -19693,9 +19693,9 @@ class Syncer {
     const msoRecordId = this.airtableBase_.getCurrentMso().getId();
     await this.airtableBase_.create(
         table,
-        (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .mapEntries */ .V7)(
+        Array.from(
             creates,
-            (id, create) => ({
+            ([id, create]) => ({
               fields: {MSO: [msoRecordId], [_common_constants_js__WEBPACK_IMPORTED_MODULE_1__/* .MSO_BILL_COM_ID */ .yG]: id, ...create},
             })));
     await this.airtableBase_.update(
@@ -19770,7 +19770,7 @@ class Syncer {
     await this.billComApi_.bulk(
         'Update',
         'Customer',
-        (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .mapEntries */ .V7)(billComUpdates, (id, update) => ({id, ...update})));
+        Array.from(billComUpdates, ([id, update]) => ({id, ...update})));
 
     // Upsert Anchor Entity Bill.com Customers into MSO Bill.com (and Airtable).
     const hasEmailAirtableCustomers =
@@ -19795,18 +19795,18 @@ class Syncer {
         ALL_CUSTOMERS_TABLE,
         [
           ...(await Promise.all(
-              (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .mapEntries */ .V7)(
+              Array.from(
                   billComCreates,
-                  async (id, create) => ({
+                  async ([id, create]) => ({
                     id,
                     fields: {
                       [BILL_COM_ID]:
                         await billComApi.create('Customer', create),
                     },
                   })))),
-          ...(0,_common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .mapEntries */ .V7)(
+          ...Array.from(
               airtableUpdates,
-              (id, update) => ({id, fields: {Email: update.email}})),
+              ([id, update]) => ({id, fields: {Email: update.email}})),
         ]);
 
     // Create any active anchor entity Bill.com Customer not in Airtable;
@@ -19817,9 +19817,9 @@ class Syncer {
     await this.airtableBase_.create(
         ALL_CUSTOMERS_TABLE,
         await Promise.all(
-            (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .mapEntries */ .V7)(
+            Array.from(
                 airtableCreates,
-                async (id, create) => ({
+                async ([id, create]) => ({
                   fields: {
                     Active: true,
                     MSO: [msoRecordId],
@@ -20177,9 +20177,9 @@ async function main(billComApi, airtableBase = new _common_airtable_js__WEBPACK_
     await airtableBase.update(
         AIRTABLE_CUSTOMERS_TABLE,
         await Promise.all(
-            (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_3__/* .mapEntries */ .V7)(
+            Array.from(
                 creates,
-                async (id, create) => ({
+                async ([id, create]) => ({
                   id,
                   fields: {
                     [_common_constants_js__WEBPACK_IMPORTED_MODULE_1__/* .MSO_BILL_COM_ID */ .yG]:
@@ -21091,7 +21091,6 @@ const airtableBaseId = (0,_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/*
 
 /* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
 /* harmony export */   "U4": () => (/* binding */ syncChanges),
-/* harmony export */   "V7": () => (/* binding */ mapEntries),
 /* harmony export */   "lr": () => (/* binding */ mapEntriesAndValues),
 /* harmony export */   "vw": () => (/* binding */ airtableRecordUpdate)
 /* harmony export */ });
@@ -21142,15 +21141,6 @@ function syncChanges(source, mapping, destinationIds = null) {
 }
 
 /**
- * @param {!Map<*, *>} map
- * @param {function(*, *): *} func
- * @return {!Array<*>}
- */
-function mapEntries(map, func) {
-  return Array.from(map.entries(), ([key, value]) => func(key, value));
-}
-
-/**
  * Maps the given functions on the respective ~iterables
  * and concatenates the results.
  * @param {!Map<*, *>} map
@@ -21161,7 +21151,7 @@ function mapEntries(map, func) {
  */
 function mapEntriesAndValues(map, entriesFunc, set, valuesFunc) {
   return [
-    ...mapEntries(map, entriesFunc),
+    ...Array.from(map, ([key, value]) => entriesFunc(key, value)),
     ...Array.from(set.values(), valuesFunc),
   ];
 }

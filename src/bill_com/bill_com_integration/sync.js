@@ -3,7 +3,7 @@
  * (e.g., Vendors, Chart of Accounts) into Airtable.
  */
 
-import {airtableRecordUpdate, mapEntries, mapEntriesAndValues, syncChanges} from '../../common/sync.js';
+import {airtableRecordUpdate, mapEntriesAndValues, syncChanges} from '../../common/sync.js';
 import {ActiveStatus, activeFilter, filter, isActiveEnum} from '../common/api.js';
 import {BILL_COM_ID_SUFFIX, MSO_BILL_COM_ID} from '../common/constants.js';
 import {getYyyyMmDd} from '../../common/utils.js';
@@ -150,9 +150,9 @@ class Syncer {
     const msoRecordId = this.airtableBase_.getCurrentMso().getId();
     await this.airtableBase_.create(
         table,
-        mapEntries(
+        Array.from(
             creates,
-            (id, create) => ({
+            ([id, create]) => ({
               fields: {MSO: [msoRecordId], [MSO_BILL_COM_ID]: id, ...create},
             })));
     await this.airtableBase_.update(
@@ -227,7 +227,7 @@ class Syncer {
     await this.billComApi_.bulk(
         'Update',
         'Customer',
-        mapEntries(billComUpdates, (id, update) => ({id, ...update})));
+        Array.from(billComUpdates, ([id, update]) => ({id, ...update})));
 
     // Upsert Anchor Entity Bill.com Customers into MSO Bill.com (and Airtable).
     const hasEmailAirtableCustomers =
@@ -252,18 +252,18 @@ class Syncer {
         ALL_CUSTOMERS_TABLE,
         [
           ...(await Promise.all(
-              mapEntries(
+              Array.from(
                   billComCreates,
-                  async (id, create) => ({
+                  async ([id, create]) => ({
                     id,
                     fields: {
                       [BILL_COM_ID]:
                         await billComApi.create('Customer', create),
                     },
                   })))),
-          ...mapEntries(
+          ...Array.from(
               airtableUpdates,
-              (id, update) => ({id, fields: {Email: update.email}})),
+              ([id, update]) => ({id, fields: {Email: update.email}})),
         ]);
 
     // Create any active anchor entity Bill.com Customer not in Airtable;
@@ -274,9 +274,9 @@ class Syncer {
     await this.airtableBase_.create(
         ALL_CUSTOMERS_TABLE,
         await Promise.all(
-            mapEntries(
+            Array.from(
                 airtableCreates,
-                async (id, create) => ({
+                async ([id, create]) => ({
                   fields: {
                     Active: true,
                     MSO: [msoRecordId],
