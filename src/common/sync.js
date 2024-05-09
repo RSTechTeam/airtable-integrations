@@ -45,26 +45,10 @@ export function syncChanges(source, mapping, destinationIds = null) {
 }
 
 /**
- * Maps the given functions on the respective ~iterables
- * and concatenates the results.
- * @param {!Map<*, *>} map
- * @param {function(*, *): *} entriesFunc
- * @param {!Set<*>} set
- * @param {function(*): *} valuesFunc
- * @return {!Array<*>}
- */
-export function mapEntriesAndValues(map, entriesFunc, set, valuesFunc) {
-  return [
-    ...Array.from(map, ([key, value]) => entriesFunc(key, value)),
-    ...Array.from(set.values(), valuesFunc),
-  ];
-}
-
-/**
  * @param {string} id
  * @param {!Object<string, *>} update
  * @return {!Object<string, *>} Airtable formatted Record update
  */
-export function airtableRecordUpdate(id, update) {
+export function airtableRecordUpdate([id, update]) {
   return {id, fields: update};
 }

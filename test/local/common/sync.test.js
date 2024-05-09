@@ -37,29 +37,8 @@ describe.each`
   }
 });
 
-describe.each`
-  map                         | set           | expected
-  ${[]}                       | ${[]}         | ${[]}
-  ${[]}                       | ${['a']}      | ${['A']}
-  ${[['a', '1']]}             | ${[]}         | ${['a1']}
-  ${[['a', '1']]}             | ${['a']}      | ${['a1', 'A']}
-  ${[['a', '1'], ['b', '2']]} | ${['a', 'b']} | ${['a1', 'b2', 'A', 'B']}
-`('mapEntriesAndValues', ({map, set, expected}) => {
-
-  const upperCase = s => s.toUpperCase();
-  test(
-      `given args (${stringify(map)}, ${stringify(set)}),` +
-          ` returns ${stringify(expected)}`,
-      () => {
-        const got =
-            sync.mapEntriesAndValues(
-                new Map(map), (s1, s2) => s1 + s2, new Set(set), upperCase)
-        expect(got).toEqual(expected);
-      });
-});
-
 test('airtableRecordUpdate', () => {
   const id = 'rec1';
   const update = {'Field': 'value'};
-  expect(sync.airtableRecordUpdate(id, update)).toEqual({id, fields: update});
+  expect(sync.airtableRecordUpdate([id, update])).toEqual({id, fields: update});
 });

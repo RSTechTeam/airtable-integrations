@@ -19681,7 +19681,7 @@ class Syncer {
 
     const airtableRecords = await this.airtableBase_.select(table);
     const {updates, creates, removes} =
-        (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .syncChanges */ .U4)(
+        (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .syncChanges */ .U)(
             // Source
             changes,
             // Mapping
@@ -19700,9 +19700,10 @@ class Syncer {
             })));
     await this.airtableBase_.update(
         table,
-        (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .mapEntriesAndValues */ .lr)(
-            updates, _common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .airtableRecordUpdate */ .vw,
-            removes, id => ({id, fields: {Active: false}})));
+        [
+          ...Array.from(updates, _common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .airtableRecordUpdate */ .v),
+          ...Array.from(removes, id => ({id, fields: {Active: false}})),
+        ]);
   }
 
   /**
@@ -19751,7 +19752,7 @@ class Syncer {
                 // And temporarily skip Customers with long names.
                 c.get('Name').length < 42);
     const {updates: billComUpdates, creates: billComCreates} =
-        (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .syncChanges */ .U4)(
+        (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .syncChanges */ .U)(
             // Source
             new Map(
                 sourceAirtableCustomers.filter(c => c.get(BILL_COM_ID)).map(
@@ -19782,7 +19783,7 @@ class Syncer {
             // Skip updates where email already exists.
             c => !hasEmailAirtableCustomers.has(c.id));
     const {updates: airtableUpdates, creates: airtableCreates} =
-        (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .syncChanges */ .U4)(
+        (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .syncChanges */ .U)(
             // Source
             new Map(
                 billComCustomers.map(
@@ -20152,7 +20153,7 @@ async function main(billComApi, airtableBase = new _common_airtable_js__WEBPACK_
         airtableCustomers.map(c => [c.getId(), c.get(_common_constants_js__WEBPACK_IMPORTED_MODULE_1__/* .MSO_BILL_COM_ID */ .yG)]).filter(
             ([, billComId]) => billComId);
     const {updates, creates, removes} =
-        (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_3__/* .syncChanges */ .U4)(
+        (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_3__/* .syncChanges */ .U)(
             // Source
             new Map(
                 airtableCustomers.map(
@@ -20189,9 +20190,10 @@ async function main(billComApi, airtableBase = new _common_airtable_js__WEBPACK_
     await billComApi.bulk(
         'Update',
         'Customer',
-        (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_3__/* .mapEntriesAndValues */ .lr)(
-            updates, (id, update) => ({id, ...update}),
-            removes, id => ({id, isActive: _common_api_js__WEBPACK_IMPORTED_MODULE_0__/* .ActiveStatus.INACTIVE */ .tV.INACTIVE})));
+        [
+          ...Array.from(updates, ([id, update]) => ({id, ...update})),
+          ...Array.from(removes, id => ({id, isActive: _common_api_js__WEBPACK_IMPORTED_MODULE_0__/* .ActiveStatus.INACTIVE */ .tV.INACTIVE})),
+        ]);
   }
 }
 
@@ -21090,9 +21092,8 @@ const airtableBaseId = (0,_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/*
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
 
 /* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
-/* harmony export */   "U4": () => (/* binding */ syncChanges),
-/* harmony export */   "lr": () => (/* binding */ mapEntriesAndValues),
-/* harmony export */   "vw": () => (/* binding */ airtableRecordUpdate)
+/* harmony export */   "U": () => (/* binding */ syncChanges),
+/* harmony export */   "v": () => (/* binding */ airtableRecordUpdate)
 /* harmony export */ });
 /** @fileoverview Utilities for syncing data from one datasource to another. */
 
@@ -21141,27 +21142,11 @@ function syncChanges(source, mapping, destinationIds = null) {
 }
 
 /**
- * Maps the given functions on the respective ~iterables
- * and concatenates the results.
- * @param {!Map<*, *>} map
- * @param {function(*, *): *} entriesFunc
- * @param {!Set<*>} set
- * @param {function(*): *} valuesFunc
- * @return {!Array<*>}
- */
-function mapEntriesAndValues(map, entriesFunc, set, valuesFunc) {
-  return [
-    ...Array.from(map, ([key, value]) => entriesFunc(key, value)),
-    ...Array.from(set.values(), valuesFunc),
-  ];
-}
-
-/**
  * @param {string} id
  * @param {!Object<string, *>} update
  * @return {!Object<string, *>} Airtable formatted Record update
  */
-function airtableRecordUpdate(id, update) {
+function airtableRecordUpdate([id, update]) {
   return {id, fields: update};
 }
 

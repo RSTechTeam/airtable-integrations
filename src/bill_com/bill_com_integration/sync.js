@@ -3,7 +3,7 @@
  * (e.g., Vendors, Chart of Accounts) into Airtable.
  */
 
-import {airtableRecordUpdate, mapEntriesAndValues, syncChanges} from '../../common/sync.js';
+import {airtableRecordUpdate, syncChanges} from '../../common/sync.js';
 import {ActiveStatus, activeFilter, filter, isActiveEnum} from '../common/api.js';
 import {BILL_COM_ID_SUFFIX, MSO_BILL_COM_ID} from '../common/constants.js';
 import {getYyyyMmDd} from '../../common/utils.js';
@@ -157,9 +157,10 @@ class Syncer {
             })));
     await this.airtableBase_.update(
         table,
-        mapEntriesAndValues(
-            updates, airtableRecordUpdate,
-            removes, id => ({id, fields: {Active: false}})));
+        [
+          ...Array.from(updates, airtableRecordUpdate),
+          ...Array.from(removes, id => ({id, fields: {Active: false}})),
+        ]);
   }
 
   /**
