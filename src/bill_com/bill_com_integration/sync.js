@@ -28,17 +28,6 @@ const paymentStatuses = new Map([
 ]);
 
 /**
- * @param {!Object<string, *>[]} bulkResponses
- * @param {function(!Object<string, *>, number)} func
- */
-function processBulkResponses(bulkResponses, func) {
-  bulkResponses.forEach(
-      (responses, i) => {
-        responses.bulk.forEach((r, j) => func(r.response_data, 100*i + j));
-      });
-}
-
-/**
  * @param {string} name
  * @param {string} city
  * @param {string} state
