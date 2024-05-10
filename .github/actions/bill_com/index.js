@@ -19681,7 +19681,7 @@ class Syncer {
 
     const airtableRecords = await this.airtableBase_.select(table);
     const {updates, creates, removes} =
-        (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .syncChanges */ .U)(
+        (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .syncChanges */ .U4)(
             // Source
             changes,
             // Mapping
@@ -19701,7 +19701,7 @@ class Syncer {
     await this.airtableBase_.update(
         table,
         [
-          ...Array.from(updates, _common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .airtableRecordUpdate */ .v),
+          ...Array.from(updates, _common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .airtableRecordUpdate */ .vw),
           ...Array.from(removes, id => ({id, fields: {Active: false}})),
         ]);
   }
@@ -19752,7 +19752,7 @@ class Syncer {
                 // And temporarily skip Customers with long names.
                 c.get('Name').length < 42);
     const {updates: billComUpdates, creates: billComCreates} =
-        (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .syncChanges */ .U)(
+        (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .syncChanges */ .U4)(
             // Source
             new Map(
                 sourceAirtableCustomers.filter(c => c.get(BILL_COM_ID)).map(
@@ -19783,7 +19783,7 @@ class Syncer {
             // Skip updates where email already exists.
             c => !hasEmailAirtableCustomers.has(c.id));
     const {updates: airtableUpdates, creates: airtableCreates} =
-        (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .syncChanges */ .U)(
+        (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .syncChanges */ .U4)(
             // Source
             new Map(
                 billComCustomers.map(
@@ -20153,7 +20153,7 @@ async function main(billComApi, airtableBase = new _common_airtable_js__WEBPACK_
         airtableCustomers.map(c => [c.getId(), c.get(_common_constants_js__WEBPACK_IMPORTED_MODULE_1__/* .MSO_BILL_COM_ID */ .yG)]).filter(
             ([, billComId]) => billComId);
     const {updates, creates, removes} =
-        (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_3__/* .syncChanges */ .U)(
+        (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_3__/* .syncChanges */ .U4)(
             // Source
             new Map(
                 airtableCustomers.map(
@@ -21092,9 +21092,10 @@ const airtableBaseId = (0,_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/*
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
 
 /* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
-/* harmony export */   "U": () => (/* binding */ syncChanges),
-/* harmony export */   "v": () => (/* binding */ airtableRecordUpdate)
+/* harmony export */   "U4": () => (/* binding */ syncChanges),
+/* harmony export */   "vw": () => (/* binding */ airtableRecordUpdate)
 /* harmony export */ });
+/* unused harmony export getMapping */
 /** @fileoverview Utilities for syncing data from one datasource to another. */
 
 /**
@@ -21139,6 +21140,28 @@ function syncChanges(source, mapping, destinationIds = null) {
           Array.from((destinationIds?.values() || mapping.values())).filter(
               x => !updates.has(x))),
   };
+}
+
+/**
+ * Returns the datasource ID mapping between Airtable
+ * and an integration datasource. If Airtable is the Source of Truth
+ * (i.e., integrationSource is false), then filters out records
+ * where the integration datasource ID is not set.
+ * @param {!Array<!Object<string, *>>} airtableRecords
+ * @param {string} integrationIdField
+ * @param {boolean=} integrationSource
+ * @return {!Map<*, *>}
+ */
+function getMapping(
+    airtableRecords, integrationIdField, integrationSource = true) {
+  const mapping =
+      airtableRecords.map(
+          integrationSource ?
+              r => [r.get(integrationIdField), r.getId()] :
+              r => [r.getId(), r.get(integrationIdField)]);
+  return new Map(
+      integrationSource ?
+          mapping : mapping.filter(([, integrationId]) => integrationId));
 }
 
 /**

@@ -37,6 +37,28 @@ describe.each`
   }
 });
 
+const records = [
+  [1, 2],
+  [3, 6],
+  [4, null],
+].map(
+    ([airtableId, integrationId]) => ({
+      getId: () => airtableId, get: () => integrationId}));
+
+describe.each`
+  source   | expected
+  ${true}  | ${[[2, 1], [6, 3], [null, 4]]}
+  ${false} | ${[[1, 2], [3, 6]]}
+`('getMapping', ({source, expected}) => {
+  test(
+      `given args (${stringify(records)}, ${source}),` +
+          ` returns ${stringify(expected)}`,
+      () => {
+        expect(Array.from(sync.getMapping(records, '', source))).toEqual(
+            expect.arrayContaining(expected));
+      });
+});
+
 test('airtableRecordUpdate', () => {
   const id = 'rec1';
   const update = {'Field': 'value'};

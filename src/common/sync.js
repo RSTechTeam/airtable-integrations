@@ -45,6 +45,28 @@ export function syncChanges(source, mapping, destinationIds = null) {
 }
 
 /**
+ * Returns the datasource ID mapping between Airtable
+ * and an integration datasource. If Airtable is the Source of Truth
+ * (i.e., integrationSource is false), then filters out records
+ * where the integration datasource ID is not set.
+ * @param {!Array<!Object<string, *>>} airtableRecords
+ * @param {string} integrationIdField
+ * @param {boolean=} integrationSource
+ * @return {!Map<*, *>}
+ */
+export function getMapping(
+    airtableRecords, integrationIdField, integrationSource = true) {
+  const mapping =
+      airtableRecords.map(
+          integrationSource ?
+              r => [r.get(integrationIdField), r.getId()] :
+              r => [r.getId(), r.get(integrationIdField)]);
+  return new Map(
+      integrationSource ?
+          mapping : mapping.filter(([, integrationId]) => integrationId));
+}
+
+/**
  * @param {string} id
  * @param {!Object<string, *>} update
  * @return {!Object<string, *>} Airtable formatted Record update
