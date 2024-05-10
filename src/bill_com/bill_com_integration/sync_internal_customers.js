@@ -1,7 +1,7 @@
 /** @fileoverview Syncs Bill.com Customers from Airtable to Bill.com. */
 
 import {ActiveStatus, filter} from '../common/api.js';
-import {syncChanges} from '../../common/sync.js';
+import {getMapping, syncChanges} from '../../common/sync.js';
 import {MSO_BILL_COM_ID} from '../common/constants.js';
 import {MsoBase} from '../../common/airtable.js';
 
@@ -22,9 +22,6 @@ export async function main(billComApi, airtableBase = new MsoBase()) {
     const airtableCustomers =
         await airtableBase.select(AIRTABLE_CUSTOMERS_TABLE);
 
-    const mapping =
-        airtableCustomers.map(c => [c.getId(), c.get(MSO_BILL_COM_ID)]).filter(
-            ([, billComId]) => billComId);
     const {updates, creates, removes} =
         syncChanges(
             // Source
@@ -39,7 +36,7 @@ export async function main(billComApi, airtableBase = new MsoBase()) {
                       },
                     ])),
             // Mapping
-            new Map(mapping),
+            getMapping(airtableCustomers, MSO_BILL_COM_ID, false),
             // Destination IDs
             new Set(
                 Array.from(

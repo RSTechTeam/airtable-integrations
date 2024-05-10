@@ -19610,8 +19610,7 @@ class Syncer {
 
     const BILL_COM_ID =
         entity === 'Bill' ? _common_constants_js__WEBPACK_IMPORTED_MODULE_1__/* .MSO_BILL_COM_ID */ .yG : _common_constants_js__WEBPACK_IMPORTED_MODULE_1__/* .BILL_COM_ID_SUFFIX */ .dK;
-    const mapping =
-        new Map(airtableUnpaids.map(r => [r.get(BILL_COM_ID), r.getId()]));
+    const mapping = (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .getMapping */ .tj)(airtableUnpaids, BILL_COM_ID);
     const billComUpdates =
         await this.billComApi_.bulk('Read', entity, Array.from(mapping.keys()));
     await this.airtableBase_.update(
@@ -19685,8 +19684,7 @@ class Syncer {
             // Source
             changes,
             // Mapping
-            new Map(
-                airtableRecords.map(r => [r.get(_common_constants_js__WEBPACK_IMPORTED_MODULE_1__/* .MSO_BILL_COM_ID */ .yG), r.getId()])),
+            (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .getMapping */ .tj)(airtableRecords, _common_constants_js__WEBPACK_IMPORTED_MODULE_1__/* .MSO_BILL_COM_ID */ .yG),
             // Destination IDs
             new Set(airtableRecords.map(r => r.getId())));
 
@@ -19755,7 +19753,7 @@ class Syncer {
         (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .syncChanges */ .U4)(
             // Source
             new Map(
-                sourceAirtableCustomers.filter(c => c.get(BILL_COM_ID)).map(
+                sourceAirtableCustomers.map(
                     c => [
                       c.getId(),
                       {
@@ -19765,9 +19763,7 @@ class Syncer {
                       },
                     ])),
             // Mapping
-            new Map(
-                sourceAirtableCustomers.map(
-                    c => [c.getId(), c.get(BILL_COM_ID)])));
+            (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .getMapping */ .tj)(sourceAirtableCustomers, BILL_COM_ID, false));
     await this.billComApi_.bulk(
         'Update',
         'Customer',
@@ -19789,8 +19785,7 @@ class Syncer {
                 billComCustomers.map(
                     c => [c.id, {name: c.name, email: c.email}])),
             // Mapping
-            new Map(
-                airtableCustomers.map(c => [c.get(BILL_COM_ID), c.getId()])));
+            (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .getMapping */ .tj)(airtableCustomers, BILL_COM_ID));
 
     await this.airtableBase_.update(
         ALL_CUSTOMERS_TABLE,
@@ -20149,9 +20144,6 @@ async function main(billComApi, airtableBase = new _common_airtable_js__WEBPACK_
     const airtableCustomers =
         await airtableBase.select(AIRTABLE_CUSTOMERS_TABLE);
 
-    const mapping =
-        airtableCustomers.map(c => [c.getId(), c.get(_common_constants_js__WEBPACK_IMPORTED_MODULE_1__/* .MSO_BILL_COM_ID */ .yG)]).filter(
-            ([, billComId]) => billComId);
     const {updates, creates, removes} =
         (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_3__/* .syncChanges */ .U4)(
             // Source
@@ -20166,7 +20158,7 @@ async function main(billComApi, airtableBase = new _common_airtable_js__WEBPACK_
                       },
                     ])),
             // Mapping
-            new Map(mapping),
+            (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_3__/* .getMapping */ .tj)(airtableCustomers, _common_constants_js__WEBPACK_IMPORTED_MODULE_1__/* .MSO_BILL_COM_ID */ .yG, false),
             // Destination IDs
             new Set(
                 Array.from(
@@ -21093,9 +21085,9 @@ const airtableBaseId = (0,_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/*
 
 /* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
 /* harmony export */   "U4": () => (/* binding */ syncChanges),
+/* harmony export */   "tj": () => (/* binding */ getMapping),
 /* harmony export */   "vw": () => (/* binding */ airtableRecordUpdate)
 /* harmony export */ });
-/* unused harmony export getMapping */
 /** @fileoverview Utilities for syncing data from one datasource to another. */
 
 /**

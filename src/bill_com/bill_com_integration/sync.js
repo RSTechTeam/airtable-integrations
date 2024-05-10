@@ -3,7 +3,7 @@
  * (e.g., Vendors, Chart of Accounts) into Airtable.
  */
 
-import {airtableRecordUpdate, syncChanges} from '../../common/sync.js';
+import {airtableRecordUpdate, getMapping, syncChanges} from '../../common/sync.js';
 import {ActiveStatus, activeFilter, filter, isActiveEnum} from '../common/api.js';
 import {BILL_COM_ID_SUFFIX, MSO_BILL_COM_ID} from '../common/constants.js';
 import {getYyyyMmDd} from '../../common/utils.js';
@@ -67,8 +67,7 @@ class Syncer {
 
     const BILL_COM_ID =
         entity === 'Bill' ? MSO_BILL_COM_ID : BILL_COM_ID_SUFFIX;
-    const mapping =
-        new Map(airtableUnpaids.map(r => [r.get(BILL_COM_ID), r.getId()]));
+    const mapping = getMapping(airtableUnpaids, BILL_COM_ID);
     const billComUpdates =
         await this.billComApi_.bulk('Read', entity, Array.from(mapping.keys()));
     await this.airtableBase_.update(
@@ -142,8 +141,7 @@ class Syncer {
             // Source
             changes,
             // Mapping
-            new Map(
-                airtableRecords.map(r => [r.get(MSO_BILL_COM_ID), r.getId()])),
+            getMapping(airtableRecords, MSO_BILL_COM_ID),
             // Destination IDs
             new Set(airtableRecords.map(r => r.getId())));
 
@@ -212,7 +210,7 @@ class Syncer {
         syncChanges(
             // Source
             new Map(
-                sourceAirtableCustomers.filter(c => c.get(BILL_COM_ID)).map(
+                sourceAirtableCustomers.map(
                     c => [
                       c.getId(),
                       {
@@ -222,9 +220,7 @@ class Syncer {
                       },
                     ])),
             // Mapping
-            new Map(
-                sourceAirtableCustomers.map(
-                    c => [c.getId(), c.get(BILL_COM_ID)])));
+            getMapping(sourceAirtableCustomers, BILL_COM_ID, false));
     await this.billComApi_.bulk(
         'Update',
         'Customer',
@@ -246,8 +242,7 @@ class Syncer {
                 billComCustomers.map(
                     c => [c.id, {name: c.name, email: c.email}])),
             // Mapping
-            new Map(
-                airtableCustomers.map(c => [c.get(BILL_COM_ID), c.getId()])));
+            getMapping(airtableCustomers, BILL_COM_ID));
 
     await this.airtableBase_.update(
         ALL_CUSTOMERS_TABLE,
