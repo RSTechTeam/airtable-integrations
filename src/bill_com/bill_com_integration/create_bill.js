@@ -140,7 +140,7 @@ export async function main(api, airtableBase = new MsoBase()) {
             }
 
             const date = item.get('Item Expense Date');
-            const description = encodeURIComponent(item.get('Description'));
+            const description = item.get('Description');
             const lineItem = {
               entity: 'BillLineItem',
               amount: item.get('Amount'),
@@ -182,14 +182,13 @@ export async function main(api, airtableBase = new MsoBase()) {
           const notes = newCheckRequest.get('Notes');
           const bill = {
             vendorId: await getVendorId(newCheckRequest),
-            invoiceNumber: encodeURIComponent(invoiceId),
+            invoiceNumber: invoiceId,
             invoiceDate: newCheckRequest.get('Invoice Date'),
             dueDate: newCheckRequest.get('Due Date'),
             description:
               `Submitted by ${requester}` +
                   ` (${newCheckRequest.get('Requester Email')}).` +
-                  (notes == undefined ?
-                      '' : `\n\nNotes:\n${encodeURIComponent(notes)}`),
+                  (notes == undefined ? '' : `\n\nNotes:\n${notes}`),
             billLineItems: billComLineItems,
           };
 

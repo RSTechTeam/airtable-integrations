@@ -254,7 +254,7 @@ class Syncer {
                     id,
                     fields: {
                       [BILL_COM_ID]:
-                        await billComApi.create('Customer', create),
+                        await this.billComApi_.create('Customer', create),
                     },
                   })))),
           ...Array.from(

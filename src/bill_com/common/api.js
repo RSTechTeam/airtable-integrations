@@ -63,19 +63,6 @@ export function isActiveEnum(isActive) {
 }
 
 /**
- * @param {string} entity
- * @param {string} data
- * @return {!Object<string, !Object<string, *>>}
- */
-export function entityData(entity, data) {
-
-  // Copy to avoid changing passed argument.
-  data = {...data};
-  data.name &&= encodeURIComponent(data.name);
-  return {obj: {entity: entity, ...data}};
-}
-
-/**
  * @param {string} field
  * @param {string} op
  * @param {string} value
@@ -87,6 +74,15 @@ export function filter(field, op, value) {
 
 /** @type {!Object<string, string>} */
 export const activeFilter = filter('isActive', '=', ActiveStatus.ACTIVE);
+
+/**
+ * @param {string} entity
+ * @param {string} data
+ * @return {!Object<string, !Object<string, *>>}
+ */
+function entityData(entity, data) {
+  return {obj: {entity: entity, ...data}};
+}
 
 /** A connection to the Bill.com API. */
 export class Api {
@@ -168,7 +164,8 @@ export class Api {
    * @return {!Promise<!Object<string, *>>} endpoint-specific response_data.
    */
   dataCall(endpoint, data) {
-    return this.call(endpoint, `data=${JSON.stringify(data)}`);
+    return this.call(
+        endpoint, `data=${encodeURIComponent(JSON.stringify(data))}`);
   }
 
   /**

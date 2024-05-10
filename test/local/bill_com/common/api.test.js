@@ -35,19 +35,6 @@ describe.each`
       () => expect(api.isActiveEnum(given)).toBe(expected));
 });
 
-describe.each`
-  givenName       | expectedName
-  ${undefined}    | ${undefined}
-  ${'First Last'} | ${'First%20Last'}
-`('entityData', ({givenName, expectedName}) => {
-  
-  test(`given name "${givenName}", expect name "${expectedName}"`, () => {
-    expect(api.entityData('Customer', {id: 1, name: givenName})).toEqual({
-      obj: {entity: 'Customer', id: 1, name: expectedName}
-    });
-  });
-});
-
 test('filter creates API filter object', () => {
   expect(api.filter('field', 'op', 'value')).toEqual(
       {field: 'field', op: 'op', value: 'value'});

@@ -19430,7 +19430,7 @@ async function main(api, airtableBase = new airtable/* MsoBase */.F()) {
             }
 
             const date = item.get('Item Expense Date');
-            const description = encodeURIComponent(item.get('Description'));
+            const description = item.get('Description');
             const lineItem = {
               entity: 'BillLineItem',
               amount: item.get('Amount'),
@@ -19472,14 +19472,13 @@ async function main(api, airtableBase = new airtable/* MsoBase */.F()) {
           const notes = newCheckRequest.get('Notes');
           const bill = {
             vendorId: await getVendorId(newCheckRequest),
-            invoiceNumber: encodeURIComponent(invoiceId),
+            invoiceNumber: invoiceId,
             invoiceDate: newCheckRequest.get('Invoice Date'),
             dueDate: newCheckRequest.get('Due Date'),
             description:
               `Submitted by ${requester}` +
                   ` (${newCheckRequest.get('Requester Email')}).` +
-                  (notes == undefined ?
-                      '' : `\n\nNotes:\n${encodeURIComponent(notes)}`),
+                  (notes == undefined ? '' : `\n\nNotes:\n${notes}`),
             billLineItems: billComLineItems,
           };
 
@@ -19797,7 +19796,7 @@ class Syncer {
                     id,
                     fields: {
                       [BILL_COM_ID]:
-                        await billComApi.create('Customer', create),
+                        await this.billComApi_.create('Customer', create),
                     },
                   })))),
           ...Array.from(
@@ -20206,7 +20205,7 @@ __nccwpck_require__.d(__webpack_exports__, {
   "dA": () => (/* binding */ isActiveEnum)
 });
 
-// UNUSED EXPORTS: Api, entityData
+// UNUSED EXPORTS: Api
 
 // EXTERNAL MODULE: ./node_modules/node-fetch/src/index.js + 20 modules
 var src = __nccwpck_require__(4028);
@@ -20427,19 +20426,6 @@ function isActiveEnum(isActive) {
 }
 
 /**
- * @param {string} entity
- * @param {string} data
- * @return {!Object<string, !Object<string, *>>}
- */
-function entityData(entity, data) {
-
-  // Copy to avoid changing passed argument.
-  data = {...data};
-  data.name &&= encodeURIComponent(data.name);
-  return {obj: {entity: entity, ...data}};
-}
-
-/**
  * @param {string} field
  * @param {string} op
  * @param {string} value
@@ -20451,6 +20437,15 @@ function filter(field, op, value) {
 
 /** @type {!Object<string, string>} */
 const activeFilter = filter('isActive', '=', ActiveStatus.ACTIVE);
+
+/**
+ * @param {string} entity
+ * @param {string} data
+ * @return {!Object<string, !Object<string, *>>}
+ */
+function entityData(entity, data) {
+  return {obj: {entity: entity, ...data}};
+}
 
 /** A connection to the Bill.com API. */
 class Api {
@@ -20532,7 +20527,8 @@ class Api {
    * @return {!Promise<!Object<string, *>>} endpoint-specific response_data.
    */
   dataCall(endpoint, data) {
-    return this.call(endpoint, `data=${JSON.stringify(data)}`);
+    return this.call(
+        endpoint, `data=${encodeURIComponent(JSON.stringify(data))}`);
   }
 
   /**
