@@ -20104,15 +20104,16 @@ async function main(api, billComIntegrationBase = new _common_airtable_js__WEBPA
         new Map(
             airtableRecords.map(
                 r => [r.getId(), normalizeTime(r.get('Last Updated Time'))]));
+    const newUpdates =
+        Array.from(updates).filter(
+            ([id, update]) =>
+                airtableLastUpdatedTimes.get(id) <
+                    normalizeTime(update['Last Updated Time']));
     await billComIntegrationBase.update(
         BILL_REPORTING_TABLE,
         [
           ...(await Promise.all(
-              Array.from(
-                  updates.filter(
-                      ([id, update]) =>
-                          airtableLastUpdatedTimes.get(id) <
-                              normalizeTime(update['Last Updated Time'])),
+              newUpdates.map(
                   async ([id, update]) =>
                       (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_3__/* .airtableRecordUpdate */ .vw)(
                           [id, await inPlaceDocuments(update)])))),

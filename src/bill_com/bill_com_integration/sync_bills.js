@@ -215,15 +215,16 @@ export async function main(api, billComIntegrationBase = new Base()) {
         new Map(
             airtableRecords.map(
                 r => [r.getId(), normalizeTime(r.get('Last Updated Time'))]));
+    const newUpdates =
+        Array.from(updates).filter(
+            ([id, update]) =>
+                airtableLastUpdatedTimes.get(id) <
+                    normalizeTime(update['Last Updated Time']));
     await billComIntegrationBase.update(
         BILL_REPORTING_TABLE,
         [
           ...(await Promise.all(
-              Array.from(
-                  updates.filter(
-                      ([id, update]) =>
-                          airtableLastUpdatedTimes.get(id) <
-                              normalizeTime(update['Last Updated Time'])),
+              newUpdates.map(
                   async ([id, update]) =>
                       airtableRecordUpdate(
                           [id, await inPlaceDocuments(update)])))),
