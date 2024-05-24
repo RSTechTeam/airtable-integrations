@@ -19885,8 +19885,10 @@ __nccwpck_require__.r(__webpack_exports__);
 /* harmony export */ });
 /* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(5585);
 /* harmony import */ var _common_inputs_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(1872);
+/* harmony import */ var _common_sync_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(3599);
 /* harmony import */ var _common_utils_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(381);
 /** @fileoverview Syncs Bill.com Bill Line Item data into Airtable. */
+
 
 
 
@@ -19979,6 +19981,15 @@ async function getDocuments(sessionId, billId) {
 }
 
 /**
+ * @param {!Object<string, *>} upsert
+ * @return {!Object<string, *>}
+ */
+async function inPlaceDocuments(upsert) {
+  upsert['Supporting Documents'] = await upsert['Supporting Documents']();
+  return upsert;
+}
+
+/**
  * @param {!Api} api
  * @param {!Base=} billComIntegrationBase
  * @return {!Promise<undefined>}
@@ -20057,52 +20068,56 @@ async function main(api, billComIntegrationBase = new _common_airtable_js__WEBPA
               'Payment Status': paymentStatus,
               'Paid': paymentStatus === 'Paid In Full',
               [billComIdFieldName('Bill')]: bill.id,
+              'Supporting Documents': () => getDocuments(sessionId, bill.id),
               'Last Updated Time': bill.updatedTime,
             });
       }
     }
 
-    // Update every existing table record based on the Bill.com data.
-    const updates = [];
-    const records =
+    const airtableRecords =
         await billComIntegrationBase.select(
             BILL_REPORTING_TABLE, '', `Org = '${orgCode} (${mso})'`);
-    for (const record of records) {
-      const id = record.get(primaryBillComId);
-      const update = {id: record.getId()};
-      if (!changes.has(id)) {
-        update.fields = {Active: false};
-        updates.push(update);
-        continue;
-      }
-
-      const fields = changes.get(id);
-      changes.delete(id);
-
-      const airtableTime = normalizeTime(record.get('Last Updated Time'));
-      const billComTime = normalizeTime(fields['Last Updated Time']);
-      if (airtableTime === billComTime) continue;
-
-      fields['Supporting Documents'] =
-          await getDocuments(sessionId, fields[billComIdFieldName('Bill')]);
-      update.fields = fields;
-      updates.push(update);
-    }
-    await billComIntegrationBase.update(BILL_REPORTING_TABLE, updates);
+    const {updates, creates, removes} =
+        (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_3__/* .syncChanges */ .U4)(
+            // Source
+            changes,
+            // Mapping
+            (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_3__/* .getMapping */ .tj)(airtableRecords, primaryBillComId),
+            // Destination IDs
+            new Set(airtableRecords.map(r => r.getId())));
 
     // Create new table records from new Bill.com data.
-    const creates = [];
-    for (const [id, data] of changes) {
-      creates.push({
-        fields: {
-          [primaryBillComId]: id,
-          'Supporting Documents':
-            await getDocuments(sessionId, data[billComIdFieldName('Bill')]),
-          ...data,
-        }
-      });
-    }
-    await billComIntegrationBase.create(BILL_REPORTING_TABLE, creates);
+    await billComIntegrationBase.create(
+        BILL_REPORTING_TABLE,
+        await Promise.all(
+            Array.from(
+                creates,
+                async ([id, create]) => ({
+                  fields: {
+                    [primaryBillComId]: id,
+                    ...(await inPlaceDocuments(create)),
+                  },
+                }))));
+
+    // Update every existing table record based on the Bill.com data.
+    const airtableLastUpdatedTimes =
+        new Map(
+            airtableRecords.map(
+                r => [r.getId(), normalizeTime(r.get('Last Updated Time'))]));
+    await billComIntegrationBase.update(
+        BILL_REPORTING_TABLE,
+        [
+          ...(await Promise.all(
+              Array.from(
+                  updates.filter(
+                      ([id, update]) =>
+                          airtableLastUpdatedTimes.get(id) <
+                              normalizeTime(update['Last Updated Time'])),
+                  async ([id, update]) =>
+                      (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_3__/* .airtableRecordUpdate */ .vw)(
+                          [id, await inPlaceDocuments(update)])))),
+          ...Array.from(removes, id => ({id, fields: {Active: false}})),
+        ]);
   }
 }
 
