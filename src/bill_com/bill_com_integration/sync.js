@@ -3,8 +3,8 @@
  * (e.g., Vendors, Chart of Accounts) into Airtable.
  */
 
-import {airtableRecordUpdate, getMapping, syncChanges} from '../../common/sync.js';
 import {ActiveStatus, activeFilter, filter, isActiveEnum} from '../common/api.js';
+import {airtableRecordUpdate, filterMap, getMapping, syncChanges} from '../../common/sync.js';
 import {BILL_COM_ID_SUFFIX, MSO_BILL_COM_ID} from '../common/constants.js';
 import {getYyyyMmDd} from '../../common/utils.js';
 import {MsoBase} from '../../common/airtable.js';
@@ -229,17 +229,18 @@ class Syncer {
     // Upsert Anchor Entity Bill.com Customers into MSO Bill.com (and Airtable).
     const hasEmailAirtableCustomers =
         new Set(
-            airtableCustomers.filter(c => !!c.get('Email')).map(
+            filterMap(
+                airtableCustomers,
+                c => !!c.get('Email'),
                 c => c.get(BILL_COM_ID)));
-    const billComCustomers =
-        (await this.billComApi_.listActive('Customer')).filter(
-            // Skip updates where email already exists.
-            c => !hasEmailAirtableCustomers.has(c.id));
     const {updates: airtableUpdates, creates: airtableCreates} =
         syncChanges(
             // Source
             new Map(
-                billComCustomers.map(
+                filterMap(
+                    await this.billComApi_.listActive('Customer'),
+                    // Skip updates where email already exists.
+                    c => !hasEmailAirtableCustomers.has(c.id),
                     c => [c.id, {name: c.name, email: c.email}])),
             // Mapping
             getMapping(airtableCustomers, BILL_COM_ID));

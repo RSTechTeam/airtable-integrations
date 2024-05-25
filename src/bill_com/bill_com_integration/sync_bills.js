@@ -2,7 +2,7 @@
 
 import {Base} from '../../common/airtable.js';
 import {billComTransformUrl} from '../common/inputs.js';
-import {airtableRecordUpdate, getMapping, syncChanges} from '../../common/sync.js';
+import {airtableRecordUpdate, filterMap, getMapping, syncChanges} from '../../common/sync.js';
 import {getYyyyMmDd} from '../../common/utils.js';
 
 /** Bill.com Bill Approval Statuses. */
@@ -215,16 +215,15 @@ export async function main(api, billComIntegrationBase = new Base()) {
         new Map(
             airtableRecords.map(
                 r => [r.getId(), normalizeTime(r.get('Last Updated Time'))]));
-    const newUpdates =
-        Array.from(updates).filter(
-            ([id, update]) =>
-                airtableLastUpdatedTimes.get(id) <
-                    normalizeTime(update['Last Updated Time']));
     await billComIntegrationBase.update(
         BILL_REPORTING_TABLE,
         [
           ...(await Promise.all(
-              newUpdates.map(
+              filterMap(
+                  Array.from(updates),
+                  ([id, update]) =>
+                      airtableLastUpdatedTimes.get(id) <
+                          normalizeTime(update['Last Updated Time']),
                   async ([id, update]) =>
                       airtableRecordUpdate(
                           [id, await inPlaceDocuments(update)])))),

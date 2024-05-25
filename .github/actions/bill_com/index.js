@@ -19535,8 +19535,8 @@ __nccwpck_require__.r(__webpack_exports__);
 /* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
 /* harmony export */   "main": () => (/* binding */ main)
 /* harmony export */ });
-/* harmony import */ var _common_sync_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(3599);
 /* harmony import */ var _common_api_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(6362);
+/* harmony import */ var _common_sync_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(3599);
 /* harmony import */ var _common_constants_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(9447);
 /* harmony import */ var _common_utils_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(381);
 /* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(5585);
@@ -19771,17 +19771,18 @@ class Syncer {
     // Upsert Anchor Entity Bill.com Customers into MSO Bill.com (and Airtable).
     const hasEmailAirtableCustomers =
         new Set(
-            airtableCustomers.filter(c => !!c.get('Email')).map(
+            (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .filterMap */ .DZ)(
+                airtableCustomers,
+                c => !!c.get('Email'),
                 c => c.get(BILL_COM_ID)));
-    const billComCustomers =
-        (await this.billComApi_.listActive('Customer')).filter(
-            // Skip updates where email already exists.
-            c => !hasEmailAirtableCustomers.has(c.id));
     const {updates: airtableUpdates, creates: airtableCreates} =
         (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .syncChanges */ .U4)(
             // Source
             new Map(
-                billComCustomers.map(
+                (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .filterMap */ .DZ)(
+                    await this.billComApi_.listActive('Customer'),
+                    // Skip updates where email already exists.
+                    c => !hasEmailAirtableCustomers.has(c.id),
                     c => [c.id, {name: c.name, email: c.email}])),
             // Mapping
             (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .getMapping */ .tj)(airtableCustomers, BILL_COM_ID));
@@ -20104,16 +20105,15 @@ async function main(api, billComIntegrationBase = new _common_airtable_js__WEBPA
         new Map(
             airtableRecords.map(
                 r => [r.getId(), normalizeTime(r.get('Last Updated Time'))]));
-    const newUpdates =
-        Array.from(updates).filter(
-            ([id, update]) =>
-                airtableLastUpdatedTimes.get(id) <
-                    normalizeTime(update['Last Updated Time']));
     await billComIntegrationBase.update(
         BILL_REPORTING_TABLE,
         [
           ...(await Promise.all(
-              newUpdates.map(
+              (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_3__/* .filterMap */ .DZ)(
+                  Array.from(updates),
+                  ([id, update]) =>
+                      airtableLastUpdatedTimes.get(id) <
+                          normalizeTime(update['Last Updated Time']),
                   async ([id, update]) =>
                       (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_3__/* .airtableRecordUpdate */ .vw)(
                           [id, await inPlaceDocuments(update)])))),
@@ -21097,10 +21097,10 @@ const airtableBaseId = (0,_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/*
 
 /* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
 /* harmony export */   "U4": () => (/* binding */ syncChanges),
+/* harmony export */   "DZ": () => (/* binding */ filterMap),
 /* harmony export */   "tj": () => (/* binding */ getMapping),
 /* harmony export */   "vw": () => (/* binding */ airtableRecordUpdate)
 /* harmony export */ });
-/* unused harmony export filterMap */
 /** @fileoverview Utilities for syncing data from one datasource to another. */
 
 /**
