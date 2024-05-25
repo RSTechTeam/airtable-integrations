@@ -21100,6 +21100,7 @@ const airtableBaseId = (0,_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/*
 /* harmony export */   "tj": () => (/* binding */ getMapping),
 /* harmony export */   "vw": () => (/* binding */ airtableRecordUpdate)
 /* harmony export */ });
+/* unused harmony export filterMap */
 /** @fileoverview Utilities for syncing data from one datasource to another. */
 
 /**
@@ -21141,9 +21142,19 @@ function syncChanges(source, mapping, destinationIds = null) {
     creates: new Map(upserts.get(CREATES)),
     removes:
       new Set(
-          Array.from((destinationIds?.values() || mapping.values())).filter(
+          Array.from(destinationIds || mapping.values()).filter(
               x => !updates.has(x))),
   };
+}
+
+/**
+ * @param {!Array<*>} array
+ * @param {function(*): boolean} filterFn
+ * @param {function(*): *} mapFn
+ * @return {!Array<*>}
+ */
+function filterMap(array, filterFn, mapFn) {
+  return array.flatMap(x => filterFn(x) ? [mapFn(x)] : []);
 }
 
 /**
@@ -21158,14 +21169,13 @@ function syncChanges(source, mapping, destinationIds = null) {
  */
 function getMapping(
     airtableRecords, integrationIdField, integrationSource = true) {
-  const mapping =
-      airtableRecords.map(
+  return new Map(
+      filterMap(
+          airtableRecords,
+          integrationSource ? r => true : r => r.get(integrationIdField),
           integrationSource ?
               r => [r.get(integrationIdField), r.getId()] :
-              r => [r.getId(), r.get(integrationIdField)]);
-  return new Map(
-      integrationSource ?
-          mapping : mapping.filter(([, integrationId]) => integrationId));
+              r => [r.getId(), r.get(integrationIdField)]));
 }
 
 /**

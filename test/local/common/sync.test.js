@@ -37,6 +37,17 @@ describe.each`
   }
 });
 
+describe.each`
+  name            | filterFn            | expected
+  ${'keep all'}   | ${x => true}        | ${[2, 3, 4, 5]}
+  ${'keep evens'} | ${x => x % 2 === 0} | ${[3, 5]}
+`('filterMap', ({name, filterFn, expected}) => {
+  test(`given filterFn "${name}", returns ${stringify(expected)}`, () => {
+    expect(sync.filterMap([1, 2, 3, 4], filterFn, x => ++x)).toEqual(
+        expect.arrayContaining(expected));
+  });
+});
+
 const records = [
   [1, 2],
   [3, 6],

@@ -39,9 +39,19 @@ export function syncChanges(source, mapping, destinationIds = null) {
     creates: new Map(upserts.get(CREATES)),
     removes:
       new Set(
-          Array.from((destinationIds?.values() || mapping.values())).filter(
+          Array.from(destinationIds || mapping.values()).filter(
               x => !updates.has(x))),
   };
+}
+
+/**
+ * @param {!Array<*>} array
+ * @param {function(*): boolean} filterFn
+ * @param {function(*): *} mapFn
+ * @return {!Array<*>}
+ */
+export function filterMap(array, filterFn, mapFn) {
+  return array.flatMap(x => filterFn(x) ? [mapFn(x)] : []);
 }
 
 /**
@@ -56,14 +66,13 @@ export function syncChanges(source, mapping, destinationIds = null) {
  */
 export function getMapping(
     airtableRecords, integrationIdField, integrationSource = true) {
-  const mapping =
-      airtableRecords.map(
+  return new Map(
+      filterMap(
+          airtableRecords,
+          integrationSource ? r => true : r => r.get(integrationIdField),
           integrationSource ?
               r => [r.get(integrationIdField), r.getId()] :
-              r => [r.getId(), r.get(integrationIdField)]);
-  return new Map(
-      integrationSource ?
-          mapping : mapping.filter(([, integrationId]) => integrationId));
+              r => [r.getId(), r.get(integrationIdField)]));
 }
 
 /**
