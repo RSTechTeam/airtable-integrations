@@ -65,8 +65,8 @@ describe.each`
       `given args (${stringify(airtableRecords)}, ${source}),` +
           ` returns ${stringify(expected)}`,
       () => {
-        const mapping = sync.getMapping(airtableRecords, '', source);
-        expect(Array.from(mapping)).toEqual(expect.arrayContaining(expected));
+        expect(sync.getMapping(airtableRecords, '', source)).toEqual(
+            new Map(expected));
       });
 });
 
