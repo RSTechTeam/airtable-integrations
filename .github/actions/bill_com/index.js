@@ -21102,6 +21102,7 @@ const airtableBaseId = (0,_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/*
 /* harmony export */   "D2": () => (/* binding */ getAirtableRecordIds),
 /* harmony export */   "vw": () => (/* binding */ airtableRecordUpdate)
 /* harmony export */ });
+/* unused harmony export airtableRecordDeactivate */
 /** @fileoverview Utilities for syncing data from one datasource to another. */
 
 /**
@@ -21194,6 +21195,14 @@ function getAirtableRecordIds(airtableRecords) {
  */
 function airtableRecordUpdate([id, update]) {
   return {id, fields: update};
+}
+
+/**
+ * @param {string} id
+ * @return {!Object<string, *>} Airtable formatted Record deactivation
+ */
+function airtableRecordDeactivate(id) {
+  return airtableRecordUpdate([id, {Active: false}]);
 }
 
 

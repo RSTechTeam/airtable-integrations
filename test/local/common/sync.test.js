@@ -85,3 +85,9 @@ test('airtableRecordUpdate', () => {
   const update = {'Field': 'value'};
   expect(sync.airtableRecordUpdate([id, update])).toEqual({id, fields: update});
 });
+
+test('airtableRecordDeactivate', () => {
+  const id = 'rec1';
+  expect(sync.airtableRecordDeactivate(id)).toEqual(
+      {id, fields: {Active: false}});
+});

@@ -91,3 +91,11 @@ export function getAirtableRecordIds(airtableRecords) {
 export function airtableRecordUpdate([id, update]) {
   return {id, fields: update};
 }
+
+/**
+ * @param {string} id
+ * @return {!Object<string, *>} Airtable formatted Record deactivation
+ */
+export function airtableRecordDeactivate(id) {
+  return airtableRecordUpdate([id, {Active: false}]);
+}
