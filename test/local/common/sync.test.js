@@ -48,7 +48,7 @@ describe.each`
   });
 });
 
-const records = [
+const airtableRecords = [
   [1, 2],
   [3, 6],
   [4, null],
@@ -62,12 +62,22 @@ describe.each`
   ${false} | ${[[1, 2], [3, 6]]}
 `('getMapping', ({source, expected}) => {
   test(
-      `given args (${stringify(records)}, ${source}),` +
+      `given args (${stringify(airtableRecords)}, ${source}),` +
           ` returns ${stringify(expected)}`,
       () => {
-        expect(Array.from(sync.getMapping(records, '', source))).toEqual(
-            expect.arrayContaining(expected));
+        const mapping = sync.getMapping(airtableRecords, '', source);
+        expect(Array.from(mapping)).toEqual(expect.arrayContaining(expected));
       });
+});
+
+describe.each`
+  records            | expected
+  ${[]}              | ${[]}
+  ${airtableRecords} | ${[1, 3, 4]}
+`('getAirtableRecordIds', ({records, expected}) => {
+  test(`given ${stringify(records)}, returns ${stringify(expected)}`, () => {
+    expect(sync.getAirtableRecordIds(records)).toEqual(new Set(expected));
+  });
 });
 
 test('airtableRecordUpdate', () => {

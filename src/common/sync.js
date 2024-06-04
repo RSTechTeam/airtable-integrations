@@ -76,6 +76,14 @@ export function getMapping(
 }
 
 /**
+ * @param {!Array<!Object<string, *>>} airtableRecords
+ * @return {!Array<*>}
+ */
+export function getAirtableRecordIds(airtableRecords) {
+  return new Set(airtableRecords.map(r => r.getId()));
+}
+
+/**
  * @param {string} id
  * @param {!Object<string, *>} update
  * @return {!Object<string, *>} Airtable formatted Record update

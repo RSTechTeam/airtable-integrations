@@ -21101,6 +21101,7 @@ const airtableBaseId = (0,_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/*
 /* harmony export */   "tj": () => (/* binding */ getMapping),
 /* harmony export */   "vw": () => (/* binding */ airtableRecordUpdate)
 /* harmony export */ });
+/* unused harmony export getAirtableRecordIds */
 /** @fileoverview Utilities for syncing data from one datasource to another. */
 
 /**
@@ -21176,6 +21177,14 @@ function getMapping(
           integrationSource ?
               r => [r.get(integrationIdField), r.getId()] :
               r => [r.getId(), r.get(integrationIdField)]));
+}
+
+/**
+ * @param {!Array<!Object<string, *>>} airtableRecords
+ * @return {!Array<*>}
+ */
+function getAirtableRecordIds(airtableRecords) {
+  return new Set(airtableRecords.map(r => r.getId()));
 }
 
 /**
