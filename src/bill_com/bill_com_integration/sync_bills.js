@@ -1,9 +1,9 @@
 /** @fileoverview Syncs Bill.com Bill Line Item data into Airtable. */
 
-import {airtableRecordUpdate, filterMap, getAirtableRecordIds, getMapping, syncChanges} from '../../common/sync.js';
 import {Base} from '../../common/airtable.js';
 import {billComTransformUrl} from '../common/inputs.js';
 import {getYyyyMmDd} from '../../common/utils.js';
+import * as sync from '../../common/sync.js';
 
 /** Bill.com Bill Approval Statuses. */
 const approvalStatuses = new Map([
@@ -189,13 +189,13 @@ export async function main(api, billComIntegrationBase = new Base()) {
         await billComIntegrationBase.select(
             BILL_REPORTING_TABLE, '', `Org = '${orgCode} (${mso})'`);
     const {updates, creates, removes} =
-        syncChanges(
+        sync.syncChanges(
             // Source
             changes,
             // Mapping
-            getMapping(airtableRecords, primaryBillComId),
+            sync.getMapping(airtableRecords, primaryBillComId),
             // Destination IDs
-            getAirtableRecordIds(airtableRecords));
+            sync.getAirtableRecordIds(airtableRecords));
 
     // Create new table records from new Bill.com data.
     await billComIntegrationBase.create(
@@ -219,15 +219,15 @@ export async function main(api, billComIntegrationBase = new Base()) {
         BILL_REPORTING_TABLE,
         [
           ...(await Promise.all(
-              filterMap(
+              sync.filterMap(
                   Array.from(updates),
                   ([id, update]) =>
                       airtableLastUpdatedTimes.get(id) <
                           normalizeTime(update['Last Updated Time']),
                   async ([id, update]) =>
-                      airtableRecordUpdate(
+                      sync.airtableRecordUpdate(
                           [id, await inPlaceDocuments(update)])))),
-          ...Array.from(removes, id => ({id, fields: {Active: false}})),
+          ...Array.from(removes, sync.airtableRecordDeactivate),
         ]);
   }
 }

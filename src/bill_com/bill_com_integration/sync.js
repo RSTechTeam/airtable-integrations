@@ -4,11 +4,11 @@
  */
 
 import {ActiveStatus, activeFilter, filter, isActiveEnum} from '../common/api.js';
-import {airtableRecordUpdate, filterMap, getAirtableRecordIds, getMapping, syncChanges} from '../../common/sync.js';
 import {BILL_COM_ID_SUFFIX, MSO_BILL_COM_ID} from '../common/constants.js';
 import {getYyyyMmDd} from '../../common/utils.js';
 import {MsoBase} from '../../common/airtable.js';
 import {PRIMARY_ORG} from '../common/constants.js';
+import * as sync from '../../common/sync.js';
 
 /** Bill.com Bill Approval Statuses. */
 const approvalStatuses = new Map([
@@ -67,7 +67,7 @@ class Syncer {
 
     const BILL_COM_ID =
         entity === 'Bill' ? MSO_BILL_COM_ID : BILL_COM_ID_SUFFIX;
-    const mapping = getMapping(airtableUnpaids, BILL_COM_ID);
+    const mapping = sync.getMapping(airtableUnpaids, BILL_COM_ID);
     const billComUpdates =
         await this.billComApi_.bulk('Read', entity, Array.from(mapping.keys()));
     await this.airtableBase_.update(
@@ -137,13 +137,13 @@ class Syncer {
 
     const airtableRecords = await this.airtableBase_.select(table);
     const {updates, creates, removes} =
-        syncChanges(
+        sync.syncChanges(
             // Source
             changes,
             // Mapping
-            getMapping(airtableRecords, MSO_BILL_COM_ID),
+            sync.getMapping(airtableRecords, MSO_BILL_COM_ID),
             // Destination IDs
-            getAirtableRecordIds(airtableRecords));
+            sync.getAirtableRecordIds(airtableRecords));
 
     const msoRecordId = this.airtableBase_.getCurrentMso().getId();
     await this.airtableBase_.create(
@@ -156,8 +156,8 @@ class Syncer {
     await this.airtableBase_.update(
         table,
         [
-          ...Array.from(updates, airtableRecordUpdate),
-          ...Array.from(removes, id => ({id, fields: {Active: false}})),
+          ...Array.from(updates, sync.airtableRecordUpdate),
+          ...Array.from(removes, sync.airtableRecordDeactivate),
         ]);
   }
 
@@ -207,7 +207,7 @@ class Syncer {
                 // And temporarily skip Customers with long names.
                 c.get('Name').length < 42);
     const {updates: billComUpdates, creates: billComCreates} =
-        syncChanges(
+        sync.syncChanges(
             // Source
             new Map(
                 sourceAirtableCustomers.map(
@@ -220,7 +220,7 @@ class Syncer {
                       },
                     ])),
             // Mapping
-            getMapping(sourceAirtableCustomers, BILL_COM_ID, false));
+            sync.getMapping(sourceAirtableCustomers, BILL_COM_ID, false));
     await this.billComApi_.bulk(
         'Update',
         'Customer',
@@ -229,21 +229,21 @@ class Syncer {
     // Upsert Anchor Entity Bill.com Customers into MSO Bill.com (and Airtable).
     const hasEmailAirtableCustomers =
         new Set(
-            filterMap(
+            sync.filterMap(
                 airtableCustomers,
                 c => !!c.get('Email'),
                 c => c.get(BILL_COM_ID)));
     const {updates: airtableUpdates, creates: airtableCreates} =
-        syncChanges(
+        sync.syncChanges(
             // Source
             new Map(
-                filterMap(
+                sync.filterMap(
                     await this.billComApi_.listActive('Customer'),
                     // Skip updates where email already exists.
                     c => !hasEmailAirtableCustomers.has(c.id),
                     c => [c.id, {name: c.name, email: c.email}])),
             // Mapping
-            getMapping(airtableCustomers, BILL_COM_ID));
+            sync.getMapping(airtableCustomers, BILL_COM_ID));
 
     await this.airtableBase_.update(
         ALL_CUSTOMERS_TABLE,
