@@ -1,8 +1,8 @@
 /** @fileoverview Syncs Bill.com Bill Line Item data into Airtable. */
 
+import {airtableRecordUpdate, filterMap, getAirtableRecordIds, getMapping, syncChanges} from '../../common/sync.js';
 import {Base} from '../../common/airtable.js';
 import {billComTransformUrl} from '../common/inputs.js';
-import {airtableRecordUpdate, filterMap, getMapping, syncChanges} from '../../common/sync.js';
 import {getYyyyMmDd} from '../../common/utils.js';
 
 /** Bill.com Bill Approval Statuses. */
@@ -195,7 +195,7 @@ export async function main(api, billComIntegrationBase = new Base()) {
             // Mapping
             getMapping(airtableRecords, primaryBillComId),
             // Destination IDs
-            new Set(airtableRecords.map(r => r.getId())));
+            getAirtableRecordIds(airtableRecords));
 
     // Create new table records from new Bill.com data.
     await billComIntegrationBase.create(

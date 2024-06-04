@@ -19685,7 +19685,7 @@ class Syncer {
             // Mapping
             (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .getMapping */ .tj)(airtableRecords, _common_constants_js__WEBPACK_IMPORTED_MODULE_1__/* .MSO_BILL_COM_ID */ .yG),
             // Destination IDs
-            new Set(airtableRecords.map(r => r.getId())));
+            (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .getAirtableRecordIds */ .D2)(airtableRecords));
 
     const msoRecordId = this.airtableBase_.getCurrentMso().getId();
     await this.airtableBase_.create(
@@ -19884,9 +19884,9 @@ __nccwpck_require__.r(__webpack_exports__);
 /* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
 /* harmony export */   "main": () => (/* binding */ main)
 /* harmony export */ });
+/* harmony import */ var _common_sync_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(3599);
 /* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(5585);
 /* harmony import */ var _common_inputs_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(1872);
-/* harmony import */ var _common_sync_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(3599);
 /* harmony import */ var _common_utils_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(381);
 /** @fileoverview Syncs Bill.com Bill Line Item data into Airtable. */
 
@@ -20085,7 +20085,7 @@ async function main(api, billComIntegrationBase = new _common_airtable_js__WEBPA
             // Mapping
             (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_3__/* .getMapping */ .tj)(airtableRecords, primaryBillComId),
             // Destination IDs
-            new Set(airtableRecords.map(r => r.getId())));
+            (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_3__/* .getAirtableRecordIds */ .D2)(airtableRecords));
 
     // Create new table records from new Bill.com data.
     await billComIntegrationBase.create(
@@ -21099,9 +21099,9 @@ const airtableBaseId = (0,_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/*
 /* harmony export */   "U4": () => (/* binding */ syncChanges),
 /* harmony export */   "DZ": () => (/* binding */ filterMap),
 /* harmony export */   "tj": () => (/* binding */ getMapping),
+/* harmony export */   "D2": () => (/* binding */ getAirtableRecordIds),
 /* harmony export */   "vw": () => (/* binding */ airtableRecordUpdate)
 /* harmony export */ });
-/* unused harmony export getAirtableRecordIds */
 /** @fileoverview Utilities for syncing data from one datasource to another. */
 
 /**

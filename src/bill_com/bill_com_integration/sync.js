@@ -4,7 +4,7 @@
  */
 
 import {ActiveStatus, activeFilter, filter, isActiveEnum} from '../common/api.js';
-import {airtableRecordUpdate, filterMap, getMapping, syncChanges} from '../../common/sync.js';
+import {airtableRecordUpdate, filterMap, getAirtableRecordIds, getMapping, syncChanges} from '../../common/sync.js';
 import {BILL_COM_ID_SUFFIX, MSO_BILL_COM_ID} from '../common/constants.js';
 import {getYyyyMmDd} from '../../common/utils.js';
 import {MsoBase} from '../../common/airtable.js';
@@ -143,7 +143,7 @@ class Syncer {
             // Mapping
             getMapping(airtableRecords, MSO_BILL_COM_ID),
             // Destination IDs
-            new Set(airtableRecords.map(r => r.getId())));
+            getAirtableRecordIds(airtableRecords));
 
     const msoRecordId = this.airtableBase_.getCurrentMso().getId();
     await this.airtableBase_.create(
