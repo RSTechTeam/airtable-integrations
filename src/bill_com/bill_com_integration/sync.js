@@ -116,17 +116,6 @@ class Syncer {
       changes.set(e.id, change);
     }
 
-    // Construct full Class names.
-    if (entity === 'ActgClass') {
-      for (const [, change] of changes) {
-        let p = change;
-        while (p = changes.get(p.Parent)) {
-          change.Name = p.Name + ':' + change.Name;
-        }
-        delete change.Parent;
-      }
-    }
-
     // Reconsider when BILL supports retrieving Vendor documents.
     // if (entity === 'Vendor') {
     //   for (const [id, change] of changes) {
@@ -309,10 +298,7 @@ export async function main(billComApi, airtableBase = new MsoBase()) {
           'Paid via BILL': o.lastPaymentDate != null,
         }));
     await syncer.syncNameKey('ChartOfAccount', 'Chart of Accounts', 'name');
-    await syncer.sync(
-        'ActgClass',
-        'Classes',
-        o => ({Name: o.name, Parent: o.parentActgClassId}));
+    await syncer.syncNameKey('ActgClass', 'Classes', 'name');
     await syncer.sync(
         'Profile', 'User Role Profiles', o => ({Name: o.name}), false);
     await syncer.sync(

@@ -191,8 +191,25 @@ export class Api {
       const response =
           await this.dataCall(
               `List/${entity}`, {start: start, max: MAX, filters: filters});
-      fullList = fullList.concat(response);
+      fullList = [...fullList, ...response];
       if (response.length < MAX) break;
+    }
+
+    // Construct full Class names.
+    if (entity === 'ActgClass') {
+      const classes =
+          new Map(
+              fullList.map(
+                  e => [
+                    e.id,
+                    {name: e.name, parentActgClassId: e.parentActgClassId},
+                  ]));
+      for (const actgClass of fullList) {
+        let p = actgClass;
+        while (p = classes.get(p.parentActgClassId)) {
+          actgClass.name = p.name + ':' + actgClass.name;
+        }
+      }
     }
     return fullList;
   }
