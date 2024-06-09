@@ -20719,13 +20719,15 @@ function fixResponseChunkedTransferBadEnding(request, errorCallback) {
 /***/ ((__webpack_module__, __unused_webpack___webpack_exports__, __nccwpck_require__) => {
 
 __nccwpck_require__.a(__webpack_module__, async (__webpack_handle_async_dependencies__) => {
-/* harmony import */ var node_fetch__WEBPACK_IMPORTED_MODULE_5__ = __nccwpck_require__(4028);
+/* harmony import */ var node_fetch__WEBPACK_IMPORTED_MODULE_6__ = __nccwpck_require__(4028);
 /* harmony import */ var papaparse__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(1826);
 /* harmony import */ var _inputs_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(2568);
+/* harmony import */ var _common_sync_js__WEBPACK_IMPORTED_MODULE_5__ = __nccwpck_require__(3599);
 /* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(8997);
 /* harmony import */ var _common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(1444);
 /* harmony import */ var _common_utils_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(381);
 /** @fileoverview Imports an Abacus CSV update into Airtable. */
+
 
 
 
@@ -20756,9 +20758,8 @@ const mapping = new Map([
 // For existing Abacus Airtable Records,
 // map Abacus Expense ID to Airtable Record ID.
 const expenseSources = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_2__/* .Base */ .X();
-const expenses = await expenseSources.select(ABACUS_TABLE);
 const expenseRecords =
-    new Map(expenses.map(e => [e.get('Expense ID'), e.getId()]));
+    (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_5__/* .getMapping */ .tj)(await expenseSources.select(ABACUS_TABLE), 'Expense ID');
 
 // Create Papa Parse Config.
 const airtableFields = Array.from(mapping.values());
@@ -20792,32 +20793,30 @@ const parseConfig = {
         }
       }
 
-      const updates = [];
-      const creates = [];
+      // Handle Paid/Debit Status,
+      // completing Abacus CSV row alignment with Airtable Fields.
       for (const row of results.data) {
-
-        // Handle Paid/Debit Status,
-        // completing Abacus CSV row alignment with Airtable Fields.
         const debitStatus = row['Paid'];
         row['Paid'] = debitStatus !== 'pending';
         row['Type'] = debitStatus > '' ? 'Reimbursement' : 'Card Transaction';
-
-        // Load upsert.
-        const upsert = {fields: row};
-        const existingRecordId = expenseRecords.get(row['Expense ID']);
-        if (existingRecordId) {
-          updates.push({id: existingRecordId, ...upsert});
-          continue
-        }
-        creates.push(upsert);
       }
 
+      const {updates, creates} =
+          sync.syncChanges(
+              // Source
+              new Map(results.data.map(row => [row['Expense ID'], row])),
+              // Mapping
+              expenseRecords);
+
       // Launch upserts.
-      upsertPromises =
-          upsertPromises.concat([
-            expenseSources.update(ABACUS_TABLE, updates),
-            expenseSources.create(ABACUS_TABLE, creates),
-          ]);
+      upsertPromises = [
+        ...upsertPromises,
+        expenseSources.update(
+            ABACUS_TABLE, Array.from(updates, _common_sync_js__WEBPACK_IMPORTED_MODULE_5__/* .airtableRecordUpdate */ .vw)),
+        expenseSources.create(
+            ABACUS_TABLE,
+            Array.from(creates, ([, create]) => ({fields: create}))),
+      ];
     },
   error: (err, file) => (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_3__/* .error */ .vU)(err),
 };
@@ -20826,7 +20825,7 @@ const parseConfig = {
 const importRecord =
     await expenseSources.find('Imports', (0,_inputs_js__WEBPACK_IMPORTED_MODULE_1__/* .airtableImportRecordId */ .p)());
 for (const csv of importRecord.get('CSVs')) {
-  const response = await (0,node_fetch__WEBPACK_IMPORTED_MODULE_5__/* ["default"] */ .ZP)(csv.url);
+  const response = await (0,node_fetch__WEBPACK_IMPORTED_MODULE_6__/* ["default"] */ .ZP)(csv.url);
   if (!response.ok) {
     (0,_common_utils_js__WEBPACK_IMPORTED_MODULE_4__/* .fetchError */ .Tl)(response.status, csv.filename, response.statusText);
   }
@@ -21139,6 +21138,119 @@ function logJson(endpoint, json) {
         return value;
       });
   firstArray.forEach((data, index) => logJsonGroup(index, data));
+}
+
+
+/***/ }),
+
+/***/ 3599:
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
+
+/* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
+/* harmony export */   "tj": () => (/* binding */ getMapping),
+/* harmony export */   "vw": () => (/* binding */ airtableRecordUpdate)
+/* harmony export */ });
+/* unused harmony exports syncChanges, filterMap, getAirtableRecordIds, airtableRecordDeactivate */
+/** @fileoverview Utilities for syncing data from one datasource to another. */
+
+/**
+ * Returns the changes that would occur when syncing source data to a
+ * destination datasource, using the given key mapping. Note: does not check
+ * whether the destination data is already consistent with the source.
+ * @param {!Map<*, *>} source
+ *    The priveleged datasource considered to be the Source of Truth.
+ * @param {!Map<*, *>} mapping
+ *    A mapping from source ID to destination ID.
+ * @param {Set<*>=} destinationIds
+ *    A (super)set of destination IDs to use instead of mapping values when
+ *     computing removes.
+ * @return {!Object<string, (!Map|!Set)>}
+ *    An Object with 3 fields:
+ *      1) updates - A Map keyed by destination IDs
+ *        (for objects in both datasources);
+ *      2) creates - A Map keyed by source IDs
+ *        (for objects only in the source);
+ *      3) removes - A Set of destination IDs
+ *        (for objects only in the destination).
+ */
+function syncChanges(source, mapping, destinationIds = null) {
+  const UPDATES = 'updates';
+  const CREATES = 'creates';
+
+  // Group source upserts by updates and creates.
+  const upserts = new Map([[UPDATES, []], [CREATES, []]]);
+  source.forEach(
+      (upsert, id, map) => {
+        upserts.get(mapping.has(id) ? UPDATES : CREATES).push([id, upsert]);
+      });
+  const updates =
+      new Map(
+          upserts.get(UPDATES).map(
+              ([id, update]) => [mapping.get(id), update]));
+  return {
+    updates,
+    creates: new Map(upserts.get(CREATES)),
+    removes:
+      new Set(
+          Array.from(destinationIds || mapping.values()).filter(
+              x => !updates.has(x))),
+  };
+}
+
+/**
+ * @param {!Array<*>} array
+ * @param {function(*): boolean} filterFn
+ * @param {function(*): *} mapFn
+ * @return {!Array<*>}
+ */
+function filterMap(array, filterFn, mapFn) {
+  return array.flatMap(x => filterFn(x) ? [mapFn(x)] : []);
+}
+
+/**
+ * Returns the datasource ID mapping between Airtable
+ * and an integration datasource. If Airtable is the Source of Truth
+ * (i.e., integrationSource is false), then filters out records
+ * where the integration datasource ID is not set.
+ * @param {!Array<!Object<string, *>>} airtableRecords
+ * @param {string} integrationIdField
+ * @param {boolean=} integrationSource
+ * @return {!Map<*, *>}
+ */
+function getMapping(
+    airtableRecords, integrationIdField, integrationSource = true) {
+  return new Map(
+      filterMap(
+          airtableRecords,
+          integrationSource ? r => true : r => r.get(integrationIdField),
+          integrationSource ?
+              r => [r.get(integrationIdField), r.getId()] :
+              r => [r.getId(), r.get(integrationIdField)]));
+}
+
+/**
+ * @param {!Array<!Object<string, *>>} airtableRecords
+ * @return {!Array<*>}
+ */
+function getAirtableRecordIds(airtableRecords) {
+  return new Set(airtableRecords.map(r => r.getId()));
+}
+
+/**
+ * @param {string} id
+ * @param {!Object<string, *>} update
+ * @return {!Object<string, *>} Airtable formatted Record update
+ */
+function airtableRecordUpdate([id, update]) {
+  return {id, fields: update};
+}
+
+/**
+ * @param {string} id
+ * @return {!Object<string, *>} Airtable formatted Record deactivation
+ */
+function airtableRecordDeactivate(id) {
+  return airtableRecordUpdate([id, {Active: false}]);
 }
 
 

@@ -3,6 +3,7 @@
 import fetch from 'node-fetch';
 import Papa from 'papaparse';
 import {airtableImportRecordId} from './inputs.js';
+import {airtableRecordUpdate, getMapping, syncChanges} from '../common/sync.js';
 import {Base} from '../common/airtable.js';
 import {error} from '../common/github_actions_core.js';
 import {fetchError} from '../common/utils.js';
@@ -29,9 +30,8 @@ const mapping = new Map([
 // For existing Abacus Airtable Records,
 // map Abacus Expense ID to Airtable Record ID.
 const expenseSources = new Base();
-const expenses = await expenseSources.select(ABACUS_TABLE);
 const expenseRecords =
-    new Map(expenses.map(e => [e.get('Expense ID'), e.getId()]));
+    getMapping(await expenseSources.select(ABACUS_TABLE), 'Expense ID');
 
 // Create Papa Parse Config.
 const airtableFields = Array.from(mapping.values());
@@ -65,32 +65,30 @@ const parseConfig = {
         }
       }
 
-      const updates = [];
-      const creates = [];
+      // Handle Paid/Debit Status,
+      // completing Abacus CSV row alignment with Airtable Fields.
       for (const row of results.data) {
-
-        // Handle Paid/Debit Status,
-        // completing Abacus CSV row alignment with Airtable Fields.
         const debitStatus = row['Paid'];
         row['Paid'] = debitStatus !== 'pending';
         row['Type'] = debitStatus > '' ? 'Reimbursement' : 'Card Transaction';
-
-        // Load upsert.
-        const upsert = {fields: row};
-        const existingRecordId = expenseRecords.get(row['Expense ID']);
-        if (existingRecordId) {
-          updates.push({id: existingRecordId, ...upsert});
-          continue
-        }
-        creates.push(upsert);
       }
 
+      const {updates, creates} =
+          sync.syncChanges(
+              // Source
+              new Map(results.data.map(row => [row['Expense ID'], row])),
+              // Mapping
+              expenseRecords);
+
       // Launch upserts.
-      upsertPromises =
-          upsertPromises.concat([
-            expenseSources.update(ABACUS_TABLE, updates),
-            expenseSources.create(ABACUS_TABLE, creates),
-          ]);
+      upsertPromises = [
+        ...upsertPromises,
+        expenseSources.update(
+            ABACUS_TABLE, Array.from(updates, airtableRecordUpdate)),
+        expenseSources.create(
+            ABACUS_TABLE,
+            Array.from(creates, ([, create]) => ({fields: create}))),
+      ];
     },
   error: (err, file) => error(err),
 };
