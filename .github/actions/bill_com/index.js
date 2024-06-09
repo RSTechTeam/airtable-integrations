@@ -19907,12 +19907,8 @@ let billComApi;
  * @return {!Promise<!Map<string, *>>}
  */
  async function getEntityData(entity, dataFunc) {
-  const entities = await billComApi.listActive(entity);
-  const data = new Map();
-  for (const e of entities) {
-    data.set(e.id, dataFunc(e));
-  }
-  return data;
+  return new Map(
+      (await billComApi.listActive(entity)).map(e => [e.id, dataFunc(e)]));
  }
 
 /**
@@ -20014,6 +20010,7 @@ async function main(api, billComIntegrationBase = new _common_airtable_js__WEBPA
             }));
     const chartOfAccounts = await getNames('ChartOfAccount');
     const customers = await getNames('Customer');
+    const classes = await getNames('ActgClass');
 
     // Initialize sync changes.
     const bills = await billComApi.listActive('Bill');
@@ -20049,6 +20046,8 @@ async function main(api, billComIntegrationBase = new _common_airtable_js__WEBPA
               'Amount': item.amount,
               [billComIdFieldName('Customer')]: item.customerId,
               'Customer': customers.get(item.customerId),
+              [billComIdFieldName('Class')]: item.actgClassId,
+              'Class': classes.get(item.actgClassId),
               'Invoice ID': bill.invoiceNumber,
               'Approval Status': approvalStatus,
               'Approved': approvalStatus === 'Approved',
