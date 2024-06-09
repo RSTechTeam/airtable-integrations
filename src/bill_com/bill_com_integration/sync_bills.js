@@ -3,6 +3,7 @@
 import {Base} from '../../common/airtable.js';
 import {billComTransformUrl} from '../common/inputs.js';
 import {getYyyyMmDd} from '../../common/utils.js';
+import {log} from '../../common/github_actions_core.js';
 import * as sync from '../../common/sync.js';
 
 /** Bill.com Bill Approval Statuses. */
@@ -134,7 +135,18 @@ export async function main(api, billComIntegrationBase = new Base()) {
             }));
     const chartOfAccounts = await getNames('ChartOfAccount');
     const customers = await getNames('Customer');
-    const classes = await getNames('ActgClass');
+    let classes;
+    try {
+      classes = await getNames('ActgClass');
+    } catch (err) {
+
+      // Handle no Classes.
+      if (err.message.match(/BDC_1145/)) {
+        log(`${orgCode} does not use Classes: ${err.message}`);
+      } else {
+        throw err;
+      }
+    }
 
     // Initialize sync changes.
     const bills = await billComApi.listActive('Bill');
@@ -170,8 +182,8 @@ export async function main(api, billComIntegrationBase = new Base()) {
               'Amount': item.amount,
               [billComIdFieldName('Customer')]: item.customerId,
               'Customer': customers.get(item.customerId),
-              [billComIdFieldName('Class')]: item.actgClassId,
-              'Class': classes.get(item.actgClassId),
+              [billComIdFieldName('Class')]: item?.actgClassId,
+              'Class': classes?.get(item?.actgClassId),
               'Invoice ID': bill.invoiceNumber,
               'Approval Status': approvalStatus,
               'Approved': approvalStatus === 'Approved',

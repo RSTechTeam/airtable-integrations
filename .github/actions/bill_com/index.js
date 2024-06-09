@@ -19873,8 +19873,10 @@ __nccwpck_require__.r(__webpack_exports__);
 /* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(5585);
 /* harmony import */ var _common_inputs_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(1872);
 /* harmony import */ var _common_utils_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(381);
-/* harmony import */ var _common_sync_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(3599);
+/* harmony import */ var _common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(1444);
+/* harmony import */ var _common_sync_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(3599);
 /** @fileoverview Syncs Bill.com Bill Line Item data into Airtable. */
+
 
 
 
@@ -20010,7 +20012,18 @@ async function main(api, billComIntegrationBase = new _common_airtable_js__WEBPA
             }));
     const chartOfAccounts = await getNames('ChartOfAccount');
     const customers = await getNames('Customer');
-    const classes = await getNames('ActgClass');
+    let classes;
+    try {
+      classes = await getNames('ActgClass');
+    } catch (err) {
+
+      // Handle no Classes.
+      if (err.message.match(/BDC_1145/)) {
+        (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_3__/* .log */ .cM)(`${orgCode} does not use Classes: ${err.message}`);
+      } else {
+        throw err;
+      }
+    }
 
     // Initialize sync changes.
     const bills = await billComApi.listActive('Bill');
@@ -20046,8 +20059,8 @@ async function main(api, billComIntegrationBase = new _common_airtable_js__WEBPA
               'Amount': item.amount,
               [billComIdFieldName('Customer')]: item.customerId,
               'Customer': customers.get(item.customerId),
-              [billComIdFieldName('Class')]: item.actgClassId,
-              'Class': classes.get(item.actgClassId),
+              [billComIdFieldName('Class')]: item?.actgClassId,
+              'Class': classes?.get(item?.actgClassId),
               'Invoice ID': bill.invoiceNumber,
               'Approval Status': approvalStatus,
               'Approved': approvalStatus === 'Approved',
@@ -20064,13 +20077,13 @@ async function main(api, billComIntegrationBase = new _common_airtable_js__WEBPA
         await billComIntegrationBase.select(
             BILL_REPORTING_TABLE, '', `Org = '${orgCode} (${mso})'`);
     const {updates, creates, removes} =
-        _common_sync_js__WEBPACK_IMPORTED_MODULE_3__/* .syncChanges */ .U4(
+        _common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .syncChanges */ .U4(
             // Source
             changes,
             // Mapping
-            _common_sync_js__WEBPACK_IMPORTED_MODULE_3__/* .getMapping */ .tj(airtableRecords, primaryBillComId),
+            _common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .getMapping */ .tj(airtableRecords, primaryBillComId),
             // Destination IDs
-            _common_sync_js__WEBPACK_IMPORTED_MODULE_3__/* .getAirtableRecordIds */ .D2(airtableRecords));
+            _common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .getAirtableRecordIds */ .D2(airtableRecords));
 
     // Create new table records from new Bill.com data.
     await billComIntegrationBase.create(
@@ -20094,15 +20107,15 @@ async function main(api, billComIntegrationBase = new _common_airtable_js__WEBPA
         BILL_REPORTING_TABLE,
         [
           ...(await Promise.all(
-              _common_sync_js__WEBPACK_IMPORTED_MODULE_3__/* .filterMap */ .DZ(
+              _common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .filterMap */ .DZ(
                   Array.from(updates),
                   ([id, update]) =>
                       airtableLastUpdatedTimes.get(id) <
                           normalizeTime(update['Last Updated Time']),
                   async ([id, update]) =>
-                      _common_sync_js__WEBPACK_IMPORTED_MODULE_3__/* .airtableRecordUpdate */ .vw(
+                      _common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .airtableRecordUpdate */ .vw(
                           [id, await inPlaceDocuments(update)])))),
-          ...Array.from(removes, _common_sync_js__WEBPACK_IMPORTED_MODULE_3__/* .airtableRecordDeactivate */ .g6),
+          ...Array.from(removes, _common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .airtableRecordDeactivate */ .g6),
         ]);
   }
 }
