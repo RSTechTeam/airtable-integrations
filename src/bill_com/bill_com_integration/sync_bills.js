@@ -233,7 +233,7 @@ export async function main(api, billComIntegrationBase = new Base()) {
               sync.filterMap(
                   Array.from(updates),
                   ([id, update]) =>
-                      airtableLastUpdatedTimes.get(id) <
+                      airtableLastUpdatedTimes.get(id) !==
                           normalizeTime(update['Last Updated Time']),
                   async ([id, update]) =>
                       sync.airtableRecordUpdate(

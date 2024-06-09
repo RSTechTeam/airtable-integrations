@@ -20110,7 +20110,7 @@ async function main(api, billComIntegrationBase = new _common_airtable_js__WEBPA
               _common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .filterMap */ .DZ(
                   Array.from(updates),
                   ([id, update]) =>
-                      airtableLastUpdatedTimes.get(id) <
+                      airtableLastUpdatedTimes.get(id) !==
                           normalizeTime(update['Last Updated Time']),
                   async ([id, update]) =>
                       _common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .airtableRecordUpdate */ .vw(
