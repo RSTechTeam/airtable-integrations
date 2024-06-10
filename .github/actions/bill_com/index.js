@@ -20130,10 +20130,12 @@ __nccwpck_require__.r(__webpack_exports__);
 /* harmony export */   "main": () => (/* binding */ main)
 /* harmony export */ });
 /* harmony import */ var _common_api_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(6362);
-/* harmony import */ var _common_sync_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(3599);
-/* harmony import */ var _common_constants_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(9447);
-/* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(5585);
+/* harmony import */ var _common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(1444);
+/* harmony import */ var _common_sync_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(3599);
+/* harmony import */ var _common_constants_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(9447);
+/* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(5585);
 /** @fileoverview Syncs Bill.com Customers from Airtable to Bill.com. */
+
 
 
 
@@ -20145,20 +20147,22 @@ __nccwpck_require__.r(__webpack_exports__);
  * @param {!MsoBase=} airtableBase
  * @return {!Promise<undefined>}
  */
-async function main(billComApi, airtableBase = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_2__/* .MsoBase */ .F()) {
+async function main(billComApi, airtableBase = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_3__/* .MsoBase */ .F()) {
   const AIRTABLE_CUSTOMERS_TABLE = 'Internal Customers';
 
   // Sync for each Org/MSO.
+  (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_1__/* .addSummaryTableRow */ .QS)(['MSO', 'Updates', 'Creates', 'Removes'], true);
   for await (const mso of airtableBase.iterateMsos()) {
     if (!mso.get('Use Customers?')) continue;
 
-    await billComApi.login(mso.get('Code'));
+    const msoCode = mso.get('Code');
+    await billComApi.login(msoCode);
     const parentCustomerId = mso.get('Internal Customer ID');
     const airtableCustomers =
         await airtableBase.select(AIRTABLE_CUSTOMERS_TABLE);
 
     const {updates, creates, removes} =
-        (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_3__/* .syncChanges */ .U4)(
+        (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .syncChanges */ .U4)(
             // Source
             new Map(
                 airtableCustomers.map(
@@ -20171,7 +20175,7 @@ async function main(billComApi, airtableBase = new _common_airtable_js__WEBPACK_
                       },
                     ])),
             // Mapping
-            (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_3__/* .getMapping */ .tj)(airtableCustomers, _common_constants_js__WEBPACK_IMPORTED_MODULE_1__/* .MSO_BILL_COM_ID */ .yG, false),
+            (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .getMapping */ .tj)(airtableCustomers, _common_constants_js__WEBPACK_IMPORTED_MODULE_2__/* .MSO_BILL_COM_ID */ .yG, false),
             // Destination IDs
             new Set(
                 Array.from(
@@ -20188,7 +20192,7 @@ async function main(billComApi, airtableBase = new _common_airtable_js__WEBPACK_
                 async ([id, create]) => ({
                   id,
                   fields: {
-                    [_common_constants_js__WEBPACK_IMPORTED_MODULE_1__/* .MSO_BILL_COM_ID */ .yG]:
+                    [_common_constants_js__WEBPACK_IMPORTED_MODULE_2__/* .MSO_BILL_COM_ID */ .yG]:
                       await billComApi.create('Customer', create),
                   },
                 }))));
@@ -20199,6 +20203,7 @@ async function main(billComApi, airtableBase = new _common_airtable_js__WEBPACK_
           ...Array.from(updates, ([id, update]) => ({id, ...update})),
           ...Array.from(removes, id => ({id, isActive: _common_api_js__WEBPACK_IMPORTED_MODULE_0__/* .ActiveStatus.INACTIVE */ .tV.INACTIVE})),
         ]);
+    (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_1__/* .addSummaryTableRow */ .QS)([msoCode, updates.size, creates.size, removes.size]);
   }
 }
 
@@ -20812,7 +20817,7 @@ switch ((0,_common_inputs_js__WEBPACK_IMPORTED_MODULE_7__/* .fileId */ .o8)()) {
 }
 
 const billComApi = await (0,_common_api_js__WEBPACK_IMPORTED_MODULE_8__/* .getApi */ .ac)();
-await imp.main(billComApi).catch(_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_6__/* .error */ .vU);
+await imp.main(billComApi).catch(_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_6__/* .error */ .vU).finally(_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_6__/* .writeSummary */ .A8);
 
 __webpack_handle_async_dependencies__();
 }, 1);
@@ -21010,6 +21015,8 @@ class MsoBase extends Base {
 /* harmony export */   "ZK": () => (/* binding */ warn),
 /* harmony export */   "Np": () => (/* binding */ getInput),
 /* harmony export */   "vU": () => (/* binding */ error),
+/* harmony export */   "QS": () => (/* binding */ addSummaryTableRow),
+/* harmony export */   "A8": () => (/* binding */ writeSummary),
 /* harmony export */   "u2": () => (/* binding */ logJson)
 /* harmony export */ });
 /* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(6024);
@@ -21032,6 +21039,9 @@ const log = _actions_core__WEBPACK_IMPORTED_MODULE_0__.info;
 /** @type {function(string)} */
 const warn = _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning;
 
+/** @type {Array<!Object<string, *>>} */
+const summaryTableData = [];
+
 /**
  * @param {string} input
  * @return {function(): string} required input value
@@ -21047,6 +21057,25 @@ function getInput(input) {
 function error(err) {
   _actions_core__WEBPACK_IMPORTED_MODULE_0__.setFailed(err);
   throw err;
+}
+
+/**
+ * @param {string[]} row
+ * @param {boolean=} header
+ */
+function addSummaryTableRow(row, header = false) {
+  summaryTableData = [
+    ...summaryTableData,
+    ...row.map(data => ({data: data, header: header})),
+  ];
+}
+
+/** Writes the summary, along with any table data. */
+function writeSummary() {
+  if (summaryTableData.length > 0) {
+    _actions_core__WEBPACK_IMPORTED_MODULE_0__.summary.addTable(summaryTableData);
+  }
+  _actions_core__WEBPACK_IMPORTED_MODULE_0__.summary.write();
 }
 
 /**

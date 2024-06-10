@@ -1,6 +1,7 @@
 /** @fileoverview Syncs Bill.com Customers from Airtable to Bill.com. */
 
 import {ActiveStatus, filter} from '../common/api.js';
+import {addSummaryTableRow} from '../../common/github_actions_core.js';
 import {getMapping, syncChanges} from '../../common/sync.js';
 import {MSO_BILL_COM_ID} from '../common/constants.js';
 import {MsoBase} from '../../common/airtable.js';
@@ -14,10 +15,12 @@ export async function main(billComApi, airtableBase = new MsoBase()) {
   const AIRTABLE_CUSTOMERS_TABLE = 'Internal Customers';
 
   // Sync for each Org/MSO.
+  addSummaryTableRow(['MSO', 'Updates', 'Creates', 'Removes'], true);
   for await (const mso of airtableBase.iterateMsos()) {
     if (!mso.get('Use Customers?')) continue;
 
-    await billComApi.login(mso.get('Code'));
+    const msoCode = mso.get('Code');
+    await billComApi.login(msoCode);
     const parentCustomerId = mso.get('Internal Customer ID');
     const airtableCustomers =
         await airtableBase.select(AIRTABLE_CUSTOMERS_TABLE);
@@ -64,5 +67,6 @@ export async function main(billComApi, airtableBase = new MsoBase()) {
           ...Array.from(updates, ([id, update]) => ({id, ...update})),
           ...Array.from(removes, id => ({id, isActive: ActiveStatus.INACTIVE})),
         ]);
+    addSummaryTableRow([msoCode, updates.size, creates.size, removes.size]);
   }
 }

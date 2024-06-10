@@ -16,6 +16,9 @@ export const log = core.info;
 /** @type {function(string)} */
 export const warn = core.warning;
 
+/** @type {Array<!Object<string, *>>} */
+const summaryTableData = [];
+
 /**
  * @param {string} input
  * @return {function(): string} required input value
@@ -31,6 +34,25 @@ export function getInput(input) {
 export function error(err) {
   core.setFailed(err);
   throw err;
+}
+
+/**
+ * @param {string[]} row
+ * @param {boolean=} header
+ */
+export function addSummaryTableRow(row, header = false) {
+  summaryTableData = [
+    ...summaryTableData,
+    ...row.map(data => ({data: data, header: header})),
+  ];
+}
+
+/** Writes the summary, along with any table data. */
+export function writeSummary() {
+  if (summaryTableData.length > 0) {
+    core.summary.addTable(summaryTableData);
+  }
+  core.summary.write();
 }
 
 /**

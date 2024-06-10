@@ -21069,7 +21069,7 @@ class MsoBase extends (/* unused pure expression or super */ null && (Base)) {
 /* harmony export */   "Np": () => (/* binding */ getInput),
 /* harmony export */   "vU": () => (/* binding */ error)
 /* harmony export */ });
-/* unused harmony exports log, logJson */
+/* unused harmony exports log, addSummaryTableRow, writeSummary, logJson */
 /* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(6024);
 /* harmony import */ var _utils_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(381);
 /**
@@ -21090,6 +21090,9 @@ const log = _actions_core__WEBPACK_IMPORTED_MODULE_0__.info;
 /** @type {function(string)} */
 const warn = _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning;
 
+/** @type {Array<!Object<string, *>>} */
+const summaryTableData = (/* unused pure expression or super */ null && ([]));
+
 /**
  * @param {string} input
  * @return {function(): string} required input value
@@ -21105,6 +21108,25 @@ function getInput(input) {
 function error(err) {
   _actions_core__WEBPACK_IMPORTED_MODULE_0__.setFailed(err);
   throw err;
+}
+
+/**
+ * @param {string[]} row
+ * @param {boolean=} header
+ */
+function addSummaryTableRow(row, header = false) {
+  summaryTableData = [
+    ...summaryTableData,
+    ...row.map(data => ({data: data, header: header})),
+  ];
+}
+
+/** Writes the summary, along with any table data. */
+function writeSummary() {
+  if (summaryTableData.length > 0) {
+    core.summary.addTable(summaryTableData);
+  }
+  core.summary.write();
 }
 
 /**

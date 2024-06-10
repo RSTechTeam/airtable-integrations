@@ -6,7 +6,7 @@ import * as billComIntegrationSync from './bill_com_integration/sync.js';
 import * as billComIntegrationSyncBills from './bill_com_integration/sync_bills.js';
 import * as billComIntegrationSyncInternalCustomers from './bill_com_integration/sync_internal_customers.js';
 import * as doorKnockingCreateVendor from './door_knocking/create_vendor.js';
-import {error} from '../common/github_actions_core.js';
+import {error, writeSummary} from '../common/github_actions_core.js';
 import {fileId} from './common/inputs.js';
 import {getApi} from './common/api.js';
 
@@ -35,4 +35,4 @@ switch (fileId()) {
 }
 
 const billComApi = await getApi();
-await imp.main(billComApi).catch(error);
+await imp.main(billComApi).catch(error).finally(writeSummary);
