@@ -21073,7 +21073,7 @@ function addSummaryTableRow(row, header = false) {
 /** Writes the summary, along with any table data. */
 function writeSummary() {
   if (summaryTableData.length > 0) {
-    _actions_core__WEBPACK_IMPORTED_MODULE_0__.summary.addTable(summaryTableData);
+    _actions_core__WEBPACK_IMPORTED_MODULE_0__.summary.addTable([summaryTableData]);
   }
   _actions_core__WEBPACK_IMPORTED_MODULE_0__.summary.write();
 }

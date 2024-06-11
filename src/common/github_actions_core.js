@@ -50,7 +50,7 @@ export function addSummaryTableRow(row, header = false) {
 /** Writes the summary, along with any table data. */
 export function writeSummary() {
   if (summaryTableData.length > 0) {
-    core.summary.addTable(summaryTableData);
+    core.summary.addTable([summaryTableData]);
   }
   core.summary.write();
 }
