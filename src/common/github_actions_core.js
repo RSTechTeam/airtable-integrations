@@ -17,7 +17,7 @@ export const log = core.info;
 export const warn = core.warning;
 
 /** @type {Array<!Object<string, *>>} */
-const summaryTableData = [];
+let summaryTableData = [];
 
 /**
  * @param {string} input

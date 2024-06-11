@@ -21040,7 +21040,7 @@ const log = _actions_core__WEBPACK_IMPORTED_MODULE_0__.info;
 const warn = _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning;
 
 /** @type {Array<!Object<string, *>>} */
-const summaryTableData = [];
+let summaryTableData = [];
 
 /**
  * @param {string} input
