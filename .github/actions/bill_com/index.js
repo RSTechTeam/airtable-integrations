@@ -20203,7 +20203,11 @@ async function main(billComApi, airtableBase = new _common_airtable_js__WEBPACK_
           ...Array.from(updates, ([id, update]) => ({id, ...update})),
           ...Array.from(removes, id => ({id, isActive: _common_api_js__WEBPACK_IMPORTED_MODULE_0__/* .ActiveStatus.INACTIVE */ .tV.INACTIVE})),
         ]);
-    (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_1__/* .addSummaryTableRow */ .QS)([msoCode, updates.size, creates.size, removes.size]);
+    (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_1__/* .addSummaryTableRow */ .QS)([
+      msoCode,
+      ...[updates, creates, removes].map(
+          arrayLike => arrayLike.size > 0 ? arrayLike.size : '-'),
+    ]);
   }
 }
 
@@ -21040,7 +21044,7 @@ const log = _actions_core__WEBPACK_IMPORTED_MODULE_0__.info;
 const warn = _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning;
 
 /** @type {Array<!Object<string, *>>} */
-let summaryTableData = [];
+const summaryTableData = [];
 
 /**
  * @param {string} input
@@ -21064,16 +21068,13 @@ function error(err) {
  * @param {boolean=} header
  */
 function addSummaryTableRow(row, header = false) {
-  summaryTableData = [
-    ...summaryTableData,
-    ...row.map(data => ({data: data, header: header})),
-  ];
+  summaryTableData.push(row.map(data => ({data: data, header: header})));
 }
 
 /** Writes the summary, along with any table data. */
 function writeSummary() {
   if (summaryTableData.length > 0) {
-    _actions_core__WEBPACK_IMPORTED_MODULE_0__.summary.addTable([summaryTableData]);
+    _actions_core__WEBPACK_IMPORTED_MODULE_0__.summary.addTable(summaryTableData);
   }
   _actions_core__WEBPACK_IMPORTED_MODULE_0__.summary.write();
 }

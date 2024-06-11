@@ -67,6 +67,10 @@ export async function main(billComApi, airtableBase = new MsoBase()) {
           ...Array.from(updates, ([id, update]) => ({id, ...update})),
           ...Array.from(removes, id => ({id, isActive: ActiveStatus.INACTIVE})),
         ]);
-    addSummaryTableRow([msoCode, updates.size, creates.size, removes.size]);
+    addSummaryTableRow([
+      msoCode,
+      ...[updates, creates, removes].map(
+          arrayLike => arrayLike.size > 0 ? arrayLike.size : '-'),
+    ]);
   }
 }

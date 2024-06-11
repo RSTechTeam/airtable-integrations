@@ -17,7 +17,7 @@ export const log = core.info;
 export const warn = core.warning;
 
 /** @type {Array<!Object<string, *>>} */
-let summaryTableData = [];
+const summaryTableData = [];
 
 /**
  * @param {string} input
@@ -41,16 +41,13 @@ export function error(err) {
  * @param {boolean=} header
  */
 export function addSummaryTableRow(row, header = false) {
-  summaryTableData = [
-    ...summaryTableData,
-    ...row.map(data => ({data: data, header: header})),
-  ];
+  summaryTableData.push(row.map(data => ({data: data, header: header})));
 }
 
 /** Writes the summary, along with any table data. */
 export function writeSummary() {
   if (summaryTableData.length > 0) {
-    core.summary.addTable([summaryTableData]);
+    core.summary.addTable(summaryTableData);
   }
   core.summary.write();
 }

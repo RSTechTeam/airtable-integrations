@@ -21091,7 +21091,7 @@ const log = _actions_core__WEBPACK_IMPORTED_MODULE_0__.info;
 const warn = _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning;
 
 /** @type {Array<!Object<string, *>>} */
-let summaryTableData = (/* unused pure expression or super */ null && ([]));
+const summaryTableData = (/* unused pure expression or super */ null && ([]));
 
 /**
  * @param {string} input
@@ -21115,16 +21115,13 @@ function error(err) {
  * @param {boolean=} header
  */
 function addSummaryTableRow(row, header = false) {
-  summaryTableData = [
-    ...summaryTableData,
-    ...row.map(data => ({data: data, header: header})),
-  ];
+  summaryTableData.push(row.map(data => ({data: data, header: header})));
 }
 
 /** Writes the summary, along with any table data. */
 function writeSummary() {
   if (summaryTableData.length > 0) {
-    core.summary.addTable([summaryTableData]);
+    core.summary.addTable(summaryTableData);
   }
   core.summary.write();
 }
