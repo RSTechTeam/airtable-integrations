@@ -74,7 +74,7 @@ const parseConfig = {
       }
 
       const {updates, creates} =
-          sync.syncChanges(
+          syncChanges(
               // Source
               new Map(results.data.map(row => [row['Expense ID'], row])),
               // Mapping

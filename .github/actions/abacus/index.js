@@ -20802,7 +20802,7 @@ const parseConfig = {
       }
 
       const {updates, creates} =
-          sync.syncChanges(
+          (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_5__/* .syncChanges */ .U4)(
               // Source
               new Map(results.data.map(row => [row['Expense ID'], row])),
               // Mapping
@@ -21166,10 +21166,11 @@ function logJson(endpoint, json) {
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
 
 /* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
+/* harmony export */   "U4": () => (/* binding */ syncChanges),
 /* harmony export */   "tj": () => (/* binding */ getMapping),
 /* harmony export */   "vw": () => (/* binding */ airtableRecordUpdate)
 /* harmony export */ });
-/* unused harmony exports syncChanges, filterMap, getAirtableRecordIds, airtableRecordDeactivate */
+/* unused harmony exports filterMap, getAirtableRecordIds, airtableRecordDeactivate */
 /** @fileoverview Utilities for syncing data from one datasource to another. */
 
 /**
