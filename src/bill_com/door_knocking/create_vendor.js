@@ -11,25 +11,27 @@ import {PRIMARY_ORG} from '../common/constants.js';
 export async function main(billComApi, airtableBase = new Base()) {
   await billComApi.primaryOrgLogin();
   await airtableBase.selectAndUpdate(
-      'Jotform',
-      'Create Bill.com Vendor',
+      'Intake Forms',
+      'GitHub Action: Create Bill.com Vendor',
       async (record) => {
+        const name = record.get('First name') + ' ' + record.get('Last name');
         const vendorId =
             await billComApi.create(
                 'Vendor',
                 {
-                  name: `${record.get('Name')} (STV)`,
-                  nameOnCheck: record.get('Name'),
-                  address1: record.get('Street Address'),
-                  address2: record.get('Street Address Line 2'),
-                  addressCity: record.get('City'),
-                  addressState: record.get('State'),
-                  addressZip: record.get('Zip Code'),
+                  name: `${name} (STV)`,
+                  nameOnCheck: name,
+                  address1: record.get('Mailing address (line 1)'),
+                  address2: record.get('Mailing address (line 2)'),
+                  addressCity: record.get('Mailing address (city)'),
+                  addressState: record.get('Mailing address (state)'),
+                  addressZip:
+                    record.get('Mailing address (zip code)').toString(),
                   addressCountry: 'USA',
-                  email: record.get('E-mail Address'),
-                  phone: record.get('Mobile Phone'),
+                  email: record.get('Email'),
+                  phone: record.get('Cell number'),
                 });
 
-        return {[`${PRIMARY_ORG} Bill.com Vendor ID`]: vendorId};
+        return {['Bill.com Vendor ID']: vendorId};
       });
 }
