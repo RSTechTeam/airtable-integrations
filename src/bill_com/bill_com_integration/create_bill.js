@@ -8,6 +8,9 @@ import {MSO_BILL_COM_ID} from '../common/constants.js';
 import {MsoBase} from '../../common/airtable.js';
 import {warn} from '../../common/github_actions_core.js';
 
+/** Bill.com Vendor tax ID types. */
+const taxIdTypes = new Map([['EIN', '1'], ['SSN', '2']]);
+
 /** The Bill.com API connection. */
 let billComApi;
 
@@ -72,6 +75,7 @@ async function getVendorId(checkRequest) {
 
   // Create new Vendor and ID.
   const zipCode = newVendor.get('Zip Code');
+  const taxIdType = newVendor.get('Tax ID Type');
   vendorId =
       await billComApi.create(
           'Vendor',
@@ -87,6 +91,7 @@ async function getVendorId(checkRequest) {
             phone: newVendor.get('Phone'),
             track1099: newVendor.get('1099 Vendor?'),
             taxId: newVendor.get('Tax ID'),
+            taxIdType: taxIdType && taxIdTypes.get(taxIdType),
           });
   await billComIntegrationBase.update(
       NEW_VENDORS_TABLE,
