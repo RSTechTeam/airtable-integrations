@@ -20747,6 +20747,7 @@ let billComIntegrationBase;
 let firstChunk;
 let createPromises = [];
 let invoiceDate;
+let dueDate;
 let approvers;
 let project;
 let category;
@@ -20789,6 +20790,7 @@ const parseConfig = {
                 results.data.map(
                     async row => ({
                       invoiceDate: invoiceDate,
+                      dueDate: dueDate,
                       approvers: approvers,
                       invoiceNumber: row['Invoice ID'],
                       description: row['Description'],
@@ -20850,6 +20852,7 @@ async function main(api, airtableBase = new _common_airtable_js__WEBPACK_IMPORTE
 
         // Initialize form parameters.
         invoiceDate = record.get('Invoice Date');
+        dueDate = record.get('Due Date');
         approvers = record.get(`Approver ${_common_constants_js__WEBPACK_IMPORTED_MODULE_4__/* .MSO_BILL_COM_ID */ .yG}s`);
         project =
             await getBillComId('Internal Customers', record.get('Project')[0]);
