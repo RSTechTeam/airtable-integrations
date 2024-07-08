@@ -1,5 +1,6 @@
 /** @fileoverview Entrypoint for choosing which file to run. */
 
+import * as billComIntegrationBulkCreateBills from './bill_com_integration/bulk_create_bills.js';
 import * as billComIntegrationCreateApprover from './bill_com_integration/create_approver.js';
 import * as billComIntegrationCreateBill from './bill_com_integration/create_bill.js';
 import * as billComIntegrationSync from './bill_com_integration/sync.js';
@@ -12,6 +13,9 @@ import {getApi} from './common/api.js';
 
 let imp;
 switch (fileId()) {
+  case 'bill_com_integration_bulk_create_bills':
+    imp = billComIntegrationBulkCreateBills;
+    break;
   case 'bill_com_integration_create_approver':
     imp = billComIntegrationCreateApprover;
     break;

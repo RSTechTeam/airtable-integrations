@@ -20,6 +20,7 @@ jobs:
           'bill_com_integration_sync_internal_customers',
           'bill_com_integration_sync',
           # Creates that reference synced data
+          'bill_com_integration_bulk_create_bills',
           'bill_com_integration_create_bill',
           # Sync including more recently created data
           'bill_com_integration_sync_bills',
