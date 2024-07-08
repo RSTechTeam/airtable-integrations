@@ -83,7 +83,7 @@ const parseConfig = {
                                   addressCity: row['City'],
                                   addressState: row['State'],
                                   addressZip: row['Zip Code'],
-                                  addressCountry: row['Country'],
+                                  addressCountry: row['Country'] || 'USA',
                                 }),
                     })))),
       ]
