@@ -20798,7 +20798,7 @@ const parseConfig = {
                         entity: 'BillLineItem',
                         customerId: project,
                         chartOfAccountId: category,
-                        amount: row['Amount ($)'],
+                        amount: parseFloat(row['Amount ($)']),
                       }],
                       vendorId:
                         row['Vendor ID'] ||
