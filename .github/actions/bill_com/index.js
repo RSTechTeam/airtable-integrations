@@ -20851,46 +20851,47 @@ async function main(billComApi, airtableBase = new airtable/* Base */.X()) {
             await getBillComId('Chart of Accounts', record.get('Category')[0]);
         const parseConfig = {
           chunk:
-            async (results, parser) => billComApi.bulk(
-                'Create',
-                'Bill',
-                await Promise.all(
-                    results.data.map(
-                        async row => ({
-                          invoiceDate: record.get('Invoice Date'),
-                          dueDate: record.get('Due Date'),
-                          approvers: record.get(`Approver ${constants/* MSO_BILL_COM_ID */.yG}s`),
-                          invoiceNumber: row['Invoice ID'],
-                          description: row['Description'],
-                          billLineItems: [{
-                            entity: 'BillLineItem',
-                            customerId: project,
-                            chartOfAccountId: category,
-                            amount: parseFloat(row['Amount ($)']),
-                          }],
-                          vendorId:
-                            row['Vendor ID'] ||
-                                await billComApi.create(
-                                    'Vendor',
-                                    {
-                                      name: row['Name'],
-                                      taxId: row['Tax ID'],
-                                      taxIdType: '2', // SSN
-                                      email: row['Email'],
-                                      phone: row['Phone'],
-                                      address1: row['Address Line 1'],
-                                      address2: row['Address Line 2'],
-                                      addressCity: row['City'],
-                                      addressState: row['State'],
-                                      addressZip: row['Zip Code'],
-                                      addressCountry: row['Country'] || 'USA',
-                                    }),
-                        })))),
+            (results, parser) => Promise.all(
+                results.data.map(
+                    async row => ({
+                      invoiceDate: record.get('Invoice Date'),
+                      dueDate: record.get('Due Date'),
+                      approvers: record.get(`Approver ${constants/* MSO_BILL_COM_ID */.yG}s`),
+                      invoiceNumber: row['Invoice ID'],
+                      description: row['Description'],
+                      billLineItems: [{
+                        entity: 'BillLineItem',
+                        customerId: project,
+                        chartOfAccountId: category,
+                        amount: parseFloat(row['Amount ($)']),
+                      }],
+                      vendorId:
+                        row['Vendor ID'] ||
+                            await billComApi.create(
+                                'Vendor',
+                                {
+                                  name: row['Name'],
+                                  taxId: row['Tax ID'],
+                                  taxIdType: '2', // SSN
+                                  email: row['Email'],
+                                  phone: row['Phone'],
+                                  address1: row['Address Line 1'],
+                                  address2: row['Address Line 2'],
+                                  addressCity: row['City'],
+                                  addressState: row['State'],
+                                  addressZip: row['Zip Code'],
+                                  addressCountry: row['Country'] || 'USA',
+                                }),
+                    }))),
         };
 
         // Parse CSV.
-        await Promise.all(
-            record.get('CSV').map(csv => parse(csv, header, parseConfig)));
+        await billComApi.bulk(
+            'Create',
+            'Bill',
+            await Promise.all(
+                record.get('CSV').flatMap(
+                    csv => parse(csv, header, parseConfig))));
         return {'Processed': true};
       }
     );
