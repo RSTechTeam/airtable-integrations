@@ -20769,29 +20769,30 @@ async function parse(csv, header, config) {
   delete config.chunk;
 
   // Execute parse.
-  papaparse.parse(
-      response.body,
-      {
-        ...config,
-        header: true,
-        error: (err, file) => (0,github_actions_core/* error */.vU)(err),
-        chunk:
-          (results, parser) => {
+  return new Promise(
+      resolve => papaparse.parse(
+          response.body,
+          {
+            ...config,
+            header: true,
+            error: (err, file) => (0,github_actions_core/* error */.vU)(err),
+            complete: (results, parser) => resolve(Promise.all(promises)),
+            chunk:
+              (results, parser) => {
 
-            // Validate header during first chunk.
-            if (firstChunk) {
-              firstChunk = false;
-              const gotHeader = results.meta.fields;
-              if (JSON.stringify(gotHeader) !== JSON.stringify(header)) {
-                (0,github_actions_core/* error */.vU)(`Got header: ${gotHeader}\nWant header: ${header}`);
-              }
-            }
+                // Validate header during first chunk.
+                if (firstChunk) {
+                  firstChunk = false;
+                  const gotHeader = results.meta.fields;
+                  if (JSON.stringify(gotHeader) !== JSON.stringify(header)) {
+                    (0,github_actions_core/* error */.vU)(`Got header: ${gotHeader}\nWant header: ${header}`);
+                  }
+                }
 
-            // Parse chunk.
-            promises.push(chunk(results, parser));
-          },
-      });
-  return Promise.all(promises);
+                // Parse chunk.
+                promises.push(chunk(results, parser));
+              },
+          }));
 }
 
 ;// CONCATENATED MODULE: ./src/bill_com/bill_com_integration/bulk_create_bills.js
