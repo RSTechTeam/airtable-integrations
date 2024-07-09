@@ -21537,19 +21537,14 @@ async function main(api, airtableBase = new airtable/* MsoBase */.F()) {
             const item =
                 await billComIntegrationBase.find(
                     'Check Request Line Items', itemId);
-            const category = item.get('Category');
-            let chartOfAccountId;
-            if (category != null) {
-              chartOfAccountId =
-                  await getBillComId('Chart of Accounts', category[0]);
-            }
-
             const date = item.get('Item Expense Date');
             const description = item.get('Description');
             const lineItem = {
               entity: 'BillLineItem',
               amount: item.get('Amount'),
-              chartOfAccountId: chartOfAccountId,
+              chartOfAccountId:
+                await getBillComId(
+                    'Chart of Accounts', item.get('Category')[0]),
               customerId:
                 await getBillComId(
                     'Internal Customers', item.get('Project')[0]),
