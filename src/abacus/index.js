@@ -30,7 +30,7 @@ const expenseSources = new Base();
 const expenseRecords =
     getMapping(await expenseSources.select(ABACUS_TABLE), 'Expense ID');
 
-// Create Papa Parse Config.
+// Create parse config.
 const airtableFields = Array.from(mapping.values());
 const parseConfig = {
   transformHeader: (header, index) => airtableFields[index],
@@ -76,7 +76,7 @@ const parseConfig = {
     },
 };
 
-// Parse CSVs with above Config.
+// Parse CSVs with above config.
 const importRecord =
     await expenseSources.find('Imports', airtableImportRecordId());
 await Promise.all(

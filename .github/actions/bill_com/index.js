@@ -20801,56 +20801,8 @@ async function parse(csv, header, config) {
 
 
 
-/** The Bill.com API connection. */
-let billComApi;
-
 /** The Bill.com Integration Airtable Base. */
 let billComIntegrationBase;
-
-// Create Papa Parse Config.
-let invoiceDate;
-let dueDate;
-let approvers;
-let project;
-let category;
-const parseConfig = {
-  chunk:
-    async (results, parser) => billComApi.bulk(
-        'Create',
-        'Bill',
-        await Promise.all(
-            results.data.map(
-                async row => ({
-                  invoiceDate: invoiceDate,
-                  dueDate: dueDate,
-                  approvers: approvers,
-                  invoiceNumber: row['Invoice ID'],
-                  description: row['Description'],
-                  billLineItems: [{
-                    entity: 'BillLineItem',
-                    customerId: project,
-                    chartOfAccountId: category,
-                    amount: parseFloat(row['Amount ($)']),
-                  }],
-                  vendorId:
-                    row['Vendor ID'] ||
-                        await billComApi.create(
-                            'Vendor',
-                            {
-                              name: row['Name'],
-                              taxId: row['Tax ID'],
-                              taxIdType: '2', // SSN
-                              email: row['Email'],
-                              phone: row['Phone'],
-                              address1: row['Address Line 1'],
-                              address2: row['Address Line 2'],
-                              addressCity: row['City'],
-                              addressState: row['State'],
-                              addressZip: row['Zip Code'],
-                              addressCountry: row['Country'] || 'USA',
-                            }),
-                })))),
-};
 
 /**
  * @param {string} table
@@ -20863,13 +20815,11 @@ async function getBillComId(table, airtableId) {
 }
 
 /**
- * @param {!Api} api
+ * @param {!Api} billComApi
  * @param {!MsoBase=} airtableBase
  * @return {!Promise<undefined>}
  */
-async function main(api, airtableBase = new airtable/* Base */.X()) {
-
-  billComApi = api;
+async function main(billComApi, airtableBase = new airtable/* Base */.X()) {
   billComIntegrationBase = airtableBase;
 
   const header = [
@@ -20894,16 +20844,51 @@ async function main(api, airtableBase = new airtable/* Base */.X()) {
       'New',
       async (record) => {
 
-        // Initialize form parameters.
-        invoiceDate = record.get('Invoice Date');
-        dueDate = record.get('Due Date');
-        approvers = record.get(`Approver ${constants/* MSO_BILL_COM_ID */.yG}s`);
-        project =
+        // Create parse config.
+        const project =
             await getBillComId('Internal Customers', record.get('Project')[0]);
-        category =
+        const category =
             await getBillComId('Chart of Accounts', record.get('Category')[0]);
+        const parseConfig = {
+          chunk:
+            async (results, parser) => billComApi.bulk(
+                'Create',
+                'Bill',
+                await Promise.all(
+                    results.data.map(
+                        async row => ({
+                          invoiceDate: record.get('Invoice Date'),
+                          dueDate: record.get('Due Date'),
+                          approvers: record.get(`Approver ${constants/* MSO_BILL_COM_ID */.yG}s`),
+                          invoiceNumber: row['Invoice ID'],
+                          description: row['Description'],
+                          billLineItems: [{
+                            entity: 'BillLineItem',
+                            customerId: project,
+                            chartOfAccountId: category,
+                            amount: parseFloat(row['Amount ($)']),
+                          }],
+                          vendorId:
+                            row['Vendor ID'] ||
+                                await billComApi.create(
+                                    'Vendor',
+                                    {
+                                      name: row['Name'],
+                                      taxId: row['Tax ID'],
+                                      taxIdType: '2', // SSN
+                                      email: row['Email'],
+                                      phone: row['Phone'],
+                                      address1: row['Address Line 1'],
+                                      address2: row['Address Line 2'],
+                                      addressCity: row['City'],
+                                      addressState: row['State'],
+                                      addressZip: row['Zip Code'],
+                                      addressCountry: row['Country'] || 'USA',
+                                    }),
+                        })))),
+        };
 
-        // Download and parse CSV.
+        // Parse CSV.
         await Promise.all(
             record.get('CSV').map(csv => parse(csv, header, parseConfig)));
         return {'Processed': true};

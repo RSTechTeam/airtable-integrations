@@ -18611,7 +18611,7 @@ const expenseSources = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .B
 const expenseRecords =
     (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_3__/* .getMapping */ .tj)(await expenseSources.select(ABACUS_TABLE), 'Expense ID');
 
-// Create Papa Parse Config.
+// Create parse config.
 const airtableFields = Array.from(mapping.values());
 const parseConfig = {
   transformHeader: (header, index) => airtableFields[index],
@@ -18657,7 +18657,7 @@ const parseConfig = {
     },
 };
 
-// Parse CSVs with above Config.
+// Parse CSVs with above config.
 const importRecord =
     await expenseSources.find('Imports', (0,_inputs_js__WEBPACK_IMPORTED_MODULE_0__/* .airtableImportRecordId */ .p)());
 await Promise.all(
