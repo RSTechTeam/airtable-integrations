@@ -1,12 +1,9 @@
 /** @fileoverview Imports an Abacus CSV update into Airtable. */
 
-import fetch from 'node-fetch';
-import Papa from 'papaparse';
 import {airtableImportRecordId} from './inputs.js';
 import {airtableRecordUpdate, getMapping, syncChanges} from '../common/sync.js';
 import {Base} from '../common/airtable.js';
-import {error} from '../common/github_actions_core.js';
-import {fetchError} from '../common/utils.js';
+import {parse} from '../common/csv.js';
 
 /** Abacus Airtable Table name. */
 const ABACUS_TABLE = 'Abacus';
@@ -35,10 +32,7 @@ const expenseRecords =
 
 // Create Papa Parse Config.
 const airtableFields = Array.from(mapping.values());
-let firstChunk;
-let upsertPromises = [];
 const parseConfig = {
-  header: true,
   transformHeader: (header, index) => airtableFields[index],
   transform:
     (value, header) => {
@@ -55,15 +49,6 @@ const parseConfig = {
     },
   chunk:
     (results, parser) => {
-      
-      // Validate header during first chunk.
-      if (firstChunk) {
-        firstChunk = false;
-        const gotHeader = results.meta.fields;
-        if (JSON.stringify(gotHeader) !== JSON.stringify(airtableFields)) {
-          error(`Got header: ${gotHeader}\nWant header: ${airtableFields}`);
-        }
-      }
 
       // Handle Paid/Debit Status,
       // completing Abacus CSV row alignment with Airtable Fields.
@@ -81,27 +66,19 @@ const parseConfig = {
               expenseRecords);
 
       // Launch upserts.
-      upsertPromises = [
-        ...upsertPromises,
+      return Promise.all([
         expenseSources.update(
             ABACUS_TABLE, Array.from(updates, airtableRecordUpdate)),
         expenseSources.create(
             ABACUS_TABLE,
             Array.from(creates, ([, create]) => ({fields: create}))),
-      ];
+      ]);
     },
-  error: (err, file) => error(err),
 };
 
 // Parse CSVs with above Config.
 const importRecord =
     await expenseSources.find('Imports', airtableImportRecordId());
-for (const csv of importRecord.get('CSVs')) {
-  const response = await fetch(csv.url);
-  if (!response.ok) {
-    fetchError(response.status, csv.filename, response.statusText);
-  }
-  firstChunk = true;
-  Papa.parse(response.body, parseConfig);
-}
-await Promise.all(upsertPromises);
+await Promise.all(
+    importRecord.get('CSVs').map(
+        csv => parse(csv, airtableFields, parseConfig)));

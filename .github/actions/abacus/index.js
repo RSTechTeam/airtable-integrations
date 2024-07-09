@@ -18571,16 +18571,334 @@ return new B(c,{type:"multipart/form-data; boundary="+b})}
 
 /***/ }),
 
-/***/ 4028:
+/***/ 2473:
+/***/ ((__webpack_module__, __unused_webpack___webpack_exports__, __nccwpck_require__) => {
+
+__nccwpck_require__.a(__webpack_module__, async (__webpack_handle_async_dependencies__) => {
+/* harmony import */ var _inputs_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(2568);
+/* harmony import */ var _common_sync_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(3599);
+/* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(8997);
+/* harmony import */ var _common_csv_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(2066);
+/** @fileoverview Imports an Abacus CSV update into Airtable. */
+
+
+
+
+
+
+/** Abacus Airtable Table name. */
+const ABACUS_TABLE = 'Abacus';
+
+/** Abacus to Airtable Field mapping. */
+const mapping = new Map([
+  ['Expense ID', 'Expense ID'],
+  ['Expenser Name', 'Expenser Name'],
+  ['Submitted Date', 'Submitted Date'],
+  ['Transaction Date', 'Transaction Date'],
+  ['Merchant', 'Merchant (Name)'],
+  ['Note', 'Notes'],
+  ['Category', 'Category'],
+  ['Amount', 'Amount'],
+  ['Projects', 'Project'],
+  ['Approved Date', 'Approved'],
+  ['Debit Status', 'Paid'], // Also Type
+  ['Debit Date', 'Debit Date'],
+]);
+
+// For existing Abacus Airtable Records,
+// map Abacus Expense ID to Airtable Record ID.
+const expenseSources = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .Base */ .X();
+const expenseRecords =
+    (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_3__/* .getMapping */ .tj)(await expenseSources.select(ABACUS_TABLE), 'Expense ID');
+
+// Create Papa Parse Config.
+const airtableFields = Array.from(mapping.values());
+const parseConfig = {
+  transformHeader: (header, index) => airtableFields[index],
+  transform:
+    (value, header) => {
+      switch (header) {
+      case 'Amount':
+        return Number(value);
+      case 'Approved':
+        return value > '';
+
+      // Paid/Debit Status splits to 2 Fields, so handle later (in chunk).
+      default:
+        return value === '' ? undefined : value;
+      }
+    },
+  chunk:
+    (results, parser) => {
+
+      // Handle Paid/Debit Status,
+      // completing Abacus CSV row alignment with Airtable Fields.
+      for (const row of results.data) {
+        const debitStatus = row['Paid'];
+        row['Paid'] = debitStatus !== 'pending';
+        row['Type'] = debitStatus > '' ? 'Reimbursement' : 'Card Transaction';
+      }
+
+      const {updates, creates} =
+          (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_3__/* .syncChanges */ .U4)(
+              // Source
+              new Map(results.data.map(row => [row['Expense ID'], row])),
+              // Mapping
+              expenseRecords);
+
+      // Launch upserts.
+      return Promise.all([
+        expenseSources.update(
+            ABACUS_TABLE, Array.from(updates, _common_sync_js__WEBPACK_IMPORTED_MODULE_3__/* .airtableRecordUpdate */ .vw)),
+        expenseSources.create(
+            ABACUS_TABLE,
+            Array.from(creates, ([, create]) => ({fields: create}))),
+      ]);
+    },
+};
+
+// Parse CSVs with above Config.
+const importRecord =
+    await expenseSources.find('Imports', (0,_inputs_js__WEBPACK_IMPORTED_MODULE_0__/* .airtableImportRecordId */ .p)());
+await Promise.all(
+    importRecord.get('CSVs').map(
+        csv => (0,_common_csv_js__WEBPACK_IMPORTED_MODULE_2__/* .parse */ .Q)(csv, airtableFields, parseConfig)));
+
+__webpack_handle_async_dependencies__();
+}, 1);
+
+/***/ }),
+
+/***/ 2568:
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
+
+/* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
+/* harmony export */   "p": () => (/* binding */ airtableImportRecordId)
+/* harmony export */ });
+/* harmony import */ var _common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(1444);
+/**
+ * @fileoverview Lazy evaluated inputs
+ * @see abacus/action.yml
+ */
+
+
+
+/** @type function(): string */
+const airtableImportRecordId = (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .getInput */ .Np)('airtable-import-record-id');
+
+
+/***/ }),
+
+/***/ 8997:
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
 
 
 // EXPORTS
 __nccwpck_require__.d(__webpack_exports__, {
-  "ZP": () => (/* binding */ fetch)
+  "X": () => (/* binding */ Base)
 });
 
-// UNUSED EXPORTS: AbortError, Blob, FetchError, File, FormData, Headers, Request, Response, blobFrom, blobFromSync, fileFrom, fileFromSync, isRedirect
+// UNUSED EXPORTS: MsoBase
+
+// EXTERNAL MODULE: ./node_modules/airtable/lib/airtable.js
+var airtable = __nccwpck_require__(5447);
+// EXTERNAL MODULE: ./src/common/github_actions_core.js
+var github_actions_core = __nccwpck_require__(1444);
+;// CONCATENATED MODULE: ./src/common/inputs.js
+/**
+ * @fileoverview Lazy evaluated inputs
+ * @see action.yml
+ */
+
+
+
+/** @type function(): string */
+const inputs_airtableApiKey = (0,github_actions_core/* getInput */.Np)('airtable-api-key');
+const inputs_airtableBaseId = (0,github_actions_core/* getInput */.Np)('airtable-base-id');
+
+// EXTERNAL MODULE: ./src/common/utils.js + 1 modules
+var utils = __nccwpck_require__(381);
+;// CONCATENATED MODULE: ./src/common/airtable.js
+/** @fileoverview Utilities for interacting with Airtable. */
+
+/**
+ * The official Airtable JavaScript library.
+ * https://github.com/Airtable/airtable.js
+ */
+
+
+
+
+
+/**
+ * @param {string} querying e.g., selecting, updating, etc
+ * @param {string} table
+ * @param {!Error} err
+ */
+function throwError(querying, table, err) {
+  throw new Error(
+      `Error ${querying} records in Airtable Table ${table}: ${err}`);
+}
+
+/**
+ * @param {!Promise<*>} promise
+ * @param {string} querying e.g., selecting, updating, etc
+ * @param {string} table
+ * @return {!Promise<*>}
+ */
+function catchError(promise, querying, table) {
+  return promise.catch(err => throwError(querying, table, err));
+}
+
+/**
+ * Asynchronously calls func with portions of array that are at most
+ * the max number of records that can be created or updated
+ * via an Airtable API call.
+ * @param {function(!Array<*>): !Promise<*>} func
+ * @param {!Array<*>} array
+ * @return {!Promise<!Array<*>>}
+ */
+function batch(func, array) {
+  return (0,utils/* batchAsync */.aE)(func, array, 10);
+}
+
+/** An Airtable Base to query. */
+class Base {
+
+  /**
+   * @param {string=} baseId
+   * @param {string=} apiKey
+   */
+  constructor(baseId = inputs_airtableBaseId(), apiKey = inputs_airtableApiKey()) {
+
+    /** @private @const {!Base} */
+    this.base_ = new airtable({apiKey: apiKey}).base(baseId);
+  }
+
+  /**
+   * @param {string} table
+   * @param {string=} view
+   * @param {string=} filterByFormula
+   * @return {!Promise<!Array<!Record<!TField>>>}
+   */
+  select(table, view = '', filterByFormula = '') {
+    const params = {view: view, filterByFormula: filterByFormula};
+    return catchError(
+        this.base_(table).select(params).all(), 'selecting', table);
+  }
+
+  /**
+   * @param {string} table
+   * @param {!Object[]} updates
+   * @param {string} updates[].id
+   * @param {!Object<string, *>} updates[].fields
+   * @return {!Promise<!Array<*>>}
+   */
+  update(table, updates) {
+    return catchError(
+        batch(this.base_(table).update, updates), 'updating', table);
+  }
+
+  /**
+   * Runs fieldsFunc for each record from table view
+   * and updates each record's fields using fieldsFunc's return value,
+   * if there is one.
+   * @param {string} table
+   * @param {string} view
+   * @param {function(!Record<!TField>): !Promise<?Object<string, *>>} fieldsFunc
+   * @return {!Promise<!Array<*>>}
+   */
+   async selectAndUpdate(table, view, fieldsFunc) {
+    const updates = [];
+    let firstErr;
+    for (const record of await this.select(table, view)) {
+      try {
+        const fields = await fieldsFunc(record);
+        fields && updates.push({id: record.getId(), fields: fields});
+      } catch (err) {
+        (0,github_actions_core/* warn */.ZK)(err.message);
+        firstErr ||= err;
+      }
+    }
+    const update = await this.update(table, updates);
+    firstErr && throwError('selectAndUpdating', table, firstErr);
+    return update;
+   }
+
+  /**
+   * @param {string} table
+   * @param {!Object[]} creates
+   * @param {!Object<string, *>} creates[].fields
+   * @return {!Promise<!Array<*>>}
+   */
+  create(table, creates) {
+    return catchError(
+        batch(this.base_(table).create, creates), 'creating', table);
+  }
+
+  /**
+   * @param {string} table
+   * @param {string} id
+   * @return {!Promise<!Record<!TField>>}
+   */
+  find(table, id) {
+    return catchError(this.base_(table).find(id), 'finding', table);
+  }
+}
+
+/**
+ * An Airtable Base where each Table is partitioned by MSO,
+ * enabling per MSO selects across Tables. Select methods should only be called
+ * while iterating via iterateMsos.
+ */
+class MsoBase extends (/* unused pure expression or super */ null && (Base)) {
+
+  /**
+   * @param {string=} baseId
+   * @param {string=} apiKey
+   */
+  constructor(baseId = airtableBaseId(), apiKey = airtableApiKey()) {
+    super(baseId, apiKey);
+
+    /** @private {?Record<!TField>} */
+    this.currentMso_ = null;
+    /** @return {?Record<!TField>} */
+    this.getCurrentMso = () => this.currentMso_;
+  }
+
+  /** @override */
+  select(table, view = '', filterByFormula = '') {
+    const msoFilter = `MSO = '${this.currentMso_.get('Code')}'`;
+    return super.select(
+        table,
+        view,
+        filterByFormula === '' ?
+            msoFilter : `AND(${msoFilter}, ${filterByFormula})`);
+  }
+
+  /**
+   * @param {string=} view
+   * @return {!Promise<!Iterator<!Record<!TField>>>}
+   */
+  async* iterateMsos(view = 'Org IDs') {
+    for (this.currentMso_ of await super.select('MSOs', view)) {
+      yield this.currentMso_;
+    }
+    this.currentMso_ = null;
+  }
+}
+
+
+/***/ }),
+
+/***/ 2066:
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
+
+
+// EXPORTS
+__nccwpck_require__.d(__webpack_exports__, {
+  "Q": () => (/* binding */ parse)
+});
 
 ;// CONCATENATED MODULE: external "node:http"
 const external_node_http_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:http");
@@ -20712,350 +21030,66 @@ function fixResponseChunkedTransferBadEnding(request, errorCallback) {
 	});
 }
 
-
-/***/ }),
-
-/***/ 2473:
-/***/ ((__webpack_module__, __unused_webpack___webpack_exports__, __nccwpck_require__) => {
-
-__nccwpck_require__.a(__webpack_module__, async (__webpack_handle_async_dependencies__) => {
-/* harmony import */ var node_fetch__WEBPACK_IMPORTED_MODULE_6__ = __nccwpck_require__(4028);
-/* harmony import */ var papaparse__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(1826);
-/* harmony import */ var _inputs_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(2568);
-/* harmony import */ var _common_sync_js__WEBPACK_IMPORTED_MODULE_5__ = __nccwpck_require__(3599);
-/* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(8997);
-/* harmony import */ var _common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(1444);
-/* harmony import */ var _common_utils_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(381);
-/** @fileoverview Imports an Abacus CSV update into Airtable. */
-
-
-
-
-
-
-
-
-
-/** Abacus Airtable Table name. */
-const ABACUS_TABLE = 'Abacus';
-
-/** Abacus to Airtable Field mapping. */
-const mapping = new Map([
-  ['Expense ID', 'Expense ID'],
-  ['Expenser Name', 'Expenser Name'],
-  ['Submitted Date', 'Submitted Date'],
-  ['Transaction Date', 'Transaction Date'],
-  ['Merchant', 'Merchant (Name)'],
-  ['Note', 'Notes'],
-  ['Category', 'Category'],
-  ['Amount', 'Amount'],
-  ['Projects', 'Project'],
-  ['Approved Date', 'Approved'],
-  ['Debit Status', 'Paid'], // Also Type
-  ['Debit Date', 'Debit Date'],
-]);
-
-// For existing Abacus Airtable Records,
-// map Abacus Expense ID to Airtable Record ID.
-const expenseSources = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_2__/* .Base */ .X();
-const expenseRecords =
-    (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_5__/* .getMapping */ .tj)(await expenseSources.select(ABACUS_TABLE), 'Expense ID');
-
-// Create Papa Parse Config.
-const airtableFields = Array.from(mapping.values());
-let firstChunk;
-let upsertPromises = [];
-const parseConfig = {
-  header: true,
-  transformHeader: (header, index) => airtableFields[index],
-  transform:
-    (value, header) => {
-      switch (header) {
-      case 'Amount':
-        return Number(value);
-      case 'Approved':
-        return value > '';
-
-      // Paid/Debit Status splits to 2 Fields, so handle later (in chunk).
-      default:
-        return value === '' ? undefined : value;
-      }
-    },
-  chunk:
-    (results, parser) => {
-      
-      // Validate header during first chunk.
-      if (firstChunk) {
-        firstChunk = false;
-        const gotHeader = results.meta.fields;
-        if (JSON.stringify(gotHeader) !== JSON.stringify(airtableFields)) {
-          (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_3__/* .error */ .vU)(`Got header: ${gotHeader}\nWant header: ${airtableFields}`);
-        }
-      }
-
-      // Handle Paid/Debit Status,
-      // completing Abacus CSV row alignment with Airtable Fields.
-      for (const row of results.data) {
-        const debitStatus = row['Paid'];
-        row['Paid'] = debitStatus !== 'pending';
-        row['Type'] = debitStatus > '' ? 'Reimbursement' : 'Card Transaction';
-      }
-
-      const {updates, creates} =
-          (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_5__/* .syncChanges */ .U4)(
-              // Source
-              new Map(results.data.map(row => [row['Expense ID'], row])),
-              // Mapping
-              expenseRecords);
-
-      // Launch upserts.
-      upsertPromises = [
-        ...upsertPromises,
-        expenseSources.update(
-            ABACUS_TABLE, Array.from(updates, _common_sync_js__WEBPACK_IMPORTED_MODULE_5__/* .airtableRecordUpdate */ .vw)),
-        expenseSources.create(
-            ABACUS_TABLE,
-            Array.from(creates, ([, create]) => ({fields: create}))),
-      ];
-    },
-  error: (err, file) => (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_3__/* .error */ .vU)(err),
-};
-
-// Parse CSVs with above Config.
-const importRecord =
-    await expenseSources.find('Imports', (0,_inputs_js__WEBPACK_IMPORTED_MODULE_1__/* .airtableImportRecordId */ .p)());
-for (const csv of importRecord.get('CSVs')) {
-  const response = await (0,node_fetch__WEBPACK_IMPORTED_MODULE_6__/* ["default"] */ .ZP)(csv.url);
-  if (!response.ok) {
-    (0,_common_utils_js__WEBPACK_IMPORTED_MODULE_4__/* .fetchError */ .Tl)(response.status, csv.filename, response.statusText);
-  }
-  firstChunk = true;
-  papaparse__WEBPACK_IMPORTED_MODULE_0__.parse(response.body, parseConfig);
-}
-await Promise.all(upsertPromises);
-
-__webpack_handle_async_dependencies__();
-}, 1);
-
-/***/ }),
-
-/***/ 2568:
-/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
-
-/* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
-/* harmony export */   "p": () => (/* binding */ airtableImportRecordId)
-/* harmony export */ });
-/* harmony import */ var _common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(1444);
-/**
- * @fileoverview Lazy evaluated inputs
- * @see abacus/action.yml
- */
-
-
-
-/** @type function(): string */
-const airtableImportRecordId = (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .getInput */ .Np)('airtable-import-record-id');
-
-
-/***/ }),
-
-/***/ 8997:
-/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
-
-
-// EXPORTS
-__nccwpck_require__.d(__webpack_exports__, {
-  "X": () => (/* binding */ Base)
-});
-
-// UNUSED EXPORTS: MsoBase
-
-// EXTERNAL MODULE: ./node_modules/airtable/lib/airtable.js
-var airtable = __nccwpck_require__(5447);
+// EXTERNAL MODULE: ./node_modules/papaparse/papaparse.js
+var papaparse = __nccwpck_require__(1826);
 // EXTERNAL MODULE: ./src/common/github_actions_core.js
 var github_actions_core = __nccwpck_require__(1444);
-;// CONCATENATED MODULE: ./src/common/inputs.js
-/**
- * @fileoverview Lazy evaluated inputs
- * @see action.yml
- */
-
-
-
-/** @type function(): string */
-const inputs_airtableApiKey = (0,github_actions_core/* getInput */.Np)('airtable-api-key');
-const inputs_airtableBaseId = (0,github_actions_core/* getInput */.Np)('airtable-base-id');
-
 // EXTERNAL MODULE: ./src/common/utils.js + 1 modules
 var utils = __nccwpck_require__(381);
-;// CONCATENATED MODULE: ./src/common/airtable.js
-/** @fileoverview Utilities for interacting with Airtable. */
+;// CONCATENATED MODULE: ./src/common/csv.js
+/** @fileoverview Utilities for parsing CSV files. */
 
-/**
- * The official Airtable JavaScript library.
- * https://github.com/Airtable/airtable.js
- */
 
 
 
 
 
 /**
- * @param {string} querying e.g., selecting, updating, etc
- * @param {string} table
- * @param {!Error} err
- */
-function throwError(querying, table, err) {
-  throw new Error(
-      `Error ${querying} records in Airtable Table ${table}: ${err}`);
-}
-
-/**
- * @param {!Promise<*>} promise
- * @param {string} querying e.g., selecting, updating, etc
- * @param {string} table
+ * @param {!Object<string, *>} csv An Airtable Attachment Field.
+ * @param {string[]} header Expected header.
+ * @param {!Object<string, *>} config See https://www.papaparse.com/docs#config.
+ *     Header and error are preset, and expects using chunk,
+ *     which may return a Promise.
  * @return {!Promise<*>}
  */
-function catchError(promise, querying, table) {
-  return promise.catch(err => throwError(querying, table, err));
-}
+async function parse(csv, header, config) {
 
-/**
- * Asynchronously calls func with portions of array that are at most
- * the max number of records that can be created or updated
- * via an Airtable API call.
- * @param {function(!Array<*>): !Promise<*>} func
- * @param {!Array<*>} array
- * @return {!Promise<!Array<*>>}
- */
-function batch(func, array) {
-  return (0,utils/* batchAsync */.aE)(func, array, 10);
-}
-
-/** An Airtable Base to query. */
-class Base {
-
-  /**
-   * @param {string=} baseId
-   * @param {string=} apiKey
-   */
-  constructor(baseId = inputs_airtableBaseId(), apiKey = inputs_airtableApiKey()) {
-
-    /** @private @const {!Base} */
-    this.base_ = new airtable({apiKey: apiKey}).base(baseId);
+  // Download CSV.
+  const response = await fetch(csv.url);
+  if (!response.ok) {
+    (0,utils/* fetchError */.Tl)(response.status, csv.filename, response.statusText);
   }
 
-  /**
-   * @param {string} table
-   * @param {string=} view
-   * @param {string=} filterByFormula
-   * @return {!Promise<!Array<!Record<!TField>>>}
-   */
-  select(table, view = '', filterByFormula = '') {
-    const params = {view: view, filterByFormula: filterByFormula};
-    return catchError(
-        this.base_(table).select(params).all(), 'selecting', table);
-  }
+  // Setup parse.
+  let firstChunk = true;
+  const promises = [];
+  const chunk = config.chunk;
+  delete config.chunk;
 
-  /**
-   * @param {string} table
-   * @param {!Object[]} updates
-   * @param {string} updates[].id
-   * @param {!Object<string, *>} updates[].fields
-   * @return {!Promise<!Array<*>>}
-   */
-  update(table, updates) {
-    return catchError(
-        batch(this.base_(table).update, updates), 'updating', table);
-  }
+  // Execute parse.
+  papaparse.parse(
+      response.body,
+      {
+        ...config,
+        header: true,
+        error: (err, file) => (0,github_actions_core/* error */.vU)(err),
+        chunk:
+          (results, parser) => {
 
-  /**
-   * Runs fieldsFunc for each record from table view
-   * and updates each record's fields using fieldsFunc's return value,
-   * if there is one.
-   * @param {string} table
-   * @param {string} view
-   * @param {function(!Record<!TField>): !Promise<?Object<string, *>>} fieldsFunc
-   * @return {!Promise<!Array<*>>}
-   */
-   async selectAndUpdate(table, view, fieldsFunc) {
-    const updates = [];
-    let firstErr;
-    for (const record of await this.select(table, view)) {
-      try {
-        const fields = await fieldsFunc(record);
-        fields && updates.push({id: record.getId(), fields: fields});
-      } catch (err) {
-        (0,github_actions_core/* warn */.ZK)(err.message);
-        firstErr ||= err;
-      }
-    }
-    const update = await this.update(table, updates);
-    firstErr && throwError('selectAndUpdating', table, firstErr);
-    return update;
-   }
+            // Validate header during first chunk.
+            if (firstChunk) {
+              firstChunk = false;
+              const gotHeader = results.meta.fields;
+              if (JSON.stringify(gotHeader) !== JSON.stringify(header)) {
+                (0,github_actions_core/* error */.vU)(`Got header: ${gotHeader}\nWant header: ${header}`);
+              }
+            }
 
-  /**
-   * @param {string} table
-   * @param {!Object[]} creates
-   * @param {!Object<string, *>} creates[].fields
-   * @return {!Promise<!Array<*>>}
-   */
-  create(table, creates) {
-    return catchError(
-        batch(this.base_(table).create, creates), 'creating', table);
-  }
-
-  /**
-   * @param {string} table
-   * @param {string} id
-   * @return {!Promise<!Record<!TField>>}
-   */
-  find(table, id) {
-    return catchError(this.base_(table).find(id), 'finding', table);
-  }
-}
-
-/**
- * An Airtable Base where each Table is partitioned by MSO,
- * enabling per MSO selects across Tables. Select methods should only be called
- * while iterating via iterateMsos.
- */
-class MsoBase extends (/* unused pure expression or super */ null && (Base)) {
-
-  /**
-   * @param {string=} baseId
-   * @param {string=} apiKey
-   */
-  constructor(baseId = airtableBaseId(), apiKey = airtableApiKey()) {
-    super(baseId, apiKey);
-
-    /** @private {?Record<!TField>} */
-    this.currentMso_ = null;
-    /** @return {?Record<!TField>} */
-    this.getCurrentMso = () => this.currentMso_;
-  }
-
-  /** @override */
-  select(table, view = '', filterByFormula = '') {
-    const msoFilter = `MSO = '${this.currentMso_.get('Code')}'`;
-    return super.select(
-        table,
-        view,
-        filterByFormula === '' ?
-            msoFilter : `AND(${msoFilter}, ${filterByFormula})`);
-  }
-
-  /**
-   * @param {string=} view
-   * @return {!Promise<!Iterator<!Record<!TField>>>}
-   */
-  async* iterateMsos(view = 'Org IDs') {
-    for (this.currentMso_ of await super.select('MSOs', view)) {
-      yield this.currentMso_;
-    }
-    this.currentMso_ = null;
-  }
+            // Parse chunk.
+            promises.push(chunk(results, parser));
+          },
+      });
+  return Promise.all(promises);
 }
 
 

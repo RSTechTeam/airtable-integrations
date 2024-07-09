@@ -20715,23 +20715,87 @@ function fixResponseChunkedTransferBadEnding(request, errorCallback) {
 
 /***/ }),
 
-/***/ 2135:
+/***/ 3508:
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
 
+// ESM COMPAT FLAG
 __nccwpck_require__.r(__webpack_exports__);
-/* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
-/* harmony export */   "main": () => (/* binding */ main)
-/* harmony export */ });
-/* harmony import */ var node_fetch__WEBPACK_IMPORTED_MODULE_5__ = __nccwpck_require__(4028);
-/* harmony import */ var papaparse__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(1826);
-/* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(5585);
-/* harmony import */ var _common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(1444);
-/* harmony import */ var _common_utils_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(381);
-/* harmony import */ var _common_constants_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(9447);
+
+// EXPORTS
+__nccwpck_require__.d(__webpack_exports__, {
+  "main": () => (/* binding */ main)
+});
+
+// EXTERNAL MODULE: ./src/common/airtable.js
+var airtable = __nccwpck_require__(5585);
+// EXTERNAL MODULE: ./src/bill_com/common/constants.js
+var constants = __nccwpck_require__(9447);
+// EXTERNAL MODULE: ./node_modules/node-fetch/src/index.js + 20 modules
+var src = __nccwpck_require__(4028);
+// EXTERNAL MODULE: ./node_modules/papaparse/papaparse.js
+var papaparse = __nccwpck_require__(1826);
+// EXTERNAL MODULE: ./src/common/github_actions_core.js
+var github_actions_core = __nccwpck_require__(1444);
+// EXTERNAL MODULE: ./src/common/utils.js + 1 modules
+var utils = __nccwpck_require__(381);
+;// CONCATENATED MODULE: ./src/common/csv.js
+/** @fileoverview Utilities for parsing CSV files. */
+
+
+
+
+
+
+/**
+ * @param {!Object<string, *>} csv An Airtable Attachment Field.
+ * @param {string[]} header Expected header.
+ * @param {!Object<string, *>} config See https://www.papaparse.com/docs#config.
+ *     Header and error are preset, and expects using chunk,
+ *     which may return a Promise.
+ * @return {!Promise<*>}
+ */
+async function parse(csv, header, config) {
+
+  // Download CSV.
+  const response = await (0,src/* default */.ZP)(csv.url);
+  if (!response.ok) {
+    (0,utils/* fetchError */.Tl)(response.status, csv.filename, response.statusText);
+  }
+
+  // Setup parse.
+  let firstChunk = true;
+  const promises = [];
+  const chunk = config.chunk;
+  delete config.chunk;
+
+  // Execute parse.
+  papaparse.parse(
+      response.body,
+      {
+        ...config,
+        header: true,
+        error: (err, file) => (0,github_actions_core/* error */.vU)(err),
+        chunk:
+          (results, parser) => {
+
+            // Validate header during first chunk.
+            if (firstChunk) {
+              firstChunk = false;
+              const gotHeader = results.meta.fields;
+              if (JSON.stringify(gotHeader) !== JSON.stringify(header)) {
+                (0,github_actions_core/* error */.vU)(`Got header: ${gotHeader}\nWant header: ${header}`);
+              }
+            }
+
+            // Parse chunk.
+            promises.push(chunk(results, parser));
+          },
+      });
+  return Promise.all(promises);
+}
+
+;// CONCATENATED MODULE: ./src/bill_com/bill_com_integration/bulk_create_bills.js
 /** @fileoverview Bulk creates single line item Bill.com Bills from a CSV. */
-
-
-
 
 
 
@@ -20744,84 +20808,48 @@ let billComApi;
 let billComIntegrationBase;
 
 // Create Papa Parse Config.
-let firstChunk;
-let createPromises = [];
 let invoiceDate;
 let dueDate;
 let approvers;
 let project;
 let category;
 const parseConfig = {
-  header: true,
   chunk:
-    async (results, parser) => {
-
-      // Validate header during first chunk.
-      if (firstChunk) {
-        firstChunk = false;
-        const gotHeader = results.meta.fields;
-        const wantHeader = [
-          'Invoice ID',
-          'Amount ($)',
-          'Description',
-          'Vendor ID',
-          'Name',
-          'Tax ID',
-          'Email',
-          'Phone',
-          'Address Line 1',
-          'Address Line 2',
-          'City',
-          'State',
-          'Zip Code',
-          'Country',
-        ];
-        if (JSON.stringify(gotHeader) !== JSON.stringify(wantHeader)) {
-          (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_2__/* .error */ .vU)(`Got header: ${gotHeader}\nWant header: ${wantHeader}`);
-        }
-      }
-
-      createPromises = [
-        ...createPromises,
-        billComApi.bulk(
-            'Create',
-            'Bill',
-            await Promise.all(
-                results.data.map(
-                    async row => ({
-                      invoiceDate: invoiceDate,
-                      dueDate: dueDate,
-                      approvers: approvers,
-                      invoiceNumber: row['Invoice ID'],
-                      description: row['Description'],
-                      billLineItems: [{
-                        entity: 'BillLineItem',
-                        customerId: project,
-                        chartOfAccountId: category,
-                        amount: parseFloat(row['Amount ($)']),
-                      }],
-                      vendorId:
-                        row['Vendor ID'] ||
-                            await billComApi.create(
-                                'Vendor',
-                                {
-                                  name: row['Name'],
-                                  taxId: row['Tax ID'],
-                                  taxIdType: '2', // SSN
-                                  email: row['Email'],
-                                  phone: row['Phone'],
-                                  address1: row['Address Line 1'],
-                                  address2: row['Address Line 2'],
-                                  addressCity: row['City'],
-                                  addressState: row['State'],
-                                  addressZip: row['Zip Code'],
-                                  addressCountry: row['Country'] || 'USA',
-                                }),
-                    })))),
-      ]
-
-    },
-  error: (err, file) => (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_2__/* .error */ .vU)(err),
+    async (results, parser) => billComApi.bulk(
+        'Create',
+        'Bill',
+        await Promise.all(
+            results.data.map(
+                async row => ({
+                  invoiceDate: invoiceDate,
+                  dueDate: dueDate,
+                  approvers: approvers,
+                  invoiceNumber: row['Invoice ID'],
+                  description: row['Description'],
+                  billLineItems: [{
+                    entity: 'BillLineItem',
+                    customerId: project,
+                    chartOfAccountId: category,
+                    amount: parseFloat(row['Amount ($)']),
+                  }],
+                  vendorId:
+                    row['Vendor ID'] ||
+                        await billComApi.create(
+                            'Vendor',
+                            {
+                              name: row['Name'],
+                              taxId: row['Tax ID'],
+                              taxIdType: '2', // SSN
+                              email: row['Email'],
+                              phone: row['Phone'],
+                              address1: row['Address Line 1'],
+                              address2: row['Address Line 2'],
+                              addressCity: row['City'],
+                              addressState: row['State'],
+                              addressZip: row['Zip Code'],
+                              addressCountry: row['Country'] || 'USA',
+                            }),
+                })))),
 };
 
 /**
@@ -20831,7 +20859,7 @@ const parseConfig = {
  */
 async function getBillComId(table, airtableId) {
   const record = await billComIntegrationBase.find(table, airtableId);
-  return record.get(_common_constants_js__WEBPACK_IMPORTED_MODULE_4__/* .MSO_BILL_COM_ID */ .yG);
+  return record.get(constants/* MSO_BILL_COM_ID */.yG);
 }
 
 /**
@@ -20839,11 +20867,27 @@ async function getBillComId(table, airtableId) {
  * @param {!MsoBase=} airtableBase
  * @return {!Promise<undefined>}
  */
-async function main(api, airtableBase = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .Base */ .X()) {
+async function main(api, airtableBase = new airtable/* Base */.X()) {
 
   billComApi = api;
   billComIntegrationBase = airtableBase;
 
+  const header = [
+    'Invoice ID',
+    'Amount ($)',
+    'Description',
+    'Vendor ID',
+    'Name',
+    'Tax ID',
+    'Email',
+    'Phone',
+    'Address Line 1',
+    'Address Line 2',
+    'City',
+    'State',
+    'Zip Code',
+    'Country',
+  ];
   await billComApi.primaryOrgLogin();
   await airtableBase.selectAndUpdate(
       'Bulk Check Requests',
@@ -20853,22 +20897,15 @@ async function main(api, airtableBase = new _common_airtable_js__WEBPACK_IMPORTE
         // Initialize form parameters.
         invoiceDate = record.get('Invoice Date');
         dueDate = record.get('Due Date');
-        approvers = record.get(`Approver ${_common_constants_js__WEBPACK_IMPORTED_MODULE_4__/* .MSO_BILL_COM_ID */ .yG}s`);
+        approvers = record.get(`Approver ${constants/* MSO_BILL_COM_ID */.yG}s`);
         project =
             await getBillComId('Internal Customers', record.get('Project')[0]);
         category =
             await getBillComId('Chart of Accounts', record.get('Category')[0]);
 
         // Download and parse CSV.
-        for (const csv of record.get('CSV')) {
-          const response = await (0,node_fetch__WEBPACK_IMPORTED_MODULE_5__/* ["default"] */ .ZP)(csv.url);
-          if (!response.ok) {
-            (0,_common_utils_js__WEBPACK_IMPORTED_MODULE_3__/* .fetchError */ .Tl)(response.status, csv.filename, response.statusText);
-          }
-          firstChunk = true;
-          papaparse__WEBPACK_IMPORTED_MODULE_0__.parse(response.body, parseConfig);
-        }
-        await Promise.all(createPromises);
+        await Promise.all(
+            record.get('CSV').map(csv => parse(csv, header, parseConfig)));
         return {'Processed': true};
       }
     );
@@ -22870,7 +22907,7 @@ async function main(billComApi, airtableBase = new _common_airtable_js__WEBPACK_
 /***/ ((__webpack_module__, __unused_webpack___webpack_exports__, __nccwpck_require__) => {
 
 __nccwpck_require__.a(__webpack_module__, async (__webpack_handle_async_dependencies__) => {
-/* harmony import */ var _bill_com_integration_bulk_create_bills_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(2135);
+/* harmony import */ var _bill_com_integration_bulk_create_bills_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(3508);
 /* harmony import */ var _bill_com_integration_create_approver_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(8528);
 /* harmony import */ var _bill_com_integration_create_bill_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(9953);
 /* harmony import */ var _bill_com_integration_sync_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(9902);
