@@ -20854,7 +20854,6 @@ async function main(billComApi, airtableBase = new airtable/* Base */.X()) {
                     async row => ({
                       invoiceDate: record.get('Invoice Date'),
                       dueDate: record.get('Due Date'),
-                      approvers: record.get(`Approver ${constants/* MSO_BILL_COM_ID */.yG}s`),
                       invoiceNumber: row['Invoice ID'],
                       description: row['Description'],
                       billLineItems: [{
@@ -20884,10 +20883,19 @@ async function main(billComApi, airtableBase = new airtable/* Base */.X()) {
         };
 
         // Parse CSV.
-        const bills =
+        const parsedBills =
             await Promise.all(
                 record.get('CSV').map(csv => parse(csv, header, parseConfig)));
-        await billComApi.bulk('Create', 'Bill', bills.flat(2));
+
+        // Create Bills.
+        const createdBills =
+            await billComApi.bulk('Create', 'Bill', parsedBills.flat(2));
+        const approvers = record.get(`Approver ${constants/* MSO_BILL_COM_ID */.yG}s`);
+        await Promise.all(
+            createdBills.flatMap(b => b.bulk).map(
+                b => billComApi.dataCall(
+                    'SetApprovers',
+                    {entity: 'Bill', objectId: b.id, approvers: approvers})));
         return {'Processed': true};
       }
     );
