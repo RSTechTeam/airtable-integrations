@@ -21074,7 +21074,7 @@ async function parse(csv, header, config) {
             ...config,
             header: true,
             error: (err, file) => (0,github_actions_core/* error */.vU)(err),
-            complete: (results, parser) => resolve(promises),
+            complete: (results, parser) => Promise.all(promises).then(resolve), //resolve(promises),
             chunk:
               (results, parser) => {
 
