@@ -20887,11 +20887,7 @@ async function main(billComApi, airtableBase = new airtable/* Base */.X()) {
         const bills =
             await Promise.all(
                 record.get('CSV').map(csv => parse(csv, header, parseConfig)));
-        (0,github_actions_core/* log */.cM)(JSON.stringify(bills));
-        (0,github_actions_core/* log */.cM)(JSON.stringify(await Promise.all(bills)));
-        (0,github_actions_core/* log */.cM)(JSON.stringify((await Promise.all(bills)).flat()));
-        await billComApi.bulk(
-            'Create', 'Bill', (await Promise.all(bills)).flat());
+        await billComApi.bulk('Create', 'Bill', bills.flat(2));
         return {'Processed': true};
       }
     );
