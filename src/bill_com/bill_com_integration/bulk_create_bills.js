@@ -96,12 +96,15 @@ export async function main(billComApi, airtableBase = new Base()) {
         // Create Bills.
         const createdBills =
             await billComApi.bulk('Create', 'Bill', parsedBills.flat(2));
-        const approvers = record.get(`Approver ${MSO_BILL_COM_ID}s`);
         await Promise.all(
             createdBills.flatMap(b => b.bulk).map(
                 b => billComApi.dataCall(
                     'SetApprovers',
-                    {entity: 'Bill', objectId: b.id, approvers: approvers})));
+                    {
+                      entity: 'Bill',
+                      objectId: b.response_data.id,
+                      approvers: record.get(`Approver ${MSO_BILL_COM_ID}s`),
+                    })));
         return {'Processed': true};
       }
     );
