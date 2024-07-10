@@ -21060,13 +21060,9 @@ async function parse(csv, header, config) {
     (0,utils/* fetchError */.Tl)(response.status, csv.filename, response.statusText);
   }
 
-  // Setup parse.
+  // Execute parse.
   let firstChunk = true;
   const promises = [];
-  const chunk = config.chunk;
-  delete config.chunk;
-
-  // Execute parse.
   return new Promise(
       resolve => papaparse.parse(
           response.body,
@@ -21088,7 +21084,7 @@ async function parse(csv, header, config) {
                 }
 
                 // Parse chunk.
-                promises.push(chunk(results, parser));
+                promises.push(config.chunk(results, parser));
               },
           }));
 }
