@@ -93,9 +93,10 @@ export async function main(billComApi, airtableBase = new Base()) {
         const bills =
             await Promise.all(
                 record.get('CSV').map(csv => parse(csv, header, parseConfig)));
-        log(bills);
-        log(Promise.all(bills));
-        await billComApi.bulk('Create', 'Bill', bills.flat());
+        log(await Promise.all(bills));
+        log(await Promise.all(bills).flat());
+        await billComApi.bulk(
+            'Create', 'Bill', (await Promise.all(bills)).flat());
         return {'Processed': true};
       }
     );
