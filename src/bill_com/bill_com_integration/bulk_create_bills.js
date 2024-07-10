@@ -1,6 +1,7 @@
 /** @fileoverview Bulk creates single line item Bill.com Bills from a CSV. */
 
 import {Base} from '../../common/airtable.js';
+import {log} from '../../common/github_actions_core.js';
 import {MSO_BILL_COM_ID} from '../common/constants.js';
 import {parse} from '../../common/csv.js';
 
@@ -92,6 +93,8 @@ export async function main(billComApi, airtableBase = new Base()) {
         const bills =
             await Promise.all(
                 record.get('CSV').map(csv => parse(csv, header, parseConfig)));
+        log(bills);
+        log(await bills);
         await billComApi.bulk('Create', 'Bill', bills.flat());
         return {'Processed': true};
       }

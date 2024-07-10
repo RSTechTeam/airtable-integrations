@@ -20728,14 +20728,14 @@ __nccwpck_require__.d(__webpack_exports__, {
 
 // EXTERNAL MODULE: ./src/common/airtable.js
 var airtable = __nccwpck_require__(5585);
+// EXTERNAL MODULE: ./src/common/github_actions_core.js
+var github_actions_core = __nccwpck_require__(1444);
 // EXTERNAL MODULE: ./src/bill_com/common/constants.js
 var constants = __nccwpck_require__(9447);
 // EXTERNAL MODULE: ./node_modules/node-fetch/src/index.js + 20 modules
 var src = __nccwpck_require__(4028);
 // EXTERNAL MODULE: ./node_modules/papaparse/papaparse.js
 var papaparse = __nccwpck_require__(1826);
-// EXTERNAL MODULE: ./src/common/github_actions_core.js
-var github_actions_core = __nccwpck_require__(1444);
 // EXTERNAL MODULE: ./src/common/utils.js + 1 modules
 var utils = __nccwpck_require__(381);
 ;// CONCATENATED MODULE: ./src/common/csv.js
@@ -20797,6 +20797,7 @@ async function parse(csv, header, config) {
 
 ;// CONCATENATED MODULE: ./src/bill_com/bill_com_integration/bulk_create_bills.js
 /** @fileoverview Bulk creates single line item Bill.com Bills from a CSV. */
+
 
 
 
@@ -20890,6 +20891,8 @@ async function main(billComApi, airtableBase = new airtable/* Base */.X()) {
         const bills =
             await Promise.all(
                 record.get('CSV').map(csv => parse(csv, header, parseConfig)));
+        (0,github_actions_core/* log */.cM)(bills);
+        (0,github_actions_core/* log */.cM)(await bills);
         await billComApi.bulk('Create', 'Bill', bills.flat());
         return {'Processed': true};
       }
