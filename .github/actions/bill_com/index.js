@@ -20776,7 +20776,7 @@ async function parse(csv, header, config) {
             ...config,
             header: true,
             error: (err, file) => (0,github_actions_core/* error */.vU)(err),
-            complete: (results, parser) => resolve(Promise.all(promises)),
+            complete: (results, parser) => resolve(promises),
             chunk:
               (results, parser) => {
 
@@ -20892,7 +20892,7 @@ async function main(billComApi, airtableBase = new airtable/* Base */.X()) {
             await Promise.all(
                 record.get('CSV').map(csv => parse(csv, header, parseConfig)));
         (0,github_actions_core/* log */.cM)(bills);
-        (0,github_actions_core/* log */.cM)(await bills);
+        (0,github_actions_core/* log */.cM)(Promise.all(bills));
         await billComApi.bulk('Create', 'Bill', bills.flat());
         return {'Processed': true};
       }
