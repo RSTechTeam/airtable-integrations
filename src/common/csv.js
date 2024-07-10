@@ -31,7 +31,7 @@ export async function parse(csv, header, config) {
             ...config,
             header: true,
             error: (err, file) => error(err),
-            complete: (results, parser) => resolve(promises),
+            complete: (results, parser) => resolve(Promise.all(promises)),
             chunk:
               (results, parser) => {
 
