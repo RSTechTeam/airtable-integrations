@@ -66,6 +66,7 @@ export async function main(billComApi, airtableBase = new Base()) {
                         entity: 'BillLineItem',
                         customerId: project,
                         chartOfAccountId: category,
+                        description: row['Description'],
                         amount: parseFloat(row['Amount ($)']),
                       }],
                       vendorId:
@@ -103,7 +104,10 @@ export async function main(billComApi, airtableBase = new Base()) {
                     {
                       entity: 'Bill',
                       objectId: b.response_data.id,
-                      approvers: record.get(`Approver ${MSO_BILL_COM_ID}s`),
+                      approvers: [
+                        ...record.get(`Approver ${MSO_BILL_COM_ID}s`),
+                        record.get(`Final Approver ${MSO_BILL_COM_ID}`),
+                      ],
                     })));
         return {'Processed': true};
       }
