@@ -216,9 +216,9 @@ export async function main(api, airtableBase = new MsoBase()) {
           await billComApi.dataCall(
               'SetApprovers',
               {
-                objectId: newBillId,
                 entity: 'Bill',
-                approvers: approvers.concat(getApproverIds(mso, 'Final')),
+                objectId: newBillId,
+                approvers: [...approvers, ...getApproverIds(mso, 'Final')],
               });
 
           // Upload the Supporting Documents.
