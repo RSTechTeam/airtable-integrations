@@ -22884,7 +22884,7 @@ async function main(billComApi, airtableBase = new _common_airtable_js__WEBPACK_
                     record.get('Mailing address (zip code)').toString(),
                   addressCountry: 'USA',
                   email: record.get('Email'),
-                  phone: record.get('Cell number'),
+                  phone: record.get('Trimmed cell number (for Bill.com)'),
                 });
 
         return {['Bill.com Vendor ID']: vendorId};

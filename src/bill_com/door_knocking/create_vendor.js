@@ -29,7 +29,7 @@ export async function main(billComApi, airtableBase = new Base()) {
                     record.get('Mailing address (zip code)').toString(),
                   addressCountry: 'USA',
                   email: record.get('Email'),
-                  phone: record.get('Cell number'),
+                  phone: record.get('Trimmed cell number (for Bill.com)'),
                 });
 
         return {['Bill.com Vendor ID']: vendorId};
