@@ -20847,6 +20847,7 @@ async function main(billComApi, airtableBase = new airtable/* Base */.X()) {
         const category =
             await getBillComId('Chart of Accounts', record.get('Category')[0]);
         const parseConfig = {
+          transformHeader: (header, index) => header.trim(),
           chunk:
             (results, parser) => Promise.all(
                 results.data.map(
@@ -20860,7 +20861,7 @@ async function main(billComApi, airtableBase = new airtable/* Base */.X()) {
                         customerId: project,
                         chartOfAccountId: category,
                         description: row['Description'],
-                        amount: parseFloat(row['Amount ($)']),
+                        amount: parseFloat(row['Amount ($)'].replace('$', '')),
                       }],
                       vendorId:
                         row['Vendor ID'] ||
