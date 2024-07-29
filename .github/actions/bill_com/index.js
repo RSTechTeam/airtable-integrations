@@ -20838,7 +20838,7 @@ async function main(billComApi, airtableBase = new airtable/* MsoBase */.F()) {
 
   for await (const mso of billComIntegrationBase.iterateMsos()) {
 
-    await billComApi.Login(mso.get('Code'));
+    await billComApi.login(mso.get('Code'));
     await billComIntegrationBase.selectAndUpdate(
         'Bulk Check Requests',
         'New',
