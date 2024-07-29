@@ -218,7 +218,7 @@ export class Api {
     // Set the Bill's approvers.
     const approvers =
         getApproverIds(airtableRecord) || getApproverIds(mso, 'Default') || [];             
-    await billComApi.dataCall(
+    await this.dataCall(
         'SetApprovers',
         {
           entity: 'Bill',
