@@ -20816,7 +20816,7 @@ async function getBillComId(table, airtableId) {
  * @param {!MsoBase=} airtableBase
  * @return {!Promise<undefined>}
  */
-async function main(billComApi, airtableBase = new airtable/* Base */.X()) {
+async function main(billComApi, airtableBase = new MsoBase()) {
   billComIntegrationBase = airtableBase;
 
   const header = [
@@ -20835,78 +20835,70 @@ async function main(billComApi, airtableBase = new airtable/* Base */.X()) {
     'Zip Code',
     'Country',
   ];
-  await billComApi.primaryOrgLogin();
-  await airtableBase.selectAndUpdate(
-      'Bulk Check Requests',
-      'New',
-      async (record) => {
 
-        // Create parse config.
-        const project =
-            await getBillComId('Internal Customers', record.get('Project')[0]);
-        const category =
-            await getBillComId('Chart of Accounts', record.get('Category')[0]);
-        const parseConfig = {
-          transformHeader: (header, index) => header.trim(),
-          chunk:
-            (results, parser) => Promise.all(
-                results.data.map(
-                    async row => ({
-                      invoiceDate: record.get('Invoice Date'),
-                      dueDate: record.get('Due Date'),
-                      invoiceNumber: row['Invoice ID'],
-                      description: row['Description'],
-                      billLineItems: [{
-                        entity: 'BillLineItem',
-                        customerId: project,
-                        chartOfAccountId: category,
-                        description: row['Description'],
-                        amount:
-                          parseFloat(row['Amount ($)'].replace(/[$,]/g, '')),
-                      }],
-                      vendorId:
-                        row['Vendor ID'] ||
-                            await billComApi.create(
-                                'Vendor',
-                                {
-                                  name: row['Name'],
-                                  taxId: row['Tax ID'],
-                                  taxIdType: '2', // SSN
-                                  email: row['Email'],
-                                  phone: row['Phone'],
-                                  address1: row['Address Line 1'],
-                                  address2: row['Address Line 2'],
-                                  addressCity: row['City'],
-                                  addressState: row['State'],
-                                  addressZip: row['Zip Code'],
-                                  addressCountry: row['Country'] || 'USA',
-                                }),
-                    }))),
-        };
+  for await (const mso of billComIntegrationBase.iterateMsos()) {
 
-        // Parse CSV.
-        const parsedBills =
-            await Promise.all(
-                record.get('CSV').map(csv => parse(csv, header, parseConfig)));
+    await billComApi.Login(mso.get('Code'));
+    await billComIntegrationBase.selectAndUpdate(
+        'Bulk Check Requests',
+        'New',
+        async (record) => {
 
-        // Create Bills.
-        const createdBills =
-            await billComApi.bulk('Create', 'Bill', parsedBills.flat(2));
-        await Promise.all(
-            createdBills.flatMap(b => b.bulk).map(
-                b => billComApi.dataCall(
-                    'SetApprovers',
-                    {
-                      entity: 'Bill',
-                      objectId: b.response_data.id,
-                      approvers: [
-                        ...record.get(`Approver ${constants/* MSO_BILL_COM_ID */.yG}s`),
-                        record.get(`Final Approver ${constants/* MSO_BILL_COM_ID */.yG}`),
-                      ],
-                    })));
-        return {'Processed': true};
-      }
-    );
+          // Create parse config.
+          const project =
+              await getBillComId(
+                  'Internal Customers', record.get('Project')[0]);
+          const category =
+              await getBillComId(
+                  'Chart of Accounts', record.get('Category')[0]);
+          const parseConfig = {
+            transformHeader: (header, index) => header.trim(),
+            chunk:
+              (results, parser) => Promise.all(
+                  results.data.map(
+                      async row => billComApi.createBill(
+                          {
+                            invoiceDate: record.get('Invoice Date'),
+                            dueDate: record.get('Due Date'),
+                            invoiceNumber: row['Invoice ID'],
+                            description: row['Description'],
+                            billLineItems: [{
+                              entity: 'BillLineItem',
+                              customerId: project,
+                              chartOfAccountId: category,
+                              description: row['Description'],
+                              amount:
+                                parseFloat(
+                                    row['Amount ($)'].replace(/[$,]/g, '')),
+                            }],
+                            vendorId:
+                              row['Vendor ID'] ||
+                                  await billComApi.create(
+                                      'Vendor',
+                                      {
+                                        name: row['Name'],
+                                        taxId: row['Tax ID'],
+                                        taxIdType: '2', // SSN
+                                        email: row['Email'],
+                                        phone: row['Phone'],
+                                        address1: row['Address Line 1'],
+                                        address2: row['Address Line 2'],
+                                        addressCity: row['City'],
+                                        addressState: row['State'],
+                                        addressZip: row['Zip Code'],
+                                        addressCountry: row['Country'] || 'USA',
+                                      }),
+                          },
+                          record,
+                          mso))),
+          };
+
+          // Parse CSV and create Bills.
+          await Promise.all(
+              record.get('CSV').map(csv => parse(csv, header, parseConfig)));
+          return {'Processed': true};
+        });
+  }
 }
 
 
