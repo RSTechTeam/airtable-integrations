@@ -21408,11 +21408,8 @@ class FormData {
 var constants = __nccwpck_require__(9447);
 // EXTERNAL MODULE: ./src/common/airtable.js
 var airtable = __nccwpck_require__(5585);
-// EXTERNAL MODULE: ./src/common/github_actions_core.js
-var github_actions_core = __nccwpck_require__(1444);
 ;// CONCATENATED MODULE: ./src/bill_com/bill_com_integration/create_bill.js
 /** @fileoverview Creates a Bill.com Bill based on a new Check Request. */
-
 
 
 
@@ -21514,15 +21511,6 @@ async function getVendorId(checkRequest) {
 }
 
 /**
- * @param {!Record<!TField>} record
- * @param {string=} type - |Default|Final
- * @return {?string[]} approvers MSO Bill.com IDs
- */
-function getApproverIds(record, type = '') {
-  return record.get(`${type}${type ? ' ' : ''}Approver ${constants/* MSO_BILL_COM_ID */.yG}s`);
-}
-
-/**
  * @param {!Api} api
  * @param {!MsoBase=} airtableBase
  * @return {!Promise<undefined>}
@@ -21584,18 +21572,17 @@ async function main(api, airtableBase = new airtable/* MsoBase */.F()) {
 
           // Compile Bill.com Bill based on Check Request.
           const requester = newCheckRequest.get('Requester Name');
-          const invoiceId =
+          const notes = newCheckRequest.get('Notes');
+          const bill = {
+            vendorId: await getVendorId(newCheckRequest),
+            invoiceNumber:
               newCheckRequest.get('Vendor Invoice ID') ||
                   // Invoice number can currently be max 21 characters.
                   // For default ID, take 15 from requester name
                   // and 3 from unique part of Airtable Record ID,
                   // with 3 to pretty divide these parts.
                   `${requester.substring(0, 15)}` +
-                      ` - ${newCheckRequest.getId().substring(3, 6)}`;
-          const notes = newCheckRequest.get('Notes');
-          const bill = {
-            vendorId: await getVendorId(newCheckRequest),
-            invoiceNumber: invoiceId,
+                      ` - ${newCheckRequest.getId().substring(3, 6)}`,
             invoiceDate: newCheckRequest.get('Invoice Date'),
             dueDate: newCheckRequest.get('Due Date'),
             description:
@@ -21606,33 +21593,8 @@ async function main(api, airtableBase = new airtable/* MsoBase */.F()) {
           };
 
           // Create the Bill.
-          let newBillId;
-          for (let i = 1; newBillId == undefined; ++i) {
-            try {
-              newBillId = await billComApi.create('Bill', bill);
-            } catch (err) {
-
-              // Handle duplicate Vendor Invoice ID.
-              if (err.message.match(/BDC_(1171|5370)/)) {
-                (0,github_actions_core/* warn */.ZK)(err.message);
-                bill.invoiceNumber = `${invoiceId} (${i})`;
-                continue;
-              }
-              throw err;
-            }
-          }
-
-          // Set the Bill's approvers.
-          const approvers =
-              getApproverIds(newCheckRequest) ||
-                  getApproverIds(mso, 'Default') || [];             
-          await billComApi.dataCall(
-              'SetApprovers',
-              {
-                entity: 'Bill',
-                objectId: newBillId,
-                approvers: [...approvers, ...getApproverIds(mso, 'Final')],
-              });
+          const newBillId =
+              await billComApi.createBill(bill, newCheckRequest, mso);
 
           // Upload the Supporting Documents.
           await uploadAttachments(
@@ -22593,6 +22555,16 @@ function entityData(entity, data) {
   return {obj: {entity: entity, ...data}};
 }
 
+/**
+ * @param {!Record<!TField>} airtableRecord
+ * @param {string=} type - |Default|Final
+ * @return {?string[]} approvers MSO Bill.com IDs
+ */
+function getApproverIds(airtableRecord, type = '') {
+  return airtableRecord.get(
+      `${type}${type ? ' ' : ''}Approver ${constants/* MSO_BILL_COM_ID */.yG}s`);
+}
+
 /** A connection to the Bill.com API. */
 class Api {
 
@@ -22686,6 +22658,45 @@ class Api {
     const response =
         await this.dataCall(`Crud/Create/${entity}`, entityData(entity, data));
     return response.id;
+  }
+
+  /**
+   * @param {!Object<string, *>} bill
+   * @param {!Record<!TField>} airtableRecord
+   * @param {!Record<!TField>} mso
+   * @return {!Promise<string>} The newly created Bill ID.
+   */
+  async createBill(bill, airtableRecord, mso) {
+
+    // Create the Bill.
+    const invoiceNumber = bill.invoiceNumber;
+    let billId;
+    for (let i = 1; billId == undefined; ++i) {
+      try {
+        billId = await this.create('Bill', bill);
+      } catch (err) {
+
+        // Handle duplicate Vendor Invoice ID.
+        if (err.message.match(/BDC_(1171|5370)/)) {
+          (0,github_actions_core/* warn */.ZK)(err.message);
+          bill.invoiceNumber = `${invoiceNumber} (${i})`;
+          continue;
+        }
+        throw err;
+      }
+    }
+
+    // Set the Bill's approvers.
+    const approvers =
+        getApproverIds(airtableRecord) || getApproverIds(mso, 'Default') || [];             
+    await billComApi.dataCall(
+        'SetApprovers',
+        {
+          entity: 'Bill',
+          objectId: billId,
+          approvers: [...approvers, ...getApproverIds(mso, 'Final')],
+        });
+    return billId;
   }
 
   /**

@@ -6,7 +6,6 @@ import {fetchError} from '../../common/utils.js';
 import {FormData} from 'formdata-node';
 import {MSO_BILL_COM_ID} from '../common/constants.js';
 import {MsoBase} from '../../common/airtable.js';
-import {warn} from '../../common/github_actions_core.js';
 
 /** Bill.com Vendor tax ID types. */
 const taxIdTypes = new Map([['EIN', '1'], ['SSN', '2']]);
@@ -101,15 +100,6 @@ async function getVendorId(checkRequest) {
 }
 
 /**
- * @param {!Record<!TField>} record
- * @param {string=} type - |Default|Final
- * @return {?string[]} approvers MSO Bill.com IDs
- */
-function getApproverIds(record, type = '') {
-  return record.get(`${type}${type ? ' ' : ''}Approver ${MSO_BILL_COM_ID}s`);
-}
-
-/**
  * @param {!Api} api
  * @param {!MsoBase=} airtableBase
  * @return {!Promise<undefined>}
@@ -171,18 +161,17 @@ export async function main(api, airtableBase = new MsoBase()) {
 
           // Compile Bill.com Bill based on Check Request.
           const requester = newCheckRequest.get('Requester Name');
-          const invoiceId =
+          const notes = newCheckRequest.get('Notes');
+          const bill = {
+            vendorId: await getVendorId(newCheckRequest),
+            invoiceNumber:
               newCheckRequest.get('Vendor Invoice ID') ||
                   // Invoice number can currently be max 21 characters.
                   // For default ID, take 15 from requester name
                   // and 3 from unique part of Airtable Record ID,
                   // with 3 to pretty divide these parts.
                   `${requester.substring(0, 15)}` +
-                      ` - ${newCheckRequest.getId().substring(3, 6)}`;
-          const notes = newCheckRequest.get('Notes');
-          const bill = {
-            vendorId: await getVendorId(newCheckRequest),
-            invoiceNumber: invoiceId,
+                      ` - ${newCheckRequest.getId().substring(3, 6)}`,
             invoiceDate: newCheckRequest.get('Invoice Date'),
             dueDate: newCheckRequest.get('Due Date'),
             description:
@@ -193,33 +182,8 @@ export async function main(api, airtableBase = new MsoBase()) {
           };
 
           // Create the Bill.
-          let newBillId;
-          for (let i = 1; newBillId == undefined; ++i) {
-            try {
-              newBillId = await billComApi.create('Bill', bill);
-            } catch (err) {
-
-              // Handle duplicate Vendor Invoice ID.
-              if (err.message.match(/BDC_(1171|5370)/)) {
-                warn(err.message);
-                bill.invoiceNumber = `${invoiceId} (${i})`;
-                continue;
-              }
-              throw err;
-            }
-          }
-
-          // Set the Bill's approvers.
-          const approvers =
-              getApproverIds(newCheckRequest) ||
-                  getApproverIds(mso, 'Default') || [];             
-          await billComApi.dataCall(
-              'SetApprovers',
-              {
-                entity: 'Bill',
-                objectId: newBillId,
-                approvers: [...approvers, ...getApproverIds(mso, 'Final')],
-              });
+          const newBillId =
+              await billComApi.createBill(bill, newCheckRequest, mso);
 
           // Upload the Supporting Documents.
           await uploadAttachments(

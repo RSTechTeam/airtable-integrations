@@ -10,8 +10,8 @@ import pLimit from 'p-limit';
 import {airtableApiKey} from '../../common/inputs.js';
 import {Base} from '../../common/airtable.js';
 import {batchAwait, fetchError} from '../../common/utils.js';
-import {log, logJson} from '../../common/github_actions_core.js';
-import {PRIMARY_ORG} from './constants.js';
+import {log, logJson, warn} from '../../common/github_actions_core.js';
+import {MSO_BILL_COM_ID, PRIMARY_ORG} from './constants.js';
 
 /**
  * Mirrors Bill.com's isActive enum.
@@ -82,6 +82,16 @@ export const activeFilter = filter('isActive', '=', ActiveStatus.ACTIVE);
  */
 function entityData(entity, data) {
   return {obj: {entity: entity, ...data}};
+}
+
+/**
+ * @param {!Record<!TField>} airtableRecord
+ * @param {string=} type - |Default|Final
+ * @return {?string[]} approvers MSO Bill.com IDs
+ */
+function getApproverIds(airtableRecord, type = '') {
+  return airtableRecord.get(
+      `${type}${type ? ' ' : ''}Approver ${MSO_BILL_COM_ID}s`);
 }
 
 /** A connection to the Bill.com API. */
@@ -177,6 +187,45 @@ export class Api {
     const response =
         await this.dataCall(`Crud/Create/${entity}`, entityData(entity, data));
     return response.id;
+  }
+
+  /**
+   * @param {!Object<string, *>} bill
+   * @param {!Record<!TField>} airtableRecord
+   * @param {!Record<!TField>} mso
+   * @return {!Promise<string>} The newly created Bill ID.
+   */
+  async createBill(bill, airtableRecord, mso) {
+
+    // Create the Bill.
+    const invoiceNumber = bill.invoiceNumber;
+    let billId;
+    for (let i = 1; billId == undefined; ++i) {
+      try {
+        billId = await this.create('Bill', bill);
+      } catch (err) {
+
+        // Handle duplicate Vendor Invoice ID.
+        if (err.message.match(/BDC_(1171|5370)/)) {
+          warn(err.message);
+          bill.invoiceNumber = `${invoiceNumber} (${i})`;
+          continue;
+        }
+        throw err;
+      }
+    }
+
+    // Set the Bill's approvers.
+    const approvers =
+        getApproverIds(airtableRecord) || getApproverIds(mso, 'Default') || [];             
+    await billComApi.dataCall(
+        'SetApprovers',
+        {
+          entity: 'Bill',
+          objectId: billId,
+          approvers: [...approvers, ...getApproverIds(mso, 'Final')],
+        });
+    return billId;
   }
 
   /**
