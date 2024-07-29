@@ -11,10 +11,11 @@ import {PRIMARY_ORG} from '../common/constants.js';
 export async function main(billComApi, airtableBase = new Base()) {
   await billComApi.primaryOrgLogin();
   await airtableBase.selectAndUpdate(
-      'Intake Forms',
+      'Contacts',
       'GitHub Action: Create Bill.com Vendor',
       async (record) => {
-        const name = record.get('First name') + ' ' + record.get('Last name');
+        const name =
+            record.get('Legal first name') + ' ' + record.get('Last name');
         const vendorId =
             await billComApi.create(
                 'Vendor',
@@ -29,7 +30,7 @@ export async function main(billComApi, airtableBase = new Base()) {
                     record.get('Mailing address (zip code)').toString(),
                   addressCountry: 'USA',
                   email: record.get('Email'),
-                  phone: record.get('Trimmed cell number (for Bill.com)'),
+                  phone: record.get('Trimmed phone number'),
                 });
 
         return {['Bill.com Vendor ID']: vendorId};

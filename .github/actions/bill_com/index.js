@@ -22867,10 +22867,11 @@ __nccwpck_require__.r(__webpack_exports__);
 async function main(billComApi, airtableBase = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .Base */ .X()) {
   await billComApi.primaryOrgLogin();
   await airtableBase.selectAndUpdate(
-      'Intake Forms',
+      'Contacts',
       'GitHub Action: Create Bill.com Vendor',
       async (record) => {
-        const name = record.get('First name') + ' ' + record.get('Last name');
+        const name =
+            record.get('Legal first name') + ' ' + record.get('Last name');
         const vendorId =
             await billComApi.create(
                 'Vendor',
@@ -22885,7 +22886,7 @@ async function main(billComApi, airtableBase = new _common_airtable_js__WEBPACK_
                     record.get('Mailing address (zip code)').toString(),
                   addressCountry: 'USA',
                   email: record.get('Email'),
-                  phone: record.get('Trimmed cell number (for Bill.com)'),
+                  phone: record.get('Trimmed phone number'),
                 });
 
         return {['Bill.com Vendor ID']: vendorId};
