@@ -12,7 +12,7 @@ export async function main(billComApi, airtableBase = new Base()) {
   await billComApi.primaryOrgLogin();
   await airtableBase.selectAndUpdate(
       'Contacts',
-      'GitHub Action: Create Bill.com Vendor',
+      'Github Action: Create Bill.com Vendor',
       async (record) => {
         const name =
             record.get('Legal first name') + ' ' + record.get('Last name');
