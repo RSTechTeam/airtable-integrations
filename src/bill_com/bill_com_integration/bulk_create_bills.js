@@ -67,7 +67,8 @@ export async function main(billComApi, airtableBase = new Base()) {
                         customerId: project,
                         chartOfAccountId: category,
                         description: row['Description'],
-                        amount: parseFloat(row['Amount ($)'].replace('$', '')),
+                        amount:
+                          parseFloat(row['Amount ($)'].replace(/[$,]/g, '')),
                       }],
                       vendorId:
                         row['Vendor ID'] ||
