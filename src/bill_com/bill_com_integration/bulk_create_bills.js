@@ -1,6 +1,6 @@
 /** @fileoverview Bulk creates single line item Bill.com Bills from a CSV. */
 
-import {Base} from '../../common/airtable.js';
+import {MsoBase} from '../../common/airtable.js';
 import {MSO_BILL_COM_ID} from '../common/constants.js';
 import {parse} from '../../common/csv.js';
 

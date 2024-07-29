@@ -20816,7 +20816,7 @@ async function getBillComId(table, airtableId) {
  * @param {!MsoBase=} airtableBase
  * @return {!Promise<undefined>}
  */
-async function main(billComApi, airtableBase = new MsoBase()) {
+async function main(billComApi, airtableBase = new airtable/* MsoBase */.F()) {
   billComIntegrationBase = airtableBase;
 
   const header = [
