@@ -4,6 +4,7 @@
  */
 
 import {ActiveStatus, activeFilter, filter, isActiveEnum} from '../common/api.js';
+import {addSummaryTableHeaders, addSummaryTableRow} from '../../common/github_actions_core.js';
 import {BILL_COM_ID_SUFFIX, MSO_BILL_COM_ID} from '../common/constants.js';
 import {getYyyyMmDd} from '../../common/utils.js';
 import {MsoBase} from '../../common/airtable.js';
@@ -26,6 +27,9 @@ const paymentStatuses = new Map([
   ['0', 'Paid In Full'],
   ['2', 'Partial Payment'],
 ]);
+
+/** Unit for writing to the Summary Table. */
+let summaryBlock = [];
 
 /**
  * @param {string} name
@@ -148,6 +152,12 @@ class Syncer {
           ...Array.from(updates, sync.airtableRecordUpdate),
           ...Array.from(removes, sync.airtableRecordDeactivate),
         ]);
+
+    summaryBlock.push([
+      entity,
+      ...[updates, creates, removes].map(
+          arrayLike => arrayLike.size > 0 ? arrayLike.size : '-'),
+    ]);
   }
 
   /**
@@ -282,6 +292,7 @@ class Syncer {
  * @return {!Promise<undefined>}
  */
 export async function main(billComApi, airtableBase = new MsoBase()) {
+  addSummaryTableHeaders(['MSO', 'Entity', 'Updates', 'Creates', 'Removes']);
   const syncer = new Syncer(billComApi, airtableBase);
   for await (const mso of airtableBase.iterateMsos()) {
     const msoCode = mso.get('Code');
@@ -309,6 +320,12 @@ export async function main(billComApi, airtableBase = new MsoBase()) {
         }));
     await syncer.sync(
         'Customer', 'All Customers', o => ({Name: o.name, Email: o.email}));
+
+    // Add summary.
+    const blockLength = summaryBlock.length;
+    addSummaryTableRow([msoCode, ...summaryBlock.shift()], blockLength);
+    summaryBlock.forEach(addSummaryTableRow);
+    summaryBlock = [];
 
     if (msoCode !== PRIMARY_ORG) continue;
     // sync('Department', 'Departments', o => ({Name: o.name, Email: o.email}))

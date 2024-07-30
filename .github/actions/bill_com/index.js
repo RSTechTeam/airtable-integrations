@@ -21613,14 +21613,16 @@ __nccwpck_require__.r(__webpack_exports__);
 /* harmony export */   "main": () => (/* binding */ main)
 /* harmony export */ });
 /* harmony import */ var _common_api_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(6362);
-/* harmony import */ var _common_constants_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(9447);
-/* harmony import */ var _common_utils_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(381);
-/* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(5585);
-/* harmony import */ var _common_sync_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(3599);
+/* harmony import */ var _common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(1444);
+/* harmony import */ var _common_constants_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(9447);
+/* harmony import */ var _common_utils_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(381);
+/* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(5585);
+/* harmony import */ var _common_sync_js__WEBPACK_IMPORTED_MODULE_5__ = __nccwpck_require__(3599);
 /**
  * @fileoverview Checks whether Bills have been paid and syncs Bill.com data
  * (e.g., Vendors, Chart of Accounts) into Airtable.
  */
+
 
 
 
@@ -21669,7 +21671,7 @@ class Syncer {
    * @param {!Api} billComApi
    * @param {!MsoBase=} airtableBase
    */
-  constructor(billComApi, airtableBase = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_3__/* .MsoBase */ .F()) {
+  constructor(billComApi, airtableBase = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_4__/* .MsoBase */ .F()) {
 
     /** @private @const {!Api} */
     this.billComApi_ = billComApi;
@@ -21688,8 +21690,8 @@ class Syncer {
     if (airtableUnpaids.length === 0) return;
 
     const BILL_COM_ID =
-        entity === 'Bill' ? _common_constants_js__WEBPACK_IMPORTED_MODULE_1__/* .MSO_BILL_COM_ID */ .yG : _common_constants_js__WEBPACK_IMPORTED_MODULE_1__/* .BILL_COM_ID_SUFFIX */ .dK;
-    const mapping = _common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .getMapping */ .tj(airtableUnpaids, BILL_COM_ID);
+        entity === 'Bill' ? _common_constants_js__WEBPACK_IMPORTED_MODULE_2__/* .MSO_BILL_COM_ID */ .yG : _common_constants_js__WEBPACK_IMPORTED_MODULE_2__/* .BILL_COM_ID_SUFFIX */ .dK;
+    const mapping = _common_sync_js__WEBPACK_IMPORTED_MODULE_5__/* .getMapping */ .tj(airtableUnpaids, BILL_COM_ID);
     const billComUpdates =
         await this.billComApi_.bulk('Read', entity, Array.from(mapping.keys()));
     await this.airtableBase_.update(
@@ -21706,7 +21708,7 @@ class Syncer {
                   'Effective Amount': data.amount,
                   'Payment Status': paymentStatuses.get(data.paymentStatus),
                   'Paid': isPaid,
-                  'Paid Date': isPaid ? (0,_common_utils_js__WEBPACK_IMPORTED_MODULE_2__/* .getYyyyMmDd */ .PQ)(data.updatedTime) : null,
+                  'Paid Date': isPaid ? (0,_common_utils_js__WEBPACK_IMPORTED_MODULE_3__/* .getYyyyMmDd */ .PQ)(data.updatedTime) : null,
                 },
               };
             }));
@@ -21748,13 +21750,13 @@ class Syncer {
 
     const airtableRecords = await this.airtableBase_.select(table);
     const {updates, creates, removes} =
-        _common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .syncChanges */ .U4(
+        _common_sync_js__WEBPACK_IMPORTED_MODULE_5__/* .syncChanges */ .U4(
             // Source
             changes,
             // Mapping
-            _common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .getMapping */ .tj(airtableRecords, _common_constants_js__WEBPACK_IMPORTED_MODULE_1__/* .MSO_BILL_COM_ID */ .yG),
+            _common_sync_js__WEBPACK_IMPORTED_MODULE_5__/* .getMapping */ .tj(airtableRecords, _common_constants_js__WEBPACK_IMPORTED_MODULE_2__/* .MSO_BILL_COM_ID */ .yG),
             // Destination IDs
-            _common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .getAirtableRecordIds */ .D2(airtableRecords));
+            _common_sync_js__WEBPACK_IMPORTED_MODULE_5__/* .getAirtableRecordIds */ .D2(airtableRecords));
 
     const msoRecordId = this.airtableBase_.getCurrentMso().getId();
     await this.airtableBase_.create(
@@ -21762,16 +21764,20 @@ class Syncer {
         Array.from(
             creates,
             ([id, create]) => ({
-              fields: {MSO: [msoRecordId], [_common_constants_js__WEBPACK_IMPORTED_MODULE_1__/* .MSO_BILL_COM_ID */ .yG]: id, ...create},
+              fields: {MSO: [msoRecordId], [_common_constants_js__WEBPACK_IMPORTED_MODULE_2__/* .MSO_BILL_COM_ID */ .yG]: id, ...create},
             })));
     await this.airtableBase_.update(
         table,
         [
-          ...Array.from(updates, _common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .airtableRecordUpdate */ .vw),
-          ...Array.from(removes, _common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .airtableRecordDeactivate */ .g6),
+          ...Array.from(updates, _common_sync_js__WEBPACK_IMPORTED_MODULE_5__/* .airtableRecordUpdate */ .vw),
+          ...Array.from(removes, _common_sync_js__WEBPACK_IMPORTED_MODULE_5__/* .airtableRecordDeactivate */ .g6),
         ]);
 
-    summaryBlock.push()
+    summaryBlock.push([
+      entity,
+      ...[updates, creates, removes].map(
+          arrayLike => arrayLike.size > 0 ? arrayLike.size : '-'),
+    ]);
   }
 
   /**
@@ -21805,7 +21811,7 @@ class Syncer {
    */
   async syncCustomers(anchorEntity) {
     const ALL_CUSTOMERS_TABLE = 'All Customers';
-    const BILL_COM_ID = `${anchorEntity} ${_common_constants_js__WEBPACK_IMPORTED_MODULE_1__/* .BILL_COM_ID_SUFFIX */ .dK}`;
+    const BILL_COM_ID = `${anchorEntity} ${_common_constants_js__WEBPACK_IMPORTED_MODULE_2__/* .BILL_COM_ID_SUFFIX */ .dK}`;
 
     await this.billComApi_.login(anchorEntity);
 
@@ -21820,7 +21826,7 @@ class Syncer {
                 // And temporarily skip Customers with long names.
                 c.get('Name').length < 42);
     const {updates: billComUpdates, creates: billComCreates} =
-        _common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .syncChanges */ .U4(
+        _common_sync_js__WEBPACK_IMPORTED_MODULE_5__/* .syncChanges */ .U4(
             // Source
             new Map(
                 sourceAirtableCustomers.map(
@@ -21833,7 +21839,7 @@ class Syncer {
                       },
                     ])),
             // Mapping
-            _common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .getMapping */ .tj(sourceAirtableCustomers, BILL_COM_ID, false));
+            _common_sync_js__WEBPACK_IMPORTED_MODULE_5__/* .getMapping */ .tj(sourceAirtableCustomers, BILL_COM_ID, false));
     await this.billComApi_.bulk(
         'Update',
         'Customer',
@@ -21842,21 +21848,21 @@ class Syncer {
     // Upsert Anchor Entity Bill.com Customers into MSO Bill.com (and Airtable).
     const hasEmailAirtableCustomers =
         new Set(
-            _common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .filterMap */ .DZ(
+            _common_sync_js__WEBPACK_IMPORTED_MODULE_5__/* .filterMap */ .DZ(
                 airtableCustomers,
                 c => !!c.get('Email'),
                 c => c.get(BILL_COM_ID)));
     const {updates: airtableUpdates, creates: airtableCreates} =
-        _common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .syncChanges */ .U4(
+        _common_sync_js__WEBPACK_IMPORTED_MODULE_5__/* .syncChanges */ .U4(
             // Source
             new Map(
-                _common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .filterMap */ .DZ(
+                _common_sync_js__WEBPACK_IMPORTED_MODULE_5__/* .filterMap */ .DZ(
                     await this.billComApi_.listActive('Customer'),
                     // Skip updates where email already exists.
                     c => !hasEmailAirtableCustomers.has(c.id),
                     c => [c.id, {name: c.name, email: c.email}])),
             // Mapping
-            _common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .getMapping */ .tj(airtableCustomers, BILL_COM_ID));
+            _common_sync_js__WEBPACK_IMPORTED_MODULE_5__/* .getMapping */ .tj(airtableCustomers, BILL_COM_ID));
 
     await this.airtableBase_.update(
         ALL_CUSTOMERS_TABLE,
@@ -21893,7 +21899,7 @@ class Syncer {
                     Name: create.name,
                     Email: create.email,
                     [BILL_COM_ID]: id,
-                    [_common_constants_js__WEBPACK_IMPORTED_MODULE_1__/* .MSO_BILL_COM_ID */ .yG]:
+                    [_common_constants_js__WEBPACK_IMPORTED_MODULE_2__/* .MSO_BILL_COM_ID */ .yG]:
                       await this.billComApi_.create('Customer', create),
                   }
                 }))));
@@ -21905,8 +21911,8 @@ class Syncer {
  * @param {!MsoBase=} airtableBase
  * @return {!Promise<undefined>}
  */
-async function main(billComApi, airtableBase = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_3__/* .MsoBase */ .F()) {
-  addSummaryTableRow(['MSO', 'Entity', 'Updates', 'Creates', 'Removes'], true);
+async function main(billComApi, airtableBase = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_4__/* .MsoBase */ .F()) {
+  (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_1__/* .addSummaryTableHeaders */ .M9)(['MSO', 'Entity', 'Updates', 'Creates', 'Removes']);
   const syncer = new Syncer(billComApi, airtableBase);
   for await (const mso of airtableBase.iterateMsos()) {
     const msoCode = mso.get('Code');
@@ -21935,7 +21941,13 @@ async function main(billComApi, airtableBase = new _common_airtable_js__WEBPACK_
     await syncer.sync(
         'Customer', 'All Customers', o => ({Name: o.name, Email: o.email}));
 
-    if (msoCode !== _common_constants_js__WEBPACK_IMPORTED_MODULE_1__/* .PRIMARY_ORG */ .l3) continue;
+    // Add summary.
+    const blockLength = summaryBlock.length;
+    (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_1__/* .addSummaryTableRow */ .QS)([msoCode, ...summaryBlock.shift()], blockLength);
+    summaryBlock.forEach(_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_1__/* .addSummaryTableRow */ .QS);
+    summaryBlock = [];
+
+    if (msoCode !== _common_constants_js__WEBPACK_IMPORTED_MODULE_2__/* .PRIMARY_ORG */ .l3) continue;
     // sync('Department', 'Departments', o => ({Name: o.name, Email: o.email}))
     await syncer.syncUnpaid('Invoices', 'Invoice');
     await syncer.syncCustomers('CPASF');
