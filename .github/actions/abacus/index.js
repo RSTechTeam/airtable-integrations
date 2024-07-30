@@ -21317,10 +21317,11 @@ function airtableRecordDeactivate(id) {
 
 /**
  * @param {!Array<!Map|!Set>} changes
- * @return {(number|string)[]} size summary
+ * @return {string[]} size summary
  */
 function summarize(changes) {
-  return changes.map(arrayLike => arrayLike.size > 0 ? arrayLike.size : '-')
+  return changes.map(
+      arrayLike => arrayLike.size > 0 ? arrayLike.size.toString() : '-')
 }
 
 
