@@ -1,7 +1,7 @@
 /** @fileoverview Syncs Bill.com Customers from Airtable to Bill.com. */
 
 import {ActiveStatus, filter} from '../common/api.js';
-import {addSummaryTableRow} from '../../common/github_actions_core.js';
+import {addSummaryTableHeaders, addSummaryTableRow} from '../../common/github_actions_core.js';
 import {getMapping, syncChanges} from '../../common/sync.js';
 import {MSO_BILL_COM_ID} from '../common/constants.js';
 import {MsoBase} from '../../common/airtable.js';
@@ -15,7 +15,7 @@ export async function main(billComApi, airtableBase = new MsoBase()) {
   const AIRTABLE_CUSTOMERS_TABLE = 'Internal Customers';
 
   // Sync for each Org/MSO.
-  addSummaryTableRow(['MSO', 'Updates', 'Creates', 'Removes'], true);
+  addSummaryTableHeaders(['MSO', 'Updates', 'Creates', 'Removes']);
   for await (const mso of airtableBase.iterateMsos()) {
     if (!mso.get('Use Customers?')) continue;
 

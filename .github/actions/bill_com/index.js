@@ -21646,6 +21646,9 @@ const paymentStatuses = new Map([
   ['2', 'Partial Payment'],
 ]);
 
+/** Unit for writing to the Summary Table. */
+let summaryBlock = [];
+
 /**
  * @param {string} name
  * @param {string} city
@@ -21767,6 +21770,8 @@ class Syncer {
           ...Array.from(updates, _common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .airtableRecordUpdate */ .vw),
           ...Array.from(removes, _common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .airtableRecordDeactivate */ .g6),
         ]);
+
+    summaryBlock.push()
   }
 
   /**
@@ -21901,6 +21906,7 @@ class Syncer {
  * @return {!Promise<undefined>}
  */
 async function main(billComApi, airtableBase = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_3__/* .MsoBase */ .F()) {
+  addSummaryTableRow(['MSO', 'Entity', 'Updates', 'Creates', 'Removes'], true);
   const syncer = new Syncer(billComApi, airtableBase);
   for await (const mso of airtableBase.iterateMsos()) {
     const msoCode = mso.get('Code');
@@ -22228,7 +22234,7 @@ async function main(billComApi, airtableBase = new _common_airtable_js__WEBPACK_
   const AIRTABLE_CUSTOMERS_TABLE = 'Internal Customers';
 
   // Sync for each Org/MSO.
-  (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_1__/* .addSummaryTableRow */ .QS)(['MSO', 'Updates', 'Creates', 'Removes'], true);
+  (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_1__/* .addSummaryTableHeaders */ .M9)(['MSO', 'Updates', 'Creates', 'Removes']);
   for await (const mso of airtableBase.iterateMsos()) {
     if (!mso.get('Use Customers?')) continue;
 
@@ -23153,6 +23159,7 @@ class MsoBase extends Base {
 /* harmony export */   "ZK": () => (/* binding */ warn),
 /* harmony export */   "Np": () => (/* binding */ getInput),
 /* harmony export */   "vU": () => (/* binding */ error),
+/* harmony export */   "M9": () => (/* binding */ addSummaryTableHeaders),
 /* harmony export */   "QS": () => (/* binding */ addSummaryTableRow),
 /* harmony export */   "A8": () => (/* binding */ writeSummary),
 /* harmony export */   "u2": () => (/* binding */ logJson)
@@ -23197,12 +23204,23 @@ function error(err) {
   throw err;
 }
 
+/** @param {string[]} headers */
+function addSummaryTableHeaders(headers) {
+  summaryTableData.push(headers.map(h => ({data: h, header: true})));
+}
+
 /**
  * @param {string[]} row
- * @param {boolean=} header
+ * @param {number=} firstColRowspan
  */
-function addSummaryTableRow(row, header = false) {
-  summaryTableData.push(row.map(data => ({data: data, header: header})));
+function addSummaryTableRow(row, firstColRowspan = 1) {
+  summaryTableData.push(
+      firstColRowspan === 1 ?
+          row :
+          [
+            {data: row.shift(), rowspan: firstColRowspan},
+            ...row.map(data => ({data: data})),
+          ]);
 }
 
 /** Writes the summary, along with any table data. */

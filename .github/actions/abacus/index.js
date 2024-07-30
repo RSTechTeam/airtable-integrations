@@ -21100,7 +21100,7 @@ async function parse(csv, header, config) {
 /* harmony export */   "Np": () => (/* binding */ getInput),
 /* harmony export */   "vU": () => (/* binding */ error)
 /* harmony export */ });
-/* unused harmony exports log, addSummaryTableRow, writeSummary, logJson */
+/* unused harmony exports log, addSummaryTableHeaders, addSummaryTableRow, writeSummary, logJson */
 /* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(6024);
 /* harmony import */ var _utils_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(381);
 /**
@@ -21141,12 +21141,23 @@ function error(err) {
   throw err;
 }
 
+/** @param {string[]} headers */
+function addSummaryTableHeaders(headers) {
+  summaryTableData.push(headers.map(h => ({data: h, header: true})));
+}
+
 /**
  * @param {string[]} row
- * @param {boolean=} header
+ * @param {number=} firstColRowspan
  */
-function addSummaryTableRow(row, header = false) {
-  summaryTableData.push(row.map(data => ({data: data, header: header})));
+function addSummaryTableRow(row, firstColRowspan = 1) {
+  summaryTableData.push(
+      firstColRowspan === 1 ?
+          row :
+          [
+            {data: row.shift(), rowspan: firstColRowspan},
+            ...row.map(data => ({data: data})),
+          ]);
 }
 
 /** Writes the summary, along with any table data. */
