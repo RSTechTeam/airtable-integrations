@@ -21944,7 +21944,7 @@ async function main(billComApi, airtableBase = new _common_airtable_js__WEBPACK_
     // Add summary.
     const blockLength = summaryBlock.length;
     (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_1__/* .addSummaryTableRow */ .QS)([msoCode, ...summaryBlock.shift()], blockLength);
-    summaryBlock.forEach(_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_1__/* .addSummaryTableRow */ .QS);
+    summaryBlock.forEach(row => (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_1__/* .addSummaryTableRow */ .QS)(row));
     summaryBlock = [];
 
     if (msoCode !== _common_constants_js__WEBPACK_IMPORTED_MODULE_2__/* .PRIMARY_ORG */ .l3) continue;
@@ -23312,6 +23312,7 @@ const airtableBaseId = (0,_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/*
 /* harmony export */   "vw": () => (/* binding */ airtableRecordUpdate),
 /* harmony export */   "g6": () => (/* binding */ airtableRecordDeactivate)
 /* harmony export */ });
+/* unused harmony export summarize */
 /** @fileoverview Utilities for syncing data from one datasource to another. */
 
 /**
@@ -23412,6 +23413,13 @@ function airtableRecordUpdate([id, update]) {
  */
 function airtableRecordDeactivate(id) {
   return airtableRecordUpdate([id, {Active: false}]);
+}
+
+/**
+ * @param
+ */
+function summarize(changes) {
+  return changes.map(arrayLike => arrayLike.size > 0 ? arrayLike.size : '-')
 }
 
 

@@ -324,7 +324,7 @@ export async function main(billComApi, airtableBase = new MsoBase()) {
     // Add summary.
     const blockLength = summaryBlock.length;
     addSummaryTableRow([msoCode, ...summaryBlock.shift()], blockLength);
-    summaryBlock.forEach(addSummaryTableRow);
+    summaryBlock.forEach(row => addSummaryTableRow(row));
     summaryBlock = [];
 
     if (msoCode !== PRIMARY_ORG) continue;

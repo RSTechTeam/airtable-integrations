@@ -21212,7 +21212,7 @@ function logJson(endpoint, json) {
 /* harmony export */   "tj": () => (/* binding */ getMapping),
 /* harmony export */   "vw": () => (/* binding */ airtableRecordUpdate)
 /* harmony export */ });
-/* unused harmony exports filterMap, getAirtableRecordIds, airtableRecordDeactivate */
+/* unused harmony exports filterMap, getAirtableRecordIds, airtableRecordDeactivate, summarize */
 /** @fileoverview Utilities for syncing data from one datasource to another. */
 
 /**
@@ -21313,6 +21313,13 @@ function airtableRecordUpdate([id, update]) {
  */
 function airtableRecordDeactivate(id) {
   return airtableRecordUpdate([id, {Active: false}]);
+}
+
+/**
+ * @param
+ */
+function summarize(changes) {
+  return changes.map(arrayLike => arrayLike.size > 0 ? arrayLike.size : '-')
 }
 
 
