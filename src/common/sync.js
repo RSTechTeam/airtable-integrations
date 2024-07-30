@@ -99,3 +99,11 @@ export function airtableRecordUpdate([id, update]) {
 export function airtableRecordDeactivate(id) {
   return airtableRecordUpdate([id, {Active: false}]);
 }
+
+/**
+ * @param {!Array<!Map|!Set>} changes
+ * @return {(number|string)[]} size summary
+ */
+export function summarize(changes) {
+  return changes.map(arrayLike => arrayLike.size > 0 ? arrayLike.size : '-')
+}

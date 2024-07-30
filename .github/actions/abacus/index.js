@@ -21316,7 +21316,8 @@ function airtableRecordDeactivate(id) {
 }
 
 /**
- * @param
+ * @param {!Array<!Map|!Set>} changes
+ * @return {(number|string)[]} size summary
  */
 function summarize(changes) {
   return changes.map(arrayLike => arrayLike.size > 0 ? arrayLike.size : '-')

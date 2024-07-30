@@ -21773,11 +21773,7 @@ class Syncer {
           ...Array.from(removes, _common_sync_js__WEBPACK_IMPORTED_MODULE_5__/* .airtableRecordDeactivate */ .g6),
         ]);
 
-    summaryBlock.push([
-      entity,
-      ...[updates, creates, removes].map(
-          arrayLike => arrayLike.size > 0 ? arrayLike.size : '-'),
-    ]);
+    summaryBlock.push([entity, ..._common_sync_js__WEBPACK_IMPORTED_MODULE_5__/* .summarize */ .Iz([updates, creates, removes])]);
   }
 
   /**
@@ -22298,11 +22294,7 @@ async function main(billComApi, airtableBase = new _common_airtable_js__WEBPACK_
           ...Array.from(updates, ([id, update]) => ({id, ...update})),
           ...Array.from(removes, id => ({id, isActive: _common_api_js__WEBPACK_IMPORTED_MODULE_0__/* .ActiveStatus.INACTIVE */ .tV.INACTIVE})),
         ]);
-    (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_1__/* .addSummaryTableRow */ .QS)([
-      msoCode,
-      ...[updates, creates, removes].map(
-          arrayLike => arrayLike.size > 0 ? arrayLike.size : '-'),
-    ]);
+    (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_1__/* .addSummaryTableRow */ .QS)([msoCode, ...(0,_common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .summarize */ .Iz)([updates, creates, removes])]);
   }
 }
 
@@ -23310,9 +23302,9 @@ const airtableBaseId = (0,_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/*
 /* harmony export */   "tj": () => (/* binding */ getMapping),
 /* harmony export */   "D2": () => (/* binding */ getAirtableRecordIds),
 /* harmony export */   "vw": () => (/* binding */ airtableRecordUpdate),
-/* harmony export */   "g6": () => (/* binding */ airtableRecordDeactivate)
+/* harmony export */   "g6": () => (/* binding */ airtableRecordDeactivate),
+/* harmony export */   "Iz": () => (/* binding */ summarize)
 /* harmony export */ });
-/* unused harmony export summarize */
 /** @fileoverview Utilities for syncing data from one datasource to another. */
 
 /**
@@ -23416,7 +23408,8 @@ function airtableRecordDeactivate(id) {
 }
 
 /**
- * @param
+ * @param {!Array<!Map|!Set>} changes
+ * @return {(number|string)[]} size summary
  */
 function summarize(changes) {
   return changes.map(arrayLike => arrayLike.size > 0 ? arrayLike.size : '-')

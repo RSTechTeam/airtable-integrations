@@ -153,11 +153,7 @@ class Syncer {
           ...Array.from(removes, sync.airtableRecordDeactivate),
         ]);
 
-    summaryBlock.push([
-      entity,
-      ...[updates, creates, removes].map(
-          arrayLike => arrayLike.size > 0 ? arrayLike.size : '-'),
-    ]);
+    summaryBlock.push([entity, ...sync.summarize([updates, creates, removes])]);
   }
 
   /**

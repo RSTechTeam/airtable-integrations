@@ -2,7 +2,7 @@
 
 import {ActiveStatus, filter} from '../common/api.js';
 import {addSummaryTableHeaders, addSummaryTableRow} from '../../common/github_actions_core.js';
-import {getMapping, syncChanges} from '../../common/sync.js';
+import {getMapping, summarize, syncChanges} from '../../common/sync.js';
 import {MSO_BILL_COM_ID} from '../common/constants.js';
 import {MsoBase} from '../../common/airtable.js';
 
@@ -67,10 +67,6 @@ export async function main(billComApi, airtableBase = new MsoBase()) {
           ...Array.from(updates, ([id, update]) => ({id, ...update})),
           ...Array.from(removes, id => ({id, isActive: ActiveStatus.INACTIVE})),
         ]);
-    addSummaryTableRow([
-      msoCode,
-      ...[updates, creates, removes].map(
-          arrayLike => arrayLike.size > 0 ? arrayLike.size : '-'),
-    ]);
+    addSummaryTableRow([msoCode, ...summarize([updates, creates, removes])]);
   }
 }
