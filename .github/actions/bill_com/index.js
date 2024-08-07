@@ -22515,9 +22515,10 @@ function baseUrl(test = false) {
  */
 async function apiCall(endpoint, headers, body, test) {
   const response =
-      await (0,src/* default */.ZP)(
-          `${baseUrl(test)}/api/v2/${endpoint}.json`,
-          {method: 'POST', headers: headers, body: body});
+      await rateLimit(
+          () => (0,src/* default */.ZP)(
+              `${baseUrl(test)}/api/v2/${endpoint}.json`,
+              {method: 'POST', headers: headers, body: body}));
   const json = await response.json();
   (0,github_actions_core/* logJson */.u2)(endpoint, json);
   const data = json.response_data;
@@ -22611,12 +22612,11 @@ class Api {
    */
   call(endpoint, params) {
     (0,github_actions_core/* log */.cM)(params);
-    return rateLimit(
-        () => apiCall(
-            endpoint,
-            {'Content-Type': 'application/x-www-form-urlencoded'},
-            `devKey=${this.getDevKey()}&sessionId=${this.sessionId_}&${params}`,
-            this.test_));
+    return apiCall(
+        endpoint,
+        {'Content-Type': 'application/x-www-form-urlencoded'},
+        `devKey=${this.getDevKey()}&sessionId=${this.sessionId_}&${params}`,
+        this.test_);
   }
 
   /** 

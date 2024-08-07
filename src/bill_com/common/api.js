@@ -42,9 +42,10 @@ function baseUrl(test = false) {
  */
 export async function apiCall(endpoint, headers, body, test) {
   const response =
-      await fetch(
-          `${baseUrl(test)}/api/v2/${endpoint}.json`,
-          {method: 'POST', headers: headers, body: body});
+      await rateLimit(
+          () => fetch(
+              `${baseUrl(test)}/api/v2/${endpoint}.json`,
+              {method: 'POST', headers: headers, body: body}));
   const json = await response.json();
   logJson(endpoint, json);
   const data = json.response_data;
@@ -138,12 +139,11 @@ export class Api {
    */
   call(endpoint, params) {
     log(params);
-    return rateLimit(
-        () => apiCall(
-            endpoint,
-            {'Content-Type': 'application/x-www-form-urlencoded'},
-            `devKey=${this.getDevKey()}&sessionId=${this.sessionId_}&${params}`,
-            this.test_));
+    return apiCall(
+        endpoint,
+        {'Content-Type': 'application/x-www-form-urlencoded'},
+        `devKey=${this.getDevKey()}&sessionId=${this.sessionId_}&${params}`,
+        this.test_);
   }
 
   /** 
