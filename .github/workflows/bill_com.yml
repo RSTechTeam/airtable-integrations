@@ -3,6 +3,8 @@ on:
   schedule:
     - cron: '*/15 * * * *'
   workflow_dispatch:
+concurrency:
+  group: bill.com
 jobs:
   main:
     runs-on: ubuntu-latest
