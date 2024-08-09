@@ -35,12 +35,13 @@ jobs:
           'bill_com_integration_sync_bills',
         ]
         include:
+          # Unset input doesn't actually get included
           - file-id: ${{ inputs.file-id }}
     steps:
       - id: get-file-id
         run: echo "id=${{ inputs.file-id || matrix.file-id }}" >> $GITHUB_OUTPUT
       - id: get-airtable-base-id
-        if: matrix.file-id && steps.get-file-id.outputs.id == matrix.file-id
+        if: steps.get-file-id.outputs.id == matrix.file-id
         run: |
           case ${{ matrix.file-id }} in
             door_knocking*)
@@ -51,7 +52,7 @@ jobs:
               ;;
           esac
           echo "id=$id" >> $GITHUB_OUTPUT
-      - if: matrix.file-id && steps.get-file-id.outputs.id == matrix.file-id
+      - if: steps.get-file-id.outputs.id == matrix.file-id
         uses: RSTechTeam/airtable-integrations/.github/actions/bill_com@main
         with:
           file-id: ${{ matrix.file-id }}
