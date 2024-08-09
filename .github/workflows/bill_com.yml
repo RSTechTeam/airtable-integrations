@@ -3,6 +3,13 @@ on:
   schedule:
     - cron: '*/15 * * * *'
   workflow_dispatch:
+    inputs:
+      # If set, must be one of the below file IDs; that file is executed.
+      # If unset, all files are executed.
+      file-id:
+        description: 'Javascript File ID'
+        required: false
+        type: string
 concurrency:
   group: bill.com
 jobs:
@@ -28,7 +35,10 @@ jobs:
           'bill_com_integration_sync_bills',
         ]
     steps:
+      - id: get-file-id
+        run: echo "id=${{ inputs.file-id || matrix.file-id }}" >> $GITHUB_OUTPUT
       - id: get-airtable-base-id
+        if: ${{ steps.get-file-id.outputs.id == matrix.file-id }}
         run: |
           case ${{ matrix.file-id }} in
             door_knocking*)
@@ -39,7 +49,8 @@ jobs:
               ;;
           esac
           echo "id=$id" >> $GITHUB_OUTPUT
-      - uses: RSTechTeam/airtable-integrations/.github/actions/bill_com@main
+      - if: ${{ steps.get-file-id.outputs.id == matrix.file-id }}
+        uses: RSTechTeam/airtable-integrations/.github/actions/bill_com@main
         with:
           file-id: ${{ matrix.file-id }}
           airtable-api-key: ${{ secrets.AIRTABLE_API_KEY }}
