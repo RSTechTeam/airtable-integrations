@@ -35,10 +35,7 @@ jobs:
       max-parallel: 1
       fail-fast: false
       matrix:
-        file-id: ${{ env.FILE-IDS }}
-        exclude: ${{ inputs.file-id &&  env.FILE-IDS }}
-        include:
-          - ${{ inputs.file-id }}
+        file-id: ${{ fromJSON(inputs.file-id && format('[{0}]', inputs.file-id) || env.FILE-IDS) }}
     steps:
       - id: get-airtable-base-id
         run: |
