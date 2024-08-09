@@ -3,30 +3,39 @@ on:
   schedule:
     - cron: '*/15 * * * *'
   workflow_dispatch:
+    inputs:
+      # If set, must be one of the below file IDs; that file is executed.
+      # If unset, all files are executed.
+      file-id:
+        description: 'Javascript File ID'
+        required: false
+        type: string
 concurrency:
   group: bill.com
 jobs:
   main:
     runs-on: ubuntu-latest
+    env:
+      FILE-IDS: [ # Order matters for job execution
+        # Creates that don't reference other data
+        'bill_com_integration_create_approver',
+        'door_knocking_create_vendor',
+        # Sync including newly created data
+        'bill_com_integration_sync_internal_customers',
+        'bill_com_integration_sync',
+        # Creates that reference synced data
+        'bill_com_integration_bulk_create_bills',
+        'bill_com_integration_create_bill',
+        # Sync including more recently created data
+        'bill_com_integration_sync_bills',
+      ]
     strategy:
       # Run jobs sequentially to avoid Bill.com API's concurrent request limit:
       # 3 per Developer Key per Organization
       max-parallel: 1
       fail-fast: false
       matrix:
-        file-id: [
-          # Creates that don't reference other data
-          'bill_com_integration_create_approver',
-          'door_knocking_create_vendor',
-          # Sync including newly created data
-          'bill_com_integration_sync_internal_customers',
-          'bill_com_integration_sync',
-          # Creates that reference synced data
-          'bill_com_integration_bulk_create_bills',
-          'bill_com_integration_create_bill',
-          # Sync including more recently created data
-          'bill_com_integration_sync_bills',
-        ]
+        file-id: ${{ inputs.file-id && [inputs.file-id] || env.FILE-IDS }}
     steps:
       - id: get-airtable-base-id
         run: |
