@@ -302,6 +302,7 @@ export async function main(billComApi, airtableBase = new MsoBase()) {
           'City': o.addressCity,
           'State': o.addressState,
           'Zip Code': parseInt(o.addressZip),
+          'Email': o.email,
           'Paid via BILL': o.lastPaymentDate != null,
         }));
     await syncer.syncNameKey('ChartOfAccount', 'Chart of Accounts', 'name');

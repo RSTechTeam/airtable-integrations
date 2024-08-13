@@ -21922,6 +21922,7 @@ async function main(billComApi, airtableBase = new _common_airtable_js__WEBPACK_
           'City': o.addressCity,
           'State': o.addressState,
           'Zip Code': parseInt(o.addressZip),
+          'Email': o.email,
           'Paid via BILL': o.lastPaymentDate != null,
         }));
     await syncer.syncNameKey('ChartOfAccount', 'Chart of Accounts', 'name');
