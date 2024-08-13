@@ -51,6 +51,9 @@ export async function main(billComApi, airtableBase = new MsoBase()) {
         async (record) => {
 
           // Create parse config.
+          const submittedBy =
+              `Submitted by ${record.get('Requester Name')}` +
+                  ` (${record.get('Requester Email')})`;
           const project =
               await getBillComId(
                   'Internal Customers', record.get('Project')[0]);
@@ -67,7 +70,7 @@ export async function main(billComApi, airtableBase = new MsoBase()) {
                             invoiceDate: record.get('Invoice Date'),
                             dueDate: record.get('Due Date'),
                             invoiceNumber: row['Invoice ID'],
-                            description: row['Description'],
+                            description: submittedBy,
                             billLineItems: [{
                               entity: 'BillLineItem',
                               customerId: project,
