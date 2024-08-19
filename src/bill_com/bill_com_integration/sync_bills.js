@@ -1,5 +1,6 @@
 /** @fileoverview Syncs Bill.com Bill Line Item data into Airtable. */
 
+import {addSummaryTableHeaders, addSummaryTableRow} from '../../common/github_actions_core.js';
 import {Base} from '../../common/airtable.js';
 import {billComTransformUrl} from '../common/inputs.js';
 import {getYyyyMmDd} from '../../common/utils.js';
@@ -112,6 +113,7 @@ export async function main(api, billComIntegrationBase = new Base()) {
               '(?<city>.+) \\| (?<state>.+) \\| (?<zip>.+)\\n' +
               '(?<description>.+)');
 
+  addSummaryTableHeaders(['Org', 'Updates', 'Creates', 'Removes']);
   const orgs =
       await billComIntegrationBase.select(
           'Anchor Entities', BILL_REPORTING_TABLE);
@@ -240,5 +242,7 @@ export async function main(api, billComIntegrationBase = new Base()) {
                           [id, await inPlaceDocuments(update)])))),
           ...Array.from(removes, sync.airtableRecordDeactivate),
         ]);
+    addSummaryTableRow(
+        [orgCode, ...sync.summarize([updates, creates, removes])]);
   }
 }

@@ -21965,12 +21965,13 @@ __nccwpck_require__.r(__webpack_exports__);
 /* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
 /* harmony export */   "main": () => (/* binding */ main)
 /* harmony export */ });
-/* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(5585);
-/* harmony import */ var _common_inputs_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(1872);
-/* harmony import */ var _common_utils_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(381);
-/* harmony import */ var _common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(1444);
+/* harmony import */ var _common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(1444);
+/* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(5585);
+/* harmony import */ var _common_inputs_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(1872);
+/* harmony import */ var _common_utils_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(381);
 /* harmony import */ var _common_sync_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(3599);
 /** @fileoverview Syncs Bill.com Bill Line Item data into Airtable. */
+
 
 
 
@@ -22053,7 +22054,7 @@ async function getDocuments(sessionId, billId) {
   for (let i = 1; i <= pages.documentPages.numPages; ++i) {
     docs.push({
       url: 
-        `${(0,_common_inputs_js__WEBPACK_IMPORTED_MODULE_1__/* .billComTransformUrl */ .hF)()}?sessionId=${sessionId}&entityId=${billId}` +
+        `${(0,_common_inputs_js__WEBPACK_IMPORTED_MODULE_2__/* .billComTransformUrl */ .hF)()}?sessionId=${sessionId}&entityId=${billId}` +
             `&pageNumber=${i}`
     });
   }
@@ -22074,7 +22075,7 @@ async function inPlaceDocuments(upsert) {
  * @param {!Base=} billComIntegrationBase
  * @return {!Promise<undefined>}
  */
-async function main(api, billComIntegrationBase = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .Base */ .X()) {
+async function main(api, billComIntegrationBase = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .Base */ .X()) {
   billComApi = api;
 
   const BILL_REPORTING_TABLE = 'Bill Reporting';
@@ -22084,6 +22085,7 @@ async function main(api, billComIntegrationBase = new _common_airtable_js__WEBPA
               '(?<city>.+) \\| (?<state>.+) \\| (?<zip>.+)\\n' +
               '(?<description>.+)');
 
+  (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .addSummaryTableHeaders */ .M9)(['Org', 'Updates', 'Creates', 'Removes']);
   const orgs =
       await billComIntegrationBase.select(
           'Anchor Entities', BILL_REPORTING_TABLE);
@@ -22114,7 +22116,7 @@ async function main(api, billComIntegrationBase = new _common_airtable_js__WEBPA
 
       // Handle no Classes.
       if (err.message.match(/BDC_1145/)) {
-        (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_3__/* .log */ .cM)(`${orgCode} does not use Classes: ${err.message}`);
+        (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .log */ .cM)(`${orgCode} does not use Classes: ${err.message}`);
       } else {
         throw err;
       }
@@ -22139,7 +22141,7 @@ async function main(api, billComIntegrationBase = new _common_airtable_js__WEBPA
               'Active': true,
               'Org': [orgId],
               'Submitted By': submitterMatch == null ? null : submitterMatch[1],
-              'Creation Date': (0,_common_utils_js__WEBPACK_IMPORTED_MODULE_2__/* .getYyyyMmDd */ .PQ)(item.createdTime),
+              'Creation Date': (0,_common_utils_js__WEBPACK_IMPORTED_MODULE_3__/* .getYyyyMmDd */ .PQ)(item.createdTime),
               'Invoice Date': bill.invoiceDate,
               'Expense Date': itemVendor.date || bill.invoiceDate,
               [billComIdFieldName('Vendor')]: bill.vendorId,
@@ -22212,6 +22214,8 @@ async function main(api, billComIntegrationBase = new _common_airtable_js__WEBPA
                           [id, await inPlaceDocuments(update)])))),
           ...Array.from(removes, _common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .airtableRecordDeactivate */ .g6),
         ]);
+    (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .addSummaryTableRow */ .QS)(
+        [orgCode, ..._common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .summarize */ .Iz([updates, creates, removes])]);
   }
 }
 
