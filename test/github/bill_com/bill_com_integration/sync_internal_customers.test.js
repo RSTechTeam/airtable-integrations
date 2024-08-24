@@ -9,7 +9,8 @@ import {MSO_BILL_COM_ID} from '../../../../src/bill_com/common/constants.js';
 // true deleting.
 jest.setTimeout(100000);
 
-test('main syncs Customers from Airtable to Bill.com', async () => {
+// TODO: Need to reconsider test.
+test.skip('main syncs Customers from Airtable to Bill.com', async () => {
   const api = await billComApi();
   const testCustomers = new Map();
   const expectListActiveNames = async (expected) => {

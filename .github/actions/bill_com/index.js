@@ -22511,7 +22511,7 @@ const rateLimit = pLimit(3);
  * @return {string}
  */
 function baseUrl(test = false) {
-  return `https://api${test ? '-sandbox' : ''}.bill.com`;
+  return `https://api${test ? '-stage' : ''}.bill.com`;
 }
 
 /**
