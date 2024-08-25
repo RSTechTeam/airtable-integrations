@@ -1,6 +1,5 @@
 import * as sync from '../../../../src/bill_com/bill_com_integration/sync_internal_customers.js';
 import {airtableBase, airtableMsoBase, billComApi} from '../../../test_utils.js';
-import {ActiveStatus} from '../../../../src/bill_com/common/api.js';
 import {jest} from '@jest/globals';
 import {MSO_BILL_COM_ID} from '../../../../src/bill_com/common/constants.js';
 
@@ -18,13 +17,8 @@ test('main syncs Customers from Airtable to Bill.com', async () => {
 
   // Setup.
   const createCustomer =
-      async (name, parentId = null, active = true) => api.create(
-          'Customer',
-          {
-            name: name,
-            parentCustomerId: parentId,
-            isActive: active ? ActiveStatus.Active : ActiveStatus.Inactive,
-          });
+      async (name, parentId = null) => api.create(
+          'Customer', {name: name, parentCustomerId: parentId});
 
   const api = await billComApi();
   await api.primaryOrgLogin();
@@ -36,7 +30,8 @@ test('main syncs Customers from Airtable to Bill.com', async () => {
   const internalParentId = await createCustomer(INTERNAL_PARENT);
   await createCustomer(BILL_COM_ONLY, internalParentId);
   const staleNameId = await createCustomer(STALE_NAME, internalParentId);
-  const activeId = await createCustomer(ACTIVE, internalParentId, false);
+  const activeId = await createCustomer(ACTIVE, internalParentId);
+  await api.dataCall('Crud/Delete/Customer', {id: activeId});
   const base = airtableBase();
   await base.selectAndUpdate(
       'Internal Customers',
