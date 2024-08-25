@@ -1,6 +1,6 @@
 import * as sync from '../../../../src/bill_com/bill_com_integration/sync_internal_customers.js';
 import {airtableBase, airtableMsoBase, billComApi} from '../../../test_utils.js';
-import {isActiveEnum} from '../../../../src/bill_com/common/api.js';
+import {ActiveStatus} from '../../../../src/bill_com/common/api.js';
 import {jest} from '@jest/globals';
 import {MSO_BILL_COM_ID} from '../../../../src/bill_com/common/constants.js';
 
@@ -23,7 +23,7 @@ test('main syncs Customers from Airtable to Bill.com', async () => {
           {
             name: name,
             parentCustomerId: parentId,
-            active: isActiveEnum(active),
+            active: active ? ActiveStatus.Active : ActiveStatus.Inactive,
           });
 
   const api = await billComApi();
