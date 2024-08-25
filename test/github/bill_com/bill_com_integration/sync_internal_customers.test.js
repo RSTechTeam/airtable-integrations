@@ -23,7 +23,7 @@ test('main syncs Customers from Airtable to Bill.com', async () => {
           {
             name: name,
             parentCustomerId: parentId,
-            active: active ? ActiveStatus.Active : ActiveStatus.Inactive,
+            isActive: active ? ActiveStatus.Active : ActiveStatus.Inactive,
           });
 
   const api = await billComApi();
