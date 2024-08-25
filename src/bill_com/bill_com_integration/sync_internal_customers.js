@@ -43,7 +43,7 @@ export async function main(billComApi, airtableBase = new MsoBase()) {
             // Destination IDs
             new Set(
                 Array.from(
-                    await billComApi.list(
+                    await billComApi.listActive(
                         'Customer',
                         [filter('parentCustomerId', '=', parentCustomerId)]),
                     c => c.id)));

@@ -22278,7 +22278,7 @@ async function main(billComApi, airtableBase = new _common_airtable_js__WEBPACK_
             // Destination IDs
             new Set(
                 Array.from(
-                    await billComApi.list(
+                    await billComApi.listActive(
                         'Customer',
                         [(0,_common_api_js__WEBPACK_IMPORTED_MODULE_0__/* .filter */ .hX)('parentCustomerId', '=', parentCustomerId)]),
                     c => c.id)));
