@@ -1,5 +1,4 @@
 import * as sync from '../../../src/common/sync.js';
-import {jest} from '@jest/globals';
 
 const stringify = JSON.stringify;
 

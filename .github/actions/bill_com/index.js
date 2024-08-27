@@ -20734,13 +20734,10 @@ var constants = __nccwpck_require__(9447);
 var src = __nccwpck_require__(4028);
 // EXTERNAL MODULE: ./node_modules/papaparse/papaparse.js
 var papaparse = __nccwpck_require__(1826);
-// EXTERNAL MODULE: ./src/common/github_actions_core.js
-var github_actions_core = __nccwpck_require__(1444);
 // EXTERNAL MODULE: ./src/common/utils.js + 1 modules
 var utils = __nccwpck_require__(381);
 ;// CONCATENATED MODULE: ./src/common/csv.js
 /** @fileoverview Utilities for parsing CSV files. */
-
 
 
 
@@ -20752,7 +20749,7 @@ var utils = __nccwpck_require__(381);
  * @param {!Object<string, *>} config See https://www.papaparse.com/docs#config.
  *     Header and error are preset, and expects using chunk,
  *     which may return a Promise.
- * @return {!Promise<*>}
+ * @return {!Promise<!Array<*>>}
  */
 async function parse(csv, header, config) {
 
@@ -20766,12 +20763,12 @@ async function parse(csv, header, config) {
   let firstChunk = true;
   const promises = [];
   return new Promise(
-      resolve => papaparse.parse(
+      (resolve, reject) => papaparse.parse(
           response.body,
           {
             ...config,
             header: true,
-            error: (err, file) => (0,github_actions_core/* error */.vU)(err),
+            error: (err, file) => reject(err),
             complete: (results, parser) => resolve(Promise.all(promises)),
             chunk:
               (results, parser) => {
@@ -20779,9 +20776,12 @@ async function parse(csv, header, config) {
                 // Validate header during first chunk.
                 if (firstChunk) {
                   firstChunk = false;
-                  const gotHeader = results.meta.fields;
-                  if (JSON.stringify(gotHeader) !== JSON.stringify(header)) {
-                    (0,github_actions_core/* error */.vU)(`Got header: ${gotHeader}\nWant header: ${header}`);
+                  const parsedHeader = results.meta.fields;
+                  if (JSON.stringify(parsedHeader) !== JSON.stringify(header)) {
+                    reject(
+                        new Error(
+                            `Parsed header: ${parsedHeader}` +
+                                `\nGiven header: ${header}`));
                   }
                 }
 

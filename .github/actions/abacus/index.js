@@ -18576,10 +18576,12 @@ return new B(c,{type:"multipart/form-data; boundary="+b})}
 
 __nccwpck_require__.a(__webpack_module__, async (__webpack_handle_async_dependencies__) => {
 /* harmony import */ var _inputs_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(2568);
-/* harmony import */ var _common_sync_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(3599);
+/* harmony import */ var _common_sync_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(3599);
 /* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(8997);
-/* harmony import */ var _common_csv_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(2066);
+/* harmony import */ var _common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(1444);
+/* harmony import */ var _common_csv_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(2066);
 /** @fileoverview Imports an Abacus CSV update into Airtable. */
+
 
 
 
@@ -18609,7 +18611,8 @@ const mapping = new Map([
 // map Abacus Expense ID to Airtable Record ID.
 const expenseSources = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .Base */ .X();
 const expenseRecords =
-    (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_3__/* .getMapping */ .tj)(await expenseSources.select(ABACUS_TABLE), 'Expense ID');
+    (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .getMapping */ .tj)(
+        await expenseSources.select(ABACUS_TABLE).catch(_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_2__/* .error */ .vU), 'Expense ID');
 
 // Create parse config.
 const airtableFields = Array.from(mapping.values());
@@ -18640,7 +18643,7 @@ const parseConfig = {
       }
 
       const {updates, creates} =
-          (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_3__/* .syncChanges */ .U4)(
+          (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .syncChanges */ .U4)(
               // Source
               new Map(results.data.map(row => [row['Expense ID'], row])),
               // Mapping
@@ -18649,7 +18652,7 @@ const parseConfig = {
       // Launch upserts.
       return Promise.all([
         expenseSources.update(
-            ABACUS_TABLE, Array.from(updates, _common_sync_js__WEBPACK_IMPORTED_MODULE_3__/* .airtableRecordUpdate */ .vw)),
+            ABACUS_TABLE, Array.from(updates, _common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .airtableRecordUpdate */ .vw)),
         expenseSources.create(
             ABACUS_TABLE,
             Array.from(creates, ([, create]) => ({fields: create}))),
@@ -18659,10 +18662,10 @@ const parseConfig = {
 
 // Parse CSVs with above config.
 const importRecord =
-    await expenseSources.find('Imports', (0,_inputs_js__WEBPACK_IMPORTED_MODULE_0__/* .airtableImportRecordId */ .p)());
+    await expenseSources.find('Imports', (0,_inputs_js__WEBPACK_IMPORTED_MODULE_0__/* .airtableImportRecordId */ .p)()).catch(_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_2__/* .error */ .vU);
 await Promise.all(
     importRecord.get('CSVs').map(
-        csv => (0,_common_csv_js__WEBPACK_IMPORTED_MODULE_2__/* .parse */ .Q)(csv, airtableFields, parseConfig)));
+        csv => (0,_common_csv_js__WEBPACK_IMPORTED_MODULE_3__/* .parse */ .Q)(csv, airtableFields, parseConfig))).catch(_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_2__/* .error */ .vU);
 
 __webpack_handle_async_dependencies__();
 }, 1);
@@ -21032,13 +21035,10 @@ function fixResponseChunkedTransferBadEnding(request, errorCallback) {
 
 // EXTERNAL MODULE: ./node_modules/papaparse/papaparse.js
 var papaparse = __nccwpck_require__(1826);
-// EXTERNAL MODULE: ./src/common/github_actions_core.js
-var github_actions_core = __nccwpck_require__(1444);
 // EXTERNAL MODULE: ./src/common/utils.js + 1 modules
 var utils = __nccwpck_require__(381);
 ;// CONCATENATED MODULE: ./src/common/csv.js
 /** @fileoverview Utilities for parsing CSV files. */
-
 
 
 
@@ -21050,7 +21050,7 @@ var utils = __nccwpck_require__(381);
  * @param {!Object<string, *>} config See https://www.papaparse.com/docs#config.
  *     Header and error are preset, and expects using chunk,
  *     which may return a Promise.
- * @return {!Promise<*>}
+ * @return {!Promise<!Array<*>>}
  */
 async function parse(csv, header, config) {
 
@@ -21064,12 +21064,12 @@ async function parse(csv, header, config) {
   let firstChunk = true;
   const promises = [];
   return new Promise(
-      resolve => papaparse.parse(
+      (resolve, reject) => papaparse.parse(
           response.body,
           {
             ...config,
             header: true,
-            error: (err, file) => (0,github_actions_core/* error */.vU)(err),
+            error: (err, file) => reject(err),
             complete: (results, parser) => resolve(Promise.all(promises)),
             chunk:
               (results, parser) => {
@@ -21077,9 +21077,12 @@ async function parse(csv, header, config) {
                 // Validate header during first chunk.
                 if (firstChunk) {
                   firstChunk = false;
-                  const gotHeader = results.meta.fields;
-                  if (JSON.stringify(gotHeader) !== JSON.stringify(header)) {
-                    (0,github_actions_core/* error */.vU)(`Got header: ${gotHeader}\nWant header: ${header}`);
+                  const parsedHeader = results.meta.fields;
+                  if (JSON.stringify(parsedHeader) !== JSON.stringify(header)) {
+                    reject(
+                        new Error(
+                            `Parsed header: ${parsedHeader}` +
+                                `\nGiven header: ${header}`));
                   }
                 }
 

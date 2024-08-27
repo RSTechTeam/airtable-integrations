@@ -3,6 +3,7 @@
 import {airtableImportRecordId} from './inputs.js';
 import {airtableRecordUpdate, getMapping, syncChanges} from '../common/sync.js';
 import {Base} from '../common/airtable.js';
+import {error} from '../common/github_actions_core.js';
 import {parse} from '../common/csv.js';
 
 /** Abacus Airtable Table name. */
@@ -28,7 +29,8 @@ const mapping = new Map([
 // map Abacus Expense ID to Airtable Record ID.
 const expenseSources = new Base();
 const expenseRecords =
-    getMapping(await expenseSources.select(ABACUS_TABLE), 'Expense ID');
+    getMapping(
+        await expenseSources.select(ABACUS_TABLE).catch(error), 'Expense ID');
 
 // Create parse config.
 const airtableFields = Array.from(mapping.values());
@@ -78,7 +80,7 @@ const parseConfig = {
 
 // Parse CSVs with above config.
 const importRecord =
-    await expenseSources.find('Imports', airtableImportRecordId());
+    await expenseSources.find('Imports', airtableImportRecordId()).catch(error);
 await Promise.all(
     importRecord.get('CSVs').map(
-        csv => parse(csv, airtableFields, parseConfig)));
+        csv => parse(csv, airtableFields, parseConfig))).catch(error);

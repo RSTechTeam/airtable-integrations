@@ -2,7 +2,6 @@
 
 import fetch from 'node-fetch';
 import Papa from 'papaparse';
-import {error} from './github_actions_core.js';
 import {fetchError} from './utils.js';
 
 /**
@@ -11,7 +10,7 @@ import {fetchError} from './utils.js';
  * @param {!Object<string, *>} config See https://www.papaparse.com/docs#config.
  *     Header and error are preset, and expects using chunk,
  *     which may return a Promise.
- * @return {!Promise<*>}
+ * @return {!Promise<!Array<*>>}
  */
 export async function parse(csv, header, config) {
 
@@ -25,12 +24,12 @@ export async function parse(csv, header, config) {
   let firstChunk = true;
   const promises = [];
   return new Promise(
-      resolve => Papa.parse(
+      (resolve, reject) => Papa.parse(
           response.body,
           {
             ...config,
             header: true,
-            error: (err, file) => error(err),
+            error: (err, file) => reject(err),
             complete: (results, parser) => resolve(Promise.all(promises)),
             chunk:
               (results, parser) => {
@@ -38,9 +37,12 @@ export async function parse(csv, header, config) {
                 // Validate header during first chunk.
                 if (firstChunk) {
                   firstChunk = false;
-                  const gotHeader = results.meta.fields;
-                  if (JSON.stringify(gotHeader) !== JSON.stringify(header)) {
-                    error(`Got header: ${gotHeader}\nWant header: ${header}`);
+                  const parsedHeader = results.meta.fields;
+                  if (JSON.stringify(parsedHeader) !== JSON.stringify(header)) {
+                    reject(
+                        new Error(
+                            `Parsed header: ${parsedHeader}` +
+                                `\nGiven header: ${header}`));
                   }
                 }
 
