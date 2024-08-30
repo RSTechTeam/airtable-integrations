@@ -22903,7 +22903,7 @@ async function main(billComApi, airtableBase = new _common_airtable_js__WEBPACK_
                   address1: record.get('Mailing address (line 1)'),
                   address2: record.get('Mailing address (line 2)'),
                   addressCity: record.get('Mailing address (city)'),
-                  addressState: record.get('Mailing address (state)'),
+                  addressState: record.get('Mailing address (state short)'),
                   addressZip:
                     record.get('Mailing address (zip code)').toString(),
                   addressCountry: 'USA',
