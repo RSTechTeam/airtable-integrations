@@ -3,84 +3,86 @@
 import {airtableImportRecordId} from './inputs.js';
 import {airtableRecordUpdate, getMapping, syncChanges} from '../common/sync.js';
 import {Base} from '../common/airtable.js';
-import {error} from '../common/github_actions_core.js';
 import {parse} from '../common/csv.js';
+import {run} from '../common/action.js';
 
-/** Abacus Airtable Table name. */
-const ABACUS_TABLE = 'Abacus';
+await run(async () => {
 
-/** Abacus to Airtable Field mapping. */
-const mapping = new Map([
-  ['Expense ID', 'Expense ID'],
-  ['Expenser Name', 'Expenser Name'],
-  ['Submitted Date', 'Submitted Date'],
-  ['Transaction Date', 'Transaction Date'],
-  ['Merchant', 'Merchant (Name)'],
-  ['Note', 'Notes'],
-  ['Category', 'Category'],
-  ['Amount', 'Amount'],
-  ['Projects', 'Project'],
-  ['Approved Date', 'Approved'],
-  ['Debit Status', 'Paid'], // Also Type
-  ['Debit Date', 'Debit Date'],
-]);
+  /** Abacus Airtable Table name. */
+  const ABACUS_TABLE = 'Abacus';
 
-// For existing Abacus Airtable Records,
-// map Abacus Expense ID to Airtable Record ID.
-const expenseSources = new Base();
-const expenseRecords =
-    getMapping(
-        await expenseSources.select(ABACUS_TABLE).catch(error), 'Expense ID');
+  /** Abacus to Airtable Field mapping. */
+  const mapping = new Map([
+    ['Expense ID', 'Expense ID'],
+    ['Expenser Name', 'Expenser Name'],
+    ['Submitted Date', 'Submitted Date'],
+    ['Transaction Date', 'Transaction Date'],
+    ['Merchant', 'Merchant (Name)'],
+    ['Note', 'Notes'],
+    ['Category', 'Category'],
+    ['Amount', 'Amount'],
+    ['Projects', 'Project'],
+    ['Approved Date', 'Approved'],
+    ['Debit Status', 'Paid'], // Also Type
+    ['Debit Date', 'Debit Date'],
+  ]);
 
-// Create parse config.
-const airtableFields = Array.from(mapping.values());
-const parseConfig = {
-  transformHeader: (header, index) => airtableFields[index],
-  transform:
-    (value, header) => {
-      switch (header) {
-      case 'Amount':
-        return Number(value);
-      case 'Approved':
-        return value > '';
+  // For existing Abacus Airtable Records,
+  // map Abacus Expense ID to Airtable Record ID.
+  const expenseSources = new Base();
+  const expenseRecords =
+      getMapping(await expenseSources.select(ABACUS_TABLE), 'Expense ID');
 
-      // Paid/Debit Status splits to 2 Fields, so handle later (in chunk).
-      default:
-        return value === '' ? undefined : value;
-      }
-    },
-  chunk:
-    (results, parser) => {
+  // Create parse config.
+  const airtableFields = Array.from(mapping.values());
+  const parseConfig = {
+    transformHeader: (header, index) => airtableFields[index],
+    transform:
+      (value, header) => {
+        switch (header) {
+        case 'Amount':
+          return Number(value);
+        case 'Approved':
+          return value > '';
 
-      // Handle Paid/Debit Status,
-      // completing Abacus CSV row alignment with Airtable Fields.
-      for (const row of results.data) {
-        const debitStatus = row['Paid'];
-        row['Paid'] = debitStatus !== 'pending';
-        row['Type'] = debitStatus > '' ? 'Reimbursement' : 'Card Transaction';
-      }
+        // Paid/Debit Status splits to 2 Fields, so handle later (in chunk).
+        default:
+          return value === '' ? undefined : value;
+        }
+      },
+    chunk:
+      (results, parser) => {
 
-      const {updates, creates} =
-          syncChanges(
-              // Source
-              new Map(results.data.map(row => [row['Expense ID'], row])),
-              // Mapping
-              expenseRecords);
+        // Handle Paid/Debit Status,
+        // completing Abacus CSV row alignment with Airtable Fields.
+        for (const row of results.data) {
+          const debitStatus = row['Paid'];
+          row['Paid'] = debitStatus !== 'pending';
+          row['Type'] = debitStatus > '' ? 'Reimbursement' : 'Card Transaction';
+        }
 
-      // Launch upserts.
-      return Promise.all([
-        expenseSources.update(
-            ABACUS_TABLE, Array.from(updates, airtableRecordUpdate)),
-        expenseSources.create(
-            ABACUS_TABLE,
-            Array.from(creates, ([, create]) => ({fields: create}))),
-      ]);
-    },
-};
+        const {updates, creates} =
+            syncChanges(
+                // Source
+                new Map(results.data.map(row => [row['Expense ID'], row])),
+                // Mapping
+                expenseRecords);
 
-// Parse CSVs with above config.
-const importRecord =
-    await expenseSources.find('Imports', airtableImportRecordId()).catch(error);
-await Promise.all(
-    importRecord.get('CSVs').map(
-        csv => parse(csv, airtableFields, parseConfig))).catch(error);
+        // Launch upserts.
+        return Promise.all([
+          expenseSources.update(
+              ABACUS_TABLE, Array.from(updates, airtableRecordUpdate)),
+          expenseSources.create(
+              ABACUS_TABLE,
+              Array.from(creates, ([, create]) => ({fields: create}))),
+        ]);
+      },
+  };
+
+  // Parse CSVs with above config.
+  const importRecord =
+      await expenseSources.find('Imports', airtableImportRecordId());
+  return Promise.all(
+      importRecord.get('CSVs').map(
+          csv => parse(csv, airtableFields, parseConfig)));
+});

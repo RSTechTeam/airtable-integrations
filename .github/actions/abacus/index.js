@@ -18578,8 +18578,8 @@ __nccwpck_require__.a(__webpack_module__, async (__webpack_handle_async_dependen
 /* harmony import */ var _inputs_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(2568);
 /* harmony import */ var _common_sync_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(3599);
 /* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(8997);
-/* harmony import */ var _common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(1444);
-/* harmony import */ var _common_csv_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(2066);
+/* harmony import */ var _common_csv_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(2066);
+/* harmony import */ var _common_action_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(518);
 /** @fileoverview Imports an Abacus CSV update into Airtable. */
 
 
@@ -18588,84 +18588,86 @@ __nccwpck_require__.a(__webpack_module__, async (__webpack_handle_async_dependen
 
 
 
-/** Abacus Airtable Table name. */
-const ABACUS_TABLE = 'Abacus';
+await (0,_common_action_js__WEBPACK_IMPORTED_MODULE_3__/* .run */ .K)(async () => {
 
-/** Abacus to Airtable Field mapping. */
-const mapping = new Map([
-  ['Expense ID', 'Expense ID'],
-  ['Expenser Name', 'Expenser Name'],
-  ['Submitted Date', 'Submitted Date'],
-  ['Transaction Date', 'Transaction Date'],
-  ['Merchant', 'Merchant (Name)'],
-  ['Note', 'Notes'],
-  ['Category', 'Category'],
-  ['Amount', 'Amount'],
-  ['Projects', 'Project'],
-  ['Approved Date', 'Approved'],
-  ['Debit Status', 'Paid'], // Also Type
-  ['Debit Date', 'Debit Date'],
-]);
+  /** Abacus Airtable Table name. */
+  const ABACUS_TABLE = 'Abacus';
 
-// For existing Abacus Airtable Records,
-// map Abacus Expense ID to Airtable Record ID.
-const expenseSources = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .Base */ .X();
-const expenseRecords =
-    (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .getMapping */ .tj)(
-        await expenseSources.select(ABACUS_TABLE).catch(_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_2__/* .error */ .vU), 'Expense ID');
+  /** Abacus to Airtable Field mapping. */
+  const mapping = new Map([
+    ['Expense ID', 'Expense ID'],
+    ['Expenser Name', 'Expenser Name'],
+    ['Submitted Date', 'Submitted Date'],
+    ['Transaction Date', 'Transaction Date'],
+    ['Merchant', 'Merchant (Name)'],
+    ['Note', 'Notes'],
+    ['Category', 'Category'],
+    ['Amount', 'Amount'],
+    ['Projects', 'Project'],
+    ['Approved Date', 'Approved'],
+    ['Debit Status', 'Paid'], // Also Type
+    ['Debit Date', 'Debit Date'],
+  ]);
 
-// Create parse config.
-const airtableFields = Array.from(mapping.values());
-const parseConfig = {
-  transformHeader: (header, index) => airtableFields[index],
-  transform:
-    (value, header) => {
-      switch (header) {
-      case 'Amount':
-        return Number(value);
-      case 'Approved':
-        return value > '';
+  // For existing Abacus Airtable Records,
+  // map Abacus Expense ID to Airtable Record ID.
+  const expenseSources = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .Base */ .X();
+  const expenseRecords =
+      (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .getMapping */ .tj)(await expenseSources.select(ABACUS_TABLE), 'Expense ID');
 
-      // Paid/Debit Status splits to 2 Fields, so handle later (in chunk).
-      default:
-        return value === '' ? undefined : value;
-      }
-    },
-  chunk:
-    (results, parser) => {
+  // Create parse config.
+  const airtableFields = Array.from(mapping.values());
+  const parseConfig = {
+    transformHeader: (header, index) => airtableFields[index],
+    transform:
+      (value, header) => {
+        switch (header) {
+        case 'Amount':
+          return Number(value);
+        case 'Approved':
+          return value > '';
 
-      // Handle Paid/Debit Status,
-      // completing Abacus CSV row alignment with Airtable Fields.
-      for (const row of results.data) {
-        const debitStatus = row['Paid'];
-        row['Paid'] = debitStatus !== 'pending';
-        row['Type'] = debitStatus > '' ? 'Reimbursement' : 'Card Transaction';
-      }
+        // Paid/Debit Status splits to 2 Fields, so handle later (in chunk).
+        default:
+          return value === '' ? undefined : value;
+        }
+      },
+    chunk:
+      (results, parser) => {
 
-      const {updates, creates} =
-          (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .syncChanges */ .U4)(
-              // Source
-              new Map(results.data.map(row => [row['Expense ID'], row])),
-              // Mapping
-              expenseRecords);
+        // Handle Paid/Debit Status,
+        // completing Abacus CSV row alignment with Airtable Fields.
+        for (const row of results.data) {
+          const debitStatus = row['Paid'];
+          row['Paid'] = debitStatus !== 'pending';
+          row['Type'] = debitStatus > '' ? 'Reimbursement' : 'Card Transaction';
+        }
 
-      // Launch upserts.
-      return Promise.all([
-        expenseSources.update(
-            ABACUS_TABLE, Array.from(updates, _common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .airtableRecordUpdate */ .vw)),
-        expenseSources.create(
-            ABACUS_TABLE,
-            Array.from(creates, ([, create]) => ({fields: create}))),
-      ]);
-    },
-};
+        const {updates, creates} =
+            (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .syncChanges */ .U4)(
+                // Source
+                new Map(results.data.map(row => [row['Expense ID'], row])),
+                // Mapping
+                expenseRecords);
 
-// Parse CSVs with above config.
-const importRecord =
-    await expenseSources.find('Imports', (0,_inputs_js__WEBPACK_IMPORTED_MODULE_0__/* .airtableImportRecordId */ .p)()).catch(_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_2__/* .error */ .vU);
-await Promise.all(
-    importRecord.get('CSVs').map(
-        csv => (0,_common_csv_js__WEBPACK_IMPORTED_MODULE_3__/* .parse */ .Q)(csv, airtableFields, parseConfig))).catch(_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_2__/* .error */ .vU);
+        // Launch upserts.
+        return Promise.all([
+          expenseSources.update(
+              ABACUS_TABLE, Array.from(updates, _common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .airtableRecordUpdate */ .vw)),
+          expenseSources.create(
+              ABACUS_TABLE,
+              Array.from(creates, ([, create]) => ({fields: create}))),
+        ]);
+      },
+  };
+
+  // Parse CSVs with above config.
+  const importRecord =
+      await expenseSources.find('Imports', (0,_inputs_js__WEBPACK_IMPORTED_MODULE_0__/* .airtableImportRecordId */ .p)());
+  return Promise.all(
+      importRecord.get('CSVs').map(
+          csv => (0,_common_csv_js__WEBPACK_IMPORTED_MODULE_2__/* .parse */ .Q)(csv, airtableFields, parseConfig)));
+});
 
 __webpack_handle_async_dependencies__();
 }, 1);
@@ -18688,6 +18690,31 @@ __webpack_handle_async_dependencies__();
 
 /** @type function(): string */
 const airtableImportRecordId = (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .getInput */ .Np)('airtable-import-record-id');
+
+
+/***/ }),
+
+/***/ 518:
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
+
+/* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
+/* harmony export */   "K": () => (/* binding */ run)
+/* harmony export */ });
+/* harmony import */ var _github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(1444);
+/**
+ * @fileoverview Runs and handles GitHub Action scripts,
+ * including status setting and summary writing.
+ */
+
+
+
+/**
+ * @param {function(): !Promise<undefined>} main
+ * @return {!Promise<undefined>}
+ */
+function run(main) {
+  return main().catch(_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .error */ .vU).finally(_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .writeSummary */ .A8);
+}
 
 
 /***/ }),
@@ -21101,9 +21128,10 @@ async function parse(csv, header, config) {
 /* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
 /* harmony export */   "ZK": () => (/* binding */ warn),
 /* harmony export */   "Np": () => (/* binding */ getInput),
-/* harmony export */   "vU": () => (/* binding */ error)
+/* harmony export */   "vU": () => (/* binding */ error),
+/* harmony export */   "A8": () => (/* binding */ writeSummary)
 /* harmony export */ });
-/* unused harmony exports log, addSummaryTableHeaders, addSummaryTableRow, writeSummary, logJson */
+/* unused harmony exports log, addSummaryTableHeaders, addSummaryTableRow, logJson */
 /* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(6024);
 /* harmony import */ var _utils_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(381);
 /**
@@ -21125,7 +21153,7 @@ const log = _actions_core__WEBPACK_IMPORTED_MODULE_0__.info;
 const warn = _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning;
 
 /** @type {Array<!Object<string, *>>} */
-const summaryTableData = (/* unused pure expression or super */ null && ([]));
+const summaryTableData = [];
 
 /**
  * @param {string} input
@@ -21166,9 +21194,9 @@ function addSummaryTableRow(row, firstColRowspan = 1) {
 /** Writes the summary, along with any table data. */
 function writeSummary() {
   if (summaryTableData.length > 0) {
-    core.summary.addTable(summaryTableData);
+    _actions_core__WEBPACK_IMPORTED_MODULE_0__.summary.addTable(summaryTableData);
   }
-  core.summary.write();
+  _actions_core__WEBPACK_IMPORTED_MODULE_0__.summary.write();
 }
 
 /**
