@@ -22972,7 +22972,7 @@ await (0,_common_action_js__WEBPACK_IMPORTED_MODULE_9__/* .run */ .K)(async () =
     default:
       throw new Error(`Unknown file ID ${(0,_common_inputs_js__WEBPACK_IMPORTED_MODULE_7__/* .fileId */ .o8)()}`);
   }
-  return imp.main(await (0,_common_api_js__WEBPACK_IMPORTED_MODULE_8__/* .getApi */ .ac)());
+  await imp.main(await (0,_common_api_js__WEBPACK_IMPORTED_MODULE_8__/* .getApi */ .ac)());
 });
 
 __webpack_handle_async_dependencies__();

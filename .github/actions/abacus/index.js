@@ -17869,6 +17869,14 @@ module.exports.implForWrapper = function (wrapper) {
 
 /***/ }),
 
+/***/ 4221:
+/***/ ((module) => {
+
+module.exports = eval("require")("../../common/github_actions_core.js");
+
+
+/***/ }),
+
 /***/ 5347:
 /***/ ((module) => {
 
@@ -18575,11 +18583,12 @@ return new B(c,{type:"multipart/form-data; boundary="+b})}
 /***/ ((__webpack_module__, __unused_webpack___webpack_exports__, __nccwpck_require__) => {
 
 __nccwpck_require__.a(__webpack_module__, async (__webpack_handle_async_dependencies__) => {
-/* harmony import */ var _inputs_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(2568);
-/* harmony import */ var _common_sync_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(3599);
-/* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(8997);
-/* harmony import */ var _common_csv_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(2066);
-/* harmony import */ var _common_action_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(518);
+/* harmony import */ var _common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(4221);
+/* harmony import */ var _inputs_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(2568);
+/* harmony import */ var _common_sync_js__WEBPACK_IMPORTED_MODULE_5__ = __nccwpck_require__(3599);
+/* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(8997);
+/* harmony import */ var _common_csv_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(2066);
+/* harmony import */ var _common_action_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(518);
 /** @fileoverview Imports an Abacus CSV update into Airtable. */
 
 
@@ -18588,7 +18597,8 @@ __nccwpck_require__.a(__webpack_module__, async (__webpack_handle_async_dependen
 
 
 
-await (0,_common_action_js__WEBPACK_IMPORTED_MODULE_3__/* .run */ .K)(async () => {
+
+await (0,_common_action_js__WEBPACK_IMPORTED_MODULE_4__/* .run */ .K)(async () => {
 
   /** Abacus Airtable Table name. */
   const ABACUS_TABLE = 'Abacus';
@@ -18611,9 +18621,9 @@ await (0,_common_action_js__WEBPACK_IMPORTED_MODULE_3__/* .run */ .K)(async () =
 
   // For existing Abacus Airtable Records,
   // map Abacus Expense ID to Airtable Record ID.
-  const expenseSources = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .Base */ .X();
+  const expenseSources = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_2__/* .Base */ .X();
   const expenseRecords =
-      (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .getMapping */ .tj)(await expenseSources.select(ABACUS_TABLE), 'Expense ID');
+      (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_5__/* .getMapping */ .tj)(await expenseSources.select(ABACUS_TABLE), 'Expense ID');
 
   // Create parse config.
   const airtableFields = Array.from(mapping.values());
@@ -18644,7 +18654,7 @@ await (0,_common_action_js__WEBPACK_IMPORTED_MODULE_3__/* .run */ .K)(async () =
         }
 
         const {updates, creates} =
-            (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .syncChanges */ .U4)(
+            (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_5__/* .syncChanges */ .U4)(
                 // Source
                 new Map(results.data.map(row => [row['Expense ID'], row])),
                 // Mapping
@@ -18653,7 +18663,7 @@ await (0,_common_action_js__WEBPACK_IMPORTED_MODULE_3__/* .run */ .K)(async () =
         // Launch upserts.
         return Promise.all([
           expenseSources.update(
-              ABACUS_TABLE, Array.from(updates, _common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .airtableRecordUpdate */ .vw)),
+              ABACUS_TABLE, Array.from(updates, _common_sync_js__WEBPACK_IMPORTED_MODULE_5__/* .airtableRecordUpdate */ .vw)),
           expenseSources.create(
               ABACUS_TABLE,
               Array.from(creates, ([, create]) => ({fields: create}))),
@@ -18663,10 +18673,12 @@ await (0,_common_action_js__WEBPACK_IMPORTED_MODULE_3__/* .run */ .K)(async () =
 
   // Parse CSVs with above config.
   const importRecord =
-      await expenseSources.find('Imports', (0,_inputs_js__WEBPACK_IMPORTED_MODULE_0__/* .airtableImportRecordId */ .p)());
-  return Promise.all(
+      await expenseSources.find('Imports', (0,_inputs_js__WEBPACK_IMPORTED_MODULE_1__/* .airtableImportRecordId */ .p)());
+  await Promise.all(
       importRecord.get('CSVs').map(
-          csv => (0,_common_csv_js__WEBPACK_IMPORTED_MODULE_2__/* .parse */ .Q)(csv, airtableFields, parseConfig)));
+          csv => (0,_common_csv_js__WEBPACK_IMPORTED_MODULE_3__/* .parse */ .Q)(csv, airtableFields, parseConfig)));
+  (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__.addSummaryTableHeaders)(['Updates', 'Creates']);
+  (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__.addSummaryTableRow)((0,_common_sync_js__WEBPACK_IMPORTED_MODULE_5__/* .summarize */ .Iz)(updates, creates));
 });
 
 __webpack_handle_async_dependencies__();
@@ -21241,9 +21253,10 @@ function logJson(endpoint, json) {
 /* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
 /* harmony export */   "U4": () => (/* binding */ syncChanges),
 /* harmony export */   "tj": () => (/* binding */ getMapping),
-/* harmony export */   "vw": () => (/* binding */ airtableRecordUpdate)
+/* harmony export */   "vw": () => (/* binding */ airtableRecordUpdate),
+/* harmony export */   "Iz": () => (/* binding */ summarize)
 /* harmony export */ });
-/* unused harmony exports filterMap, getAirtableRecordIds, airtableRecordDeactivate, summarize */
+/* unused harmony exports filterMap, getAirtableRecordIds, airtableRecordDeactivate */
 /** @fileoverview Utilities for syncing data from one datasource to another. */
 
 /**

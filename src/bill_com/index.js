@@ -38,5 +38,5 @@ await run(async () => {
     default:
       throw new Error(`Unknown file ID ${fileId()}`);
   }
-  return imp.main(await getApi());
+  await imp.main(await getApi());
 });
