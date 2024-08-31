@@ -18677,6 +18677,8 @@ await (0,_common_action_js__WEBPACK_IMPORTED_MODULE_4__/* .run */ .K)(async () =
   await Promise.all(
       importRecord.get('CSVs').map(
           csv => (0,_common_csv_js__WEBPACK_IMPORTED_MODULE_3__/* .parse */ .Q)(csv, airtableFields, parseConfig)));
+
+  // Add summary.
   (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__.addSummaryTableHeaders)(['Updates', 'Creates']);
   (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__.addSummaryTableRow)((0,_common_sync_js__WEBPACK_IMPORTED_MODULE_5__/* .summarize */ .Iz)(updates, creates));
 });

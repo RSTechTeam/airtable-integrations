@@ -86,6 +86,8 @@ await run(async () => {
   await Promise.all(
       importRecord.get('CSVs').map(
           csv => parse(csv, airtableFields, parseConfig)));
+
+  // Add summary.
   addSummaryTableHeaders(['Updates', 'Creates']);
   addSummaryTableRow(summarize(updates, creates));
 });

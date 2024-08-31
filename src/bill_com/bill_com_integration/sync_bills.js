@@ -206,9 +206,7 @@ export async function main(api, billComIntegrationBase = new Base()) {
             // Source
             changes,
             // Mapping
-            sync.getMapping(airtableRecords, primaryBillComId),
-            // Destination IDs
-            sync.getAirtableRecordIds(airtableRecords));
+            sync.getMapping(airtableRecords, primaryBillComId));
 
     // Create new table records from new Bill.com data.
     await billComIntegrationBase.create(

@@ -128,15 +128,13 @@ class Syncer {
     //   }
     // }
 
-    const airtableRecords = await this.airtableBase_.select(table);
     const {updates, creates, removes} =
         sync.syncChanges(
             // Source
             changes,
             // Mapping
-            sync.getMapping(airtableRecords, MSO_BILL_COM_ID),
-            // Destination IDs
-            sync.getAirtableRecordIds(airtableRecords));
+            sync.getMapping(
+                await this.airtableBase_.select(table), MSO_BILL_COM_ID));
 
     const msoRecordId = this.airtableBase_.getCurrentMso().getId();
     await this.airtableBase_.create(

@@ -21751,15 +21751,13 @@ class Syncer {
     //   }
     // }
 
-    const airtableRecords = await this.airtableBase_.select(table);
     const {updates, creates, removes} =
         _common_sync_js__WEBPACK_IMPORTED_MODULE_5__/* .syncChanges */ .U4(
             // Source
             changes,
             // Mapping
-            _common_sync_js__WEBPACK_IMPORTED_MODULE_5__/* .getMapping */ .tj(airtableRecords, _common_constants_js__WEBPACK_IMPORTED_MODULE_2__/* .MSO_BILL_COM_ID */ .yG),
-            // Destination IDs
-            _common_sync_js__WEBPACK_IMPORTED_MODULE_5__/* .getAirtableRecordIds */ .D2(airtableRecords));
+            _common_sync_js__WEBPACK_IMPORTED_MODULE_5__/* .getMapping */ .tj(
+                await this.airtableBase_.select(table), _common_constants_js__WEBPACK_IMPORTED_MODULE_2__/* .MSO_BILL_COM_ID */ .yG));
 
     const msoRecordId = this.airtableBase_.getCurrentMso().getId();
     await this.airtableBase_.create(
@@ -22178,9 +22176,7 @@ async function main(api, billComIntegrationBase = new _common_airtable_js__WEBPA
             // Source
             changes,
             // Mapping
-            _common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .getMapping */ .tj(airtableRecords, primaryBillComId),
-            // Destination IDs
-            _common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .getAirtableRecordIds */ .D2(airtableRecords));
+            _common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .getMapping */ .tj(airtableRecords, primaryBillComId));
 
     // Create new table records from new Bill.com data.
     await billComIntegrationBase.create(
@@ -23333,11 +23329,11 @@ const airtableBaseId = (0,_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/*
 /* harmony export */   "U4": () => (/* binding */ syncChanges),
 /* harmony export */   "DZ": () => (/* binding */ filterMap),
 /* harmony export */   "tj": () => (/* binding */ getMapping),
-/* harmony export */   "D2": () => (/* binding */ getAirtableRecordIds),
 /* harmony export */   "vw": () => (/* binding */ airtableRecordUpdate),
 /* harmony export */   "g6": () => (/* binding */ airtableRecordDeactivate),
 /* harmony export */   "Iz": () => (/* binding */ summarize)
 /* harmony export */ });
+/* unused harmony export getAirtableRecordIds */
 /** @fileoverview Utilities for syncing data from one datasource to another. */
 
 /**
