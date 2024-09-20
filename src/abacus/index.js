@@ -1,6 +1,6 @@
 /** @fileoverview Imports an Abacus CSV update into Airtable. */
 
-import {addSummaryTableHeaders, addSummaryTableRow} from '../../common/github_actions_core.js';
+import {addSummaryTableHeaders, addSummaryTableRow} from '../common/github_actions_core.js';
 import {airtableImportRecordId} from './inputs.js';
 import {airtableRecordUpdate, getMapping, summarize, syncChanges} from '../common/sync.js';
 import {Base} from '../common/airtable.js';

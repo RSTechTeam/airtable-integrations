@@ -17869,14 +17869,6 @@ module.exports.implForWrapper = function (wrapper) {
 
 /***/ }),
 
-/***/ 4221:
-/***/ ((module) => {
-
-module.exports = eval("require")("../../common/github_actions_core.js");
-
-
-/***/ }),
-
 /***/ 5347:
 /***/ ((module) => {
 
@@ -18583,7 +18575,7 @@ return new B(c,{type:"multipart/form-data; boundary="+b})}
 /***/ ((__webpack_module__, __unused_webpack___webpack_exports__, __nccwpck_require__) => {
 
 __nccwpck_require__.a(__webpack_module__, async (__webpack_handle_async_dependencies__) => {
-/* harmony import */ var _common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(4221);
+/* harmony import */ var _common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(1444);
 /* harmony import */ var _inputs_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(2568);
 /* harmony import */ var _common_sync_js__WEBPACK_IMPORTED_MODULE_5__ = __nccwpck_require__(3599);
 /* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(8997);
@@ -18679,8 +18671,8 @@ await (0,_common_action_js__WEBPACK_IMPORTED_MODULE_4__/* .run */ .K)(async () =
           csv => (0,_common_csv_js__WEBPACK_IMPORTED_MODULE_3__/* .parse */ .Q)(csv, airtableFields, parseConfig)));
 
   // Add summary.
-  (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__.addSummaryTableHeaders)(['Updates', 'Creates']);
-  (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__.addSummaryTableRow)((0,_common_sync_js__WEBPACK_IMPORTED_MODULE_5__/* .summarize */ .Iz)(updates, creates));
+  (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .addSummaryTableHeaders */ .M9)(['Updates', 'Creates']);
+  (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .addSummaryTableRow */ .QS)((0,_common_sync_js__WEBPACK_IMPORTED_MODULE_5__/* .summarize */ .Iz)(updates, creates));
 });
 
 __webpack_handle_async_dependencies__();
@@ -21143,9 +21135,11 @@ async function parse(csv, header, config) {
 /* harmony export */   "ZK": () => (/* binding */ warn),
 /* harmony export */   "Np": () => (/* binding */ getInput),
 /* harmony export */   "vU": () => (/* binding */ error),
+/* harmony export */   "M9": () => (/* binding */ addSummaryTableHeaders),
+/* harmony export */   "QS": () => (/* binding */ addSummaryTableRow),
 /* harmony export */   "A8": () => (/* binding */ writeSummary)
 /* harmony export */ });
-/* unused harmony exports log, addSummaryTableHeaders, addSummaryTableRow, logJson */
+/* unused harmony exports log, logJson */
 /* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(6024);
 /* harmony import */ var _utils_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(381);
 /**
