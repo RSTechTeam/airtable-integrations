@@ -2,7 +2,7 @@
 
 import {addSummaryTableHeaders, addSummaryTableRow} from '../common/github_actions_core.js';
 import {airtableImportRecordId} from './inputs.js';
-import {airtableRecordUpdate, getMapping, summarize, syncChanges} from '../common/sync.js';
+import {airtableRecordUpdate, getMapping, syncChanges} from '../common/sync.js';
 import {Base} from '../common/airtable.js';
 import {parse} from '../common/csv.js';
 import {run} from '../common/action.js';
@@ -36,6 +36,8 @@ await run(async () => {
 
   // Create parse config.
   const airtableFields = Array.from(mapping.values());
+  let updateCount = 0;
+  let createCount = 0;
   const parseConfig = {
     transformHeader: (header, index) => airtableFields[index],
     transform:
@@ -69,6 +71,10 @@ await run(async () => {
                 // Mapping
                 expenseRecords);
 
+        // Track change counts.
+        updateCount += updates.size();
+        createCount += creates.size();
+
         // Launch upserts.
         return Promise.all([
           expenseSources.update(
@@ -89,5 +95,5 @@ await run(async () => {
 
   // Add summary.
   addSummaryTableHeaders(['Updates', 'Creates']);
-  addSummaryTableRow(summarize(updates, creates));
+  addSummaryTableRow([updateCount, createCount]);
 });

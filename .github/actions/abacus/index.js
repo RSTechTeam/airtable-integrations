@@ -18619,6 +18619,8 @@ await (0,_common_action_js__WEBPACK_IMPORTED_MODULE_4__/* .run */ .K)(async () =
 
   // Create parse config.
   const airtableFields = Array.from(mapping.values());
+  let updateCount = 0;
+  let createCount = 0;
   const parseConfig = {
     transformHeader: (header, index) => airtableFields[index],
     transform:
@@ -18652,6 +18654,10 @@ await (0,_common_action_js__WEBPACK_IMPORTED_MODULE_4__/* .run */ .K)(async () =
                 // Mapping
                 expenseRecords);
 
+        // Track change counts.
+        updateCount += updates.size();
+        createCount += creates.size();
+
         // Launch upserts.
         return Promise.all([
           expenseSources.update(
@@ -18672,7 +18678,7 @@ await (0,_common_action_js__WEBPACK_IMPORTED_MODULE_4__/* .run */ .K)(async () =
 
   // Add summary.
   (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .addSummaryTableHeaders */ .M9)(['Updates', 'Creates']);
-  (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .addSummaryTableRow */ .QS)((0,_common_sync_js__WEBPACK_IMPORTED_MODULE_5__/* .summarize */ .Iz)(updates, creates));
+  (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .addSummaryTableRow */ .QS)([updateCount, createCount]);
 });
 
 __webpack_handle_async_dependencies__();
@@ -21249,10 +21255,9 @@ function logJson(endpoint, json) {
 /* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
 /* harmony export */   "U4": () => (/* binding */ syncChanges),
 /* harmony export */   "tj": () => (/* binding */ getMapping),
-/* harmony export */   "vw": () => (/* binding */ airtableRecordUpdate),
-/* harmony export */   "Iz": () => (/* binding */ summarize)
+/* harmony export */   "vw": () => (/* binding */ airtableRecordUpdate)
 /* harmony export */ });
-/* unused harmony exports filterMap, getAirtableRecordIds, airtableRecordDeactivate */
+/* unused harmony exports filterMap, getAirtableRecordIds, airtableRecordDeactivate, summarize */
 /** @fileoverview Utilities for syncing data from one datasource to another. */
 
 /**
