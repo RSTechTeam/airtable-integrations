@@ -18655,8 +18655,8 @@ await (0,_common_action_js__WEBPACK_IMPORTED_MODULE_4__/* .run */ .K)(async () =
                 expenseRecords);
 
         // Track change counts.
-        updateCount += updates.size();
-        createCount += creates.size();
+        updateCount += updates.size;
+        createCount += creates.size;
 
         // Launch upserts.
         return Promise.all([
