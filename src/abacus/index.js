@@ -24,7 +24,7 @@ await run(async () => {
     ['Amount', 'Amount'],
     ['Projects', 'Project'],
     ['Approved Date', 'Approved'],
-    ['Debit Status', 'Paid'], // Also Type
+    ['Source', 'Type'], // Also Paid, with Debit Date
     ['Debit Date', 'Debit Date'],
   ]);
 
@@ -47,8 +47,10 @@ await run(async () => {
           return Number(value);
         case 'Approved':
           return value > '';
+        case 'Type':
+          return value === 'Manual' ? 'Reimbursement' : 'Card Transaction';
 
-        // Paid/Debit Status splits to 2 Fields, so handle later (in chunk).
+        // Paid references Type and Debit Date, so handle later (in chunk).
         default:
           return value === '' ? undefined : value;
         }
@@ -56,12 +58,10 @@ await run(async () => {
     chunk:
       (results, parser) => {
 
-        // Handle Paid/Debit Status,
-        // completing Abacus CSV row alignment with Airtable Fields.
+        // Handle Paid, completing Abacus CSV row alignment with Airtable.
         for (const row of results.data) {
-          const debitStatus = row['Paid'];
-          row['Paid'] = debitStatus !== 'pending';
-          row['Type'] = debitStatus > '' ? 'Reimbursement' : 'Card Transaction';
+          row['Paid'] =
+              row['Type'] === 'Card Transaction' || row['Debit Date'] > '';
         }
 
         const {updates, creates} =
