@@ -22863,7 +22863,7 @@ const ecrApproverUserProfileId =
 
 /***/ }),
 
-/***/ 318:
+/***/ 702:
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
 
 __nccwpck_require__.r(__webpack_exports__);
@@ -22871,8 +22871,8 @@ __nccwpck_require__.r(__webpack_exports__);
 /* harmony export */   "main": () => (/* binding */ main)
 /* harmony export */ });
 /* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(5585);
-/* harmony import */ var _common_constants_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(9447);
-/** @fileoverview Creates a Bill.com Vendor based on volunteer address info. */
+/* harmony import */ var _common_sync_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(3599);
+/** @fileoverview Syncs Bill.com Vendors from Airtable to Bill.com. */
  
 
 
@@ -22883,32 +22883,65 @@ __nccwpck_require__.r(__webpack_exports__);
  * @return {!Promise<undefined>}
  */
 async function main(billComApi, airtableBase = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .Base */ .X()) {
-  await billComApi.primaryOrgLogin();
-  await airtableBase.selectAndUpdate(
-      'Contacts',
-      'Github Action: Create Bill.com Vendor',
-      async (record) => {
-        const name =
-            record.get('Legal first name') + ' ' + record.get('Last name');
-        const vendorId =
-            await billComApi.create(
-                'Vendor',
-                {
-                  name: `${name} (STV)`,
-                  nameOnCheck: name,
-                  address1: record.get('Mailing address (line 1)'),
-                  address2: record.get('Mailing address (line 2)'),
-                  addressCity: record.get('Mailing address (city)'),
-                  addressState: record.get('Mailing address (state short)'),
-                  addressZip:
-                    record.get('Mailing address (zip code)').toString(),
-                  addressCountry: 'USA',
-                  email: record.get('Email'),
-                  phone: record.get('Trimmed phone number'),
-                });
+  const AIRTABLE_VENDORS_TABLE = 'Contacts';
+  const AIRTABLE_BILL_COM_ID_FIELD = 'Bill.com Vendor ID';
 
-        return {['Bill.com Vendor ID']: vendorId};
-      });
+  const airtableVendors =
+      await airtableBase.select(
+          AIRTABLE_VENDORS_TABLE, 'Github Action: Upsert Bill.com Vendors');
+
+  // Get changes.
+  const {updates, creates} =
+      (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_1__/* .syncChanges */ .U4)(
+          // Source
+          new Map(
+              airtableVendors.map(
+                  v => {
+                    const name =
+                        v.get('Legal first name') + ' ' + v.get('Last name');
+                    return [
+                      v.getId(),
+                      {
+                        name: `${name} (STV)`,
+                        nameOnCheck: name,
+                        address1: record.get('Mailing address (line 1)'),
+                        address2: record.get('Mailing address (line 2)'),
+                        addressCity: record.get('Mailing address (city)'),
+                        addressState:
+                          record.get('Mailing address (state short)'),
+                        addressZip:
+                          record.get('Mailing address (zip code)').toString(),
+                        addressCountry: 'USA',
+                        email: record.get('Email'),
+                        phone: record.get('Trimmed phone number'),
+                      },
+                    ];
+                  })),
+          // Mapping
+          (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_1__/* .getMapping */ .tj)(airtableVendors, AIRTABLE_BILL_COM_ID_FIELD, false));
+
+  // Perform sync.
+  await billComApi.primaryOrgLogin();
+  await airtableBase.update(
+      AIRTABLE_VENDORS_TABLE,
+      await Promise.all(
+          Array.from(
+              creates,
+              async ([id, create]) => ({
+                id,
+                fields: {
+                  [AIRTABLE_BILL_COM_ID_FIELD]:
+                    await billComApi.create('Vendor', create),
+                },
+              }))));
+  await billComApi.bulk(
+      'Update',
+      'Vendor',
+      Array.from(updates, ([id, update]) => ({id, ...update})));
+
+  // Add summary.
+  addSummaryTableHeaders(['Updates', 'Creates']);
+  addSummaryTableRow((0,_common_sync_js__WEBPACK_IMPORTED_MODULE_1__/* .summarize */ .Iz)([updates, creates]));
 }
 
 
@@ -22924,7 +22957,7 @@ __nccwpck_require__.a(__webpack_module__, async (__webpack_handle_async_dependen
 /* harmony import */ var _bill_com_integration_sync_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(9902);
 /* harmony import */ var _bill_com_integration_sync_bills_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(8655);
 /* harmony import */ var _bill_com_integration_sync_internal_customers_js__WEBPACK_IMPORTED_MODULE_5__ = __nccwpck_require__(7842);
-/* harmony import */ var _door_knocking_create_vendor_js__WEBPACK_IMPORTED_MODULE_6__ = __nccwpck_require__(318);
+/* harmony import */ var _door_knocking_sync_vendors_js__WEBPACK_IMPORTED_MODULE_6__ = __nccwpck_require__(702);
 /* harmony import */ var _common_inputs_js__WEBPACK_IMPORTED_MODULE_7__ = __nccwpck_require__(1872);
 /* harmony import */ var _common_api_js__WEBPACK_IMPORTED_MODULE_8__ = __nccwpck_require__(6362);
 /* harmony import */ var _common_action_js__WEBPACK_IMPORTED_MODULE_9__ = __nccwpck_require__(518);
@@ -22962,8 +22995,8 @@ await (0,_common_action_js__WEBPACK_IMPORTED_MODULE_9__/* .run */ .K)(async () =
     case 'bill_com_integration_sync_internal_customers':
       imp = _bill_com_integration_sync_internal_customers_js__WEBPACK_IMPORTED_MODULE_5__;
       break;
-    case 'door_knocking_create_vendor':
-      imp = _door_knocking_create_vendor_js__WEBPACK_IMPORTED_MODULE_6__;
+    case 'door_knocking_sync_vendors':
+      imp = _door_knocking_sync_vendors_js__WEBPACK_IMPORTED_MODULE_6__;
       break;
     default:
       throw new Error(`Unknown file ID ${(0,_common_inputs_js__WEBPACK_IMPORTED_MODULE_7__/* .fileId */ .o8)()}`);

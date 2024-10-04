@@ -24,8 +24,8 @@ jobs:
         file-id: [
           # Creates that don't reference other data
           'bill_com_integration_create_approver',
-          'door_knocking_create_vendor',
           # Sync including newly created data
+          'door_knocking_sync_vendors',
           'bill_com_integration_sync_internal_customers',
           'bill_com_integration_sync',
           # Creates that reference synced data
