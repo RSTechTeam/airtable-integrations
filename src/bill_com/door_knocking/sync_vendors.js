@@ -35,7 +35,7 @@ export async function main(billComApi, airtableBase = new Base()) {
                         addressCity: v.get('Mailing address (city)'),
                         addressState: v.get('Mailing address (state short)'),
                         addressZip:
-                          v.get('Mailing address (zip code)').toString(),
+                          v.get('Mailing address (zip code)')?.toString(),
                         addressCountry: 'USA',
                         email: v.get('Email'),
                         phone: v.get('Trimmed phone number'),
