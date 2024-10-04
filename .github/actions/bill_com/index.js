@@ -22870,10 +22870,12 @@ __nccwpck_require__.r(__webpack_exports__);
 /* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
 /* harmony export */   "main": () => (/* binding */ main)
 /* harmony export */ });
-/* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(5585);
-/* harmony import */ var _common_sync_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(3599);
+/* harmony import */ var _common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(1444);
+/* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(5585);
+/* harmony import */ var _common_sync_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(3599);
 /** @fileoverview Syncs Bill.com Vendors from Airtable to Bill.com. */
  
+
 
 
 
@@ -22882,7 +22884,7 @@ __nccwpck_require__.r(__webpack_exports__);
  * @param {!Base=} airtableBase
  * @return {!Promise<undefined>}
  */
-async function main(billComApi, airtableBase = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .Base */ .X()) {
+async function main(billComApi, airtableBase = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .Base */ .X()) {
   const AIRTABLE_VENDORS_TABLE = 'Contacts';
   const AIRTABLE_BILL_COM_ID_FIELD = 'Bill.com Vendor ID';
 
@@ -22892,7 +22894,7 @@ async function main(billComApi, airtableBase = new _common_airtable_js__WEBPACK_
 
   // Get changes.
   const {updates, creates} =
-      (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_1__/* .syncChanges */ .U4)(
+      (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_2__/* .syncChanges */ .U4)(
           // Source
           new Map(
               airtableVendors.map(
@@ -22917,7 +22919,7 @@ async function main(billComApi, airtableBase = new _common_airtable_js__WEBPACK_
                     ];
                   })),
           // Mapping
-          (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_1__/* .getMapping */ .tj)(airtableVendors, AIRTABLE_BILL_COM_ID_FIELD, false));
+          (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_2__/* .getMapping */ .tj)(airtableVendors, AIRTABLE_BILL_COM_ID_FIELD, false));
 
   // Perform sync.
   await billComApi.primaryOrgLogin();
@@ -22939,8 +22941,8 @@ async function main(billComApi, airtableBase = new _common_airtable_js__WEBPACK_
       Array.from(updates, ([id, update]) => ({id, ...update})));
 
   // Add summary.
-  addSummaryTableHeaders(['Updates', 'Creates']);
-  addSummaryTableRow((0,_common_sync_js__WEBPACK_IMPORTED_MODULE_1__/* .summarize */ .Iz)([updates, creates]));
+  (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .addSummaryTableHeaders */ .M9)(['Updates', 'Creates']);
+  (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .addSummaryTableRow */ .QS)((0,_common_sync_js__WEBPACK_IMPORTED_MODULE_2__/* .summarize */ .Iz)([updates, creates]));
 }
 
 

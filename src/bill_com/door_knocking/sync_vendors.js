@@ -1,5 +1,6 @@
 /** @fileoverview Syncs Bill.com Vendors from Airtable to Bill.com. */
  
+import {addSummaryTableHeaders, addSummaryTableRow} from '../../common/github_actions_core.js';
 import {Base} from '../../common/airtable.js';
 import {getMapping, summarize, syncChanges} from '../../common/sync.js';
 
