@@ -94,7 +94,7 @@ await run(async () => {
       },
   };
 
-  // Parse Credit Card Report CSVs with above config.
+  // Parse Credit Card Report CSV with above config.
   await Promise.all(
       importRecord.get('Credit Card Report').map(
           csv => parse(csv, header, parseConfig)));

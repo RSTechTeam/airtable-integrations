@@ -1,5 +1,5 @@
-name: 'Abacus x Airtable Action'
-description: 'Parse Abacus CSV exports into Airtable'
+name: 'AmTrav x Airtable Action'
+description: 'Parse AmTrav CSV reports into Airtable'
 inputs:
   airtable-api-key:
     description: 'The Airtable API key to use for Airtable interactions'
@@ -9,6 +9,9 @@ inputs:
     required: true
   airtable-import-record-id:
     description: 'The ID of the Airtable Record whose CSVs should be parsed and integrated'
+    required: true
+  amtrav-card-id:
+    description: 'The ID of the AmTrav Credit Card whose transactions should be integrated'
     required: true
 runs:
   using: 'node20'
