@@ -35,11 +35,12 @@ await run(async () => {
                 'Total',
               ],
               { // Parse Config
+                transform: (value, header) => value.replace('=', ''),
                 chunk:
                   (results, parser) => results.data.forEach(
                       row => emails.set(row['Booking #'], row['Email'])),
               })));
-  log(Array.from(emails));
+
   // For existing AmTrav Airtable Records,
   // map AmTrav Transaction ID to Airtable Record ID.
   const expenseRecords =
@@ -61,7 +62,6 @@ await run(async () => {
   const usedFields =
       header.filter(
           field => !['Card', 'Travel Date'].includes(field));
-  log(usedFields);
   let updateCount = 0;
   let createCount = 0;
   const parseConfig = {
@@ -89,8 +89,6 @@ await run(async () => {
                 // Mapping
                 expenseRecords);
 
-        log(`u: ${Array.from(updates)}`);
-        log(`c: ${Array.from(creates)}`);
         // Track change counts.
         updateCount += updates.size;
         createCount += creates.size;

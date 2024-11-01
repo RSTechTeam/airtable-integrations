@@ -18619,11 +18619,12 @@ await (0,_common_action_js__WEBPACK_IMPORTED_MODULE_5__/* .run */ .K)(async () =
                 'Total',
               ],
               { // Parse Config
+                transform: (value, header) => value.replace('=', ''),
                 chunk:
                   (results, parser) => results.data.forEach(
                       row => emails.set(row['Booking #'], row['Email'])),
               })));
-  (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .log */ .cM)(Array.from(emails));
+
   // For existing AmTrav Airtable Records,
   // map AmTrav Transaction ID to Airtable Record ID.
   const expenseRecords =
@@ -18645,7 +18646,6 @@ await (0,_common_action_js__WEBPACK_IMPORTED_MODULE_5__/* .run */ .K)(async () =
   const usedFields =
       header.filter(
           field => !['Card', 'Travel Date'].includes(field));
-  (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .log */ .cM)(usedFields);
   let updateCount = 0;
   let createCount = 0;
   const parseConfig = {
@@ -18673,8 +18673,6 @@ await (0,_common_action_js__WEBPACK_IMPORTED_MODULE_5__/* .run */ .K)(async () =
                 // Mapping
                 expenseRecords);
 
-        (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .log */ .cM)(`u: ${Array.from(updates)}`);
-        (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .log */ .cM)(`c: ${Array.from(creates)}`);
         // Track change counts.
         updateCount += updates.size;
         createCount += creates.size;
