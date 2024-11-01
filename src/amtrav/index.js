@@ -8,6 +8,18 @@ import {Base} from '../common/airtable.js';
 import {parse} from '../common/csv.js';
 import {run} from '../common/action.js';
 
+/**
+ * Trims leading "=" (and resulting quotes) and types number values.
+ * @param {string} value
+ * @param {string} header
+ * @returns {string|number}
+ */
+function trimAndType(value, header) {
+  const val =
+      value.startsWith('=') ? value.substring(2, value.length - 1) : value;
+  return header.includes('#') ? Number(val) : val;
+}
+
 await run(async () => {
 
   /** AmTrav Data Airtable Table name. */
@@ -35,7 +47,7 @@ await run(async () => {
                 'Total',
               ],
               { // Parse Config
-                transform: (value, header) => value.replace('=', ''),
+                transform: trimAndType,
                 chunk:
                   (results, parser) => results.data.forEach(
                       row => emails.set(row['Booking #'], row['Email'])),
@@ -65,10 +77,9 @@ await run(async () => {
   let updateCount = 0;
   let createCount = 0;
   const parseConfig = {
-    transform: (value, header) => value.replace('=', ''),
+    transform: trimAndType,
     chunk:
       (results, parser) => {
-        log(results.data[0]['Card']);
         const {updates, creates} =
             syncChanges(
                 // Source
