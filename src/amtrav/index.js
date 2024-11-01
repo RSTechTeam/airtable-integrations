@@ -39,7 +39,7 @@ await run(async () => {
                   (results, parser) => results.data.forEach(
                       row => emails.set(row['Booking #'], row['Email'])),
               })));
-
+  log(Array.from(emails));
   // For existing AmTrav Airtable Records,
   // map AmTrav Transaction ID to Airtable Record ID.
   const expenseRecords =
@@ -67,6 +67,7 @@ await run(async () => {
   const parseConfig = {
     chunk:
       (results, parser) => {
+        log(results.data[0]['Card']);
         const {updates, creates} =
             syncChanges(
                 // Source
@@ -81,6 +82,7 @@ await run(async () => {
                           {
                             ...Object.fromEntries(
                                 usedFields.map(f => [f, row[f]])),
+                            'TT': log(row['Booking #']),
                             'Email': emails.get(row['Booking #']),
                           },
                         ])),

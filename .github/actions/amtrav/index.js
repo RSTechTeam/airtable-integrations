@@ -18623,7 +18623,7 @@ await (0,_common_action_js__WEBPACK_IMPORTED_MODULE_5__/* .run */ .K)(async () =
                   (results, parser) => results.data.forEach(
                       row => emails.set(row['Booking #'], row['Email'])),
               })));
-
+  (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .log */ .cM)(Array.from(emails));
   // For existing AmTrav Airtable Records,
   // map AmTrav Transaction ID to Airtable Record ID.
   const expenseRecords =
@@ -18651,6 +18651,7 @@ await (0,_common_action_js__WEBPACK_IMPORTED_MODULE_5__/* .run */ .K)(async () =
   const parseConfig = {
     chunk:
       (results, parser) => {
+        (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .log */ .cM)(results.data[0]['Card']);
         const {updates, creates} =
             (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_6__/* .syncChanges */ .U4)(
                 // Source
@@ -18665,6 +18666,7 @@ await (0,_common_action_js__WEBPACK_IMPORTED_MODULE_5__/* .run */ .K)(async () =
                           {
                             ...Object.fromEntries(
                                 usedFields.map(f => [f, row[f]])),
+                            'TT': (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .log */ .cM)(row['Booking #']),
                             'Email': emails.get(row['Booking #']),
                           },
                         ])),
