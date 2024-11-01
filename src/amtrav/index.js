@@ -1,5 +1,6 @@
 /** @fileoverview Imports an AmTrav CSV update into Airtable. */
 
+import {addSummaryTableHeaders, addSummaryTableRow} from '../common/github_actions_core.js';
 import {airtableImportRecordId} from '../common/inputs.js';
 import {airtableRecordUpdate, filterMap, getMapping, syncChanges} from '../common/sync.js';
 import {amtravCardId} from './inputs.js';
@@ -60,6 +61,8 @@ await run(async () => {
   const usedFields =
       header.filter(
           field => !['Card', 'Travel Date'].includes(field));
+  let updateCount = 0;
+  let createCount = 0;
   const parseConfig = {
     chunk:
       (results, parser) => {
@@ -83,6 +86,10 @@ await run(async () => {
                 // Mapping
                 expenseRecords);
 
+        // Track change counts.
+        updateCount += updates.size;
+        createCount += creates.size;
+
         // Launch upserts.
         return Promise.all([
           expenseSources.update(
@@ -98,4 +105,8 @@ await run(async () => {
   await Promise.all(
       importRecord.get('Credit Card Report').map(
           csv => parse(csv, header, parseConfig)));
+
+  // Add summary.
+  addSummaryTableHeaders(['Updates', 'Creates']);
+  addSummaryTableRow([updateCount, createCount]);
 });

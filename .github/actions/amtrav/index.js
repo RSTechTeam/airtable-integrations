@@ -18575,12 +18575,13 @@ return new B(c,{type:"multipart/form-data; boundary="+b})}
 /***/ ((__webpack_module__, __unused_webpack___webpack_exports__, __nccwpck_require__) => {
 
 __nccwpck_require__.a(__webpack_module__, async (__webpack_handle_async_dependencies__) => {
-/* harmony import */ var _common_inputs_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(4684);
-/* harmony import */ var _common_sync_js__WEBPACK_IMPORTED_MODULE_5__ = __nccwpck_require__(3599);
-/* harmony import */ var _inputs_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(4434);
-/* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(5585);
-/* harmony import */ var _common_csv_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(2066);
-/* harmony import */ var _common_action_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(518);
+/* harmony import */ var _common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(1444);
+/* harmony import */ var _common_inputs_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(4684);
+/* harmony import */ var _common_sync_js__WEBPACK_IMPORTED_MODULE_6__ = __nccwpck_require__(3599);
+/* harmony import */ var _inputs_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(4434);
+/* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(5585);
+/* harmony import */ var _common_csv_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(2066);
+/* harmony import */ var _common_action_js__WEBPACK_IMPORTED_MODULE_5__ = __nccwpck_require__(518);
 /** @fileoverview Imports an AmTrav CSV update into Airtable. */
 
 
@@ -18590,21 +18591,22 @@ __nccwpck_require__.a(__webpack_module__, async (__webpack_handle_async_dependen
 
 
 
-await (0,_common_action_js__WEBPACK_IMPORTED_MODULE_4__/* .run */ .K)(async () => {
+
+await (0,_common_action_js__WEBPACK_IMPORTED_MODULE_5__/* .run */ .K)(async () => {
 
   /** AmTrav Data Airtable Table name. */
   const AMTRAV_TABLE = 'AmTrav Data';
 
   // Find Import Record.
-  const expenseSources = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_2__/* .Base */ .X();
+  const expenseSources = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_3__/* .Base */ .X();
   const importRecord =
-      await expenseSources.find('AmTrav Imports', (0,_common_inputs_js__WEBPACK_IMPORTED_MODULE_0__/* .airtableImportRecordId */ .pN)());
+      await expenseSources.find('AmTrav Imports', (0,_common_inputs_js__WEBPACK_IMPORTED_MODULE_1__/* .airtableImportRecordId */ .pN)());
 
   // Parse Trip Spend Report CSV.
   const emails = new Map();
   await Promise.all(
       importRecord.get('Trip Spend Report').map(
-          csv => (0,_common_csv_js__WEBPACK_IMPORTED_MODULE_3__/* .parse */ .Q)(
+          csv => (0,_common_csv_js__WEBPACK_IMPORTED_MODULE_4__/* .parse */ .Q)(
               csv,
               [ // Header
                 'Booking #',
@@ -18625,7 +18627,7 @@ await (0,_common_action_js__WEBPACK_IMPORTED_MODULE_4__/* .run */ .K)(async () =
   // For existing AmTrav Airtable Records,
   // map AmTrav Transaction ID to Airtable Record ID.
   const expenseRecords =
-      (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_5__/* .getMapping */ .tj)(await expenseSources.select(AMTRAV_TABLE), 'Transaction ID');
+      (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_6__/* .getMapping */ .tj)(await expenseSources.select(AMTRAV_TABLE), 'Transaction ID');
 
   // Create Credit Card Report parse config.
   const header = [
@@ -18643,16 +18645,18 @@ await (0,_common_action_js__WEBPACK_IMPORTED_MODULE_4__/* .run */ .K)(async () =
   const usedFields =
       header.filter(
           field => !['Card', 'Travel Date'].includes(field));
+  let updateCount = 0;
+  let createCount = 0;
   const parseConfig = {
     chunk:
       (results, parser) => {
         const {updates, creates} =
-            (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_5__/* .syncChanges */ .U4)(
+            (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_6__/* .syncChanges */ .U4)(
                 // Source
                 new Map(
-                    (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_5__/* .filterMap */ .DZ)(
+                    (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_6__/* .filterMap */ .DZ)(
                         results.data,
-                        row => row['Card'] === (0,_inputs_js__WEBPACK_IMPORTED_MODULE_1__/* .amtravCardId */ .f)(),
+                        row => row['Card'] === (0,_inputs_js__WEBPACK_IMPORTED_MODULE_2__/* .amtravCardId */ .f)(),
                         row => [
                           // Tramsaction ID
                           `${row['Booking #']}:${row['Invoice #']}:` +
@@ -18666,10 +18670,14 @@ await (0,_common_action_js__WEBPACK_IMPORTED_MODULE_4__/* .run */ .K)(async () =
                 // Mapping
                 expenseRecords);
 
+        // Track change counts.
+        updateCount += updates.size;
+        createCount += creates.size;
+
         // Launch upserts.
         return Promise.all([
           expenseSources.update(
-              AMTRAV_TABLE, Array.from(updates, _common_sync_js__WEBPACK_IMPORTED_MODULE_5__/* .airtableRecordUpdate */ .vw)),
+              AMTRAV_TABLE, Array.from(updates, _common_sync_js__WEBPACK_IMPORTED_MODULE_6__/* .airtableRecordUpdate */ .vw)),
           expenseSources.create(
               AMTRAV_TABLE,
               Array.from(creates, ([, create]) => ({fields: create}))),
@@ -18680,7 +18688,11 @@ await (0,_common_action_js__WEBPACK_IMPORTED_MODULE_4__/* .run */ .K)(async () =
   // Parse Credit Card Report CSV with above config.
   await Promise.all(
       importRecord.get('Credit Card Report').map(
-          csv => (0,_common_csv_js__WEBPACK_IMPORTED_MODULE_3__/* .parse */ .Q)(csv, header, parseConfig)));
+          csv => (0,_common_csv_js__WEBPACK_IMPORTED_MODULE_4__/* .parse */ .Q)(csv, header, parseConfig)));
+
+  // Add summary.
+  (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .addSummaryTableHeaders */ .M9)(['Updates', 'Creates']);
+  (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .addSummaryTableRow */ .QS)([updateCount, createCount]);
 });
 
 __webpack_handle_async_dependencies__();
@@ -21123,9 +21135,11 @@ async function parse(csv, header, config) {
 /* harmony export */   "ZK": () => (/* binding */ warn),
 /* harmony export */   "Np": () => (/* binding */ getInput),
 /* harmony export */   "vU": () => (/* binding */ error),
+/* harmony export */   "M9": () => (/* binding */ addSummaryTableHeaders),
+/* harmony export */   "QS": () => (/* binding */ addSummaryTableRow),
 /* harmony export */   "A8": () => (/* binding */ writeSummary)
 /* harmony export */ });
-/* unused harmony exports log, addSummaryTableHeaders, addSummaryTableRow, logJson */
+/* unused harmony exports log, logJson */
 /* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(6024);
 /* harmony import */ var _utils_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(381);
 /**
