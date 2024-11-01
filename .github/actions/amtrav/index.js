@@ -18671,8 +18671,8 @@ await (0,_common_action_js__WEBPACK_IMPORTED_MODULE_5__/* .run */ .K)(async () =
                 // Mapping
                 expenseRecords);
 
-        (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .log */ .cM)(updates);
-        (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .log */ .cM)(creates);
+        (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .log */ .cM)(`u: ${Array.from(updates)}`);
+        (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .log */ .cM)(`c: ${Array.from(creates)}`);
         // Track change counts.
         updateCount += updates.size;
         createCount += creates.size;

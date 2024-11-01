@@ -87,8 +87,8 @@ await run(async () => {
                 // Mapping
                 expenseRecords);
 
-        log(updates);
-        log(creates);
+        log(`u: ${Array.from(updates)}`);
+        log(`c: ${Array.from(creates)}`);
         // Track change counts.
         updateCount += updates.size;
         createCount += creates.size;
