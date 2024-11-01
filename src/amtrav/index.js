@@ -65,6 +65,7 @@ await run(async () => {
   let updateCount = 0;
   let createCount = 0;
   const parseConfig = {
+    transform: (value, header) => value.replace('=', ''),
     chunk:
       (results, parser) => {
         log(results.data[0]['Card']);
@@ -82,7 +83,6 @@ await run(async () => {
                           {
                             ...Object.fromEntries(
                                 usedFields.map(f => [f, row[f]])),
-                            'TT': log(row['Booking #']),
                             'Email': emails.get(row['Booking #']),
                           },
                         ])),

@@ -18649,6 +18649,7 @@ await (0,_common_action_js__WEBPACK_IMPORTED_MODULE_5__/* .run */ .K)(async () =
   let updateCount = 0;
   let createCount = 0;
   const parseConfig = {
+    transform: (value, header) => value.replace('=', ''),
     chunk:
       (results, parser) => {
         (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .log */ .cM)(results.data[0]['Card']);
@@ -18666,7 +18667,6 @@ await (0,_common_action_js__WEBPACK_IMPORTED_MODULE_5__/* .run */ .K)(async () =
                           {
                             ...Object.fromEntries(
                                 usedFields.map(f => [f, row[f]])),
-                            'TT': (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .log */ .cM)(row['Booking #']),
                             'Email': emails.get(row['Booking #']),
                           },
                         ])),
