@@ -18576,9 +18576,9 @@ return new B(c,{type:"multipart/form-data; boundary="+b})}
 
 __nccwpck_require__.a(__webpack_module__, async (__webpack_handle_async_dependencies__) => {
 /* harmony import */ var _common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(1444);
-/* harmony import */ var _inputs_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(2568);
+/* harmony import */ var _common_inputs_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(4684);
 /* harmony import */ var _common_sync_js__WEBPACK_IMPORTED_MODULE_5__ = __nccwpck_require__(3599);
-/* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(8997);
+/* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(5585);
 /* harmony import */ var _common_csv_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(2066);
 /* harmony import */ var _common_action_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(518);
 /** @fileoverview Imports an Abacus CSV update into Airtable. */
@@ -18592,8 +18592,8 @@ __nccwpck_require__.a(__webpack_module__, async (__webpack_handle_async_dependen
 
 await (0,_common_action_js__WEBPACK_IMPORTED_MODULE_4__/* .run */ .K)(async () => {
 
-  /** Abacus Airtable Table name. */
-  const ABACUS_TABLE = 'Abacus';
+  /** Abacus Data Airtable Table name. */
+  const ABACUS_TABLE = 'Abacus Data';
 
   /** Abacus to Airtable Field mapping. */
   const mapping = new Map([
@@ -18671,7 +18671,7 @@ await (0,_common_action_js__WEBPACK_IMPORTED_MODULE_4__/* .run */ .K)(async () =
 
   // Parse CSVs with above config.
   const importRecord =
-      await expenseSources.find('Imports', (0,_inputs_js__WEBPACK_IMPORTED_MODULE_1__/* .airtableImportRecordId */ .p)());
+      await expenseSources.find('Abacus Imports', (0,_common_inputs_js__WEBPACK_IMPORTED_MODULE_1__/* .airtableImportRecordId */ .pN)());
   await Promise.all(
       importRecord.get('CSVs').map(
           csv => (0,_common_csv_js__WEBPACK_IMPORTED_MODULE_3__/* .parse */ .Q)(csv, airtableFields, parseConfig)));
@@ -18683,26 +18683,6 @@ await (0,_common_action_js__WEBPACK_IMPORTED_MODULE_4__/* .run */ .K)(async () =
 
 __webpack_handle_async_dependencies__();
 }, 1);
-
-/***/ }),
-
-/***/ 2568:
-/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
-
-/* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
-/* harmony export */   "p": () => (/* binding */ airtableImportRecordId)
-/* harmony export */ });
-/* harmony import */ var _common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(1444);
-/**
- * @fileoverview Lazy evaluated inputs
- * @see abacus/action.yml
- */
-
-
-
-/** @type function(): string */
-const airtableImportRecordId = (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .getInput */ .Np)('airtable-import-record-id');
-
 
 /***/ }),
 
@@ -18731,36 +18711,17 @@ function run(main) {
 
 /***/ }),
 
-/***/ 8997:
+/***/ 5585:
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
 
-
-// EXPORTS
-__nccwpck_require__.d(__webpack_exports__, {
-  "X": () => (/* binding */ Base)
-});
-
-// UNUSED EXPORTS: MsoBase
-
-// EXTERNAL MODULE: ./node_modules/airtable/lib/airtable.js
-var airtable = __nccwpck_require__(5447);
-// EXTERNAL MODULE: ./src/common/github_actions_core.js
-var github_actions_core = __nccwpck_require__(1444);
-;// CONCATENATED MODULE: ./src/common/inputs.js
-/**
- * @fileoverview Lazy evaluated inputs
- * @see action.yml
- */
-
-
-
-/** @type function(): string */
-const inputs_airtableApiKey = (0,github_actions_core/* getInput */.Np)('airtable-api-key');
-const inputs_airtableBaseId = (0,github_actions_core/* getInput */.Np)('airtable-base-id');
-
-// EXTERNAL MODULE: ./src/common/utils.js + 1 modules
-var utils = __nccwpck_require__(381);
-;// CONCATENATED MODULE: ./src/common/airtable.js
+/* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
+/* harmony export */   "X": () => (/* binding */ Base)
+/* harmony export */ });
+/* unused harmony export MsoBase */
+/* harmony import */ var airtable__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(5447);
+/* harmony import */ var _inputs_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(4684);
+/* harmony import */ var _utils_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(381);
+/* harmony import */ var _github_actions_core_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(1444);
 /** @fileoverview Utilities for interacting with Airtable. */
 
 /**
@@ -18801,7 +18762,7 @@ function catchError(promise, querying, table) {
  * @return {!Promise<!Array<*>>}
  */
 function batch(func, array) {
-  return (0,utils/* batchAsync */.aE)(func, array, 10);
+  return (0,_utils_js__WEBPACK_IMPORTED_MODULE_2__/* .batchAsync */ .aE)(func, array, 10);
 }
 
 /** An Airtable Base to query. */
@@ -18811,10 +18772,10 @@ class Base {
    * @param {string=} baseId
    * @param {string=} apiKey
    */
-  constructor(baseId = inputs_airtableBaseId(), apiKey = inputs_airtableApiKey()) {
+  constructor(baseId = (0,_inputs_js__WEBPACK_IMPORTED_MODULE_1__/* .airtableBaseId */ .kt)(), apiKey = (0,_inputs_js__WEBPACK_IMPORTED_MODULE_1__/* .airtableApiKey */ .Bd)()) {
 
     /** @private @const {!Base} */
-    this.base_ = new airtable({apiKey: apiKey}).base(baseId);
+    this.base_ = new airtable__WEBPACK_IMPORTED_MODULE_0__({apiKey: apiKey}).base(baseId);
   }
 
   /**
@@ -18858,7 +18819,7 @@ class Base {
         const fields = await fieldsFunc(record);
         fields && updates.push({id: record.getId(), fields: fields});
       } catch (err) {
-        (0,github_actions_core/* warn */.ZK)(err.message);
+        (0,_github_actions_core_js__WEBPACK_IMPORTED_MODULE_3__/* .warn */ .ZK)(err.message);
         firstErr ||= err;
       }
     }
@@ -21245,6 +21206,30 @@ function logJson(endpoint, json) {
       });
   firstArray.forEach((data, index) => logJsonGroup(index, data));
 }
+
+
+/***/ }),
+
+/***/ 4684:
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
+
+/* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
+/* harmony export */   "Bd": () => (/* binding */ airtableApiKey),
+/* harmony export */   "kt": () => (/* binding */ airtableBaseId),
+/* harmony export */   "pN": () => (/* binding */ airtableImportRecordId)
+/* harmony export */ });
+/* harmony import */ var _github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(1444);
+/**
+ * @fileoverview Lazy evaluated inputs
+ * @see action.yml
+ */
+
+
+
+/** @type function(): string */
+const airtableApiKey = (0,_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .getInput */ .Np)('airtable-api-key');
+const airtableBaseId = (0,_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .getInput */ .Np)('airtable-base-id');
+const airtableImportRecordId = (0,_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .getInput */ .Np)('airtable-import-record-id');
 
 
 /***/ }),

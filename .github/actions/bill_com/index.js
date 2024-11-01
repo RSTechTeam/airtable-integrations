@@ -22792,7 +22792,7 @@ class Api {
  */
 async function getApi(
     baseId = inputs/* airtableOrgIdsBaseId */.AG(),
-    apiKey = (0,common_inputs/* airtableApiKey */.B)(),
+    apiKey = (0,common_inputs/* airtableApiKey */.Bd)(),
     userName = inputs/* billComUserName */.jv(),
     password = inputs/* billComPassword */.Mr(),
     devKey = inputs/* billComDevKey */.Hc(),
@@ -23096,7 +23096,7 @@ class Base {
    * @param {string=} baseId
    * @param {string=} apiKey
    */
-  constructor(baseId = (0,_inputs_js__WEBPACK_IMPORTED_MODULE_1__/* .airtableBaseId */ .k)(), apiKey = (0,_inputs_js__WEBPACK_IMPORTED_MODULE_1__/* .airtableApiKey */ .B)()) {
+  constructor(baseId = (0,_inputs_js__WEBPACK_IMPORTED_MODULE_1__/* .airtableBaseId */ .kt)(), apiKey = (0,_inputs_js__WEBPACK_IMPORTED_MODULE_1__/* .airtableApiKey */ .Bd)()) {
 
     /** @private @const {!Base} */
     this.base_ = new airtable__WEBPACK_IMPORTED_MODULE_0__({apiKey: apiKey}).base(baseId);
@@ -23184,7 +23184,7 @@ class MsoBase extends Base {
    * @param {string=} baseId
    * @param {string=} apiKey
    */
-  constructor(baseId = (0,_inputs_js__WEBPACK_IMPORTED_MODULE_1__/* .airtableBaseId */ .k)(), apiKey = (0,_inputs_js__WEBPACK_IMPORTED_MODULE_1__/* .airtableApiKey */ .B)()) {
+  constructor(baseId = (0,_inputs_js__WEBPACK_IMPORTED_MODULE_1__/* .airtableBaseId */ .kt)(), apiKey = (0,_inputs_js__WEBPACK_IMPORTED_MODULE_1__/* .airtableApiKey */ .Bd)()) {
     super(baseId, apiKey);
 
     /** @private {?Record<!TField>} */
@@ -23338,9 +23338,10 @@ function logJson(endpoint, json) {
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
 
 /* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
-/* harmony export */   "B": () => (/* binding */ airtableApiKey),
-/* harmony export */   "k": () => (/* binding */ airtableBaseId)
+/* harmony export */   "Bd": () => (/* binding */ airtableApiKey),
+/* harmony export */   "kt": () => (/* binding */ airtableBaseId)
 /* harmony export */ });
+/* unused harmony export airtableImportRecordId */
 /* harmony import */ var _github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(1444);
 /**
  * @fileoverview Lazy evaluated inputs
@@ -23352,6 +23353,7 @@ function logJson(endpoint, json) {
 /** @type function(): string */
 const airtableApiKey = (0,_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .getInput */ .Np)('airtable-api-key');
 const airtableBaseId = (0,_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .getInput */ .Np)('airtable-base-id');
+const airtableImportRecordId = (0,_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .getInput */ .Np)('airtable-import-record-id');
 
 
 /***/ }),

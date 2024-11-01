@@ -1,7 +1,7 @@
 /** @fileoverview Imports an Abacus CSV update into Airtable. */
 
 import {addSummaryTableHeaders, addSummaryTableRow} from '../common/github_actions_core.js';
-import {airtableImportRecordId} from './inputs.js';
+import {airtableImportRecordId} from '../common/inputs.js';
 import {airtableRecordUpdate, getMapping, syncChanges} from '../common/sync.js';
 import {Base} from '../common/airtable.js';
 import {parse} from '../common/csv.js';
@@ -9,8 +9,8 @@ import {run} from '../common/action.js';
 
 await run(async () => {
 
-  /** Abacus Airtable Table name. */
-  const ABACUS_TABLE = 'Abacus';
+  /** Abacus Data Airtable Table name. */
+  const ABACUS_TABLE = 'Abacus Data';
 
   /** Abacus to Airtable Field mapping. */
   const mapping = new Map([
@@ -88,7 +88,7 @@ await run(async () => {
 
   // Parse CSVs with above config.
   const importRecord =
-      await expenseSources.find('Imports', airtableImportRecordId());
+      await expenseSources.find('Abacus Imports', airtableImportRecordId());
   await Promise.all(
       importRecord.get('CSVs').map(
           csv => parse(csv, airtableFields, parseConfig)));
