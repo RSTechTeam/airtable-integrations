@@ -17,7 +17,7 @@ import {run} from '../common/action.js';
 function trimAndType(value, header) {
   const val =
       value.startsWith('=') ? value.substring(2, value.length - 1) : value;
-  return header.includes('#') ? Number(val) : val;
+  return header.includes('#') || header === 'Amount' ? Number(val) : val;
 }
 
 await run(async () => {
