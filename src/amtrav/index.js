@@ -1,6 +1,6 @@
 /** @fileoverview Imports an AmTrav CSV update into Airtable. */
 
-import {addSummaryTableHeaders, addSummaryTableRow} from '../common/github_actions_core.js';
+import {addSummaryTableHeaders, addSummaryTableRow, log} from '../common/github_actions_core.js';
 import {airtableImportRecordId} from '../common/inputs.js';
 import {airtableRecordUpdate, filterMap, getMapping, syncChanges} from '../common/sync.js';
 import {amtravCardId} from './inputs.js';
@@ -17,7 +17,7 @@ await run(async () => {
   const expenseSources = new Base();
   const importRecord =
       await expenseSources.find('AmTrav Imports', airtableImportRecordId());
-
+  log('1');
   // Parse Trip Spend Report CSV.
   const emails = new Map();
   await Promise.all(
@@ -39,7 +39,7 @@ await run(async () => {
                   (results, parser) => results.data.forEach(
                       row => emails.set(row['Booking #'], row['Email'])),
               })));
-
+  log('2');
   // For existing AmTrav Airtable Records,
   // map AmTrav Transaction ID to Airtable Record ID.
   const expenseRecords =
@@ -101,11 +101,12 @@ await run(async () => {
       },
   };
 
+  log('3');
   // Parse Credit Card Report CSV with above config.
   await Promise.all(
       importRecord.get('Credit Card Report').map(
           csv => parse(csv, header, parseConfig)));
-
+  log('4');
   // Add summary.
   addSummaryTableHeaders(['Updates', 'Creates']);
   addSummaryTableRow([updateCount, createCount]);
