@@ -6,8 +6,5 @@
   "main": "../../src/abacus/index.js",
   "scripts": {
     "ncc-build": "cd .. && npm run ncc-build -- abacus"
-  },
-  "dependencies": {
-    "papaparse": "^5.4.1"
   }
 }

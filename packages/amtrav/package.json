@@ -1,0 +1,10 @@
+{
+  "name": "amtrav",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "",
+  "main": "../../src/amtrav/index.js",
+  "scripts": {
+    "ncc-build": "cd .. && npm run ncc-build -- amtrav"
+  }
+}
