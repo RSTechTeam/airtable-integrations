@@ -18601,7 +18601,7 @@ await (0,_common_action_js__WEBPACK_IMPORTED_MODULE_5__/* .run */ .K)(async () =
   const expenseSources = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_3__/* .Base */ .X();
   const importRecord =
       await expenseSources.find('AmTrav Imports', (0,_common_inputs_js__WEBPACK_IMPORTED_MODULE_1__/* .airtableImportRecordId */ .pN)());
-  (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .log */ .cM)('1');
+
   // Parse Trip Spend Report CSV.
   const emails = new Map();
   await Promise.all(
@@ -18623,7 +18623,7 @@ await (0,_common_action_js__WEBPACK_IMPORTED_MODULE_5__/* .run */ .K)(async () =
                   (results, parser) => results.data.forEach(
                       row => emails.set(row['Booking #'], row['Email'])),
               })));
-  (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .log */ .cM)('2');
+
   // For existing AmTrav Airtable Records,
   // map AmTrav Transaction ID to Airtable Record ID.
   const expenseRecords =
@@ -18645,6 +18645,7 @@ await (0,_common_action_js__WEBPACK_IMPORTED_MODULE_5__/* .run */ .K)(async () =
   const usedFields =
       header.filter(
           field => !['Card', 'Travel Date'].includes(field));
+  (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .log */ .cM)(usedFields);
   let updateCount = 0;
   let createCount = 0;
   const parseConfig = {
@@ -18670,6 +18671,8 @@ await (0,_common_action_js__WEBPACK_IMPORTED_MODULE_5__/* .run */ .K)(async () =
                 // Mapping
                 expenseRecords);
 
+        (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .log */ .cM)(updates);
+        (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .log */ .cM)(creates);
         // Track change counts.
         updateCount += updates.size;
         createCount += creates.size;
@@ -18685,12 +18688,11 @@ await (0,_common_action_js__WEBPACK_IMPORTED_MODULE_5__/* .run */ .K)(async () =
       },
   };
 
-  (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .log */ .cM)('3');
   // Parse Credit Card Report CSV with above config.
   await Promise.all(
       importRecord.get('Credit Card Report').map(
           csv => (0,_common_csv_js__WEBPACK_IMPORTED_MODULE_4__/* .parse */ .Q)(csv, header, parseConfig)));
-  (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .log */ .cM)('4');
+
   // Add summary.
   (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .addSummaryTableHeaders */ .M9)(['Updates', 'Creates']);
   (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .addSummaryTableRow */ .QS)([updateCount, createCount]);

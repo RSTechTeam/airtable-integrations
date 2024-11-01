@@ -17,7 +17,7 @@ await run(async () => {
   const expenseSources = new Base();
   const importRecord =
       await expenseSources.find('AmTrav Imports', airtableImportRecordId());
-  log('1');
+
   // Parse Trip Spend Report CSV.
   const emails = new Map();
   await Promise.all(
@@ -39,7 +39,7 @@ await run(async () => {
                   (results, parser) => results.data.forEach(
                       row => emails.set(row['Booking #'], row['Email'])),
               })));
-  log('2');
+
   // For existing AmTrav Airtable Records,
   // map AmTrav Transaction ID to Airtable Record ID.
   const expenseRecords =
@@ -61,6 +61,7 @@ await run(async () => {
   const usedFields =
       header.filter(
           field => !['Card', 'Travel Date'].includes(field));
+  log(usedFields);
   let updateCount = 0;
   let createCount = 0;
   const parseConfig = {
@@ -86,6 +87,8 @@ await run(async () => {
                 // Mapping
                 expenseRecords);
 
+        log(updates);
+        log(creates);
         // Track change counts.
         updateCount += updates.size;
         createCount += creates.size;
@@ -101,12 +104,11 @@ await run(async () => {
       },
   };
 
-  log('3');
   // Parse Credit Card Report CSV with above config.
   await Promise.all(
       importRecord.get('Credit Card Report').map(
           csv => parse(csv, header, parseConfig)));
-  log('4');
+
   // Add summary.
   addSummaryTableHeaders(['Updates', 'Creates']);
   addSummaryTableRow([updateCount, createCount]);
