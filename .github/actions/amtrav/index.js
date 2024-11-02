@@ -18602,8 +18602,8 @@ function trimAndType(value, header) {
   const val =
       value.replace('$', '').startsWith('=') ?
           value.substring(2, value.length - 1) : value;
-  return (header.includes('#') || header === 'Amount') && val.length > 0 ?
-      Number(val) : val;
+  return header.includes('#') || header === 'Amount' ?
+      (val.length > 0 ? Number(val) : null) : val;
 }
 
 await (0,_common_action_js__WEBPACK_IMPORTED_MODULE_5__/* .run */ .K)(async () => {
