@@ -59,7 +59,7 @@ await run(async () => {
   // map AmTrav Transaction ID to Airtable Record ID.
   const expenseRecords =
       getMapping(await expenseSources.select(AMTRAV_TABLE), 'Transaction ID');
-
+  log(Array.from(expenseRecords));
   // Create Credit Card Report parse config.
   const header = [
     'Card',
