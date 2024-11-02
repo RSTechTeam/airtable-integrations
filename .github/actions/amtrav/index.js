@@ -18602,8 +18602,10 @@ function trimAndType(value, header) {
   const val =
       value.replace('$', '').startsWith('=') ?
           value.substring(2, value.length - 1) : value;
-  return header.includes('#') || header === 'Amount' ?
-      (val.length > 0 ? Number(val) : null) : val;
+  const val2 = header.includes('#') || header === 'Amount' ?
+      (val ? Number(val) : null) : val;
+  header === 'Amount' ? (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .log */ .cM)(val2) : null;
+  return val2;
 }
 
 await (0,_common_action_js__WEBPACK_IMPORTED_MODULE_5__/* .run */ .K)(async () => {
@@ -18676,7 +18678,7 @@ await (0,_common_action_js__WEBPACK_IMPORTED_MODULE_5__/* .run */ .K)(async () =
                         row => [
                           // Tramsaction ID
                           `${row['Booking #']}:${row['Invoice #']}:` +
-                              row['Ticket #'],
+                              row['Ticket #'] ? row['Ticket #'] : '',
                           {
                             ...Object.fromEntries(
                                 usedFields.map(f => [f, row[f]])),
@@ -18686,6 +18688,7 @@ await (0,_common_action_js__WEBPACK_IMPORTED_MODULE_5__/* .run */ .K)(async () =
                 // Mapping
                 expenseRecords);
 
+        (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .log */ .cM)(Array.from(updates));
         // Track change counts.
         updateCount += updates.size;
         createCount += creates.size;
@@ -21148,6 +21151,7 @@ async function parse(csv, header, config) {
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
 
 /* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
+/* harmony export */   "cM": () => (/* binding */ log),
 /* harmony export */   "ZK": () => (/* binding */ warn),
 /* harmony export */   "Np": () => (/* binding */ getInput),
 /* harmony export */   "vU": () => (/* binding */ error),
@@ -21155,7 +21159,7 @@ async function parse(csv, header, config) {
 /* harmony export */   "QS": () => (/* binding */ addSummaryTableRow),
 /* harmony export */   "A8": () => (/* binding */ writeSummary)
 /* harmony export */ });
-/* unused harmony exports log, logJson */
+/* unused harmony export logJson */
 /* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(6024);
 /* harmony import */ var _utils_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(381);
 /**

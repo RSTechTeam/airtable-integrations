@@ -18,8 +18,10 @@ function trimAndType(value, header) {
   const val =
       value.replace('$', '').startsWith('=') ?
           value.substring(2, value.length - 1) : value;
-  return header.includes('#') || header === 'Amount' ?
-      (val.length > 0 ? Number(val) : null) : val;
+  const val2 = header.includes('#') || header === 'Amount' ?
+      (val ? Number(val) : null) : val;
+  header === 'Amount' ? log(val2) : null;
+  return val2;
 }
 
 await run(async () => {
@@ -92,7 +94,7 @@ await run(async () => {
                         row => [
                           // Tramsaction ID
                           `${row['Booking #']}:${row['Invoice #']}:` +
-                              row['Ticket #'],
+                              row['Ticket #'] ? row['Ticket #'] : '',
                           {
                             ...Object.fromEntries(
                                 usedFields.map(f => [f, row[f]])),
@@ -102,6 +104,7 @@ await run(async () => {
                 // Mapping
                 expenseRecords);
 
+        log(Array.from(updates));
         // Track change counts.
         updateCount += updates.size;
         createCount += creates.size;
