@@ -16,12 +16,10 @@ import {run} from '../common/action.js';
  */
 function trimAndType(value, header) {
   const val =
-      value.replace('$', '').startsWith('=') ?
-          value.substring(2, value.length - 1) : value;
-  const val2 = header.includes('#') || header === 'Amount' ?
+      value.startsWith('=') ?
+          value.substring(2, value.length - 1) : value.replace('$', '');
+  return header.includes('#') || header === 'Amount' ?
       (val ? Number(val) : null) : val;
-  header === 'Amount' ? log(val2) : null;
-  return val2;
 }
 
 await run(async () => {
@@ -104,7 +102,6 @@ await run(async () => {
                 // Mapping
                 expenseRecords);
 
-        log(Array.from(updates));
         // Track change counts.
         updateCount += updates.size;
         createCount += creates.size;
