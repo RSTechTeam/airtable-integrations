@@ -9,15 +9,17 @@ import {parse} from '../common/csv.js';
 import {run} from '../common/action.js';
 
 /**
- * Trims leading "=" (and resulting quotes) and types number values.
+ * Trims "$" and leading "=" (and resulting quotes) and types number values.
  * @param {string} value
  * @param {string} header
  * @returns {string|number}
  */
 function trimAndType(value, header) {
   const val =
-      value.startsWith('=') ? value.substring(2, value.length - 1) : value;
-  return header.includes('#') || header === 'Amount' ? Number(val) : val;
+      value.replace('$', '').startsWith('=') ?
+          value.substring(2, value.length - 1) : value;
+  return (header.includes('#') || header === 'Amount') && val.length > 0 ?
+      Number(val) : val;
 }
 
 await run(async () => {
