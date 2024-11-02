@@ -18674,9 +18674,9 @@ await (0,_common_action_js__WEBPACK_IMPORTED_MODULE_5__/* .run */ .K)(async () =
                         results.data,
                         row => row['Card'] === (0,_inputs_js__WEBPACK_IMPORTED_MODULE_2__/* .amtravCardId */ .f)(),
                         row => [
-                          // Tramsaction ID
-                          `${row['Booking #']}:${row['Invoice #']}:` +
-                              row['Ticket #'] ? row['Ticket #'] : '',
+                          // Transaction ID
+                          `"${row['Booking #']}:${row['Invoice #']}:` +
+                              `${row['Ticket #'] ? row['Ticket #'] : ''}"`,
                           {
                             ...Object.fromEntries(
                                 usedFields.map(f => [f, row[f]])),

@@ -90,9 +90,9 @@ await run(async () => {
                         results.data,
                         row => row['Card'] === amtravCardId(),
                         row => [
-                          // Tramsaction ID
-                          `${row['Booking #']}:${row['Invoice #']}:` +
-                              row['Ticket #'] ? row['Ticket #'] : '',
+                          // Transaction ID
+                          `"${row['Booking #']}:${row['Invoice #']}:` +
+                              `${row['Ticket #'] ? row['Ticket #'] : ''}"`,
                           {
                             ...Object.fromEntries(
                                 usedFields.map(f => [f, row[f]])),
