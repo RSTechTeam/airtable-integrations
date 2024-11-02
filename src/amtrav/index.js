@@ -82,23 +82,26 @@ await run(async () => {
     transform: trimAndType,
     chunk:
       (results, parser) => {
+        const source =
+            new Map(
+                filterMap(
+                    results.data,
+                    row => row['Card'] === amtravCardId(),
+                    row => [
+                      // Transaction ID
+                      `${row['Booking #']}:${row['Invoice #']}:` +
+                          row['Ticket #'] ? row['Ticket #'] : '',
+                      {
+                        ...Object.fromEntries(
+                            usedFields.map(f => [f, row[f]])),
+                        'Email': emails.get(row['Booking #']),
+                      },
+                    ]));
+        log(Array.from(source));
         const {updates, creates} =
             syncChanges(
                 // Source
-                new Map(
-                    filterMap(
-                        results.data,
-                        row => row['Card'] === amtravCardId(),
-                        row => [
-                          // Transaction ID
-                          `"${row['Booking #']}:${row['Invoice #']}:` +
-                              `${row['Ticket #'] ? row['Ticket #'] : ''}"`,
-                          {
-                            ...Object.fromEntries(
-                                usedFields.map(f => [f, row[f]])),
-                            'Email': emails.get(row['Booking #']),
-                          },
-                        ])),
+                source,
                 // Mapping
                 expenseRecords);
 
