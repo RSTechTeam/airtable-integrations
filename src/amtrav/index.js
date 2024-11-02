@@ -1,6 +1,6 @@
 /** @fileoverview Imports an AmTrav CSV update into Airtable. */
 
-import {addSummaryTableHeaders, addSummaryTableRow, log} from '../common/github_actions_core.js';
+import {addSummaryTableHeaders, addSummaryTableRow} from '../common/github_actions_core.js';
 import {airtableImportRecordId} from '../common/inputs.js';
 import {airtableRecordUpdate, filterMap, getMapping, syncChanges} from '../common/sync.js';
 import {amtravCardId} from './inputs.js';
@@ -59,7 +59,7 @@ await run(async () => {
   // map AmTrav Transaction ID to Airtable Record ID.
   const expenseRecords =
       getMapping(await expenseSources.select(AMTRAV_TABLE), 'Transaction ID');
-  log(Array.from(expenseRecords));
+
   // Create Credit Card Report parse config.
   const header = [
     'Card',
@@ -82,26 +82,24 @@ await run(async () => {
     transform: trimAndType,
     chunk:
       (results, parser) => {
-        const source =
-            new Map(
-                filterMap(
-                    results.data,
-                    row => row['Card'] === amtravCardId(),
-                    row => [
-                      // Transaction ID
-                      `${row['Booking #']}:${row['Invoice #']}:` +
-                          row['Ticket #'] ? row['Ticket #'] : '',
-                      {
-                        ...Object.fromEntries(
-                            usedFields.map(f => [f, row[f]])),
-                        'Email': emails.get(row['Booking #']),
-                      },
-                    ]));
-        log(Array.from(source));
+
         const {updates, creates} =
             syncChanges(
                 // Source
-                source,
+                new Map(
+                    filterMap(
+                        results.data,
+                        row => row['Card'] === amtravCardId(),
+                        row => [
+                          // Transaction ID
+                          `${row['Booking #']}:${row['Invoice #']}:` +
+                              (row['Ticket #'] ? row['Ticket #'] : ''),
+                          {
+                            ...Object.fromEntries(
+                                usedFields.map(f => [f, row[f]])),
+                            'Email': emails.get(row['Booking #']),
+                          },
+                        ])),
                 // Mapping
                 expenseRecords);
 

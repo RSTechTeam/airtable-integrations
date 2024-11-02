@@ -18643,7 +18643,7 @@ await (0,_common_action_js__WEBPACK_IMPORTED_MODULE_5__/* .run */ .K)(async () =
   // map AmTrav Transaction ID to Airtable Record ID.
   const expenseRecords =
       (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_6__/* .getMapping */ .tj)(await expenseSources.select(AMTRAV_TABLE), 'Transaction ID');
-  (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .log */ .cM)(Array.from(expenseRecords));
+
   // Create Credit Card Report parse config.
   const header = [
     'Card',
@@ -18666,26 +18666,24 @@ await (0,_common_action_js__WEBPACK_IMPORTED_MODULE_5__/* .run */ .K)(async () =
     transform: trimAndType,
     chunk:
       (results, parser) => {
-        const source =
-            new Map(
-                (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_6__/* .filterMap */ .DZ)(
-                    results.data,
-                    row => row['Card'] === (0,_inputs_js__WEBPACK_IMPORTED_MODULE_2__/* .amtravCardId */ .f)(),
-                    row => [
-                      // Transaction ID
-                      `${row['Booking #']}:${row['Invoice #']}:` +
-                          row['Ticket #'] ? row['Ticket #'] : '',
-                      {
-                        ...Object.fromEntries(
-                            usedFields.map(f => [f, row[f]])),
-                        'Email': emails.get(row['Booking #']),
-                      },
-                    ]));
-        (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .log */ .cM)(Array.from(source));
+
         const {updates, creates} =
             (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_6__/* .syncChanges */ .U4)(
                 // Source
-                source,
+                new Map(
+                    (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_6__/* .filterMap */ .DZ)(
+                        results.data,
+                        row => row['Card'] === (0,_inputs_js__WEBPACK_IMPORTED_MODULE_2__/* .amtravCardId */ .f)(),
+                        row => [
+                          // Transaction ID
+                          `${row['Booking #']}:${row['Invoice #']}:` +
+                              (row['Ticket #'] ? row['Ticket #'] : ''),
+                          {
+                            ...Object.fromEntries(
+                                usedFields.map(f => [f, row[f]])),
+                            'Email': emails.get(row['Booking #']),
+                          },
+                        ])),
                 // Mapping
                 expenseRecords);
 
@@ -21151,7 +21149,6 @@ async function parse(csv, header, config) {
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
 
 /* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
-/* harmony export */   "cM": () => (/* binding */ log),
 /* harmony export */   "ZK": () => (/* binding */ warn),
 /* harmony export */   "Np": () => (/* binding */ getInput),
 /* harmony export */   "vU": () => (/* binding */ error),
@@ -21159,7 +21156,7 @@ async function parse(csv, header, config) {
 /* harmony export */   "QS": () => (/* binding */ addSummaryTableRow),
 /* harmony export */   "A8": () => (/* binding */ writeSummary)
 /* harmony export */ });
-/* unused harmony export logJson */
+/* unused harmony exports log, logJson */
 /* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(6024);
 /* harmony import */ var _utils_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(381);
 /**
