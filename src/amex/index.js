@@ -43,7 +43,7 @@ await run(async () => {
           // Delete column.
           return undefined;
         case 'Reference':
-          value = value.repleaceAll("'", '');
+          value = value.replaceAll("'", '');
           // fall through
         case 'Amount':
           return Number(value);

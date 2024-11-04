@@ -18625,7 +18625,7 @@ await (0,_common_action_js__WEBPACK_IMPORTED_MODULE_3__/* .run */ .K)(async () =
           // Delete column.
           return undefined;
         case 'Reference':
-          value = value.repleaceAll("'", '');
+          value = value.replaceAll("'", '');
           // fall through
         case 'Amount':
           return Number(value);
