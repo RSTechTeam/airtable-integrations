@@ -48,7 +48,8 @@ await run(async () => {
         case 'Amount':
           return Number(value);
         case 'Merchant':
-          return value.match(/(.+?)\s\s+/);
+          const match = value.match(/(.+?)\s\s+/);
+          return match ? match[1] : null;
 
         // Split City/State later (in chunk).
         default:
