@@ -1,0 +1,15 @@
+name: 'Amex x Airtable Action'
+description: 'Parse Amex CSV export into Airtable'
+inputs:
+  airtable-api-key:
+    description: 'The Airtable API key to use for Airtable interactions'
+    required: true
+  airtable-base-id:
+    description: 'The ID of the Airtable Base used in the target program'
+    required: true
+  airtable-import-record-id:
+    description: 'The ID of the Airtable Record whose CSVs should be parsed and integrated'
+    required: true
+runs:
+  using: 'node20'
+  main: 'index.js'

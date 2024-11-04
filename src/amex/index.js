@@ -85,7 +85,7 @@ await run(async () => {
       },
   };
 
-  // Parse CSVs with above config.
+  // Parse CSV with above config.
   const importRecord =
       await expenseSources.find('Amex Imports', airtableImportRecordId());
   await Promise.all(
