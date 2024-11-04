@@ -18630,8 +18630,7 @@ await (0,_common_action_js__WEBPACK_IMPORTED_MODULE_3__/* .run */ .K)(async () =
         case 'Amount':
           return Number(value);
         case 'Merchant':
-          const match = value.match(/(.+)\s\s/);
-          return match ? match[1] : null;
+          return value.match(/(.+?)\s\s+/);
 
         // Split City/State later (in chunk).
         default:
