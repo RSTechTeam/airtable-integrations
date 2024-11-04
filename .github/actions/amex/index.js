@@ -18624,11 +18624,10 @@ await (0,_common_action_js__WEBPACK_IMPORTED_MODULE_3__/* .run */ .K)(async () =
         case 'Appears On Your Statement As':
           // Delete column.
           return undefined;
-        case 'Reference':
-          value = value.replaceAll("'", '');
-          // fall through
         case 'Amount':
           return Number(value);
+        case 'Reference':
+          return BigInt(value.replaceAll("'", ''));
         case 'Merchant':
           const match = value.match(/(.+?)\s\s+/);
           return match ? match[1] : value;
