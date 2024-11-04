@@ -89,5 +89,5 @@ await run(async () => {
   const importRecord =
       await expenseSources.find('Amex Imports', airtableImportRecordId());
   await Promise.all(
-      importRecord.get('CSV').map(csv => parse(csv, header, parseConfig)));
+      importRecord.get('CSV').map(csv => parse(csv, headers, parseConfig)));
 });
