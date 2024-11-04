@@ -18627,7 +18627,7 @@ await (0,_common_action_js__WEBPACK_IMPORTED_MODULE_3__/* .run */ .K)(async () =
         case 'Amount':
           return Number(value);
         case 'Reference':
-          return BigInt(value.replaceAll("'", ''));
+          return value.replaceAll("'", '');
         case 'Merchant':
           const match = value.match(/(.+?)\s\s+/);
           return match ? match[1] : value;
