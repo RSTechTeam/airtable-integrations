@@ -19,7 +19,7 @@ function trimAndType(value, header) {
       value.startsWith('=') ?
           value.substring(2, value.length - 1) : value.replace('$', '');
   return header.includes('#') || header === 'Amount' ?
-      (val ? Number(val) : null) : val;
+      (val ? Number(val.replace(',', '')) : null) : val;
 }
 
 await run(async () => {
