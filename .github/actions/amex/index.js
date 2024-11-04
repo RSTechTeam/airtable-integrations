@@ -18593,10 +18593,10 @@ await (0,_common_action_js__WEBPACK_IMPORTED_MODULE_3__/* .run */ .K)(async () =
   /** Amex Data Airtable Table name. */
   const AMEX_TABLE = 'Amex Data';
 
-  /** Amex CSV headers. */
+  /** Amex CSV transformed headers. */
   const headers = [
     'Date',
-    'Description',
+    'Merchant', // From Description
     'Amount',
     'Extended Details',
     'Appears On Your Statement As',
