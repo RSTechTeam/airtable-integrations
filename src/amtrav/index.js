@@ -60,25 +60,31 @@ await run(async () => {
   const expenseRecords =
       getMapping(await expenseSources.select(AMTRAV_TABLE), 'Transaction ID');
 
+  // AmTrav Credit Card Report to Airtable Field mapping.
+  const mapping = new Map([
+    ['Card', 'Card'],
+    ['Booking #', 'Booking #'],
+    ['Invoice #', 'Invoice #'],
+    ['Transaction Date', 'Transaction Date'],
+    ['Amount', 'Amount'],
+    ['Ticket #', 'Ticket #'],
+    ['Description', 'Description'],
+    ['Merchant', 'Merchant'],
+    ['Traveler', 'Traveler'],
+    ['Travel Date', 'Travel Date'],
+    ['Meeting Name', 'Pod'],
+    ['STV Volunteer Canvasses', 'Canvass'],
+  ]);
+
   // Create Credit Card Report parse config.
-  const header = [
-    'Card',
-    'Booking #',
-    'Invoice #',
-    'Transaction Date',
-    'Amount',
-    'Ticket #',
-    'Description',
-    'Merchant',
-    'Traveler',
-    'Travel Date',
-  ];
+  const airtableFields = Array.from(mapping.values());
   const usedFields =
-      header.filter(
+      airtableFields.filter(
           field => !['Card', 'Travel Date'].includes(field));
   let updateCount = 0;
   let createCount = 0;
   const parseConfig = {
+    transformHeader: (header, index) => airtableFields[index],
     transform: trimAndType,
     chunk:
       (results, parser) => {
@@ -122,7 +128,7 @@ await run(async () => {
   // Parse Credit Card Report CSV with above config.
   await Promise.all(
       importRecord.get('Credit Card Report').map(
-          csv => parse(csv, header, parseConfig)));
+          csv => parse(csv, airtableFields, parseConfig)));
 
   // Add summary.
   addSummaryTableHeaders(['Updates', 'Creates']);

@@ -18644,25 +18644,31 @@ await (0,_common_action_js__WEBPACK_IMPORTED_MODULE_5__/* .run */ .K)(async () =
   const expenseRecords =
       (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_6__/* .getMapping */ .tj)(await expenseSources.select(AMTRAV_TABLE), 'Transaction ID');
 
+  // AmTrav Credit Card Report to Airtable Field mapping.
+  const mapping = new Map([
+    ['Card', 'Card'],
+    ['Booking #', 'Booking #'],
+    ['Invoice #', 'Invoice #'],
+    ['Transaction Date', 'Transaction Date'],
+    ['Amount', 'Amount'],
+    ['Ticket #', 'Ticket #'],
+    ['Description', 'Description'],
+    ['Merchant', 'Merchant'],
+    ['Traveler', 'Traveler'],
+    ['Travel Date', 'Travel Date'],
+    ['Meeting Name', 'Pod'],
+    ['STV Volunteer Canvasses', 'Canvass'],
+  ]);
+
   // Create Credit Card Report parse config.
-  const header = [
-    'Card',
-    'Booking #',
-    'Invoice #',
-    'Transaction Date',
-    'Amount',
-    'Ticket #',
-    'Description',
-    'Merchant',
-    'Traveler',
-    'Travel Date',
-  ];
+  const airtableFields = Array.from(mapping.values());
   const usedFields =
-      header.filter(
+      airtableFields.filter(
           field => !['Card', 'Travel Date'].includes(field));
   let updateCount = 0;
   let createCount = 0;
   const parseConfig = {
+    transformHeader: (header, index) => airtableFields[index],
     transform: trimAndType,
     chunk:
       (results, parser) => {
@@ -18706,7 +18712,7 @@ await (0,_common_action_js__WEBPACK_IMPORTED_MODULE_5__/* .run */ .K)(async () =
   // Parse Credit Card Report CSV with above config.
   await Promise.all(
       importRecord.get('Credit Card Report').map(
-          csv => (0,_common_csv_js__WEBPACK_IMPORTED_MODULE_4__/* .parse */ .Q)(csv, header, parseConfig)));
+          csv => (0,_common_csv_js__WEBPACK_IMPORTED_MODULE_4__/* .parse */ .Q)(csv, airtableFields, parseConfig)));
 
   // Add summary.
   (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .addSummaryTableHeaders */ .M9)(['Updates', 'Creates']);
