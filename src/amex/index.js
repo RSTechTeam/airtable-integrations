@@ -61,9 +61,9 @@ await run(async () => {
         // Split City/State.
         for (const row of results.data) {
           const cityState =
-              row['City/State'].match(/(?<city>.+)\n(?<state>.+)/).groups;
-          row['City'] = cityState.city;
-          row['State'] = cityState.state;
+              row['City/State'].match(/(?<city>.+)\n(?<state>.+)/)?.groups;
+          row['City'] = cityState?.city;
+          row['State'] = cityState?.state;
           delete row['City/State'];
         }
 
