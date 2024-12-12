@@ -72,8 +72,8 @@ await run(async () => {
     ['Merchant', 'Merchant'],
     ['Traveler', 'Traveler'],
     ['Travel Date', 'Travel Date'],
-    ['Meeting Name', 'Pod'],
-    ['STV Volunteer Canvasses', 'Canvass'],
+    ['Meeting Name', 'Meeting Name'],
+    ['STV Volunteer Canvasses', 'Billing Code'],
   ]);
 
   // Create Credit Card Report parse config.

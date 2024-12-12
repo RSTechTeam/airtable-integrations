@@ -18656,8 +18656,8 @@ await (0,_common_action_js__WEBPACK_IMPORTED_MODULE_5__/* .run */ .K)(async () =
     ['Merchant', 'Merchant'],
     ['Traveler', 'Traveler'],
     ['Travel Date', 'Travel Date'],
-    ['Meeting Name', 'Pod'],
-    ['STV Volunteer Canvasses', 'Canvass'],
+    ['Meeting Name', 'Meeting Name'],
+    ['STV Volunteer Canvasses', 'Billing Code'],
   ]);
 
   // Create Credit Card Report parse config.
