@@ -1,5 +1,6 @@
 import * as api from '../../../../src/bill_com/common/api.js';
 import {billComApi} from '../../../test_utils.js';
+import {jest} from '@jest/globals';
 
 jest.setTimeout(10**4);
 
