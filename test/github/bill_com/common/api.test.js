@@ -1,6 +1,8 @@
 import * as api from '../../../../src/bill_com/common/api.js';
 import {billComApi} from '../../../test_utils.js';
 
+jest.setTimeout(10**4);
+
 let testApi;
 
 test('getApi queries Airtable and creates unauthenticated Api', async () => {

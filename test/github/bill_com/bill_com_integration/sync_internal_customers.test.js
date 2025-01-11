@@ -3,7 +3,7 @@ import {airtableBase, airtableMsoBase, billComApi} from '../../../test_utils.js'
 import {jest} from '@jest/globals';
 import {MSO_BILL_COM_ID} from '../../../../src/bill_com/common/constants.js';
 
-jest.setTimeout(10**4);
+jest.setTimeout(10**5);
 test('main syncs Customers from Airtable to Bill.com', async () => {
 
   // Test customers.
