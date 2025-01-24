@@ -1,5 +1,6 @@
 /** @fileoverview Bulk creates single line item Bill.com Bills from a CSV. */
 
+import {error, warn} from '../../common/github_actions_core.js';
 import {MsoBase} from '../../common/airtable.js';
 import {MSO_BILL_COM_ID} from '../common/constants.js';
 import {parse} from '../../common/csv.js';
@@ -42,6 +43,7 @@ export async function main(billComApi, airtableBase = new MsoBase()) {
     'Country',
   ];
 
+  let err;
   for await (const mso of billComIntegrationBase.iterateMsos()) {
 
     await billComApi.login(mso.get('Code'));
@@ -103,9 +105,16 @@ export async function main(billComApi, airtableBase = new MsoBase()) {
           };
 
           // Parse CSV and create Bills.
-          await Promise.all(
-              record.get('CSV').map(csv => parse(csv, header, parseConfig)));
+          try {
+            await Promise.all(
+                record.get('CSV').map(csv => parse(csv, header, parseConfig)));
+          } catch (e) {
+            err = e;
+            warn(e.message);
+            return {'Error': true};
+          }
           return {'Processed': true};
         });
   }
+  if (err) error(err);
 }

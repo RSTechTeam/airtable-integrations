@@ -10528,7 +10528,7 @@ var baseTimes = __nccwpck_require__(3349),
     isArray = __nccwpck_require__(5997),
     isBuffer = __nccwpck_require__(3741),
     isIndex = __nccwpck_require__(576),
-    isTypedArray = __nccwpck_require__(3837);
+    isTypedArray = __nccwpck_require__(9137);
 
 /** Used for built-in method references. */
 var objectProto = Object.prototype;
@@ -12637,7 +12637,7 @@ module.exports = isSymbol;
 
 /***/ }),
 
-/***/ 3837:
+/***/ 9137:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 var baseIsTypedArray = __nccwpck_require__(6934),
@@ -15023,7 +15023,7 @@ var http = __nccwpck_require__(3685);
 var https = __nccwpck_require__(5687);
 var events = __nccwpck_require__(2361);
 var assert = __nccwpck_require__(9491);
-var util = __nccwpck_require__(3849);
+var util = __nccwpck_require__(3837);
 
 
 exports.httpOverHttp = httpOverHttp;
@@ -17989,7 +17989,7 @@ module.exports = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("url");
 
 /***/ }),
 
-/***/ 3849:
+/***/ 3837:
 /***/ ((module) => {
 
 module.exports = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("util");
@@ -20726,6 +20726,8 @@ __nccwpck_require__.d(__webpack_exports__, {
   "main": () => (/* binding */ main)
 });
 
+// EXTERNAL MODULE: ./src/common/github_actions_core.js
+var github_actions_core = __nccwpck_require__(1444);
 // EXTERNAL MODULE: ./src/common/airtable.js
 var airtable = __nccwpck_require__(5585);
 // EXTERNAL MODULE: ./src/bill_com/common/constants.js
@@ -20798,6 +20800,7 @@ async function parse(csv, header, config) {
 
 
 
+
 /** The Bill.com Integration Airtable Base. */
 let billComIntegrationBase;
 
@@ -20836,6 +20839,7 @@ async function main(billComApi, airtableBase = new airtable/* MsoBase */.F()) {
     'Country',
   ];
 
+  let err;
   for await (const mso of billComIntegrationBase.iterateMsos()) {
 
     await billComApi.login(mso.get('Code'));
@@ -20897,11 +20901,18 @@ async function main(billComApi, airtableBase = new airtable/* MsoBase */.F()) {
           };
 
           // Parse CSV and create Bills.
-          await Promise.all(
-              record.get('CSV').map(csv => parse(csv, header, parseConfig)));
+          try {
+            await Promise.all(
+                record.get('CSV').map(csv => parse(csv, header, parseConfig)));
+          } catch (e) {
+            err = e;
+            (0,github_actions_core/* warn */.ZK)(e.message);
+            return {'Error': true};
+          }
           return {'Processed': true};
         });
   }
+  if (err) (0,github_actions_core/* error */.vU)(err);
 }
 
 
@@ -20974,7 +20985,7 @@ var api = __nccwpck_require__(6362);
 // EXTERNAL MODULE: ./src/common/utils.js + 1 modules
 var utils = __nccwpck_require__(381);
 // EXTERNAL MODULE: external "util"
-var external_util_ = __nccwpck_require__(3849);
+var external_util_ = __nccwpck_require__(3837);
 ;// CONCATENATED MODULE: ./node_modules/web-streams-polyfill/dist/ponyfill.mjs
 /**
  * @license
