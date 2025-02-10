@@ -9,8 +9,8 @@ import pThrottle from 'p-throttle';
 import {airtableRecordUpdate, getMapping, syncChanges} from '../common/sync.js';
 import {Base} from '../common/airtable.js';
 import {billSpendExpenseApiKey} from './inputs.js';
-import {fetchError} from '../../common/utils.js';
-import {logJson} from '../../common/github_actions_core.js';
+import {fetchError} from '../common/utils.js';
+import {logJson} from '../common/github_actions_core.js';
 import {run} from '../common/action.js';
 
 /** The rate limit for BILL Spend & Expense API calls. */

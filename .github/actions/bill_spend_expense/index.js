@@ -15943,22 +15943,6 @@ module.exports.implForWrapper = function (wrapper) {
 
 /***/ }),
 
-/***/ 4221:
-/***/ ((module) => {
-
-module.exports = eval("require")("../../common/github_actions_core.js");
-
-
-/***/ }),
-
-/***/ 3707:
-/***/ ((module) => {
-
-module.exports = eval("require")("../../common/utils.js");
-
-
-/***/ }),
-
 /***/ 5347:
 /***/ ((module) => {
 
@@ -18940,8 +18924,8 @@ __nccwpck_require__.a(__webpack_module__, async (__webpack_handle_async_dependen
 /* harmony import */ var _common_sync_js__WEBPACK_IMPORTED_MODULE_7__ = __nccwpck_require__(3599);
 /* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(8997);
 /* harmony import */ var _inputs_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(8830);
-/* harmony import */ var _common_utils_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(3707);
-/* harmony import */ var _common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(4221);
+/* harmony import */ var _common_utils_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(381);
+/* harmony import */ var _common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(1444);
 /* harmony import */ var _common_action_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(518);
 /**
  * @fileoverview Syncs BILL Spend & Expense data into Airtable.
@@ -18977,7 +18961,7 @@ async function apiCall(endpoint, params = new URLSearchParams()) {
   logjson(endpoint, json);
   if (!response.ok) {
     const err = json[0];
-    (0,_common_utils_js__WEBPACK_IMPORTED_MODULE_2__.fetchError)(err.code, endpoint, err.message);
+    (0,_common_utils_js__WEBPACK_IMPORTED_MODULE_2__/* .fetchError */ .Tl)(err.code, endpoint, err.message);
   }
   return json;
 }
@@ -19610,10 +19594,11 @@ function summarize(changes) {
 // EXPORTS
 __nccwpck_require__.d(__webpack_exports__, {
   "aE": () => (/* binding */ batchAsync),
+  "Tl": () => (/* binding */ fetchError),
   "ss": () => (/* binding */ lazyCache)
 });
 
-// UNUSED EXPORTS: batchAwait, fetchError, getYyyyMmDd
+// UNUSED EXPORTS: batchAwait, getYyyyMmDd
 
 ;// CONCATENATED MODULE: external "node:assert/strict"
 const strict_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:assert/strict");
