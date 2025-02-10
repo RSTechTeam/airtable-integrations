@@ -18957,7 +18957,7 @@ async function apiCall(endpoint, params = new URLSearchParams()) {
               `?${params}`,
           {headers: {apiToken: (0,_inputs_js__WEBPACK_IMPORTED_MODULE_1__/* .billSpendExpenseApiKey */ .s)()}});
   const json = await response.json();
-  logjson(endpoint, json);
+  (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_3__/* .logJson */ .u2)(endpoint, json);
   if (!response.ok) {
     const err = json[0];
     (0,_common_utils_js__WEBPACK_IMPORTED_MODULE_2__/* .fetchError */ .Tl)(err.code, endpoint, err.message);
@@ -19357,9 +19357,10 @@ class MsoBase extends (/* unused pure expression or super */ null && (Base)) {
 /* harmony export */   "ZK": () => (/* binding */ warn),
 /* harmony export */   "Np": () => (/* binding */ getInput),
 /* harmony export */   "vU": () => (/* binding */ error),
-/* harmony export */   "A8": () => (/* binding */ writeSummary)
+/* harmony export */   "A8": () => (/* binding */ writeSummary),
+/* harmony export */   "u2": () => (/* binding */ logJson)
 /* harmony export */ });
-/* unused harmony exports log, addSummaryTableHeaders, addSummaryTableRow, logJson */
+/* unused harmony exports log, addSummaryTableHeaders, addSummaryTableRow */
 /* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(6024);
 /* harmony import */ var _utils_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(381);
 /**
@@ -19434,9 +19435,9 @@ function writeSummary() {
  * @see JSON.stringify
  */
 function logJsonGroup(title, json, replacer = null) {
-  core.startGroup(title);
+  _actions_core__WEBPACK_IMPORTED_MODULE_0__.startGroup(title);
   log(JSON.stringify(json, replacer, '\t'));
-  core.endGroup();
+  _actions_core__WEBPACK_IMPORTED_MODULE_0__.endGroup();
 }
 
 /**

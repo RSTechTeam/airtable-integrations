@@ -28,7 +28,7 @@ async function apiCall(endpoint, params = new URLSearchParams()) {
               `?${params}`,
           {headers: {apiToken: billSpendExpenseApiKey()}});
   const json = await response.json();
-  logjson(endpoint, json);
+  logJson(endpoint, json);
   if (!response.ok) {
     const err = json[0];
     fetchError(err.code, endpoint, err.message);
