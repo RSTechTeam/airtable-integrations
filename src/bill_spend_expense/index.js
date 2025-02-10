@@ -9,7 +9,7 @@ import pThrottle from 'p-throttle';
 import {airtableRecordUpdate, getMapping, syncChanges} from '../common/sync.js';
 import {Base} from '../common/airtable.js';
 import {billSpendExpenseApiKey} from './inputs.js';
-import {fetchError} from '../common/utils.js';
+import {fetchError, getYyyyMmDd} from '../common/utils.js';
 import {logJson} from '../common/github_actions_core.js';
 import {run} from '../common/action.js';
 
@@ -106,13 +106,13 @@ await run(async () => {
                   'Amount': r.amount,
                   'Merchant Name': r.merchantName,
                   'Notes': r.note,
-                  'Submitted Date': r.submittedTime,
+                  'Submitted Date': getYyyyMmDd(r.submittedTime),
                   'Expense Date': r.occurredDate,
                   'Paid': r.status === 'PAID',
                   'Approved': recentApprovalStatus.status === 'APPROVED',
                   'Category': getSelectedValue(r.customFields[0]),
                   'Project': getSelectedValue(r.customFields[1]),
-                  'Receipts': r.receipts.map(receipt => receipt.url),
+                  'Receipts': r.receipts.map(receipt => ({url: receipt.url})),
                 }
               }
             ));
@@ -129,7 +129,7 @@ await run(async () => {
               'Paid': true,
               'ID': t.id,
               'Merchant Name': t.merchantName,
-              'Expense Date': t.occurredTime,
+              'Expense Date': getYyyyMmDd(t.occurredTime),
               'Category': getSelectedValue(t.customFields[0]),
               'Notes': getSelectedValue(t.customFields[1]),
               'Project': getSelectedValue(t.customFields[2]),

@@ -19035,13 +19035,13 @@ await (0,_common_action_js__WEBPACK_IMPORTED_MODULE_4__/* .run */ .K)(async () =
                   'Amount': r.amount,
                   'Merchant Name': r.merchantName,
                   'Notes': r.note,
-                  'Submitted Date': r.submittedTime,
+                  'Submitted Date': (0,_common_utils_js__WEBPACK_IMPORTED_MODULE_2__/* .getYyyyMmDd */ .PQ)(r.submittedTime),
                   'Expense Date': r.occurredDate,
                   'Paid': r.status === 'PAID',
                   'Approved': recentApprovalStatus.status === 'APPROVED',
                   'Category': getSelectedValue(r.customFields[0]),
                   'Project': getSelectedValue(r.customFields[1]),
-                  'Receipts': r.receipts.map(receipt => receipt.url),
+                  'Receipts': r.receipts.map(receipt => ({url: receipt.url})),
                 }
               }
             ));
@@ -19058,7 +19058,7 @@ await (0,_common_action_js__WEBPACK_IMPORTED_MODULE_4__/* .run */ .K)(async () =
               'Paid': true,
               'ID': t.id,
               'Merchant Name': t.merchantName,
-              'Expense Date': t.occurredTime,
+              'Expense Date': (0,_common_utils_js__WEBPACK_IMPORTED_MODULE_2__/* .getYyyyMmDd */ .PQ)(t.occurredTime),
               'Category': getSelectedValue(t.customFields[0]),
               'Notes': getSelectedValue(t.customFields[1]),
               'Project': getSelectedValue(t.customFields[2]),
@@ -19595,10 +19595,11 @@ function summarize(changes) {
 __nccwpck_require__.d(__webpack_exports__, {
   "aE": () => (/* binding */ batchAsync),
   "Tl": () => (/* binding */ fetchError),
+  "PQ": () => (/* binding */ getYyyyMmDd),
   "ss": () => (/* binding */ lazyCache)
 });
 
-// UNUSED EXPORTS: batchAwait, getYyyyMmDd
+// UNUSED EXPORTS: batchAwait
 
 ;// CONCATENATED MODULE: external "node:assert/strict"
 const strict_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:assert/strict");
