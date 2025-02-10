@@ -23,7 +23,7 @@ const throttledFetch = pThrottle({limit: 60, interval: 60 * 1000})(fetch);
  */
 async function apiCall(endpoint, params = new URLSearchParams()) {
   const response =
-      throttledFetch(
+      await throttledFetch(
           `https://gateway.prod.bill.com/connect/v3/spend/${endpoint}` +
               `?${params}`,
           {headers: {apiToken: billSpendExpenseApiKey()}});
