@@ -18943,7 +18943,7 @@ __nccwpck_require__.a(__webpack_module__, async (__webpack_handle_async_dependen
 
 
 /** The rate limit for BILL Spend & Expense API calls. */
-const rateLimit = (0,p_throttle__WEBPACK_IMPORTED_MODULE_5__/* ["default"] */ .Z)({limit: 60, interval: 60 * 1000});
+const throttledFetch = (0,p_throttle__WEBPACK_IMPORTED_MODULE_5__/* ["default"] */ .Z)({limit: 60, interval: 60 * 1000})(node_fetch__WEBPACK_IMPORTED_MODULE_6__/* ["default"] */ .ZP);
 
 /**
  * @param {string} endpoint
@@ -18952,12 +18952,10 @@ const rateLimit = (0,p_throttle__WEBPACK_IMPORTED_MODULE_5__/* ["default"] */ .Z
  */
 async function apiCall(endpoint, params = new URLSearchParams()) {
   const response =
-      await rateLimit(
-          () => (0,node_fetch__WEBPACK_IMPORTED_MODULE_6__/* ["default"] */ .ZP)(
-              `https://gateway.prod.bill.com/connect/v3/spend/${endpoint}` +
-                  `?${params}`,
-              {headers: {apiToken: (0,_inputs_js__WEBPACK_IMPORTED_MODULE_1__/* .billSpendExpenseApiKey */ .s)()}}));
-  (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_3__/* .log */ .cM)(response);
+      throttledFetch(
+          `https://gateway.prod.bill.com/connect/v3/spend/${endpoint}` +
+              `?${params}`,
+          {headers: {apiToken: (0,_inputs_js__WEBPACK_IMPORTED_MODULE_1__/* .billSpendExpenseApiKey */ .s)()}});
   const json = await response.json();
   logjson(endpoint, json);
   if (!response.ok) {
@@ -19356,13 +19354,12 @@ class MsoBase extends (/* unused pure expression or super */ null && (Base)) {
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
 
 /* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
-/* harmony export */   "cM": () => (/* binding */ log),
 /* harmony export */   "ZK": () => (/* binding */ warn),
 /* harmony export */   "Np": () => (/* binding */ getInput),
 /* harmony export */   "vU": () => (/* binding */ error),
 /* harmony export */   "A8": () => (/* binding */ writeSummary)
 /* harmony export */ });
-/* unused harmony exports addSummaryTableHeaders, addSummaryTableRow, logJson */
+/* unused harmony exports log, addSummaryTableHeaders, addSummaryTableRow, logJson */
 /* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(6024);
 /* harmony import */ var _utils_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(381);
 /**
