@@ -1,0 +1,15 @@
+name: 'BILL Spend & Expense x Airtable Action'
+description: 'Sync BILL Spend & Expense data into Airtable'
+inputs:
+  airtable-api-key:
+    description: 'The Airtable API key to use for Airtable interactions'
+    required: true
+  airtable-base-id:
+    description: 'The ID of the Airtable Base used in the target program'
+    required: true
+  bill-spend-expense-api-key:
+    description: 'The BILL Spend & Expense API key'
+    required: true
+runs:
+  using: 'node20'
+  main: 'index.js'

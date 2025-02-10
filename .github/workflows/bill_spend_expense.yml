@@ -1,0 +1,14 @@
+name: BILL Spend & Expense Workflow
+on:
+  schedule:
+    - cron: '0 * * * *'
+  workflow_dispatch:
+jobs:
+  main:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: RSTechTeam/airtable-integrations/.github/actions/bill_spend_expense@main
+        with:
+          airtable-api-key: ${{ secrets.AIRTABLE_API_KEY }}
+          airtable-base-id: ${{ secrets.EXPENSE_SOURCES_BASE_ID }}
+          bill-spend-expense-api-key: ${{ secrets.BILL_SPEND_EXPENSE_API_KEY }}
