@@ -18957,7 +18957,7 @@ async function apiCall(endpoint, params = new URLSearchParams()) {
               `https://gateway.prod.bill.com/connect/v3/spend/${endpoint}` +
                   `?${params}`,
               {headers: {apiToken: (0,_inputs_js__WEBPACK_IMPORTED_MODULE_1__/* .billSpendExpenseApiKey */ .s)()}}));
-  const json = response.json();
+  const json = await response.json();
   logjson(endpoint, json);
   if (!response.ok) {
     const err = json[0];
