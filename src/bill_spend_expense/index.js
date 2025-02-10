@@ -10,7 +10,7 @@ import {airtableRecordUpdate, getMapping, syncChanges} from '../common/sync.js';
 import {Base} from '../common/airtable.js';
 import {billSpendExpenseApiKey} from './inputs.js';
 import {fetchError} from '../common/utils.js';
-import {logJson} from '../common/github_actions_core.js';
+import {log, logJson} from '../common/github_actions_core.js';
 import {run} from '../common/action.js';
 
 /** The rate limit for BILL Spend & Expense API calls. */
@@ -28,6 +28,7 @@ async function apiCall(endpoint, params = new URLSearchParams()) {
               `https://gateway.prod.bill.com/connect/v3/spend/${endpoint}` +
                   `?${params}`,
               {headers: {apiToken: billSpendExpenseApiKey()}}));
+  log(response);
   const json = await response.json();
   logjson(endpoint, json);
   if (!response.ok) {
