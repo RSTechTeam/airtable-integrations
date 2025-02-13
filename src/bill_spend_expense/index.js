@@ -53,7 +53,7 @@ async function processPages(
   do {
     if (page.nextPage) params.set('nextPage', page.nextPage);
     page = await apiCall(endpoint, params);
-    processed = [...processed, ...page.results.map(processed)];
+    processed = [...processed, ...page.results.map(processFunc)];
   } while (page.nextPage);
   return Promise.all(processed);
 }
