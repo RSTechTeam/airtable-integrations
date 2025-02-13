@@ -80,6 +80,7 @@ async function getVendorId(checkRequest) {
           'Vendor',
           {
             name: newVendor.get('Name'),
+            companyName: newVendor.get('Company/Alternate Name'),
             address1: newVendor.get('Address Line 1'),
             address2: newVendor.get('Address Line 2'),
             addressCity: newVendor.get('City'),
