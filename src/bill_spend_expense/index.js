@@ -40,44 +40,22 @@ async function apiCall(endpoint, params = new URLSearchParams()) {
 /**
  * @param {string} endpoint
  * @param {number} max
- * @param {string=} nextPage
+ * @param {function(!Object<string, *>): *} processFunc
  * @param {!URLSearchParams=} params
- * @return {!Promise<!Object<string, *>>} endpoint-specific page.
+ * @return {!Array<*>}
  */
-function getPage(endpoint, max, nextPage = '', params = new URLSearchParams()) {
+async function processPages(
+    endpoint, max, processFunc, params = new URLSearchParams()) {
+
   params.set('max', max.toString());
-  if (nextPage) params.set('nextPage', nextPage);
-  return apiCall(endpoint, params);
-}
-
-/**
- * @param {string=} nextPage
- * @return {!Promise<!Object<string, *>>}
- */
-function getReimbursementPage(nextPage = '') {
-  return getPage('reimbursements', 100, nextPage);
-}
-
-/**
- * @param {string=} nextPage
- * @return {!Promise<!Object<string, *>>}
- */
-function getTransactionPage(nextPage = '') {
-  return getPage(
-      'transactions', 50, nextPage,
-      new URLSearchParams({filters: 'complete:eq:true'}));
-}
-
-/**
- * @param {function(string=): !Promise<!Object<string, *>>} pageFunc
- * @return {!AsyncGenerator<!Array<!Object<string, *>>>}
- */
-async function* getPages(pageFunc) {
   let page = {};
+  let processed = [];
   do {
-    page = await pageFunc(page.nextPage);
-    yield page.results;
+    if (page.nextPage) params.set('nextPage', page.nextPage);
+    page = await apiCall(endpoint, params);
+    processed = [...processed, ...page.results.map(processed)];
   } while (page.nextPage);
+  return Promise.all(processed);
 }
 
 /**
@@ -90,46 +68,43 @@ function getSelectedValue(customField) {
 
 await run(async () => {
 
-  let changes = [];
-  for await (const page of getPages(getReimbursementPage)) {
-    const reimbursements =
-        await Promise.all(
-            page.map(
-              async reimbursement => {
+  const budgets =
+      new Map(await processPages('budgets', 100, b => [b.id, b.name]));
+  const reimbursements =
+      await processPages(
+          'reimbursements', 100,
+          async reimbursement => {
 
-                // Get reimbursement to get receipt URLs.
-                const r = await apiCall(`reimbursements/${reimbursement.id}`);
-                const recentApprovalStatus =
-                    r.statusHistory.find(sh => sh.status.includes('APPROV'));
-                return {
-                  'Type': 'Reimbursement',
-                  'ID': r.id,
-                  'Amount': r.amount,
-                  'Merchant Name': r.merchantName,
-                  'Notes': r.note,
-                  'Submitted Date': getYyyyMmDd(r.submittedTime),
-                  'Expense Date': r.occurredDate,
-                  'Paid': r.status === 'PAID',
-                  'Approved': recentApprovalStatus.status === 'APPROVED',
-                  'Category': getSelectedValue(r.customFields[0]),
-                  'Project': getSelectedValue(r.customFields[1]),
-                  'Receipts': r.receipts.map(receipt => ({url: receipt.url})),
-                }
-              }
-            ));
-    changes = [...changes, ...reimbursements];
-  }
-
-  for await (const page of getPages(getTransactionPage)) {
-    changes = [
-      ...changes,
-      ...page.map(
+            // Get reimbursement to get receipt URLs.
+            const r = await apiCall(`reimbursements/${reimbursement.id}`);
+            const recentApprovalStatus =
+                r.statusHistory.find(sh => sh.status.includes('APPROV'));
+            return {
+              'Type': 'Reimbursement',
+              'ID': r.id,
+              'Amount': r.amount,
+              'Merchant Name': r.merchantName,
+              'Notes': r.note,
+              'Submitted Date': getYyyyMmDd(r.submittedTime),
+              'Expense Date': r.occurredDate,
+              'Paid': r.status === 'PAID',
+              'Approved': recentApprovalStatus.status === 'APPROVED',
+              'Budget': budgets.get(r.budgetId),
+              'Category': getSelectedValue(r.customFields[0]),
+              'Project': getSelectedValue(r.customFields[1]),
+              'Receipts': r.receipts.map(receipt => ({url: receipt.url})),
+            }
+          });
+  const transactions =
+      await processPages(
+          'transactions', 50,
           t => {
             const base = {
               'Type': 'Card Transaction',
               'Paid': true,
               'ID': t.id,
               'Merchant Name': t.merchantName,
+              'Budget': budgets.get(t.budgetId),
               'Expense Date': getYyyyMmDd(t.occurredTime),
               'Category': getSelectedValue(t.customFields[0]),
               'Notes': getSelectedValue(t.customFields[1]),
@@ -147,16 +122,15 @@ await run(async () => {
               'Merchant Zip Code': location.postalCode,
               'Merchant Country': location.country,
             };
-          }),
-    ];
-  }
+          },
+          new URLSearchParams({filters: 'complete:eq:true'}));
 
   const BILL_SPEND_EXPENSE_TABLE = 'BILL Spend & Expense';
   const expenseSources = new Base();
   const {updates, creates} =
       syncChanges(
           // Source
-          new Map(changes.map(c => [c['ID'], c])),
+          new Map([...reimbursements, ...transactions].map(e => [e['ID'], e])),
           // Mapping
           getMapping(
               await expenseSources.select(BILL_SPEND_EXPENSE_TABLE), 'ID'));
