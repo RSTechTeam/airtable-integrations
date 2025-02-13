@@ -15,7 +15,7 @@ import {run} from '../common/action.js';
 
 /** The ~rate limit for BILL Spend & Expense API calls. */
 const throttledFetch =
-    pThrottle({limit: 58, interval: 62 * 1000, strict: true})(fetch);
+    pThrottle({limit: 58, interval: 65 * 1000, strict: true})(fetch);
 
 /**
  * @param {string} endpoint
