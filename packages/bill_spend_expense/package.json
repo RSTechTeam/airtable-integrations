@@ -8,6 +8,6 @@
     "ncc-build": "cd .. && npm run ncc-build -- bill_spend_expense"
   },
   "dependencies": {
-    "p-throttle": "^7.0.0"
+    "p-queue": "^8.1.0"
   }
 }
