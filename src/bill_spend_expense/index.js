@@ -18,7 +18,7 @@ const queue =
     new PQueue({
       concurrency: 55,
       intervalCap: 55,
-      interval: 70 * 1000,
+      interval: 75 * 1000,
       carryoverConcurrencyCount: true,
     });
 
@@ -28,7 +28,6 @@ const queue =
  * @return {!Promise<!Object<string, *>>} endpoint-specific json.
  */
 async function apiCall(endpoint, params = {}) {
-  log(`concurrency: ${queue.concurrency}; pending: ${queue.pending}; size: ${queue.size}`);
   const response =
       await queue.add(
           () => fetch(
