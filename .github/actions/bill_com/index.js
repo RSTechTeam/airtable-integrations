@@ -22623,17 +22623,16 @@ class Api {
 
   /**
    * @param {string} endpoint
-   * @param {!URLSearchParams} params
+   * @param {!Object<string, string>} params
    * @return {!Promise<!Object<string, *>>} endpoint-specific response_data.
    */
   call(endpoint, params) {
     (0,github_actions_core/* log */.cM)(params);
-    params.set('devKey', this.getDevKey());
-    params.set('sessionId', this.sessionId_);
     return apiCall(
         endpoint,
         {'Content-Type': 'application/x-www-form-urlencoded'},
-        params,
+        new URLSearchParams({
+          ...params, devKey: this.getDevKey(), sessionId: this.sessionId_}),
         this.test_);
   }
 
@@ -22646,11 +22645,11 @@ class Api {
     const loginResponse =
         await this.call(
             'Login',
-            new URLSearchParams({
+            {
               userName: this.userName_,
               password: this.password_,
               orgId: this.orgIds_.get(anchorEntity),
-            }));
+            });
     this.sessionId_ = loginResponse.sessionId;
   }
 
@@ -22669,8 +22668,7 @@ class Api {
    */
   dataCall(endpoint, data) {
     return this.call(
-        endpoint,
-        new URLSearchParams({'data': encodeURIComponent(JSON.stringify(data))}));
+        endpoint, {data: encodeURIComponent(JSON.stringify(data))});
   }
 
   /**
