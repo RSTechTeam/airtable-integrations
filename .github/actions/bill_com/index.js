@@ -22670,7 +22670,7 @@ class Api {
   dataCall(endpoint, data) {
     return this.call(
         endpoint,
-        new URLSearchParams({date: encodeURIComponent(JSON.stringify(data))}));
+        new URLSearchParams({data: encodeURIComponent(JSON.stringify(data))}));
   }
 
   /**
