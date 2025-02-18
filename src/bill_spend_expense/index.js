@@ -55,7 +55,7 @@ async function processPages(endpoint, max, processFunc, params = {}) {
   let page = {};
   let processed = [];
   do {
-    params.nextPage = page.nextPage;
+    if (page.nextPage) params.nextPage = page.nextPage;
     page = await apiCall(endpoint, params);
     processed = [...processed, ...page.results.map(processFunc)];
   } while (page.nextPage);
