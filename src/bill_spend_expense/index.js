@@ -16,8 +16,8 @@ import {run} from '../common/action.js';
 /** The ~rate limit for BILL Spend & Expense API calls. */
 const queue =
     new PQueue({
-      concurrency: 55,
-      intervalCap: 55,
+      concurrency: 50,
+      intervalCap: 50,
       interval: 75 * 1000,
       carryoverConcurrencyCount: true,
     });
