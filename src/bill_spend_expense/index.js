@@ -19,15 +19,15 @@ const queue =
 
 /**
  * @param {string} endpoint
- * @param {!URLSearchParams=} params
+ * @param {!Object<string, string>=} params
  * @return {!Promise<!Object<string, *>>} endpoint-specific json.
  */
-async function apiCall(endpoint, params = new URLSearchParams()) {
+async function apiCall(endpoint, params = {}) {
   const response =
       await queue.add(
           () => fetch(
               `https://gateway.prod.bill.com/connect/v3/spend/${endpoint}` +
-                  `?${params}`,
+                  `?${new URLSearchParams(params)}`,
               {headers: {apiToken: billSpendExpenseApiKey()}}));
   const json = await response.json();
   logJson(endpoint, json);
@@ -42,17 +42,15 @@ async function apiCall(endpoint, params = new URLSearchParams()) {
  * @param {string} endpoint
  * @param {number} max
  * @param {function(!Object<string, *>): *} processFunc
- * @param {!URLSearchParams=} params
+ * @param {!Object<string, string>=} params
  * @return {!Array<*>}
  */
-async function processPages(
-    endpoint, max, processFunc, params = new URLSearchParams()) {
-
-  params.set('max', max.toString());
+async function processPages(endpoint, max, processFunc, params = {}) {
+  params.max = max.toString();
   let page = {};
   let processed = [];
   do {
-    if (page.nextPage) params.set('nextPage', page.nextPage);
+    params.nextPage = page.nextPage;
     page = await apiCall(endpoint, params);
     processed = [...processed, ...page.results.map(processFunc)];
   } while (page.nextPage);
@@ -124,7 +122,7 @@ await run(async () => {
               'Merchant Country': location.country,
             };
           },
-          new URLSearchParams({filters: 'complete:eq:true'}));
+          {filters: 'complete:eq:true'});
 
   const BILL_SPEND_EXPENSE_TABLE = 'BILL Spend & Expense';
   const expenseSources = new Base();
