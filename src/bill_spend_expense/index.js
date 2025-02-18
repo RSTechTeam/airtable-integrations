@@ -18,7 +18,7 @@ const queue =
     new PQueue({
       concurrency: 55,
       intervalCap: 55,
-      interval: 65 * 1000,
+      interval: 70 * 1000,
       carryoverConcurrencyCount: true,
     });
 
