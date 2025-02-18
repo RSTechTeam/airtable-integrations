@@ -181,7 +181,7 @@ export class Api {
   dataCall(endpoint, data) {
     return this.call(
         endpoint,
-        new URLSearchParams({date: ncodeURIComponent(JSON.stringify(data))}));
+        new URLSearchParams({date: encodeURIComponent(JSON.stringify(data))}));
   }
 
   /**
