@@ -138,7 +138,7 @@ export class Api {
    * @return {!Promise<!Object<string, *>>} endpoint-specific response_data.
    */
   call(endpoint, params) {
-    log(params);
+    log(JSON.stringify(params));
     return apiCall(
         endpoint,
         {'Content-Type': 'application/x-www-form-urlencoded'},
@@ -178,8 +178,7 @@ export class Api {
    * @return {!Promise<!Object<string, *>>} endpoint-specific response_data.
    */
   dataCall(endpoint, data) {
-    return this.call(
-        endpoint, {data: encodeURIComponent(JSON.stringify(data))});
+    return this.call(endpoint, {data: JSON.stringify(data)});
   }
 
   /**
