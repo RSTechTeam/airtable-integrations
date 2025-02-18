@@ -12,7 +12,13 @@ describe('apiCall', () => {
     return expectApiCallToThrow('Login', appType, body, errorCode);
   };
 
-  const body = 'devKey=devKey&userName=userName&password=password&orgId=orgId';
+  const body =
+      new URLSearchParams({
+        devKey: 'devKey',
+        userName: 'userName',
+        password: 'password',
+        orgId: 'orgId',
+      });
 
   test('given no endpoint, throws', expectApiCallToThrow('', '', '', 1121));
 

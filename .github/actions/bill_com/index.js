@@ -22525,7 +22525,7 @@ function baseUrl(test = false) {
 /**
  * @param {string} endpoint 
  * @param {!Object<string, *>} headers
- * @param {(string|FormData)} body
+ * @param {(!URLSearchParams|!FormData)} body
  * @param {boolean} test
  * @return {!Promise<!Object<string, *>>} endpoint-specific response_data.
  */
@@ -22623,15 +22623,17 @@ class Api {
 
   /**
    * @param {string} endpoint
-   * @param {string} params
+   * @param {!URLSearchParams} params
    * @return {!Promise<!Object<string, *>>} endpoint-specific response_data.
    */
   call(endpoint, params) {
     (0,github_actions_core/* log */.cM)(params);
+    params.set('devKey', this.getDevKey());
+    params.set('sessionId', this.sessionId_);
     return apiCall(
         endpoint,
         {'Content-Type': 'application/x-www-form-urlencoded'},
-        `devKey=${this.getDevKey()}&sessionId=${this.sessionId_}&${params}`,
+        params,
         this.test_);
   }
 
@@ -22644,8 +22646,11 @@ class Api {
     const loginResponse =
         await this.call(
             'Login',
-            `userName=${this.userName_}&password=${this.password_}` +
-                `&orgId=${this.orgIds_.get(anchorEntity)}`);
+            new URLSearchParams({
+              userName: this.userName_,
+              password: this.password_,
+              orgId: this.orgIds_.get(anchorEntity),
+            }));
     this.sessionId_ = loginResponse.sessionId;
   }
 
@@ -22664,7 +22669,8 @@ class Api {
    */
   dataCall(endpoint, data) {
     return this.call(
-        endpoint, `data=${encodeURIComponent(JSON.stringify(data))}`);
+        endpoint,
+        new URLSearchParams({date: ncodeURIComponent(JSON.stringify(data))}));
   }
 
   /**
