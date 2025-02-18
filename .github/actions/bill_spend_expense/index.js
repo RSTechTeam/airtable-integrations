@@ -19734,6 +19734,7 @@ const queue =
  * @return {!Promise<!Object<string, *>>} endpoint-specific json.
  */
 async function apiCall(endpoint, params = {}) {
+  (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_3__/* .log */ .cM)(`concurrency: ${queue.concurrency}; pending: ${queue.pending}; size: ${queue.size}`);
   const response =
       await queue.add(
           () => (0,node_fetch__WEBPACK_IMPORTED_MODULE_6__/* ["default"] */ .ZP)(
@@ -20110,13 +20111,14 @@ class MsoBase extends (/* unused pure expression or super */ null && (Base)) {
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
 
 /* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
+/* harmony export */   "cM": () => (/* binding */ log),
 /* harmony export */   "ZK": () => (/* binding */ warn),
 /* harmony export */   "Np": () => (/* binding */ getInput),
 /* harmony export */   "vU": () => (/* binding */ error),
 /* harmony export */   "A8": () => (/* binding */ writeSummary),
 /* harmony export */   "u2": () => (/* binding */ logJson)
 /* harmony export */ });
-/* unused harmony exports log, addSummaryTableHeaders, addSummaryTableRow */
+/* unused harmony exports addSummaryTableHeaders, addSummaryTableRow */
 /* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(6024);
 /* harmony import */ var _utils_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(381);
 /**

@@ -10,7 +10,7 @@ import {airtableRecordUpdate, getMapping, syncChanges} from '../common/sync.js';
 import {Base} from '../common/airtable.js';
 import {billSpendExpenseApiKey} from './inputs.js';
 import {fetchError, getYyyyMmDd} from '../common/utils.js';
-import {logJson} from '../common/github_actions_core.js';
+import {log, logJson} from '../common/github_actions_core.js';
 import {run} from '../common/action.js';
 
 /** The ~rate limit for BILL Spend & Expense API calls. */
@@ -28,6 +28,7 @@ const queue =
  * @return {!Promise<!Object<string, *>>} endpoint-specific json.
  */
 async function apiCall(endpoint, params = {}) {
+  log(`concurrency: ${queue.concurrency}; pending: ${queue.pending}; size: ${queue.size}`);
   const response =
       await queue.add(
           () => fetch(
