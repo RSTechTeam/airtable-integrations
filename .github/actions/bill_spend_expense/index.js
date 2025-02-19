@@ -19722,7 +19722,7 @@ __nccwpck_require__.a(__webpack_module__, async (__webpack_handle_async_dependen
 /** The ~rate limit for BILL Spend & Expense API calls. */
 const queue =
     new p_queue__WEBPACK_IMPORTED_MODULE_5__/* ["default"] */ .Z({
-      concurrency: 45,
+      concurrency: 30,
       intervalCap: 55,
       interval: 70 * 1000,
       carryoverConcurrencyCount: true,
