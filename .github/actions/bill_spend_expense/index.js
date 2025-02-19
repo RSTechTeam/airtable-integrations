@@ -19724,7 +19724,7 @@ const queue =
     new p_queue__WEBPACK_IMPORTED_MODULE_5__/* ["default"] */ .Z({
       concurrency: 30,
       intervalCap: 55,
-      interval: 70 * 1000,
+      interval: 75 * 1000,
       carryoverConcurrencyCount: true,
     });
 
