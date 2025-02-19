@@ -17,8 +17,8 @@ import {run} from '../common/action.js';
 const queue =
     new PQueue({
       concurrency: 50,
-      intervalCap: 50,
-      interval: 65 * 1000,
+      intervalCap: 55,
+      interval: 70 * 1000,
       carryoverConcurrencyCount: true,
     });
 

@@ -19723,8 +19723,8 @@ __nccwpck_require__.a(__webpack_module__, async (__webpack_handle_async_dependen
 const queue =
     new p_queue__WEBPACK_IMPORTED_MODULE_5__/* ["default"] */ .Z({
       concurrency: 50,
-      intervalCap: 50,
-      interval: 65 * 1000,
+      intervalCap: 55,
+      interval: 70 * 1000,
       carryoverConcurrencyCount: true,
     });
 
