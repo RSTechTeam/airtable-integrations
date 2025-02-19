@@ -48,7 +48,7 @@ async function apiCall(endpoint, params = {}) {
  * @param {number} max
  * @param {function(!Object<string, *>): *} processFunc
  * @param {!Object<string, string>=} params
- * @return {!Array<*>}
+ * @return {!Promise<!Array<*>>}
  */
 async function processPages(endpoint, max, processFunc, params = {}) {
   params.max = max.toString();
