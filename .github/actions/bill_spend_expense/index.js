@@ -19725,7 +19725,7 @@ const queue =
       concurrency: 50,
       intervalCap: 50,
       interval: 70 * 1000,
-      carryoverConcurrencyCount: false,
+      carryoverConcurrencyCount: true,
     });
 
 /**
