@@ -8,7 +8,6 @@
     "ncc-build": "cd .. && npm run ncc-build -- bill_com"
   },
   "dependencies": {
-    "formdata-node": "^4.3.3",
-    "p-limit": "^4.0.0"
+    "formdata-node": "^4.3.3"
   }
 }
