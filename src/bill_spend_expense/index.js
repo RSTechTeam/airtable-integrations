@@ -15,8 +15,8 @@ import {log, logJson} from '../common/github_actions_core.js';
 import {run} from '../common/action.js';
 
 /** The ~rate limit for BILL Spend & Expense API calls. */
-const rateLimit = pLimit(60);
-const throttledFetch = pThrottle({limit: 59, interval: 63 * 1000})(fetch);
+const rateLimit = pLimit(59);
+const throttledFetch = pThrottle({limit: 57, interval: 60 * 1000})(fetch);
 
 /**
  * @param {string} endpoint
