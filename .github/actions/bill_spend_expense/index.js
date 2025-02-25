@@ -19096,7 +19096,7 @@ __nccwpck_require__.a(__webpack_module__, async (__webpack_handle_async_dependen
 
 
 /** The ~rate limit for BILL Spend & Expense API calls. */
-const rateLimit = (0,p_limit__WEBPACK_IMPORTED_MODULE_0__/* ["default"] */ .Z)(57);
+const rateLimit = (0,p_limit__WEBPACK_IMPORTED_MODULE_0__/* ["default"] */ .Z)(55);
 const throttledFetch = (0,p_throttle__WEBPACK_IMPORTED_MODULE_6__/* ["default"] */ .Z)({limit: 57, interval: 60 * 1000})(node_fetch__WEBPACK_IMPORTED_MODULE_7__/* ["default"] */ .ZP);
 
 /**
