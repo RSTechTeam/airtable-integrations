@@ -16021,6 +16021,13 @@ module.exports = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:stream/
 
 /***/ }),
 
+/***/ 9397:
+/***/ ((module) => {
+
+module.exports = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:timers/promises");
+
+/***/ }),
+
 /***/ 2037:
 /***/ ((module) => {
 
@@ -18940,145 +18947,19 @@ function pLimit(concurrency) {
 
 /***/ }),
 
-/***/ 830:
-/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
-
-/* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
-/* harmony export */   "Z": () => (/* binding */ pThrottle)
-/* harmony export */ });
-const registry = new FinalizationRegistry(({signal, aborted}) => {
-	signal?.removeEventListener('abort', aborted);
-});
-
-function pThrottle({limit, interval, strict, signal, onDelay}) {
-	if (!Number.isFinite(limit)) {
-		throw new TypeError('Expected `limit` to be a finite number');
-	}
-
-	if (!Number.isFinite(interval)) {
-		throw new TypeError('Expected `interval` to be a finite number');
-	}
-
-	const queue = new Map();
-
-	let currentTick = 0;
-	let activeCount = 0;
-
-	function windowedDelay() {
-		const now = Date.now();
-
-		if ((now - currentTick) > interval) {
-			activeCount = 1;
-			currentTick = now;
-			return 0;
-		}
-
-		if (activeCount < limit) {
-			activeCount++;
-		} else {
-			currentTick += interval;
-			activeCount = 1;
-		}
-
-		return currentTick - now;
-	}
-
-	const strictTicks = [];
-
-	function strictDelay() {
-		const now = Date.now();
-
-		// Clear the queue if there's a significant delay since the last execution
-		if (strictTicks.length > 0 && now - strictTicks.at(-1) > interval) {
-			strictTicks.length = 0;
-		}
-
-		// If the queue is not full, add the current time and execute immediately
-		if (strictTicks.length < limit) {
-			strictTicks.push(now);
-			return 0;
-		}
-
-		// Calculate the next execution time based on the first item in the queue
-		const nextExecutionTime = strictTicks[0] + interval;
-
-		// Shift the queue and add the new execution time
-		strictTicks.shift();
-		strictTicks.push(nextExecutionTime);
-
-		// Calculate the delay for the current execution
-		return Math.max(0, nextExecutionTime - now);
-	}
-
-	const getDelay = strict ? strictDelay : windowedDelay;
-
-	return function_ => {
-		const throttled = function (...arguments_) {
-			if (!throttled.isEnabled) {
-				return (async () => function_.apply(this, arguments_))();
-			}
-
-			let timeoutId;
-			return new Promise((resolve, reject) => {
-				const execute = () => {
-					resolve(function_.apply(this, arguments_));
-					queue.delete(timeoutId);
-				};
-
-				const delay = getDelay();
-				if (delay > 0) {
-					timeoutId = setTimeout(execute, delay);
-					queue.set(timeoutId, reject);
-					onDelay?.(...arguments_);
-				} else {
-					execute();
-				}
-			});
-		};
-
-		const aborted = () => {
-			for (const timeout of queue.keys()) {
-				clearTimeout(timeout);
-				queue.get(timeout)(signal.reason);
-			}
-
-			queue.clear();
-			strictTicks.splice(0, strictTicks.length);
-		};
-
-		registry.register(throttled, {signal, aborted});
-
-		signal?.throwIfAborted();
-		signal?.addEventListener('abort', aborted, {once: true});
-
-		throttled.isEnabled = true;
-
-		Object.defineProperty(throttled, 'queueSize', {
-			get() {
-				return queue.size;
-			},
-		});
-
-		return throttled;
-	};
-}
-
-
-/***/ }),
-
 /***/ 7784:
 /***/ ((__webpack_module__, __unused_webpack___webpack_exports__, __nccwpck_require__) => {
 
 __nccwpck_require__.a(__webpack_module__, async (__webpack_handle_async_dependencies__) => {
 /* harmony import */ var node_fetch__WEBPACK_IMPORTED_MODULE_7__ = __nccwpck_require__(4028);
 /* harmony import */ var p_limit__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(3403);
-/* harmony import */ var p_throttle__WEBPACK_IMPORTED_MODULE_6__ = __nccwpck_require__(830);
 /* harmony import */ var _common_sync_js__WEBPACK_IMPORTED_MODULE_8__ = __nccwpck_require__(3599);
 /* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(8997);
 /* harmony import */ var _inputs_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(8830);
 /* harmony import */ var _common_utils_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(381);
 /* harmony import */ var _common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(1444);
 /* harmony import */ var _common_action_js__WEBPACK_IMPORTED_MODULE_5__ = __nccwpck_require__(518);
+/* harmony import */ var node_timers_promises__WEBPACK_IMPORTED_MODULE_6__ = __nccwpck_require__(9397);
 /**
  * @fileoverview Syncs BILL Spend & Expense data into Airtable.
  * For more information, check out the API documentation:
@@ -19095,9 +18976,8 @@ __nccwpck_require__.a(__webpack_module__, async (__webpack_handle_async_dependen
 
 
 
-/** The ~rate limit for BILL Spend & Expense API calls. */
-const rateLimit = (0,p_limit__WEBPACK_IMPORTED_MODULE_0__/* ["default"] */ .Z)(55);
-const throttledFetch = (0,p_throttle__WEBPACK_IMPORTED_MODULE_6__/* ["default"] */ .Z)({limit: 55, interval: 60 * 1000})(node_fetch__WEBPACK_IMPORTED_MODULE_7__/* ["default"] */ .ZP);
+/** The rate limit for BILL Spend & Expense API calls. */
+const rateLimit = (0,p_limit__WEBPACK_IMPORTED_MODULE_0__/* ["default"] */ .Z)(60);
 
 /**
  * @param {string} endpoint
@@ -19106,11 +18986,17 @@ const throttledFetch = (0,p_throttle__WEBPACK_IMPORTED_MODULE_6__/* ["default"] 
  */
 async function apiCall(endpoint, params = {}) {
   const response =
-      await rateLimit(
-          () => throttledFetch(
-              `https://gateway.prod.bill.com/connect/v3/spend/${endpoint}` +
-                  `?${new URLSearchParams(params)}`,
-              {headers: {apiToken: (0,_inputs_js__WEBPACK_IMPORTED_MODULE_2__/* .billSpendExpenseApiKey */ .s)()}}));
+      await new Promise(
+          resolve => rateLimit(
+              async () => {
+                resolve(
+                    await (0,node_fetch__WEBPACK_IMPORTED_MODULE_7__/* ["default"] */ .ZP)(
+                        'https://gateway.prod.bill.com/connect/v3/spend/' +
+                            `${endpoint}?${new URLSearchParams(params)}`,
+                        {headers: {apiToken: (0,_inputs_js__WEBPACK_IMPORTED_MODULE_2__/* .billSpendExpenseApiKey */ .s)()}}));
+                await (0,node_timers_promises__WEBPACK_IMPORTED_MODULE_6__.setTimeout)(60 * 1000);
+              }));
+
   const json = await response.json();
   (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_4__/* .logJson */ .u2)(endpoint, json);
   if (!response.ok) {

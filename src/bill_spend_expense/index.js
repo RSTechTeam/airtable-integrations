@@ -6,17 +6,16 @@
 
 import fetch from 'node-fetch';
 import pLimit from 'p-limit';
-import pThrottle from 'p-throttle';
 import {airtableRecordUpdate, getMapping, syncChanges} from '../common/sync.js';
 import {Base} from '../common/airtable.js';
 import {billSpendExpenseApiKey} from './inputs.js';
 import {fetchError, getYyyyMmDd} from '../common/utils.js';
 import {log, logJson} from '../common/github_actions_core.js';
 import {run} from '../common/action.js';
+import {setTimeout} from 'node:timers/promises';
 
-/** The ~rate limit for BILL Spend & Expense API calls. */
-const rateLimit = pLimit(55);
-const throttledFetch = pThrottle({limit: 55, interval: 60 * 1000})(fetch);
+/** The rate limit for BILL Spend & Expense API calls. */
+const rateLimit = pLimit(60);
 
 /**
  * @param {string} endpoint
@@ -25,11 +24,17 @@ const throttledFetch = pThrottle({limit: 55, interval: 60 * 1000})(fetch);
  */
 async function apiCall(endpoint, params = {}) {
   const response =
-      await rateLimit(
-          () => throttledFetch(
-              `https://gateway.prod.bill.com/connect/v3/spend/${endpoint}` +
-                  `?${new URLSearchParams(params)}`,
-              {headers: {apiToken: billSpendExpenseApiKey()}}));
+      await new Promise(
+          resolve => rateLimit(
+              async () => {
+                resolve(
+                    await fetch(
+                        'https://gateway.prod.bill.com/connect/v3/spend/' +
+                            `${endpoint}?${new URLSearchParams(params)}`,
+                        {headers: {apiToken: billSpendExpenseApiKey()}}));
+                await setTimeout(60 * 1000);
+              }));
+
   const json = await response.json();
   logJson(endpoint, json);
   if (!response.ok) {
