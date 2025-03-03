@@ -10,12 +10,13 @@ import {airtableRecordUpdate, getMapping, syncChanges} from '../common/sync.js';
 import {Base} from '../common/airtable.js';
 import {billSpendExpenseApiKey} from './inputs.js';
 import {fetchError, getYyyyMmDd} from '../common/utils.js';
-import {log, logJson} from '../common/github_actions_core.js';
+import {logJson} from '../common/github_actions_core.js';
 import {run} from '../common/action.js';
 import {setTimeout} from 'node:timers/promises';
 
 /** The rate limit for BILL Spend & Expense API calls. */
 const rateLimit = pLimit(60);
+const delay = 60 * 1000;
 
 /**
  * @param {string} endpoint
@@ -32,7 +33,7 @@ async function apiCall(endpoint, params = {}) {
                         'https://gateway.prod.bill.com/connect/v3/spend/' +
                             `${endpoint}?${new URLSearchParams(params)}`,
                         {headers: {apiToken: billSpendExpenseApiKey()}}));
-                await setTimeout(60 * 1000);
+                await setTimeout(delay);
               }));
 
   const json = await response.json();

@@ -18978,6 +18978,7 @@ __nccwpck_require__.a(__webpack_module__, async (__webpack_handle_async_dependen
 
 /** The rate limit for BILL Spend & Expense API calls. */
 const rateLimit = (0,p_limit__WEBPACK_IMPORTED_MODULE_0__/* ["default"] */ .Z)(60);
+const delay = 60 * 1000;
 
 /**
  * @param {string} endpoint
@@ -18994,7 +18995,7 @@ async function apiCall(endpoint, params = {}) {
                         'https://gateway.prod.bill.com/connect/v3/spend/' +
                             `${endpoint}?${new URLSearchParams(params)}`,
                         {headers: {apiToken: (0,_inputs_js__WEBPACK_IMPORTED_MODULE_2__/* .billSpendExpenseApiKey */ .s)()}}));
-                await (0,node_timers_promises__WEBPACK_IMPORTED_MODULE_6__.setTimeout)(60 * 1000);
+                await (0,node_timers_promises__WEBPACK_IMPORTED_MODULE_6__.setTimeout)(delay);
               }));
 
   const json = await response.json();

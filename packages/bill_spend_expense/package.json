@@ -6,8 +6,5 @@
   "main": "../../src/bill_spend_expense/index.js",
   "scripts": {
     "ncc-build": "cd .. && npm run ncc-build -- bill_spend_expense"
-  },
-  "dependencies": {
-    "p-throttle": "^7.0.0"
   }
 }
