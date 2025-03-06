@@ -4,12 +4,12 @@
  * https://developer.bill.com/docs/spend-expense-api
  */
 
-import fetch from 'node-fetch';
 import pLimit from 'p-limit';
 import {airtableRecordUpdate, getMapping, syncChanges} from '../common/sync.js';
 import {Base} from '../common/airtable.js';
 import {billSpendExpenseApiKey} from './inputs.js';
-import {fetchError, getYyyyMmDd} from '../common/utils.js';
+import {errorObject, fetch} from '../common/fetch.js';
+import {getYyyyMmDd} from '../common/utils.js';
 import {logJson} from '../common/github_actions_core.js';
 import {run} from '../common/action.js';
 import {setTimeout} from 'node:timers/promises';
@@ -30,6 +30,11 @@ async function apiCall(endpoint, params = {}) {
               async () => {
                 resolve(
                     await fetch(
+                        async response => {
+                          const json = await response.json();
+                          const err = json[0];
+                          return errorObject(err?.code, endpoint, err?.message)
+                        },
                         'https://gateway.prod.bill.com/connect/v3/spend/' +
                             `${endpoint}?${new URLSearchParams(params)}`,
                         {headers: {apiToken: billSpendExpenseApiKey()}}));
@@ -38,10 +43,6 @@ async function apiCall(endpoint, params = {}) {
 
   const json = await response.json();
   logJson(endpoint, json);
-  if (!response.ok) {
-    const err = json[0];
-    fetchError(err.code, endpoint, err.message);
-  }
   return json;
 }
 

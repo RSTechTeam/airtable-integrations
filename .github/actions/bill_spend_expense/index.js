@@ -12878,6 +12878,289 @@ module.exports = globalThis.DOMException
 
 /***/ }),
 
+/***/ 5664:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+module.exports = __nccwpck_require__(543);
+
+/***/ }),
+
+/***/ 543:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+var RetryOperation = __nccwpck_require__(2395);
+
+exports.operation = function(options) {
+  var timeouts = exports.timeouts(options);
+  return new RetryOperation(timeouts, {
+      forever: options && (options.forever || options.retries === Infinity),
+      unref: options && options.unref,
+      maxRetryTime: options && options.maxRetryTime
+  });
+};
+
+exports.timeouts = function(options) {
+  if (options instanceof Array) {
+    return [].concat(options);
+  }
+
+  var opts = {
+    retries: 10,
+    factor: 2,
+    minTimeout: 1 * 1000,
+    maxTimeout: Infinity,
+    randomize: false
+  };
+  for (var key in options) {
+    opts[key] = options[key];
+  }
+
+  if (opts.minTimeout > opts.maxTimeout) {
+    throw new Error('minTimeout is greater than maxTimeout');
+  }
+
+  var timeouts = [];
+  for (var i = 0; i < opts.retries; i++) {
+    timeouts.push(this.createTimeout(i, opts));
+  }
+
+  if (options && options.forever && !timeouts.length) {
+    timeouts.push(this.createTimeout(i, opts));
+  }
+
+  // sort the array numerically ascending
+  timeouts.sort(function(a,b) {
+    return a - b;
+  });
+
+  return timeouts;
+};
+
+exports.createTimeout = function(attempt, opts) {
+  var random = (opts.randomize)
+    ? (Math.random() + 1)
+    : 1;
+
+  var timeout = Math.round(random * Math.max(opts.minTimeout, 1) * Math.pow(opts.factor, attempt));
+  timeout = Math.min(timeout, opts.maxTimeout);
+
+  return timeout;
+};
+
+exports.wrap = function(obj, options, methods) {
+  if (options instanceof Array) {
+    methods = options;
+    options = null;
+  }
+
+  if (!methods) {
+    methods = [];
+    for (var key in obj) {
+      if (typeof obj[key] === 'function') {
+        methods.push(key);
+      }
+    }
+  }
+
+  for (var i = 0; i < methods.length; i++) {
+    var method   = methods[i];
+    var original = obj[method];
+
+    obj[method] = function retryWrapper(original) {
+      var op       = exports.operation(options);
+      var args     = Array.prototype.slice.call(arguments, 1);
+      var callback = args.pop();
+
+      args.push(function(err) {
+        if (op.retry(err)) {
+          return;
+        }
+        if (err) {
+          arguments[0] = op.mainError();
+        }
+        callback.apply(this, arguments);
+      });
+
+      op.attempt(function() {
+        original.apply(obj, args);
+      });
+    }.bind(obj, original);
+    obj[method].options = options;
+  }
+};
+
+
+/***/ }),
+
+/***/ 2395:
+/***/ ((module) => {
+
+function RetryOperation(timeouts, options) {
+  // Compatibility for the old (timeouts, retryForever) signature
+  if (typeof options === 'boolean') {
+    options = { forever: options };
+  }
+
+  this._originalTimeouts = JSON.parse(JSON.stringify(timeouts));
+  this._timeouts = timeouts;
+  this._options = options || {};
+  this._maxRetryTime = options && options.maxRetryTime || Infinity;
+  this._fn = null;
+  this._errors = [];
+  this._attempts = 1;
+  this._operationTimeout = null;
+  this._operationTimeoutCb = null;
+  this._timeout = null;
+  this._operationStart = null;
+  this._timer = null;
+
+  if (this._options.forever) {
+    this._cachedTimeouts = this._timeouts.slice(0);
+  }
+}
+module.exports = RetryOperation;
+
+RetryOperation.prototype.reset = function() {
+  this._attempts = 1;
+  this._timeouts = this._originalTimeouts.slice(0);
+}
+
+RetryOperation.prototype.stop = function() {
+  if (this._timeout) {
+    clearTimeout(this._timeout);
+  }
+  if (this._timer) {
+    clearTimeout(this._timer);
+  }
+
+  this._timeouts       = [];
+  this._cachedTimeouts = null;
+};
+
+RetryOperation.prototype.retry = function(err) {
+  if (this._timeout) {
+    clearTimeout(this._timeout);
+  }
+
+  if (!err) {
+    return false;
+  }
+  var currentTime = new Date().getTime();
+  if (err && currentTime - this._operationStart >= this._maxRetryTime) {
+    this._errors.push(err);
+    this._errors.unshift(new Error('RetryOperation timeout occurred'));
+    return false;
+  }
+
+  this._errors.push(err);
+
+  var timeout = this._timeouts.shift();
+  if (timeout === undefined) {
+    if (this._cachedTimeouts) {
+      // retry forever, only keep last error
+      this._errors.splice(0, this._errors.length - 1);
+      timeout = this._cachedTimeouts.slice(-1);
+    } else {
+      return false;
+    }
+  }
+
+  var self = this;
+  this._timer = setTimeout(function() {
+    self._attempts++;
+
+    if (self._operationTimeoutCb) {
+      self._timeout = setTimeout(function() {
+        self._operationTimeoutCb(self._attempts);
+      }, self._operationTimeout);
+
+      if (self._options.unref) {
+          self._timeout.unref();
+      }
+    }
+
+    self._fn(self._attempts);
+  }, timeout);
+
+  if (this._options.unref) {
+      this._timer.unref();
+  }
+
+  return true;
+};
+
+RetryOperation.prototype.attempt = function(fn, timeoutOps) {
+  this._fn = fn;
+
+  if (timeoutOps) {
+    if (timeoutOps.timeout) {
+      this._operationTimeout = timeoutOps.timeout;
+    }
+    if (timeoutOps.cb) {
+      this._operationTimeoutCb = timeoutOps.cb;
+    }
+  }
+
+  var self = this;
+  if (this._operationTimeoutCb) {
+    this._timeout = setTimeout(function() {
+      self._operationTimeoutCb();
+    }, self._operationTimeout);
+  }
+
+  this._operationStart = new Date().getTime();
+
+  this._fn(this._attempts);
+};
+
+RetryOperation.prototype.try = function(fn) {
+  console.log('Using RetryOperation.try() is deprecated');
+  this.attempt(fn);
+};
+
+RetryOperation.prototype.start = function(fn) {
+  console.log('Using RetryOperation.start() is deprecated');
+  this.attempt(fn);
+};
+
+RetryOperation.prototype.start = RetryOperation.prototype.try;
+
+RetryOperation.prototype.errors = function() {
+  return this._errors;
+};
+
+RetryOperation.prototype.attempts = function() {
+  return this._attempts;
+};
+
+RetryOperation.prototype.mainError = function() {
+  if (this._errors.length === 0) {
+    return null;
+  }
+
+  var counts = {};
+  var mainError = null;
+  var mainErrorCount = 0;
+
+  for (var i = 0; i < this._errors.length; i++) {
+    var error = this._errors[i];
+    var message = error.message;
+    var count = (counts[message] || 0) + 1;
+
+    counts[message] = count;
+
+    if (count >= mainErrorCount) {
+      mainError = error;
+      mainErrorCount = count;
+    }
+  }
+
+  return mainError;
+};
+
+
+/***/ }),
+
 /***/ 9427:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
@@ -16652,16 +16935,715 @@ return new B(c,{type:"multipart/form-data; boundary="+b})}
 
 /***/ }),
 
-/***/ 4028:
+/***/ 3403:
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
 
 
 // EXPORTS
 __nccwpck_require__.d(__webpack_exports__, {
-  "ZP": () => (/* binding */ fetch)
+  "Z": () => (/* binding */ pLimit)
 });
 
-// UNUSED EXPORTS: AbortError, Blob, FetchError, File, FormData, Headers, Request, Response, blobFrom, blobFromSync, fileFrom, fileFromSync, isRedirect
+;// CONCATENATED MODULE: ./node_modules/yocto-queue/index.js
+/*
+How it works:
+`this.#head` is an instance of `Node` which keeps track of its current value and nests another instance of `Node` that keeps the value that comes after it. When a value is provided to `.enqueue()`, the code needs to iterate through `this.#head`, going deeper and deeper to find the last value. However, iterating through every single item is slow. This problem is solved by saving a reference to the last value as `this.#tail` so that it can reference it to add a new value.
+*/
+
+class Node {
+	value;
+	next;
+
+	constructor(value) {
+		this.value = value;
+	}
+}
+
+class Queue {
+	#head;
+	#tail;
+	#size;
+
+	constructor() {
+		this.clear();
+	}
+
+	enqueue(value) {
+		const node = new Node(value);
+
+		if (this.#head) {
+			this.#tail.next = node;
+			this.#tail = node;
+		} else {
+			this.#head = node;
+			this.#tail = node;
+		}
+
+		this.#size++;
+	}
+
+	dequeue() {
+		const current = this.#head;
+		if (!current) {
+			return;
+		}
+
+		this.#head = this.#head.next;
+		this.#size--;
+		return current.value;
+	}
+
+	clear() {
+		this.#head = undefined;
+		this.#tail = undefined;
+		this.#size = 0;
+	}
+
+	get size() {
+		return this.#size;
+	}
+
+	* [Symbol.iterator]() {
+		let current = this.#head;
+
+		while (current) {
+			yield current.value;
+			current = current.next;
+		}
+	}
+}
+
+;// CONCATENATED MODULE: ./node_modules/p-limit/index.js
+
+
+function pLimit(concurrency) {
+	if (!((Number.isInteger(concurrency) || concurrency === Number.POSITIVE_INFINITY) && concurrency > 0)) {
+		throw new TypeError('Expected `concurrency` to be a number from 1 and up');
+	}
+
+	const queue = new Queue();
+	let activeCount = 0;
+
+	const next = () => {
+		activeCount--;
+
+		if (queue.size > 0) {
+			queue.dequeue()();
+		}
+	};
+
+	const run = async (fn, resolve, args) => {
+		activeCount++;
+
+		const result = (async () => fn(...args))();
+
+		resolve(result);
+
+		try {
+			await result;
+		} catch {}
+
+		next();
+	};
+
+	const enqueue = (fn, resolve, args) => {
+		queue.enqueue(run.bind(undefined, fn, resolve, args));
+
+		(async () => {
+			// This function needs to wait until the next microtask before comparing
+			// `activeCount` to `concurrency`, because `activeCount` is updated asynchronously
+			// when the run function is dequeued and called. The comparison in the if-statement
+			// needs to happen asynchronously as well to get an up-to-date value for `activeCount`.
+			await Promise.resolve();
+
+			if (activeCount < concurrency && queue.size > 0) {
+				queue.dequeue()();
+			}
+		})();
+	};
+
+	const generator = (fn, ...args) => new Promise(resolve => {
+		enqueue(fn, resolve, args);
+	});
+
+	Object.defineProperties(generator, {
+		activeCount: {
+			get: () => activeCount,
+		},
+		pendingCount: {
+			get: () => queue.size,
+		},
+		clearQueue: {
+			value: () => {
+				queue.clear();
+			},
+		},
+	});
+
+	return generator;
+}
+
+
+/***/ }),
+
+/***/ 7784:
+/***/ ((__webpack_module__, __unused_webpack___webpack_exports__, __nccwpck_require__) => {
+
+__nccwpck_require__.a(__webpack_module__, async (__webpack_handle_async_dependencies__) => {
+/* harmony import */ var p_limit__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(3403);
+/* harmony import */ var _common_sync_js__WEBPACK_IMPORTED_MODULE_8__ = __nccwpck_require__(3599);
+/* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(8997);
+/* harmony import */ var _inputs_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(8830);
+/* harmony import */ var _common_fetch_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(6100);
+/* harmony import */ var _common_utils_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(381);
+/* harmony import */ var _common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_5__ = __nccwpck_require__(1444);
+/* harmony import */ var _common_action_js__WEBPACK_IMPORTED_MODULE_6__ = __nccwpck_require__(518);
+/* harmony import */ var node_timers_promises__WEBPACK_IMPORTED_MODULE_7__ = __nccwpck_require__(9397);
+/**
+ * @fileoverview Syncs BILL Spend & Expense data into Airtable.
+ * For more information, check out the API documentation:
+ * https://developer.bill.com/docs/spend-expense-api
+ */
+
+
+
+
+
+
+
+
+
+
+
+/** The rate limit for BILL Spend & Expense API calls. */
+const rateLimit = (0,p_limit__WEBPACK_IMPORTED_MODULE_0__/* ["default"] */ .Z)(60);
+const delay = 60 * 1000;
+
+/**
+ * @param {string} endpoint
+ * @param {!Object<string, string>=} params
+ * @return {!Promise<!Object<string, *>>} endpoint-specific json.
+ */
+async function apiCall(endpoint, params = {}) {
+  const response =
+      await new Promise(
+          resolve => rateLimit(
+              async () => {
+                resolve(
+                    await (0,_common_fetch_js__WEBPACK_IMPORTED_MODULE_3__/* .fetch */ .h)(
+                        async response => {
+                          const json = await response.json();
+                          const err = json[0];
+                          return (0,_common_fetch_js__WEBPACK_IMPORTED_MODULE_3__/* .errorObject */ .T)(err?.code, endpoint, err?.message)
+                        },
+                        'https://gateway.prod.bill.com/connect/v3/spend/' +
+                            `${endpoint}?${new URLSearchParams(params)}`,
+                        {headers: {apiToken: (0,_inputs_js__WEBPACK_IMPORTED_MODULE_2__/* .billSpendExpenseApiKey */ .s)()}}));
+                await (0,node_timers_promises__WEBPACK_IMPORTED_MODULE_7__.setTimeout)(delay);
+              }));
+
+  const json = await response.json();
+  (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_5__/* .logJson */ .u2)(endpoint, json);
+  return json;
+}
+
+/**
+ * @param {string} endpoint
+ * @param {number} max
+ * @param {function(!Object<string, *>): *} processFunc
+ * @param {!Object<string, string>=} params
+ * @return {!Promise<!Array<*>>}
+ */
+async function processPages(endpoint, max, processFunc, params = {}) {
+  params.max = max.toString();
+  let page = {};
+  let processed = [];
+  do {
+    if (page.nextPage) params.nextPage = page.nextPage;
+    page = await apiCall(endpoint, params);
+    processed = [...processed, ...page.results.map(processFunc)];
+  } while (page.nextPage);
+  return Promise.all(processed);
+}
+
+/**
+ * @param {!Object<string, *>} customField
+ * @return {string}
+ */
+function getSelectedValue(customField) {
+  return customField.selectedValues[0]?.value;
+}
+
+await (0,_common_action_js__WEBPACK_IMPORTED_MODULE_6__/* .run */ .K)(async () => {
+
+  const budgets =
+      new Map(await processPages('budgets', 100, b => [b.id, b.name]));
+  const reimbursements =
+      await processPages(
+          'reimbursements', 100,
+          async reimbursement => {
+
+            // Get reimbursement to get receipt URLs.
+            const r = await apiCall(`reimbursements/${reimbursement.id}`);
+            const recentApprovalStatus =
+                r.statusHistory.find(sh => sh.status.includes('APPROV'));
+            return {
+              'Type': 'Reimbursement',
+              'ID': r.id,
+              'Amount': r.amount,
+              'Merchant Name': r.merchantName,
+              'Notes': r.note,
+              'Submitted Date': (0,_common_utils_js__WEBPACK_IMPORTED_MODULE_4__/* .getYyyyMmDd */ .PQ)(r.submittedTime),
+              'Expense Date': r.occurredDate,
+              'Paid': r.status === 'PAID',
+              'Approved': recentApprovalStatus.status === 'APPROVED',
+              'Budget': budgets.get(r.budgetId),
+              'Category': getSelectedValue(r.customFields[0]),
+              'Project': getSelectedValue(r.customFields[1]),
+              'Receipts': r.receipts.map(receipt => ({url: receipt.url})),
+            }
+          });
+  const transactions =
+      await processPages(
+          'transactions', 50,
+          t => {
+            const base = {
+              'Type': 'Card Transaction',
+              'Paid': true,
+              'ID': t.id,
+              'Merchant Name': t.merchantName,
+              'Budget': budgets.get(t.budgetId),
+              'Expense Date': (0,_common_utils_js__WEBPACK_IMPORTED_MODULE_4__/* .getYyyyMmDd */ .PQ)(t.occurredTime),
+              'Category': getSelectedValue(t.customFields[0]),
+              'Notes': getSelectedValue(t.customFields[1]),
+              'Project': getSelectedValue(t.customFields[2]),
+              'Approved': t.reviews.every(r => r.isApproved),
+              'Amount': t.amount,
+            }
+            if (!t.cardPresent) return base;
+
+            const location = t.merchantLocation;
+            return {
+              ...base,
+              'Merchant City': location.city,
+              'Merchant State': location.state,
+              'Merchant Zip Code': location.postalCode,
+              'Merchant Country': location.country,
+            };
+          },
+          {filters: 'complete:eq:true'});
+
+  const BILL_SPEND_EXPENSE_TABLE = 'BILL Spend & Expense';
+  const expenseSources = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .Base */ .X();
+  const {updates, creates} =
+      (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_8__/* .syncChanges */ .U4)(
+          // Source
+          new Map([...reimbursements, ...transactions].map(e => [e['ID'], e])),
+          // Mapping
+          (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_8__/* .getMapping */ .tj)(
+              await expenseSources.select(BILL_SPEND_EXPENSE_TABLE), 'ID'));
+
+  return Promise.all([
+      expenseSources.update(
+          BILL_SPEND_EXPENSE_TABLE, Array.from(updates, _common_sync_js__WEBPACK_IMPORTED_MODULE_8__/* .airtableRecordUpdate */ .vw)),
+      expenseSources.create(
+          BILL_SPEND_EXPENSE_TABLE,
+          Array.from(creates, ([, create]) => ({fields: create}))),
+    ]);
+});
+
+__webpack_handle_async_dependencies__();
+}, 1);
+
+/***/ }),
+
+/***/ 8830:
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
+
+/* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
+/* harmony export */   "s": () => (/* binding */ billSpendExpenseApiKey)
+/* harmony export */ });
+/* harmony import */ var _common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(1444);
+/**
+ * @fileoverview Lazy evaluated inputs
+ * @see bill_spend_expense/action.yml
+ */
+
+
+
+/** @type function(): string */
+const billSpendExpenseApiKey = (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .getInput */ .Np)('bill-spend-expense-api-key');
+
+/***/ }),
+
+/***/ 518:
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
+
+/* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
+/* harmony export */   "K": () => (/* binding */ run)
+/* harmony export */ });
+/* harmony import */ var _github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(1444);
+/**
+ * @fileoverview Runs and handles GitHub Action scripts,
+ * including status setting and summary writing.
+ */
+
+
+
+/**
+ * @param {function(): !Promise<undefined>} main
+ * @return {!Promise<undefined>}
+ */
+function run(main) {
+  return main().catch(_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .error */ .vU).finally(_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .writeSummary */ .A8);
+}
+
+
+/***/ }),
+
+/***/ 8997:
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
+
+
+// EXPORTS
+__nccwpck_require__.d(__webpack_exports__, {
+  "X": () => (/* binding */ Base)
+});
+
+// UNUSED EXPORTS: MsoBase
+
+// EXTERNAL MODULE: ./node_modules/airtable/lib/airtable.js
+var airtable = __nccwpck_require__(5447);
+// EXTERNAL MODULE: ./src/common/github_actions_core.js
+var github_actions_core = __nccwpck_require__(1444);
+;// CONCATENATED MODULE: ./src/common/inputs.js
+/**
+ * @fileoverview Lazy evaluated inputs
+ * @see action.yml
+ */
+
+
+
+/** @type function(): string */
+const inputs_airtableApiKey = (0,github_actions_core/* getInput */.Np)('airtable-api-key');
+const inputs_airtableBaseId = (0,github_actions_core/* getInput */.Np)('airtable-base-id');
+const airtableImportRecordId = (0,github_actions_core/* getInput */.Np)('airtable-import-record-id');
+
+// EXTERNAL MODULE: ./src/common/utils.js + 1 modules
+var utils = __nccwpck_require__(381);
+;// CONCATENATED MODULE: ./src/common/airtable.js
+/** @fileoverview Utilities for interacting with Airtable. */
+
+/**
+ * The official Airtable JavaScript library.
+ * https://github.com/Airtable/airtable.js
+ */
+
+
+
+
+
+/**
+ * @param {string} querying e.g., selecting, updating, etc
+ * @param {string} table
+ * @param {!Error} err
+ */
+function throwError(querying, table, err) {
+  throw new Error(
+      `Error ${querying} records in Airtable Table ${table}: ${err}`);
+}
+
+/**
+ * @param {!Promise<*>} promise
+ * @param {string} querying e.g., selecting, updating, etc
+ * @param {string} table
+ * @return {!Promise<*>}
+ */
+function catchError(promise, querying, table) {
+  return promise.catch(err => throwError(querying, table, err));
+}
+
+/**
+ * Asynchronously calls func with portions of array that are at most
+ * the max number of records that can be created or updated
+ * via an Airtable API call.
+ * @param {function(!Array<*>): !Promise<*>} func
+ * @param {!Array<*>} array
+ * @return {!Promise<!Array<*>>}
+ */
+function batch(func, array) {
+  return (0,utils/* batchAsync */.aE)(func, array, 10);
+}
+
+/** An Airtable Base to query. */
+class Base {
+
+  /**
+   * @param {string=} baseId
+   * @param {string=} apiKey
+   */
+  constructor(baseId = inputs_airtableBaseId(), apiKey = inputs_airtableApiKey()) {
+
+    /** @private @const {!Base} */
+    this.base_ = new airtable({apiKey: apiKey}).base(baseId);
+  }
+
+  /**
+   * @param {string} table
+   * @param {string=} view
+   * @param {string=} filterByFormula
+   * @return {!Promise<!Array<!Record<!TField>>>}
+   */
+  select(table, view = '', filterByFormula = '') {
+    const params = {view: view, filterByFormula: filterByFormula};
+    return catchError(
+        this.base_(table).select(params).all(), 'selecting', table);
+  }
+
+  /**
+   * @param {string} table
+   * @param {!Object[]} updates
+   * @param {string} updates[].id
+   * @param {!Object<string, *>} updates[].fields
+   * @return {!Promise<!Array<*>>}
+   */
+  update(table, updates) {
+    return catchError(
+        batch(this.base_(table).update, updates), 'updating', table);
+  }
+
+  /**
+   * Runs fieldsFunc for each record from table view
+   * and updates each record's fields using fieldsFunc's return value,
+   * if there is one.
+   * @param {string} table
+   * @param {string} view
+   * @param {function(!Record<!TField>): !Promise<?Object<string, *>>} fieldsFunc
+   * @return {!Promise<!Array<*>>}
+   */
+   async selectAndUpdate(table, view, fieldsFunc) {
+    const updates = [];
+    let firstErr;
+    for (const record of await this.select(table, view)) {
+      try {
+        const fields = await fieldsFunc(record);
+        fields && updates.push({id: record.getId(), fields: fields});
+      } catch (err) {
+        (0,github_actions_core/* warn */.ZK)(err.message);
+        firstErr ||= err;
+      }
+    }
+    const update = await this.update(table, updates);
+    firstErr && throwError('selectAndUpdating', table, firstErr);
+    return update;
+   }
+
+  /**
+   * @param {string} table
+   * @param {!Object[]} creates
+   * @param {!Object<string, *>} creates[].fields
+   * @return {!Promise<!Array<*>>}
+   */
+  create(table, creates) {
+    return catchError(
+        batch(this.base_(table).create, creates), 'creating', table);
+  }
+
+  /**
+   * @param {string} table
+   * @param {string} id
+   * @return {!Promise<!Record<!TField>>}
+   */
+  find(table, id) {
+    return catchError(this.base_(table).find(id), 'finding', table);
+  }
+}
+
+/**
+ * An Airtable Base where each Table is partitioned by MSO,
+ * enabling per MSO selects across Tables. Select methods should only be called
+ * while iterating via iterateMsos.
+ */
+class MsoBase extends (/* unused pure expression or super */ null && (Base)) {
+
+  /**
+   * @param {string=} baseId
+   * @param {string=} apiKey
+   */
+  constructor(baseId = airtableBaseId(), apiKey = airtableApiKey()) {
+    super(baseId, apiKey);
+
+    /** @private {?Record<!TField>} */
+    this.currentMso_ = null;
+    /** @return {?Record<!TField>} */
+    this.getCurrentMso = () => this.currentMso_;
+  }
+
+  /** @override */
+  select(table, view = '', filterByFormula = '') {
+    const msoFilter = `MSO = '${this.currentMso_.get('Code')}'`;
+    return super.select(
+        table,
+        view,
+        filterByFormula === '' ?
+            msoFilter : `AND(${msoFilter}, ${filterByFormula})`);
+  }
+
+  /**
+   * @param {string=} view
+   * @return {!Promise<!Iterator<!Record<!TField>>>}
+   */
+  async* iterateMsos(view = 'Org IDs') {
+    for (this.currentMso_ of await super.select('MSOs', view)) {
+      yield this.currentMso_;
+    }
+    this.currentMso_ = null;
+  }
+}
+
+
+/***/ }),
+
+/***/ 6100:
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
+
+
+// EXPORTS
+__nccwpck_require__.d(__webpack_exports__, {
+  "T": () => (/* binding */ errorObject),
+  "h": () => (/* binding */ fetch_fetch)
+});
+
+// EXTERNAL MODULE: ./node_modules/retry/index.js
+var retry = __nccwpck_require__(5664);
+;// CONCATENATED MODULE: ./node_modules/is-network-error/index.js
+const objectToString = Object.prototype.toString;
+
+const isError = value => objectToString.call(value) === '[object Error]';
+
+const errorMessages = new Set([
+	'network error', // Chrome
+	'Failed to fetch', // Chrome
+	'NetworkError when attempting to fetch resource.', // Firefox
+	'The Internet connection appears to be offline.', // Safari 16
+	'Load failed', // Safari 17+
+	'Network request failed', // `cross-fetch`
+	'fetch failed', // Undici (Node.js)
+	'terminated', // Undici (Node.js)
+]);
+
+function isNetworkError(error) {
+	const isValid = error
+		&& isError(error)
+		&& error.name === 'TypeError'
+		&& typeof error.message === 'string';
+
+	if (!isValid) {
+		return false;
+	}
+
+	// We do an extra check for Safari 17+ as it has a very generic error message.
+	// Network errors in Safari have no stack.
+	if (error.message === 'Load failed') {
+		return error.stack === undefined;
+	}
+
+	return errorMessages.has(error.message);
+}
+
+;// CONCATENATED MODULE: ./node_modules/p-retry/index.js
+
+
+
+class AbortError extends Error {
+	constructor(message) {
+		super();
+
+		if (message instanceof Error) {
+			this.originalError = message;
+			({message} = message);
+		} else {
+			this.originalError = new Error(message);
+			this.originalError.stack = this.stack;
+		}
+
+		this.name = 'AbortError';
+		this.message = message;
+	}
+}
+
+const decorateErrorWithCounts = (error, attemptNumber, options) => {
+	// Minus 1 from attemptNumber because the first attempt does not count as a retry
+	const retriesLeft = options.retries - (attemptNumber - 1);
+
+	error.attemptNumber = attemptNumber;
+	error.retriesLeft = retriesLeft;
+	return error;
+};
+
+async function pRetry(input, options) {
+	return new Promise((resolve, reject) => {
+		options = {...options};
+		options.onFailedAttempt ??= () => {};
+		options.shouldRetry ??= () => true;
+		options.retries ??= 10;
+
+		const operation = retry.operation(options);
+
+		const abortHandler = () => {
+			operation.stop();
+			reject(options.signal?.reason);
+		};
+
+		if (options.signal && !options.signal.aborted) {
+			options.signal.addEventListener('abort', abortHandler, {once: true});
+		}
+
+		const cleanUp = () => {
+			options.signal?.removeEventListener('abort', abortHandler);
+			operation.stop();
+		};
+
+		operation.attempt(async attemptNumber => {
+			try {
+				const result = await input(attemptNumber);
+				cleanUp();
+				resolve(result);
+			} catch (error) {
+				try {
+					if (!(error instanceof Error)) {
+						throw new TypeError(`Non-error was thrown: "${error}". You should only throw errors.`);
+					}
+
+					if (error instanceof AbortError) {
+						throw error.originalError;
+					}
+
+					if (error instanceof TypeError && !isNetworkError(error)) {
+						throw error;
+					}
+
+					decorateErrorWithCounts(error, attemptNumber, options);
+
+					if (!(await options.shouldRetry(error))) {
+						operation.stop();
+						reject(error);
+					}
+
+					await options.onFailedAttempt(error);
+
+					if (!operation.retry(error)) {
+						throw operation.mainError();
+					}
+				} catch (finalError) {
+					decorateErrorWithCounts(finalError, attemptNumber, options);
+					cleanUp();
+					reject(finalError);
+				}
+			}
+		});
+	});
+}
 
 ;// CONCATENATED MODULE: external "node:http"
 const external_node_http_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:http");
@@ -18373,7 +19355,7 @@ const getNodeRequestOptions = request => {
 /**
  * AbortError interface for cancelled requests
  */
-class AbortError extends FetchBaseError {
+class abort_error_AbortError extends FetchBaseError {
 	constructor(message, type = 'aborted') {
 		super(message, type);
 	}
@@ -18444,7 +19426,7 @@ async function fetch(url, options_) {
 		let response = null;
 
 		const abort = () => {
-			const error = new AbortError('The operation was aborted.');
+			const error = new abort_error_AbortError('The operation was aborted.');
 			reject(error);
 			if (request.body && request.body instanceof external_node_stream_namespaceObject.Readable) {
 				request.body.destroy(error);
@@ -18793,572 +19775,48 @@ function fixResponseChunkedTransferBadEnding(request, errorCallback) {
 	});
 }
 
-
-/***/ }),
-
-/***/ 3403:
-/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
-
-
-// EXPORTS
-__nccwpck_require__.d(__webpack_exports__, {
-  "Z": () => (/* binding */ pLimit)
-});
-
-;// CONCATENATED MODULE: ./node_modules/yocto-queue/index.js
-/*
-How it works:
-`this.#head` is an instance of `Node` which keeps track of its current value and nests another instance of `Node` that keeps the value that comes after it. When a value is provided to `.enqueue()`, the code needs to iterate through `this.#head`, going deeper and deeper to find the last value. However, iterating through every single item is slow. This problem is solved by saving a reference to the last value as `this.#tail` so that it can reference it to add a new value.
-*/
-
-class Node {
-	value;
-	next;
-
-	constructor(value) {
-		this.value = value;
-	}
-}
-
-class Queue {
-	#head;
-	#tail;
-	#size;
-
-	constructor() {
-		this.clear();
-	}
-
-	enqueue(value) {
-		const node = new Node(value);
-
-		if (this.#head) {
-			this.#tail.next = node;
-			this.#tail = node;
-		} else {
-			this.#head = node;
-			this.#tail = node;
-		}
-
-		this.#size++;
-	}
-
-	dequeue() {
-		const current = this.#head;
-		if (!current) {
-			return;
-		}
-
-		this.#head = this.#head.next;
-		this.#size--;
-		return current.value;
-	}
-
-	clear() {
-		this.#head = undefined;
-		this.#tail = undefined;
-		this.#size = 0;
-	}
-
-	get size() {
-		return this.#size;
-	}
-
-	* [Symbol.iterator]() {
-		let current = this.#head;
-
-		while (current) {
-			yield current.value;
-			current = current.next;
-		}
-	}
-}
-
-;// CONCATENATED MODULE: ./node_modules/p-limit/index.js
-
-
-function pLimit(concurrency) {
-	if (!((Number.isInteger(concurrency) || concurrency === Number.POSITIVE_INFINITY) && concurrency > 0)) {
-		throw new TypeError('Expected `concurrency` to be a number from 1 and up');
-	}
-
-	const queue = new Queue();
-	let activeCount = 0;
-
-	const next = () => {
-		activeCount--;
-
-		if (queue.size > 0) {
-			queue.dequeue()();
-		}
-	};
-
-	const run = async (fn, resolve, args) => {
-		activeCount++;
-
-		const result = (async () => fn(...args))();
-
-		resolve(result);
-
-		try {
-			await result;
-		} catch {}
-
-		next();
-	};
-
-	const enqueue = (fn, resolve, args) => {
-		queue.enqueue(run.bind(undefined, fn, resolve, args));
-
-		(async () => {
-			// This function needs to wait until the next microtask before comparing
-			// `activeCount` to `concurrency`, because `activeCount` is updated asynchronously
-			// when the run function is dequeued and called. The comparison in the if-statement
-			// needs to happen asynchronously as well to get an up-to-date value for `activeCount`.
-			await Promise.resolve();
-
-			if (activeCount < concurrency && queue.size > 0) {
-				queue.dequeue()();
-			}
-		})();
-	};
-
-	const generator = (fn, ...args) => new Promise(resolve => {
-		enqueue(fn, resolve, args);
-	});
-
-	Object.defineProperties(generator, {
-		activeCount: {
-			get: () => activeCount,
-		},
-		pendingCount: {
-			get: () => queue.size,
-		},
-		clearQueue: {
-			value: () => {
-				queue.clear();
-			},
-		},
-	});
-
-	return generator;
-}
-
-
-/***/ }),
-
-/***/ 7784:
-/***/ ((__webpack_module__, __unused_webpack___webpack_exports__, __nccwpck_require__) => {
-
-__nccwpck_require__.a(__webpack_module__, async (__webpack_handle_async_dependencies__) => {
-/* harmony import */ var node_fetch__WEBPACK_IMPORTED_MODULE_7__ = __nccwpck_require__(4028);
-/* harmony import */ var p_limit__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(3403);
-/* harmony import */ var _common_sync_js__WEBPACK_IMPORTED_MODULE_8__ = __nccwpck_require__(3599);
-/* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(8997);
-/* harmony import */ var _inputs_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(8830);
-/* harmony import */ var _common_utils_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(381);
-/* harmony import */ var _common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(1444);
-/* harmony import */ var _common_action_js__WEBPACK_IMPORTED_MODULE_5__ = __nccwpck_require__(518);
-/* harmony import */ var node_timers_promises__WEBPACK_IMPORTED_MODULE_6__ = __nccwpck_require__(9397);
-/**
- * @fileoverview Syncs BILL Spend & Expense data into Airtable.
- * For more information, check out the API documentation:
- * https://developer.bill.com/docs/spend-expense-api
- */
-
-
-
-
-
-
-
-
-
-
-
-/** The rate limit for BILL Spend & Expense API calls. */
-const rateLimit = (0,p_limit__WEBPACK_IMPORTED_MODULE_0__/* ["default"] */ .Z)(60);
-const delay = 60 * 1000;
-
-/**
- * @param {string} endpoint
- * @param {!Object<string, string>=} params
- * @return {!Promise<!Object<string, *>>} endpoint-specific json.
- */
-async function apiCall(endpoint, params = {}) {
-  const response =
-      await new Promise(
-          resolve => rateLimit(
-              async () => {
-                resolve(
-                    await (0,node_fetch__WEBPACK_IMPORTED_MODULE_7__/* ["default"] */ .ZP)(
-                        'https://gateway.prod.bill.com/connect/v3/spend/' +
-                            `${endpoint}?${new URLSearchParams(params)}`,
-                        {headers: {apiToken: (0,_inputs_js__WEBPACK_IMPORTED_MODULE_2__/* .billSpendExpenseApiKey */ .s)()}}));
-                await (0,node_timers_promises__WEBPACK_IMPORTED_MODULE_6__.setTimeout)(delay);
-              }));
-
-  const json = await response.json();
-  (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_4__/* .logJson */ .u2)(endpoint, json);
-  if (!response.ok) {
-    const err = json[0];
-    (0,_common_utils_js__WEBPACK_IMPORTED_MODULE_3__/* .fetchError */ .Tl)(err.code, endpoint, err.message);
-  }
-  return json;
-}
-
-/**
- * @param {string} endpoint
- * @param {number} max
- * @param {function(!Object<string, *>): *} processFunc
- * @param {!Object<string, string>=} params
- * @return {!Promise<!Array<*>>}
- */
-async function processPages(endpoint, max, processFunc, params = {}) {
-  params.max = max.toString();
-  let page = {};
-  let processed = [];
-  do {
-    if (page.nextPage) params.nextPage = page.nextPage;
-    page = await apiCall(endpoint, params);
-    processed = [...processed, ...page.results.map(processFunc)];
-  } while (page.nextPage);
-  return Promise.all(processed);
-}
-
-/**
- * @param {!Object<string, *>} customField
- * @return {string}
- */
-function getSelectedValue(customField) {
-  return customField.selectedValues[0]?.value;
-}
-
-await (0,_common_action_js__WEBPACK_IMPORTED_MODULE_5__/* .run */ .K)(async () => {
-
-  const budgets =
-      new Map(await processPages('budgets', 100, b => [b.id, b.name]));
-  const reimbursements =
-      await processPages(
-          'reimbursements', 100,
-          async reimbursement => {
-
-            // Get reimbursement to get receipt URLs.
-            const r = await apiCall(`reimbursements/${reimbursement.id}`);
-            const recentApprovalStatus =
-                r.statusHistory.find(sh => sh.status.includes('APPROV'));
-            return {
-              'Type': 'Reimbursement',
-              'ID': r.id,
-              'Amount': r.amount,
-              'Merchant Name': r.merchantName,
-              'Notes': r.note,
-              'Submitted Date': (0,_common_utils_js__WEBPACK_IMPORTED_MODULE_3__/* .getYyyyMmDd */ .PQ)(r.submittedTime),
-              'Expense Date': r.occurredDate,
-              'Paid': r.status === 'PAID',
-              'Approved': recentApprovalStatus.status === 'APPROVED',
-              'Budget': budgets.get(r.budgetId),
-              'Category': getSelectedValue(r.customFields[0]),
-              'Project': getSelectedValue(r.customFields[1]),
-              'Receipts': r.receipts.map(receipt => ({url: receipt.url})),
-            }
-          });
-  const transactions =
-      await processPages(
-          'transactions', 50,
-          t => {
-            const base = {
-              'Type': 'Card Transaction',
-              'Paid': true,
-              'ID': t.id,
-              'Merchant Name': t.merchantName,
-              'Budget': budgets.get(t.budgetId),
-              'Expense Date': (0,_common_utils_js__WEBPACK_IMPORTED_MODULE_3__/* .getYyyyMmDd */ .PQ)(t.occurredTime),
-              'Category': getSelectedValue(t.customFields[0]),
-              'Notes': getSelectedValue(t.customFields[1]),
-              'Project': getSelectedValue(t.customFields[2]),
-              'Approved': t.reviews.every(r => r.isApproved),
-              'Amount': t.amount,
-            }
-            if (!t.cardPresent) return base;
-
-            const location = t.merchantLocation;
-            return {
-              ...base,
-              'Merchant City': location.city,
-              'Merchant State': location.state,
-              'Merchant Zip Code': location.postalCode,
-              'Merchant Country': location.country,
-            };
-          },
-          {filters: 'complete:eq:true'});
-
-  const BILL_SPEND_EXPENSE_TABLE = 'BILL Spend & Expense';
-  const expenseSources = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .Base */ .X();
-  const {updates, creates} =
-      (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_8__/* .syncChanges */ .U4)(
-          // Source
-          new Map([...reimbursements, ...transactions].map(e => [e['ID'], e])),
-          // Mapping
-          (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_8__/* .getMapping */ .tj)(
-              await expenseSources.select(BILL_SPEND_EXPENSE_TABLE), 'ID'));
-
-  return Promise.all([
-      expenseSources.update(
-          BILL_SPEND_EXPENSE_TABLE, Array.from(updates, _common_sync_js__WEBPACK_IMPORTED_MODULE_8__/* .airtableRecordUpdate */ .vw)),
-      expenseSources.create(
-          BILL_SPEND_EXPENSE_TABLE,
-          Array.from(creates, ([, create]) => ({fields: create}))),
-    ]);
-});
-
-__webpack_handle_async_dependencies__();
-}, 1);
-
-/***/ }),
-
-/***/ 8830:
-/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
-
-/* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
-/* harmony export */   "s": () => (/* binding */ billSpendExpenseApiKey)
-/* harmony export */ });
-/* harmony import */ var _common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(1444);
-/**
- * @fileoverview Lazy evaluated inputs
- * @see bill_spend_expense/action.yml
- */
-
-
-
-/** @type function(): string */
-const billSpendExpenseApiKey = (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .getInput */ .Np)('bill-spend-expense-api-key');
-
-/***/ }),
-
-/***/ 518:
-/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
-
-/* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
-/* harmony export */   "K": () => (/* binding */ run)
-/* harmony export */ });
-/* harmony import */ var _github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(1444);
-/**
- * @fileoverview Runs and handles GitHub Action scripts,
- * including status setting and summary writing.
- */
-
-
-
-/**
- * @param {function(): !Promise<undefined>} main
- * @return {!Promise<undefined>}
- */
-function run(main) {
-  return main().catch(_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .error */ .vU).finally(_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .writeSummary */ .A8);
-}
-
-
-/***/ }),
-
-/***/ 8997:
-/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
-
-
-// EXPORTS
-__nccwpck_require__.d(__webpack_exports__, {
-  "X": () => (/* binding */ Base)
-});
-
-// UNUSED EXPORTS: MsoBase
-
-// EXTERNAL MODULE: ./node_modules/airtable/lib/airtable.js
-var airtable = __nccwpck_require__(5447);
 // EXTERNAL MODULE: ./src/common/github_actions_core.js
 var github_actions_core = __nccwpck_require__(1444);
-;// CONCATENATED MODULE: ./src/common/inputs.js
-/**
- * @fileoverview Lazy evaluated inputs
- * @see action.yml
- */
-
-
-
-/** @type function(): string */
-const inputs_airtableApiKey = (0,github_actions_core/* getInput */.Np)('airtable-api-key');
-const inputs_airtableBaseId = (0,github_actions_core/* getInput */.Np)('airtable-base-id');
-const airtableImportRecordId = (0,github_actions_core/* getInput */.Np)('airtable-import-record-id');
-
-// EXTERNAL MODULE: ./src/common/utils.js + 1 modules
-var utils = __nccwpck_require__(381);
-;// CONCATENATED MODULE: ./src/common/airtable.js
-/** @fileoverview Utilities for interacting with Airtable. */
-
-/**
- * The official Airtable JavaScript library.
- * https://github.com/Airtable/airtable.js
- */
+;// CONCATENATED MODULE: ./src/common/fetch.js
+/** @fileoverview Utilities for fetching resources. */
 
 
 
 
 
 /**
- * @param {string} querying e.g., selecting, updating, etc
- * @param {string} table
- * @param {!Error} err
+ * Fetches with retry.
+ * @param {function(!Response): !Promise<!Object<string, *>>)} errFunc
+ * @param {...*} fetchArgs
+ * @return {!Response}
+ * @see Window.fetch
  */
-function throwError(querying, table, err) {
-  throw new Error(
-      `Error ${querying} records in Airtable Table ${table}: ${err}`);
+function fetch_fetch(errFunc, ...fetchArgs) {
+  return pRetry(
+      async () => {
+        const response = await fetch(...fetchArgs);
+        if (!response.ok) {
+          const err = await errFunc(response);
+          const message =
+              `Error ${err.code || response.status}` +
+                  ` (from ${err.context || response.url}):` +
+                  ` ${err.message || response.statusText}`;
+          (0,github_actions_core/* warn */.ZK)(message);
+          throw new Error(message);
+        }
+        return response;
+      },
+      {retries: 1});
 }
 
 /**
- * @param {!Promise<*>} promise
- * @param {string} querying e.g., selecting, updating, etc
- * @param {string} table
- * @return {!Promise<*>}
+ * @param {(string|number)} code
+ * @param {string} context
+ * @param {string} message
+ * @return {!Object<string, *>} named error Object
  */
-function catchError(promise, querying, table) {
-  return promise.catch(err => throwError(querying, table, err));
-}
-
-/**
- * Asynchronously calls func with portions of array that are at most
- * the max number of records that can be created or updated
- * via an Airtable API call.
- * @param {function(!Array<*>): !Promise<*>} func
- * @param {!Array<*>} array
- * @return {!Promise<!Array<*>>}
- */
-function batch(func, array) {
-  return (0,utils/* batchAsync */.aE)(func, array, 10);
-}
-
-/** An Airtable Base to query. */
-class Base {
-
-  /**
-   * @param {string=} baseId
-   * @param {string=} apiKey
-   */
-  constructor(baseId = inputs_airtableBaseId(), apiKey = inputs_airtableApiKey()) {
-
-    /** @private @const {!Base} */
-    this.base_ = new airtable({apiKey: apiKey}).base(baseId);
-  }
-
-  /**
-   * @param {string} table
-   * @param {string=} view
-   * @param {string=} filterByFormula
-   * @return {!Promise<!Array<!Record<!TField>>>}
-   */
-  select(table, view = '', filterByFormula = '') {
-    const params = {view: view, filterByFormula: filterByFormula};
-    return catchError(
-        this.base_(table).select(params).all(), 'selecting', table);
-  }
-
-  /**
-   * @param {string} table
-   * @param {!Object[]} updates
-   * @param {string} updates[].id
-   * @param {!Object<string, *>} updates[].fields
-   * @return {!Promise<!Array<*>>}
-   */
-  update(table, updates) {
-    return catchError(
-        batch(this.base_(table).update, updates), 'updating', table);
-  }
-
-  /**
-   * Runs fieldsFunc for each record from table view
-   * and updates each record's fields using fieldsFunc's return value,
-   * if there is one.
-   * @param {string} table
-   * @param {string} view
-   * @param {function(!Record<!TField>): !Promise<?Object<string, *>>} fieldsFunc
-   * @return {!Promise<!Array<*>>}
-   */
-   async selectAndUpdate(table, view, fieldsFunc) {
-    const updates = [];
-    let firstErr;
-    for (const record of await this.select(table, view)) {
-      try {
-        const fields = await fieldsFunc(record);
-        fields && updates.push({id: record.getId(), fields: fields});
-      } catch (err) {
-        (0,github_actions_core/* warn */.ZK)(err.message);
-        firstErr ||= err;
-      }
-    }
-    const update = await this.update(table, updates);
-    firstErr && throwError('selectAndUpdating', table, firstErr);
-    return update;
-   }
-
-  /**
-   * @param {string} table
-   * @param {!Object[]} creates
-   * @param {!Object<string, *>} creates[].fields
-   * @return {!Promise<!Array<*>>}
-   */
-  create(table, creates) {
-    return catchError(
-        batch(this.base_(table).create, creates), 'creating', table);
-  }
-
-  /**
-   * @param {string} table
-   * @param {string} id
-   * @return {!Promise<!Record<!TField>>}
-   */
-  find(table, id) {
-    return catchError(this.base_(table).find(id), 'finding', table);
-  }
-}
-
-/**
- * An Airtable Base where each Table is partitioned by MSO,
- * enabling per MSO selects across Tables. Select methods should only be called
- * while iterating via iterateMsos.
- */
-class MsoBase extends (/* unused pure expression or super */ null && (Base)) {
-
-  /**
-   * @param {string=} baseId
-   * @param {string=} apiKey
-   */
-  constructor(baseId = airtableBaseId(), apiKey = airtableApiKey()) {
-    super(baseId, apiKey);
-
-    /** @private {?Record<!TField>} */
-    this.currentMso_ = null;
-    /** @return {?Record<!TField>} */
-    this.getCurrentMso = () => this.currentMso_;
-  }
-
-  /** @override */
-  select(table, view = '', filterByFormula = '') {
-    const msoFilter = `MSO = '${this.currentMso_.get('Code')}'`;
-    return super.select(
-        table,
-        view,
-        filterByFormula === '' ?
-            msoFilter : `AND(${msoFilter}, ${filterByFormula})`);
-  }
-
-  /**
-   * @param {string=} view
-   * @return {!Promise<!Iterator<!Record<!TField>>>}
-   */
-  async* iterateMsos(view = 'Org IDs') {
-    for (this.currentMso_ of await super.select('MSOs', view)) {
-      yield this.currentMso_;
-    }
-    this.currentMso_ = null;
-  }
+function errorObject(code, context, message) {
+  return {code: code, context: context, message: message};
 }
 
 
@@ -19608,12 +20066,11 @@ function summarize(changes) {
 // EXPORTS
 __nccwpck_require__.d(__webpack_exports__, {
   "aE": () => (/* binding */ batchAsync),
-  "Tl": () => (/* binding */ fetchError),
   "PQ": () => (/* binding */ getYyyyMmDd),
   "ss": () => (/* binding */ lazyCache)
 });
 
-// UNUSED EXPORTS: batchAwait
+// UNUSED EXPORTS: batchAwait, fetchError
 
 ;// CONCATENATED MODULE: external "node:assert/strict"
 const strict_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:assert/strict");
