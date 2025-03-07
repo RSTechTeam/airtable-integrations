@@ -14804,6 +14804,289 @@ License: MIT
 
 /***/ }),
 
+/***/ 5664:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+module.exports = __nccwpck_require__(543);
+
+/***/ }),
+
+/***/ 543:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+var RetryOperation = __nccwpck_require__(2395);
+
+exports.operation = function(options) {
+  var timeouts = exports.timeouts(options);
+  return new RetryOperation(timeouts, {
+      forever: options && (options.forever || options.retries === Infinity),
+      unref: options && options.unref,
+      maxRetryTime: options && options.maxRetryTime
+  });
+};
+
+exports.timeouts = function(options) {
+  if (options instanceof Array) {
+    return [].concat(options);
+  }
+
+  var opts = {
+    retries: 10,
+    factor: 2,
+    minTimeout: 1 * 1000,
+    maxTimeout: Infinity,
+    randomize: false
+  };
+  for (var key in options) {
+    opts[key] = options[key];
+  }
+
+  if (opts.minTimeout > opts.maxTimeout) {
+    throw new Error('minTimeout is greater than maxTimeout');
+  }
+
+  var timeouts = [];
+  for (var i = 0; i < opts.retries; i++) {
+    timeouts.push(this.createTimeout(i, opts));
+  }
+
+  if (options && options.forever && !timeouts.length) {
+    timeouts.push(this.createTimeout(i, opts));
+  }
+
+  // sort the array numerically ascending
+  timeouts.sort(function(a,b) {
+    return a - b;
+  });
+
+  return timeouts;
+};
+
+exports.createTimeout = function(attempt, opts) {
+  var random = (opts.randomize)
+    ? (Math.random() + 1)
+    : 1;
+
+  var timeout = Math.round(random * Math.max(opts.minTimeout, 1) * Math.pow(opts.factor, attempt));
+  timeout = Math.min(timeout, opts.maxTimeout);
+
+  return timeout;
+};
+
+exports.wrap = function(obj, options, methods) {
+  if (options instanceof Array) {
+    methods = options;
+    options = null;
+  }
+
+  if (!methods) {
+    methods = [];
+    for (var key in obj) {
+      if (typeof obj[key] === 'function') {
+        methods.push(key);
+      }
+    }
+  }
+
+  for (var i = 0; i < methods.length; i++) {
+    var method   = methods[i];
+    var original = obj[method];
+
+    obj[method] = function retryWrapper(original) {
+      var op       = exports.operation(options);
+      var args     = Array.prototype.slice.call(arguments, 1);
+      var callback = args.pop();
+
+      args.push(function(err) {
+        if (op.retry(err)) {
+          return;
+        }
+        if (err) {
+          arguments[0] = op.mainError();
+        }
+        callback.apply(this, arguments);
+      });
+
+      op.attempt(function() {
+        original.apply(obj, args);
+      });
+    }.bind(obj, original);
+    obj[method].options = options;
+  }
+};
+
+
+/***/ }),
+
+/***/ 2395:
+/***/ ((module) => {
+
+function RetryOperation(timeouts, options) {
+  // Compatibility for the old (timeouts, retryForever) signature
+  if (typeof options === 'boolean') {
+    options = { forever: options };
+  }
+
+  this._originalTimeouts = JSON.parse(JSON.stringify(timeouts));
+  this._timeouts = timeouts;
+  this._options = options || {};
+  this._maxRetryTime = options && options.maxRetryTime || Infinity;
+  this._fn = null;
+  this._errors = [];
+  this._attempts = 1;
+  this._operationTimeout = null;
+  this._operationTimeoutCb = null;
+  this._timeout = null;
+  this._operationStart = null;
+  this._timer = null;
+
+  if (this._options.forever) {
+    this._cachedTimeouts = this._timeouts.slice(0);
+  }
+}
+module.exports = RetryOperation;
+
+RetryOperation.prototype.reset = function() {
+  this._attempts = 1;
+  this._timeouts = this._originalTimeouts.slice(0);
+}
+
+RetryOperation.prototype.stop = function() {
+  if (this._timeout) {
+    clearTimeout(this._timeout);
+  }
+  if (this._timer) {
+    clearTimeout(this._timer);
+  }
+
+  this._timeouts       = [];
+  this._cachedTimeouts = null;
+};
+
+RetryOperation.prototype.retry = function(err) {
+  if (this._timeout) {
+    clearTimeout(this._timeout);
+  }
+
+  if (!err) {
+    return false;
+  }
+  var currentTime = new Date().getTime();
+  if (err && currentTime - this._operationStart >= this._maxRetryTime) {
+    this._errors.push(err);
+    this._errors.unshift(new Error('RetryOperation timeout occurred'));
+    return false;
+  }
+
+  this._errors.push(err);
+
+  var timeout = this._timeouts.shift();
+  if (timeout === undefined) {
+    if (this._cachedTimeouts) {
+      // retry forever, only keep last error
+      this._errors.splice(0, this._errors.length - 1);
+      timeout = this._cachedTimeouts.slice(-1);
+    } else {
+      return false;
+    }
+  }
+
+  var self = this;
+  this._timer = setTimeout(function() {
+    self._attempts++;
+
+    if (self._operationTimeoutCb) {
+      self._timeout = setTimeout(function() {
+        self._operationTimeoutCb(self._attempts);
+      }, self._operationTimeout);
+
+      if (self._options.unref) {
+          self._timeout.unref();
+      }
+    }
+
+    self._fn(self._attempts);
+  }, timeout);
+
+  if (this._options.unref) {
+      this._timer.unref();
+  }
+
+  return true;
+};
+
+RetryOperation.prototype.attempt = function(fn, timeoutOps) {
+  this._fn = fn;
+
+  if (timeoutOps) {
+    if (timeoutOps.timeout) {
+      this._operationTimeout = timeoutOps.timeout;
+    }
+    if (timeoutOps.cb) {
+      this._operationTimeoutCb = timeoutOps.cb;
+    }
+  }
+
+  var self = this;
+  if (this._operationTimeoutCb) {
+    this._timeout = setTimeout(function() {
+      self._operationTimeoutCb();
+    }, self._operationTimeout);
+  }
+
+  this._operationStart = new Date().getTime();
+
+  this._fn(this._attempts);
+};
+
+RetryOperation.prototype.try = function(fn) {
+  console.log('Using RetryOperation.try() is deprecated');
+  this.attempt(fn);
+};
+
+RetryOperation.prototype.start = function(fn) {
+  console.log('Using RetryOperation.start() is deprecated');
+  this.attempt(fn);
+};
+
+RetryOperation.prototype.start = RetryOperation.prototype.try;
+
+RetryOperation.prototype.errors = function() {
+  return this._errors;
+};
+
+RetryOperation.prototype.attempts = function() {
+  return this._attempts;
+};
+
+RetryOperation.prototype.mainError = function() {
+  if (this._errors.length === 0) {
+    return null;
+  }
+
+  var counts = {};
+  var mainError = null;
+  var mainErrorCount = 0;
+
+  for (var i = 0; i < this._errors.length; i++) {
+    var error = this._errors[i];
+    var message = error.message;
+    var count = (counts[message] || 0) + 1;
+
+    counts[message] = count;
+
+    if (count >= mainErrorCount) {
+      mainError = error;
+      mainErrorCount = count;
+    }
+  }
+
+  return mainError;
+};
+
+
+/***/ }),
+
 /***/ 9427:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
@@ -18571,16 +18854,2668 @@ return new B(c,{type:"multipart/form-data; boundary="+b})}
 
 /***/ }),
 
-/***/ 4028:
+/***/ 3508:
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
+
+// ESM COMPAT FLAG
+__nccwpck_require__.r(__webpack_exports__);
+
+// EXPORTS
+__nccwpck_require__.d(__webpack_exports__, {
+  "main": () => (/* binding */ main)
+});
+
+// EXTERNAL MODULE: ./src/common/github_actions_core.js
+var github_actions_core = __nccwpck_require__(1444);
+// EXTERNAL MODULE: ./src/common/airtable.js
+var airtable = __nccwpck_require__(5585);
+// EXTERNAL MODULE: ./src/bill_com/common/constants.js
+var constants = __nccwpck_require__(9447);
+// EXTERNAL MODULE: ./node_modules/papaparse/papaparse.js
+var papaparse = __nccwpck_require__(1826);
+// EXTERNAL MODULE: ./src/common/fetch.js + 23 modules
+var fetch = __nccwpck_require__(6100);
+;// CONCATENATED MODULE: ./src/common/csv.js
+/** @fileoverview Utilities for parsing CSV files. */
+
+
+
+
+/**
+ * @param {!Object<string, *>} csv An Airtable Attachment Field.
+ * @param {string[]} header Expected header.
+ * @param {!Object<string, *>} config See https://www.papaparse.com/docs#config.
+ *     Header and error are preset, and expects using chunk,
+ *     which may return a Promise.
+ * @return {!Promise<!Array<*>>}
+ */
+async function parse(csv, header, config) {
+
+  // Download CSV.
+  const response =
+      await (0,fetch/* fetch */.he)(
+          response => (0,fetch/* errorObject */.TJ)(
+              response.status, csv.filename, response.statusText),
+          csv.url);
+
+  // Execute parse.
+  let firstChunk = true;
+  const promises = [];
+  return new Promise(
+      (resolve, reject) => papaparse.parse(
+          response.body,
+          {
+            ...config,
+            header: true,
+            error: (err, file) => reject(err),
+            complete: (results, parser) => resolve(Promise.all(promises)),
+            chunk:
+              (results, parser) => {
+
+                // Validate header during first chunk.
+                if (firstChunk) {
+                  firstChunk = false;
+                  const parsedHeader = results.meta.fields;
+                  if (JSON.stringify(parsedHeader) !== JSON.stringify(header)) {
+                    reject(
+                        new Error(
+                            `Parsed header: ${parsedHeader}` +
+                                `\nGiven header: ${header}`));
+                  }
+                }
+
+                // Parse chunk.
+                promises.push(config.chunk(results, parser));
+              },
+          }));
+}
+
+;// CONCATENATED MODULE: ./src/bill_com/bill_com_integration/bulk_create_bills.js
+/** @fileoverview Bulk creates single line item Bill.com Bills from a CSV. */
+
+
+
+
+
+
+/** The Bill.com Integration Airtable Base. */
+let billComIntegrationBase;
+
+/**
+ * @param {string} table
+ * @param {string} airtableId
+ * @return {!Promise<string>}
+ */
+async function getBillComId(table, airtableId) {
+  const record = await billComIntegrationBase.find(table, airtableId);
+  return record.get(constants/* MSO_BILL_COM_ID */.yG);
+}
+
+/**
+ * @param {!Api} billComApi
+ * @param {!MsoBase=} airtableBase
+ * @return {!Promise<undefined>}
+ */
+async function main(billComApi, airtableBase = new airtable/* MsoBase */.F()) {
+  billComIntegrationBase = airtableBase;
+
+  const header = [
+    'Invoice ID',
+    'Amount ($)',
+    'Description',
+    'Vendor ID',
+    'Name',
+    'Tax ID',
+    'Email',
+    'Phone',
+    'Address Line 1',
+    'Address Line 2',
+    'City',
+    'State',
+    'Zip Code',
+    'Country',
+  ];
+
+  let err;
+  for await (const mso of billComIntegrationBase.iterateMsos()) {
+
+    await billComApi.login(mso.get('Code'));
+    await billComIntegrationBase.selectAndUpdate(
+        'Bulk Check Requests',
+        'New',
+        async (record) => {
+
+          // Create parse config.
+          const submittedBy =
+              `Submitted by ${record.get('Requester Name')}` +
+                  ` (${record.get('Requester Email')})`;
+          const project =
+              await getBillComId(
+                  'Internal Customers', record.get('Project')[0]);
+          const category =
+              await getBillComId(
+                  'Chart of Accounts', record.get('Category')[0]);
+          const parseConfig = {
+            transformHeader: (header, index) => header.trim(),
+            chunk:
+              (results, parser) => Promise.all(
+                  results.data.map(
+                      async row => billComApi.createBill(
+                          {
+                            invoiceDate: record.get('Invoice Date'),
+                            dueDate: record.get('Due Date'),
+                            invoiceNumber: row['Invoice ID'],
+                            description: submittedBy,
+                            billLineItems: [{
+                              entity: 'BillLineItem',
+                              customerId: project,
+                              chartOfAccountId: category,
+                              description: row['Description'],
+                              amount:
+                                parseFloat(
+                                    row['Amount ($)'].replace(/[$,]/g, '')),
+                            }],
+                            vendorId:
+                              row['Vendor ID'] ||
+                                  await billComApi.create(
+                                      'Vendor',
+                                      {
+                                        name: row['Name'],
+                                        taxId: row['Tax ID'],
+                                        taxIdType: '2', // SSN
+                                        email: row['Email'],
+                                        phone: row['Phone'],
+                                        address1: row['Address Line 1'],
+                                        address2: row['Address Line 2'],
+                                        addressCity: row['City'],
+                                        addressState: row['State'],
+                                        addressZip: row['Zip Code'],
+                                        addressCountry: row['Country'] || 'USA',
+                                      }),
+                          },
+                          record,
+                          mso))),
+          };
+
+          // Parse CSV and create Bills.
+          try {
+            await Promise.all(
+                record.get('CSV').map(csv => parse(csv, header, parseConfig)));
+          } catch (e) {
+            err = e;
+            (0,github_actions_core/* warn */.ZK)(e.message);
+            return {'Error': true};
+          }
+          return {'Processed': true};
+        });
+  }
+  if (err) (0,github_actions_core/* error */.vU)(err);
+}
+
+
+/***/ }),
+
+/***/ 8528:
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
+
+__nccwpck_require__.r(__webpack_exports__);
+/* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
+/* harmony export */   "main": () => (/* binding */ main)
+/* harmony export */ });
+/* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(5585);
+/* harmony import */ var _common_inputs_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(1872);
+/** @fileoverview Creates a Bill.com Electronic Check Request Approver. */
+
+
+
+
+/**
+ * @param {!Api} billComApi
+ * @param {!Base=} billComIntegrationBase
+ * @param {string=} approverUserProfileId
+ * @param {string=} approverTable
+ * @param {string=} createView
+ * @return {!Promise<undefined>}
+ */
+async function main(
+    billComApi,
+    billComIntegrationBase = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .Base */ .X(),
+    approverUserProfileId = (0,_common_inputs_js__WEBPACK_IMPORTED_MODULE_1__/* .ecrApproverUserProfileId */ .WI)(),
+    approverTable = 'New Bill.com Approvers',
+    createView = 'New') {
+
+  await billComApi.primaryOrgLogin();
+  await billComIntegrationBase.selectAndUpdate(
+      approverTable,
+      createView,
+      async (record) => {
+        await billComApi.create(
+            'User',
+            {
+              profileId: approverUserProfileId,
+              firstName: record.get('First Name'),
+              lastName: record.get('Last Name'),
+              email: record.get('Email'),
+            });
+        return {Created: true};
+      });
+}
+
+
+/***/ }),
+
+/***/ 9953:
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
+
+// ESM COMPAT FLAG
+__nccwpck_require__.r(__webpack_exports__);
+
+// EXPORTS
+__nccwpck_require__.d(__webpack_exports__, {
+  "main": () => (/* binding */ main)
+});
+
+// EXTERNAL MODULE: ./src/bill_com/common/api.js + 2 modules
+var api = __nccwpck_require__(6362);
+// EXTERNAL MODULE: ./src/common/fetch.js + 23 modules
+var fetch = __nccwpck_require__(6100);
+// EXTERNAL MODULE: external "util"
+var external_util_ = __nccwpck_require__(3837);
+;// CONCATENATED MODULE: ./node_modules/web-streams-polyfill/dist/ponyfill.mjs
+/**
+ * @license
+ * web-streams-polyfill v4.0.0-beta.3
+ * Copyright 2021 Mattias Buelens, Diwank Singh Tomer and other contributors.
+ * This code is released under the MIT license.
+ * SPDX-License-Identifier: MIT
+ */
+const e="function"==typeof Symbol&&"symbol"==typeof Symbol.iterator?Symbol:e=>`Symbol(${e})`;function t(){}function r(e){return"object"==typeof e&&null!==e||"function"==typeof e}const o=t;function n(e,t){try{Object.defineProperty(e,"name",{value:t,configurable:!0})}catch(e){}}const a=Promise,i=Promise.prototype.then,l=Promise.resolve.bind(a),s=Promise.reject.bind(a);function u(e){return new a(e)}function c(e){return l(e)}function d(e){return s(e)}function f(e,t,r){return i.call(e,t,r)}function b(e,t,r){f(f(e,t,r),void 0,o)}function h(e,t){b(e,t)}function _(e,t){b(e,void 0,t)}function p(e,t,r){return f(e,t,r)}function m(e){f(e,void 0,o)}let y=e=>{if("function"==typeof queueMicrotask)y=queueMicrotask;else{const e=c(void 0);y=t=>f(e,t)}return y(e)};function g(e,t,r){if("function"!=typeof e)throw new TypeError("Argument is not a function");return Function.prototype.apply.call(e,t,r)}function w(e,t,r){try{return c(g(e,t,r))}catch(e){return d(e)}}class S{constructor(){this._cursor=0,this._size=0,this._front={_elements:[],_next:void 0},this._back=this._front,this._cursor=0,this._size=0}get length(){return this._size}push(e){const t=this._back;let r=t;16383===t._elements.length&&(r={_elements:[],_next:void 0}),t._elements.push(e),r!==t&&(this._back=r,t._next=r),++this._size}shift(){const e=this._front;let t=e;const r=this._cursor;let o=r+1;const n=e._elements,a=n[r];return 16384===o&&(t=e._next,o=0),--this._size,this._cursor=o,e!==t&&(this._front=t),n[r]=void 0,a}forEach(e){let t=this._cursor,r=this._front,o=r._elements;for(;!(t===o.length&&void 0===r._next||t===o.length&&(r=r._next,o=r._elements,t=0,0===o.length));)e(o[t]),++t}peek(){const e=this._front,t=this._cursor;return e._elements[t]}}const v=e("[[AbortSteps]]"),R=e("[[ErrorSteps]]"),T=e("[[CancelSteps]]"),q=e("[[PullSteps]]"),C=e("[[ReleaseSteps]]");function E(e,t){e._ownerReadableStream=t,t._reader=e,"readable"===t._state?O(e):"closed"===t._state?function(e){O(e),j(e)}(e):B(e,t._storedError)}function P(e,t){return Gt(e._ownerReadableStream,t)}function W(e){const t=e._ownerReadableStream;"readable"===t._state?A(e,new TypeError("Reader was released and can no longer be used to monitor the stream's closedness")):function(e,t){B(e,t)}(e,new TypeError("Reader was released and can no longer be used to monitor the stream's closedness")),t._readableStreamController[C](),t._reader=void 0,e._ownerReadableStream=void 0}function k(e){return new TypeError("Cannot "+e+" a stream using a released reader")}function O(e){e._closedPromise=u(((t,r)=>{e._closedPromise_resolve=t,e._closedPromise_reject=r}))}function B(e,t){O(e),A(e,t)}function A(e,t){void 0!==e._closedPromise_reject&&(m(e._closedPromise),e._closedPromise_reject(t),e._closedPromise_resolve=void 0,e._closedPromise_reject=void 0)}function j(e){void 0!==e._closedPromise_resolve&&(e._closedPromise_resolve(void 0),e._closedPromise_resolve=void 0,e._closedPromise_reject=void 0)}const z=Number.isFinite||function(e){return"number"==typeof e&&isFinite(e)},L=Math.trunc||function(e){return e<0?Math.ceil(e):Math.floor(e)};function F(e,t){if(void 0!==e&&("object"!=typeof(r=e)&&"function"!=typeof r))throw new TypeError(`${t} is not an object.`);var r}function I(e,t){if("function"!=typeof e)throw new TypeError(`${t} is not a function.`)}function D(e,t){if(!function(e){return"object"==typeof e&&null!==e||"function"==typeof e}(e))throw new TypeError(`${t} is not an object.`)}function $(e,t,r){if(void 0===e)throw new TypeError(`Parameter ${t} is required in '${r}'.`)}function M(e,t,r){if(void 0===e)throw new TypeError(`${t} is required in '${r}'.`)}function Y(e){return Number(e)}function Q(e){return 0===e?0:e}function N(e,t){const r=Number.MAX_SAFE_INTEGER;let o=Number(e);if(o=Q(o),!z(o))throw new TypeError(`${t} is not a finite number`);if(o=function(e){return Q(L(e))}(o),o<0||o>r)throw new TypeError(`${t} is outside the accepted range of 0 to ${r}, inclusive`);return z(o)&&0!==o?o:0}function H(e){if(!r(e))return!1;if("function"!=typeof e.getReader)return!1;try{return"boolean"==typeof e.locked}catch(e){return!1}}function x(e){if(!r(e))return!1;if("function"!=typeof e.getWriter)return!1;try{return"boolean"==typeof e.locked}catch(e){return!1}}function V(e,t){if(!Vt(e))throw new TypeError(`${t} is not a ReadableStream.`)}function U(e,t){e._reader._readRequests.push(t)}function G(e,t,r){const o=e._reader._readRequests.shift();r?o._closeSteps():o._chunkSteps(t)}function X(e){return e._reader._readRequests.length}function J(e){const t=e._reader;return void 0!==t&&!!K(t)}class ReadableStreamDefaultReader{constructor(e){if($(e,1,"ReadableStreamDefaultReader"),V(e,"First parameter"),Ut(e))throw new TypeError("This stream has already been locked for exclusive reading by another reader");E(this,e),this._readRequests=new S}get closed(){return K(this)?this._closedPromise:d(ee("closed"))}cancel(e){return K(this)?void 0===this._ownerReadableStream?d(k("cancel")):P(this,e):d(ee("cancel"))}read(){if(!K(this))return d(ee("read"));if(void 0===this._ownerReadableStream)return d(k("read from"));let e,t;const r=u(((r,o)=>{e=r,t=o}));return function(e,t){const r=e._ownerReadableStream;r._disturbed=!0,"closed"===r._state?t._closeSteps():"errored"===r._state?t._errorSteps(r._storedError):r._readableStreamController[q](t)}(this,{_chunkSteps:t=>e({value:t,done:!1}),_closeSteps:()=>e({value:void 0,done:!0}),_errorSteps:e=>t(e)}),r}releaseLock(){if(!K(this))throw ee("releaseLock");void 0!==this._ownerReadableStream&&function(e){W(e);const t=new TypeError("Reader was released");Z(e,t)}(this)}}function K(e){return!!r(e)&&(!!Object.prototype.hasOwnProperty.call(e,"_readRequests")&&e instanceof ReadableStreamDefaultReader)}function Z(e,t){const r=e._readRequests;e._readRequests=new S,r.forEach((e=>{e._errorSteps(t)}))}function ee(e){return new TypeError(`ReadableStreamDefaultReader.prototype.${e} can only be used on a ReadableStreamDefaultReader`)}Object.defineProperties(ReadableStreamDefaultReader.prototype,{cancel:{enumerable:!0},read:{enumerable:!0},releaseLock:{enumerable:!0},closed:{enumerable:!0}}),n(ReadableStreamDefaultReader.prototype.cancel,"cancel"),n(ReadableStreamDefaultReader.prototype.read,"read"),n(ReadableStreamDefaultReader.prototype.releaseLock,"releaseLock"),"symbol"==typeof e.toStringTag&&Object.defineProperty(ReadableStreamDefaultReader.prototype,e.toStringTag,{value:"ReadableStreamDefaultReader",configurable:!0});class te{constructor(e,t){this._ongoingPromise=void 0,this._isFinished=!1,this._reader=e,this._preventCancel=t}next(){const e=()=>this._nextSteps();return this._ongoingPromise=this._ongoingPromise?p(this._ongoingPromise,e,e):e(),this._ongoingPromise}return(e){const t=()=>this._returnSteps(e);return this._ongoingPromise?p(this._ongoingPromise,t,t):t()}_nextSteps(){if(this._isFinished)return Promise.resolve({value:void 0,done:!0});const e=this._reader;return void 0===e?d(k("iterate")):f(e.read(),(e=>{var t;return this._ongoingPromise=void 0,e.done&&(this._isFinished=!0,null===(t=this._reader)||void 0===t||t.releaseLock(),this._reader=void 0),e}),(e=>{var t;throw this._ongoingPromise=void 0,this._isFinished=!0,null===(t=this._reader)||void 0===t||t.releaseLock(),this._reader=void 0,e}))}_returnSteps(e){if(this._isFinished)return Promise.resolve({value:e,done:!0});this._isFinished=!0;const t=this._reader;if(void 0===t)return d(k("finish iterating"));if(this._reader=void 0,!this._preventCancel){const r=t.cancel(e);return t.releaseLock(),p(r,(()=>({value:e,done:!0})))}return t.releaseLock(),c({value:e,done:!0})}}const re={next(){return oe(this)?this._asyncIteratorImpl.next():d(ne("next"))},return(e){return oe(this)?this._asyncIteratorImpl.return(e):d(ne("return"))}};function oe(e){if(!r(e))return!1;if(!Object.prototype.hasOwnProperty.call(e,"_asyncIteratorImpl"))return!1;try{return e._asyncIteratorImpl instanceof te}catch(e){return!1}}function ne(e){return new TypeError(`ReadableStreamAsyncIterator.${e} can only be used on a ReadableSteamAsyncIterator`)}"symbol"==typeof e.asyncIterator&&Object.defineProperty(re,e.asyncIterator,{value(){return this},writable:!0,configurable:!0});const ae=Number.isNaN||function(e){return e!=e};function ie(e,t,r,o,n){new Uint8Array(e).set(new Uint8Array(r,o,n),t)}function le(e){const t=function(e,t,r){if(e.slice)return e.slice(t,r);const o=r-t,n=new ArrayBuffer(o);return ie(n,0,e,t,o),n}(e.buffer,e.byteOffset,e.byteOffset+e.byteLength);return new Uint8Array(t)}function se(e){const t=e._queue.shift();return e._queueTotalSize-=t.size,e._queueTotalSize<0&&(e._queueTotalSize=0),t.value}function ue(e,t,r){if("number"!=typeof(o=r)||ae(o)||o<0||r===1/0)throw new RangeError("Size must be a finite, non-NaN, non-negative number.");var o;e._queue.push({value:t,size:r}),e._queueTotalSize+=r}function ce(e){e._queue=new S,e._queueTotalSize=0}class ReadableStreamBYOBRequest{constructor(){throw new TypeError("Illegal constructor")}get view(){if(!fe(this))throw Be("view");return this._view}respond(e){if(!fe(this))throw Be("respond");if($(e,1,"respond"),e=N(e,"First parameter"),void 0===this._associatedReadableByteStreamController)throw new TypeError("This BYOB request has been invalidated");this._view.buffer,function(e,t){const r=e._pendingPullIntos.peek();if("closed"===e._controlledReadableByteStream._state){if(0!==t)throw new TypeError("bytesWritten must be 0 when calling respond() on a closed stream")}else{if(0===t)throw new TypeError("bytesWritten must be greater than 0 when calling respond() on a readable stream");if(r.bytesFilled+t>r.byteLength)throw new RangeError("bytesWritten out of range")}r.buffer=r.buffer,qe(e,t)}(this._associatedReadableByteStreamController,e)}respondWithNewView(e){if(!fe(this))throw Be("respondWithNewView");if($(e,1,"respondWithNewView"),!ArrayBuffer.isView(e))throw new TypeError("You can only respond with array buffer views");if(void 0===this._associatedReadableByteStreamController)throw new TypeError("This BYOB request has been invalidated");e.buffer,function(e,t){const r=e._pendingPullIntos.peek();if("closed"===e._controlledReadableByteStream._state){if(0!==t.byteLength)throw new TypeError("The view's length must be 0 when calling respondWithNewView() on a closed stream")}else if(0===t.byteLength)throw new TypeError("The view's length must be greater than 0 when calling respondWithNewView() on a readable stream");if(r.byteOffset+r.bytesFilled!==t.byteOffset)throw new RangeError("The region specified by view does not match byobRequest");if(r.bufferByteLength!==t.buffer.byteLength)throw new RangeError("The buffer of view has different capacity than byobRequest");if(r.bytesFilled+t.byteLength>r.byteLength)throw new RangeError("The region specified by view is larger than byobRequest");const o=t.byteLength;r.buffer=t.buffer,qe(e,o)}(this._associatedReadableByteStreamController,e)}}Object.defineProperties(ReadableStreamBYOBRequest.prototype,{respond:{enumerable:!0},respondWithNewView:{enumerable:!0},view:{enumerable:!0}}),n(ReadableStreamBYOBRequest.prototype.respond,"respond"),n(ReadableStreamBYOBRequest.prototype.respondWithNewView,"respondWithNewView"),"symbol"==typeof e.toStringTag&&Object.defineProperty(ReadableStreamBYOBRequest.prototype,e.toStringTag,{value:"ReadableStreamBYOBRequest",configurable:!0});class ReadableByteStreamController{constructor(){throw new TypeError("Illegal constructor")}get byobRequest(){if(!de(this))throw Ae("byobRequest");return function(e){if(null===e._byobRequest&&e._pendingPullIntos.length>0){const t=e._pendingPullIntos.peek(),r=new Uint8Array(t.buffer,t.byteOffset+t.bytesFilled,t.byteLength-t.bytesFilled),o=Object.create(ReadableStreamBYOBRequest.prototype);!function(e,t,r){e._associatedReadableByteStreamController=t,e._view=r}(o,e,r),e._byobRequest=o}return e._byobRequest}(this)}get desiredSize(){if(!de(this))throw Ae("desiredSize");return ke(this)}close(){if(!de(this))throw Ae("close");if(this._closeRequested)throw new TypeError("The stream has already been closed; do not close it again!");const e=this._controlledReadableByteStream._state;if("readable"!==e)throw new TypeError(`The stream (in ${e} state) is not in the readable state and cannot be closed`);!function(e){const t=e._controlledReadableByteStream;if(e._closeRequested||"readable"!==t._state)return;if(e._queueTotalSize>0)return void(e._closeRequested=!0);if(e._pendingPullIntos.length>0){if(e._pendingPullIntos.peek().bytesFilled>0){const t=new TypeError("Insufficient bytes to fill elements in the given buffer");throw Pe(e,t),t}}Ee(e),Xt(t)}(this)}enqueue(e){if(!de(this))throw Ae("enqueue");if($(e,1,"enqueue"),!ArrayBuffer.isView(e))throw new TypeError("chunk must be an array buffer view");if(0===e.byteLength)throw new TypeError("chunk must have non-zero byteLength");if(0===e.buffer.byteLength)throw new TypeError("chunk's buffer must have non-zero byteLength");if(this._closeRequested)throw new TypeError("stream is closed or draining");const t=this._controlledReadableByteStream._state;if("readable"!==t)throw new TypeError(`The stream (in ${t} state) is not in the readable state and cannot be enqueued to`);!function(e,t){const r=e._controlledReadableByteStream;if(e._closeRequested||"readable"!==r._state)return;const o=t.buffer,n=t.byteOffset,a=t.byteLength,i=o;if(e._pendingPullIntos.length>0){const t=e._pendingPullIntos.peek();t.buffer,0,Re(e),t.buffer=t.buffer,"none"===t.readerType&&ge(e,t)}if(J(r))if(function(e){const t=e._controlledReadableByteStream._reader;for(;t._readRequests.length>0;){if(0===e._queueTotalSize)return;We(e,t._readRequests.shift())}}(e),0===X(r))me(e,i,n,a);else{e._pendingPullIntos.length>0&&Ce(e);G(r,new Uint8Array(i,n,a),!1)}else Le(r)?(me(e,i,n,a),Te(e)):me(e,i,n,a);be(e)}(this,e)}error(e){if(!de(this))throw Ae("error");Pe(this,e)}[T](e){he(this),ce(this);const t=this._cancelAlgorithm(e);return Ee(this),t}[q](e){const t=this._controlledReadableByteStream;if(this._queueTotalSize>0)return void We(this,e);const r=this._autoAllocateChunkSize;if(void 0!==r){let t;try{t=new ArrayBuffer(r)}catch(t){return void e._errorSteps(t)}const o={buffer:t,bufferByteLength:r,byteOffset:0,byteLength:r,bytesFilled:0,elementSize:1,viewConstructor:Uint8Array,readerType:"default"};this._pendingPullIntos.push(o)}U(t,e),be(this)}[C](){if(this._pendingPullIntos.length>0){const e=this._pendingPullIntos.peek();e.readerType="none",this._pendingPullIntos=new S,this._pendingPullIntos.push(e)}}}function de(e){return!!r(e)&&(!!Object.prototype.hasOwnProperty.call(e,"_controlledReadableByteStream")&&e instanceof ReadableByteStreamController)}function fe(e){return!!r(e)&&(!!Object.prototype.hasOwnProperty.call(e,"_associatedReadableByteStreamController")&&e instanceof ReadableStreamBYOBRequest)}function be(e){const t=function(e){const t=e._controlledReadableByteStream;if("readable"!==t._state)return!1;if(e._closeRequested)return!1;if(!e._started)return!1;if(J(t)&&X(t)>0)return!0;if(Le(t)&&ze(t)>0)return!0;if(ke(e)>0)return!0;return!1}(e);if(!t)return;if(e._pulling)return void(e._pullAgain=!0);e._pulling=!0;b(e._pullAlgorithm(),(()=>(e._pulling=!1,e._pullAgain&&(e._pullAgain=!1,be(e)),null)),(t=>(Pe(e,t),null)))}function he(e){Re(e),e._pendingPullIntos=new S}function _e(e,t){let r=!1;"closed"===e._state&&(r=!0);const o=pe(t);"default"===t.readerType?G(e,o,r):function(e,t,r){const o=e._reader._readIntoRequests.shift();r?o._closeSteps(t):o._chunkSteps(t)}(e,o,r)}function pe(e){const t=e.bytesFilled,r=e.elementSize;return new e.viewConstructor(e.buffer,e.byteOffset,t/r)}function me(e,t,r,o){e._queue.push({buffer:t,byteOffset:r,byteLength:o}),e._queueTotalSize+=o}function ye(e,t,r,o){let n;try{n=t.slice(r,r+o)}catch(t){throw Pe(e,t),t}me(e,n,0,o)}function ge(e,t){t.bytesFilled>0&&ye(e,t.buffer,t.byteOffset,t.bytesFilled),Ce(e)}function we(e,t){const r=t.elementSize,o=t.bytesFilled-t.bytesFilled%r,n=Math.min(e._queueTotalSize,t.byteLength-t.bytesFilled),a=t.bytesFilled+n,i=a-a%r;let l=n,s=!1;i>o&&(l=i-t.bytesFilled,s=!0);const u=e._queue;for(;l>0;){const r=u.peek(),o=Math.min(l,r.byteLength),n=t.byteOffset+t.bytesFilled;ie(t.buffer,n,r.buffer,r.byteOffset,o),r.byteLength===o?u.shift():(r.byteOffset+=o,r.byteLength-=o),e._queueTotalSize-=o,Se(e,o,t),l-=o}return s}function Se(e,t,r){r.bytesFilled+=t}function ve(e){0===e._queueTotalSize&&e._closeRequested?(Ee(e),Xt(e._controlledReadableByteStream)):be(e)}function Re(e){null!==e._byobRequest&&(e._byobRequest._associatedReadableByteStreamController=void 0,e._byobRequest._view=null,e._byobRequest=null)}function Te(e){for(;e._pendingPullIntos.length>0;){if(0===e._queueTotalSize)return;const t=e._pendingPullIntos.peek();we(e,t)&&(Ce(e),_e(e._controlledReadableByteStream,t))}}function qe(e,t){const r=e._pendingPullIntos.peek();Re(e);"closed"===e._controlledReadableByteStream._state?function(e,t){"none"===t.readerType&&Ce(e);const r=e._controlledReadableByteStream;if(Le(r))for(;ze(r)>0;)_e(r,Ce(e))}(e,r):function(e,t,r){if(Se(0,t,r),"none"===r.readerType)return ge(e,r),void Te(e);if(r.bytesFilled<r.elementSize)return;Ce(e);const o=r.bytesFilled%r.elementSize;if(o>0){const t=r.byteOffset+r.bytesFilled;ye(e,r.buffer,t-o,o)}r.bytesFilled-=o,_e(e._controlledReadableByteStream,r),Te(e)}(e,t,r),be(e)}function Ce(e){return e._pendingPullIntos.shift()}function Ee(e){e._pullAlgorithm=void 0,e._cancelAlgorithm=void 0}function Pe(e,t){const r=e._controlledReadableByteStream;"readable"===r._state&&(he(e),ce(e),Ee(e),Jt(r,t))}function We(e,t){const r=e._queue.shift();e._queueTotalSize-=r.byteLength,ve(e);const o=new Uint8Array(r.buffer,r.byteOffset,r.byteLength);t._chunkSteps(o)}function ke(e){const t=e._controlledReadableByteStream._state;return"errored"===t?null:"closed"===t?0:e._strategyHWM-e._queueTotalSize}function Oe(e,t,r){const o=Object.create(ReadableByteStreamController.prototype);let n,a,i;n=void 0!==t.start?()=>t.start(o):()=>{},a=void 0!==t.pull?()=>t.pull(o):()=>c(void 0),i=void 0!==t.cancel?e=>t.cancel(e):()=>c(void 0);const l=t.autoAllocateChunkSize;if(0===l)throw new TypeError("autoAllocateChunkSize must be greater than 0");!function(e,t,r,o,n,a,i){t._controlledReadableByteStream=e,t._pullAgain=!1,t._pulling=!1,t._byobRequest=null,t._queue=t._queueTotalSize=void 0,ce(t),t._closeRequested=!1,t._started=!1,t._strategyHWM=a,t._pullAlgorithm=o,t._cancelAlgorithm=n,t._autoAllocateChunkSize=i,t._pendingPullIntos=new S,e._readableStreamController=t,b(c(r()),(()=>(t._started=!0,be(t),null)),(e=>(Pe(t,e),null)))}(e,o,n,a,i,r,l)}function Be(e){return new TypeError(`ReadableStreamBYOBRequest.prototype.${e} can only be used on a ReadableStreamBYOBRequest`)}function Ae(e){return new TypeError(`ReadableByteStreamController.prototype.${e} can only be used on a ReadableByteStreamController`)}function je(e,t){e._reader._readIntoRequests.push(t)}function ze(e){return e._reader._readIntoRequests.length}function Le(e){const t=e._reader;return void 0!==t&&!!Fe(t)}Object.defineProperties(ReadableByteStreamController.prototype,{close:{enumerable:!0},enqueue:{enumerable:!0},error:{enumerable:!0},byobRequest:{enumerable:!0},desiredSize:{enumerable:!0}}),n(ReadableByteStreamController.prototype.close,"close"),n(ReadableByteStreamController.prototype.enqueue,"enqueue"),n(ReadableByteStreamController.prototype.error,"error"),"symbol"==typeof e.toStringTag&&Object.defineProperty(ReadableByteStreamController.prototype,e.toStringTag,{value:"ReadableByteStreamController",configurable:!0});class ReadableStreamBYOBReader{constructor(e){if($(e,1,"ReadableStreamBYOBReader"),V(e,"First parameter"),Ut(e))throw new TypeError("This stream has already been locked for exclusive reading by another reader");if(!de(e._readableStreamController))throw new TypeError("Cannot construct a ReadableStreamBYOBReader for a stream not constructed with a byte source");E(this,e),this._readIntoRequests=new S}get closed(){return Fe(this)?this._closedPromise:d(De("closed"))}cancel(e){return Fe(this)?void 0===this._ownerReadableStream?d(k("cancel")):P(this,e):d(De("cancel"))}read(e){if(!Fe(this))return d(De("read"));if(!ArrayBuffer.isView(e))return d(new TypeError("view must be an array buffer view"));if(0===e.byteLength)return d(new TypeError("view must have non-zero byteLength"));if(0===e.buffer.byteLength)return d(new TypeError("view's buffer must have non-zero byteLength"));if(e.buffer,void 0===this._ownerReadableStream)return d(k("read from"));let t,r;const o=u(((e,o)=>{t=e,r=o}));return function(e,t,r){const o=e._ownerReadableStream;o._disturbed=!0,"errored"===o._state?r._errorSteps(o._storedError):function(e,t,r){const o=e._controlledReadableByteStream;let n=1;t.constructor!==DataView&&(n=t.constructor.BYTES_PER_ELEMENT);const a=t.constructor,i=t.buffer,l={buffer:i,bufferByteLength:i.byteLength,byteOffset:t.byteOffset,byteLength:t.byteLength,bytesFilled:0,elementSize:n,viewConstructor:a,readerType:"byob"};if(e._pendingPullIntos.length>0)return e._pendingPullIntos.push(l),void je(o,r);if("closed"!==o._state){if(e._queueTotalSize>0){if(we(e,l)){const t=pe(l);return ve(e),void r._chunkSteps(t)}if(e._closeRequested){const t=new TypeError("Insufficient bytes to fill elements in the given buffer");return Pe(e,t),void r._errorSteps(t)}}e._pendingPullIntos.push(l),je(o,r),be(e)}else{const e=new a(l.buffer,l.byteOffset,0);r._closeSteps(e)}}(o._readableStreamController,t,r)}(this,e,{_chunkSteps:e=>t({value:e,done:!1}),_closeSteps:e=>t({value:e,done:!0}),_errorSteps:e=>r(e)}),o}releaseLock(){if(!Fe(this))throw De("releaseLock");void 0!==this._ownerReadableStream&&function(e){W(e);const t=new TypeError("Reader was released");Ie(e,t)}(this)}}function Fe(e){return!!r(e)&&(!!Object.prototype.hasOwnProperty.call(e,"_readIntoRequests")&&e instanceof ReadableStreamBYOBReader)}function Ie(e,t){const r=e._readIntoRequests;e._readIntoRequests=new S,r.forEach((e=>{e._errorSteps(t)}))}function De(e){return new TypeError(`ReadableStreamBYOBReader.prototype.${e} can only be used on a ReadableStreamBYOBReader`)}function $e(e,t){const{highWaterMark:r}=e;if(void 0===r)return t;if(ae(r)||r<0)throw new RangeError("Invalid highWaterMark");return r}function Me(e){const{size:t}=e;return t||(()=>1)}function Ye(e,t){F(e,t);const r=null==e?void 0:e.highWaterMark,o=null==e?void 0:e.size;return{highWaterMark:void 0===r?void 0:Y(r),size:void 0===o?void 0:Qe(o,`${t} has member 'size' that`)}}function Qe(e,t){return I(e,t),t=>Y(e(t))}function Ne(e,t,r){return I(e,r),r=>w(e,t,[r])}function He(e,t,r){return I(e,r),()=>w(e,t,[])}function xe(e,t,r){return I(e,r),r=>g(e,t,[r])}function Ve(e,t,r){return I(e,r),(r,o)=>w(e,t,[r,o])}Object.defineProperties(ReadableStreamBYOBReader.prototype,{cancel:{enumerable:!0},read:{enumerable:!0},releaseLock:{enumerable:!0},closed:{enumerable:!0}}),n(ReadableStreamBYOBReader.prototype.cancel,"cancel"),n(ReadableStreamBYOBReader.prototype.read,"read"),n(ReadableStreamBYOBReader.prototype.releaseLock,"releaseLock"),"symbol"==typeof e.toStringTag&&Object.defineProperty(ReadableStreamBYOBReader.prototype,e.toStringTag,{value:"ReadableStreamBYOBReader",configurable:!0});const Ue="function"==typeof AbortController;class WritableStream{constructor(e={},t={}){void 0===e?e=null:D(e,"First parameter");const r=Ye(t,"Second parameter"),o=function(e,t){F(e,t);const r=null==e?void 0:e.abort,o=null==e?void 0:e.close,n=null==e?void 0:e.start,a=null==e?void 0:e.type,i=null==e?void 0:e.write;return{abort:void 0===r?void 0:Ne(r,e,`${t} has member 'abort' that`),close:void 0===o?void 0:He(o,e,`${t} has member 'close' that`),start:void 0===n?void 0:xe(n,e,`${t} has member 'start' that`),write:void 0===i?void 0:Ve(i,e,`${t} has member 'write' that`),type:a}}(e,"First parameter");var n;(n=this)._state="writable",n._storedError=void 0,n._writer=void 0,n._writableStreamController=void 0,n._writeRequests=new S,n._inFlightWriteRequest=void 0,n._closeRequest=void 0,n._inFlightCloseRequest=void 0,n._pendingAbortRequest=void 0,n._backpressure=!1;if(void 0!==o.type)throw new RangeError("Invalid type is specified");const a=Me(r);!function(e,t,r,o){const n=Object.create(WritableStreamDefaultController.prototype);let a,i,l,s;a=void 0!==t.start?()=>t.start(n):()=>{};i=void 0!==t.write?e=>t.write(e,n):()=>c(void 0);l=void 0!==t.close?()=>t.close():()=>c(void 0);s=void 0!==t.abort?e=>t.abort(e):()=>c(void 0);!function(e,t,r,o,n,a,i,l){t._controlledWritableStream=e,e._writableStreamController=t,t._queue=void 0,t._queueTotalSize=void 0,ce(t),t._abortReason=void 0,t._abortController=function(){if(Ue)return new AbortController}(),t._started=!1,t._strategySizeAlgorithm=l,t._strategyHWM=i,t._writeAlgorithm=o,t._closeAlgorithm=n,t._abortAlgorithm=a;const s=bt(t);nt(e,s);const u=r();b(c(u),(()=>(t._started=!0,dt(t),null)),(r=>(t._started=!0,Ze(e,r),null)))}(e,n,a,i,l,s,r,o)}(this,o,$e(r,1),a)}get locked(){if(!Ge(this))throw _t("locked");return Xe(this)}abort(e){return Ge(this)?Xe(this)?d(new TypeError("Cannot abort a stream that already has a writer")):Je(this,e):d(_t("abort"))}close(){return Ge(this)?Xe(this)?d(new TypeError("Cannot close a stream that already has a writer")):rt(this)?d(new TypeError("Cannot close an already-closing stream")):Ke(this):d(_t("close"))}getWriter(){if(!Ge(this))throw _t("getWriter");return new WritableStreamDefaultWriter(this)}}function Ge(e){return!!r(e)&&(!!Object.prototype.hasOwnProperty.call(e,"_writableStreamController")&&e instanceof WritableStream)}function Xe(e){return void 0!==e._writer}function Je(e,t){var r;if("closed"===e._state||"errored"===e._state)return c(void 0);e._writableStreamController._abortReason=t,null===(r=e._writableStreamController._abortController)||void 0===r||r.abort(t);const o=e._state;if("closed"===o||"errored"===o)return c(void 0);if(void 0!==e._pendingAbortRequest)return e._pendingAbortRequest._promise;let n=!1;"erroring"===o&&(n=!0,t=void 0);const a=u(((r,o)=>{e._pendingAbortRequest={_promise:void 0,_resolve:r,_reject:o,_reason:t,_wasAlreadyErroring:n}}));return e._pendingAbortRequest._promise=a,n||et(e,t),a}function Ke(e){const t=e._state;if("closed"===t||"errored"===t)return d(new TypeError(`The stream (in ${t} state) is not in the writable state and cannot be closed`));const r=u(((t,r)=>{const o={_resolve:t,_reject:r};e._closeRequest=o})),o=e._writer;var n;return void 0!==o&&e._backpressure&&"writable"===t&&Et(o),ue(n=e._writableStreamController,lt,0),dt(n),r}function Ze(e,t){"writable"!==e._state?tt(e):et(e,t)}function et(e,t){const r=e._writableStreamController;e._state="erroring",e._storedError=t;const o=e._writer;void 0!==o&&it(o,t),!function(e){if(void 0===e._inFlightWriteRequest&&void 0===e._inFlightCloseRequest)return!1;return!0}(e)&&r._started&&tt(e)}function tt(e){e._state="errored",e._writableStreamController[R]();const t=e._storedError;if(e._writeRequests.forEach((e=>{e._reject(t)})),e._writeRequests=new S,void 0===e._pendingAbortRequest)return void ot(e);const r=e._pendingAbortRequest;if(e._pendingAbortRequest=void 0,r._wasAlreadyErroring)return r._reject(t),void ot(e);b(e._writableStreamController[v](r._reason),(()=>(r._resolve(),ot(e),null)),(t=>(r._reject(t),ot(e),null)))}function rt(e){return void 0!==e._closeRequest||void 0!==e._inFlightCloseRequest}function ot(e){void 0!==e._closeRequest&&(e._closeRequest._reject(e._storedError),e._closeRequest=void 0);const t=e._writer;void 0!==t&&St(t,e._storedError)}function nt(e,t){const r=e._writer;void 0!==r&&t!==e._backpressure&&(t?function(e){Rt(e)}(r):Et(r)),e._backpressure=t}Object.defineProperties(WritableStream.prototype,{abort:{enumerable:!0},close:{enumerable:!0},getWriter:{enumerable:!0},locked:{enumerable:!0}}),n(WritableStream.prototype.abort,"abort"),n(WritableStream.prototype.close,"close"),n(WritableStream.prototype.getWriter,"getWriter"),"symbol"==typeof e.toStringTag&&Object.defineProperty(WritableStream.prototype,e.toStringTag,{value:"WritableStream",configurable:!0});class WritableStreamDefaultWriter{constructor(e){if($(e,1,"WritableStreamDefaultWriter"),function(e,t){if(!Ge(e))throw new TypeError(`${t} is not a WritableStream.`)}(e,"First parameter"),Xe(e))throw new TypeError("This stream has already been locked for exclusive writing by another writer");this._ownerWritableStream=e,e._writer=this;const t=e._state;if("writable"===t)!rt(e)&&e._backpressure?Rt(this):qt(this),gt(this);else if("erroring"===t)Tt(this,e._storedError),gt(this);else if("closed"===t)qt(this),gt(r=this),vt(r);else{const t=e._storedError;Tt(this,t),wt(this,t)}var r}get closed(){return at(this)?this._closedPromise:d(mt("closed"))}get desiredSize(){if(!at(this))throw mt("desiredSize");if(void 0===this._ownerWritableStream)throw yt("desiredSize");return function(e){const t=e._ownerWritableStream,r=t._state;if("errored"===r||"erroring"===r)return null;if("closed"===r)return 0;return ct(t._writableStreamController)}(this)}get ready(){return at(this)?this._readyPromise:d(mt("ready"))}abort(e){return at(this)?void 0===this._ownerWritableStream?d(yt("abort")):function(e,t){return Je(e._ownerWritableStream,t)}(this,e):d(mt("abort"))}close(){if(!at(this))return d(mt("close"));const e=this._ownerWritableStream;return void 0===e?d(yt("close")):rt(e)?d(new TypeError("Cannot close an already-closing stream")):Ke(this._ownerWritableStream)}releaseLock(){if(!at(this))throw mt("releaseLock");void 0!==this._ownerWritableStream&&function(e){const t=e._ownerWritableStream,r=new TypeError("Writer was released and can no longer be used to monitor the stream's closedness");it(e,r),function(e,t){"pending"===e._closedPromiseState?St(e,t):function(e,t){wt(e,t)}(e,t)}(e,r),t._writer=void 0,e._ownerWritableStream=void 0}(this)}write(e){return at(this)?void 0===this._ownerWritableStream?d(yt("write to")):function(e,t){const r=e._ownerWritableStream,o=r._writableStreamController,n=function(e,t){try{return e._strategySizeAlgorithm(t)}catch(t){return ft(e,t),1}}(o,t);if(r!==e._ownerWritableStream)return d(yt("write to"));const a=r._state;if("errored"===a)return d(r._storedError);if(rt(r)||"closed"===a)return d(new TypeError("The stream is closing or closed and cannot be written to"));if("erroring"===a)return d(r._storedError);const i=function(e){return u(((t,r)=>{const o={_resolve:t,_reject:r};e._writeRequests.push(o)}))}(r);return function(e,t,r){try{ue(e,t,r)}catch(t){return void ft(e,t)}const o=e._controlledWritableStream;if(!rt(o)&&"writable"===o._state){nt(o,bt(e))}dt(e)}(o,t,n),i}(this,e):d(mt("write"))}}function at(e){return!!r(e)&&(!!Object.prototype.hasOwnProperty.call(e,"_ownerWritableStream")&&e instanceof WritableStreamDefaultWriter)}function it(e,t){"pending"===e._readyPromiseState?Ct(e,t):function(e,t){Tt(e,t)}(e,t)}Object.defineProperties(WritableStreamDefaultWriter.prototype,{abort:{enumerable:!0},close:{enumerable:!0},releaseLock:{enumerable:!0},write:{enumerable:!0},closed:{enumerable:!0},desiredSize:{enumerable:!0},ready:{enumerable:!0}}),n(WritableStreamDefaultWriter.prototype.abort,"abort"),n(WritableStreamDefaultWriter.prototype.close,"close"),n(WritableStreamDefaultWriter.prototype.releaseLock,"releaseLock"),n(WritableStreamDefaultWriter.prototype.write,"write"),"symbol"==typeof e.toStringTag&&Object.defineProperty(WritableStreamDefaultWriter.prototype,e.toStringTag,{value:"WritableStreamDefaultWriter",configurable:!0});const lt={};class WritableStreamDefaultController{constructor(){throw new TypeError("Illegal constructor")}get abortReason(){if(!st(this))throw pt("abortReason");return this._abortReason}get signal(){if(!st(this))throw pt("signal");if(void 0===this._abortController)throw new TypeError("WritableStreamDefaultController.prototype.signal is not supported");return this._abortController.signal}error(e){if(!st(this))throw pt("error");"writable"===this._controlledWritableStream._state&&ht(this,e)}[v](e){const t=this._abortAlgorithm(e);return ut(this),t}[R](){ce(this)}}function st(e){return!!r(e)&&(!!Object.prototype.hasOwnProperty.call(e,"_controlledWritableStream")&&e instanceof WritableStreamDefaultController)}function ut(e){e._writeAlgorithm=void 0,e._closeAlgorithm=void 0,e._abortAlgorithm=void 0,e._strategySizeAlgorithm=void 0}function ct(e){return e._strategyHWM-e._queueTotalSize}function dt(e){const t=e._controlledWritableStream;if(!e._started)return;if(void 0!==t._inFlightWriteRequest)return;if("erroring"===t._state)return void tt(t);if(0===e._queue.length)return;const r=e._queue.peek().value;r===lt?function(e){const t=e._controlledWritableStream;(function(e){e._inFlightCloseRequest=e._closeRequest,e._closeRequest=void 0})(t),se(e);const r=e._closeAlgorithm();ut(e),b(r,(()=>(function(e){e._inFlightCloseRequest._resolve(void 0),e._inFlightCloseRequest=void 0,"erroring"===e._state&&(e._storedError=void 0,void 0!==e._pendingAbortRequest&&(e._pendingAbortRequest._resolve(),e._pendingAbortRequest=void 0)),e._state="closed";const t=e._writer;void 0!==t&&vt(t)}(t),null)),(e=>(function(e,t){e._inFlightCloseRequest._reject(t),e._inFlightCloseRequest=void 0,void 0!==e._pendingAbortRequest&&(e._pendingAbortRequest._reject(t),e._pendingAbortRequest=void 0),Ze(e,t)}(t,e),null)))}(e):function(e,t){const r=e._controlledWritableStream;!function(e){e._inFlightWriteRequest=e._writeRequests.shift()}(r);b(e._writeAlgorithm(t),(()=>{!function(e){e._inFlightWriteRequest._resolve(void 0),e._inFlightWriteRequest=void 0}(r);const t=r._state;if(se(e),!rt(r)&&"writable"===t){const t=bt(e);nt(r,t)}return dt(e),null}),(t=>("writable"===r._state&&ut(e),function(e,t){e._inFlightWriteRequest._reject(t),e._inFlightWriteRequest=void 0,Ze(e,t)}(r,t),null)))}(e,r)}function ft(e,t){"writable"===e._controlledWritableStream._state&&ht(e,t)}function bt(e){return ct(e)<=0}function ht(e,t){const r=e._controlledWritableStream;ut(e),et(r,t)}function _t(e){return new TypeError(`WritableStream.prototype.${e} can only be used on a WritableStream`)}function pt(e){return new TypeError(`WritableStreamDefaultController.prototype.${e} can only be used on a WritableStreamDefaultController`)}function mt(e){return new TypeError(`WritableStreamDefaultWriter.prototype.${e} can only be used on a WritableStreamDefaultWriter`)}function yt(e){return new TypeError("Cannot "+e+" a stream using a released writer")}function gt(e){e._closedPromise=u(((t,r)=>{e._closedPromise_resolve=t,e._closedPromise_reject=r,e._closedPromiseState="pending"}))}function wt(e,t){gt(e),St(e,t)}function St(e,t){void 0!==e._closedPromise_reject&&(m(e._closedPromise),e._closedPromise_reject(t),e._closedPromise_resolve=void 0,e._closedPromise_reject=void 0,e._closedPromiseState="rejected")}function vt(e){void 0!==e._closedPromise_resolve&&(e._closedPromise_resolve(void 0),e._closedPromise_resolve=void 0,e._closedPromise_reject=void 0,e._closedPromiseState="resolved")}function Rt(e){e._readyPromise=u(((t,r)=>{e._readyPromise_resolve=t,e._readyPromise_reject=r})),e._readyPromiseState="pending"}function Tt(e,t){Rt(e),Ct(e,t)}function qt(e){Rt(e),Et(e)}function Ct(e,t){void 0!==e._readyPromise_reject&&(m(e._readyPromise),e._readyPromise_reject(t),e._readyPromise_resolve=void 0,e._readyPromise_reject=void 0,e._readyPromiseState="rejected")}function Et(e){void 0!==e._readyPromise_resolve&&(e._readyPromise_resolve(void 0),e._readyPromise_resolve=void 0,e._readyPromise_reject=void 0,e._readyPromiseState="fulfilled")}Object.defineProperties(WritableStreamDefaultController.prototype,{abortReason:{enumerable:!0},signal:{enumerable:!0},error:{enumerable:!0}}),"symbol"==typeof e.toStringTag&&Object.defineProperty(WritableStreamDefaultController.prototype,e.toStringTag,{value:"WritableStreamDefaultController",configurable:!0});const Pt="undefined"!=typeof DOMException?DOMException:void 0;const Wt=function(e){if("function"!=typeof e&&"object"!=typeof e)return!1;try{return new e,!0}catch(e){return!1}}(Pt)?Pt:function(){const e=function(e,t){this.message=e||"",this.name=t||"Error",Error.captureStackTrace&&Error.captureStackTrace(this,this.constructor)};return e.prototype=Object.create(Error.prototype),Object.defineProperty(e.prototype,"constructor",{value:e,writable:!0,configurable:!0}),e}();function kt(e,t,r,o,n,a){const i=e.getReader(),l=t.getWriter();Vt(e)&&(e._disturbed=!0);let s,_,g,w=!1,S=!1,v="readable",R="writable",T=!1,q=!1;const C=u((e=>{g=e}));let E=Promise.resolve(void 0);return u(((P,W)=>{let k;function O(){if(w)return;const e=u(((e,t)=>{!function r(o){o?e():f(function(){if(w)return c(!0);return f(l.ready,(()=>f(i.read(),(e=>!!e.done||(E=l.write(e.value),m(E),!1)))))}(),r,t)}(!1)}));m(e)}function B(){return v="closed",r?L():z((()=>(Ge(t)&&(T=rt(t),R=t._state),T||"closed"===R?c(void 0):"erroring"===R||"errored"===R?d(_):(T=!0,l.close()))),!1,void 0),null}function A(e){return w||(v="errored",s=e,o?L(!0,e):z((()=>l.abort(e)),!0,e)),null}function j(e){return S||(R="errored",_=e,n?L(!0,e):z((()=>i.cancel(e)),!0,e)),null}if(void 0!==a&&(k=()=>{const e=void 0!==a.reason?a.reason:new Wt("Aborted","AbortError"),t=[];o||t.push((()=>"writable"===R?l.abort(e):c(void 0))),n||t.push((()=>"readable"===v?i.cancel(e):c(void 0))),z((()=>Promise.all(t.map((e=>e())))),!0,e)},a.aborted?k():a.addEventListener("abort",k)),Vt(e)&&(v=e._state,s=e._storedError),Ge(t)&&(R=t._state,_=t._storedError,T=rt(t)),Vt(e)&&Ge(t)&&(q=!0,g()),"errored"===v)A(s);else if("erroring"===R||"errored"===R)j(_);else if("closed"===v)B();else if(T||"closed"===R){const e=new TypeError("the destination writable stream closed before all data could be piped to it");n?L(!0,e):z((()=>i.cancel(e)),!0,e)}function z(e,t,r){function o(){return"writable"!==R||T?n():h(function(){let e;return c(function t(){if(e!==E)return e=E,p(E,t,t)}())}(),n),null}function n(){return e?b(e(),(()=>F(t,r)),(e=>F(!0,e))):F(t,r),null}w||(w=!0,q?o():h(C,o))}function L(e,t){z(void 0,e,t)}function F(e,t){return S=!0,l.releaseLock(),i.releaseLock(),void 0!==a&&a.removeEventListener("abort",k),e?W(t):P(void 0),null}w||(b(i.closed,B,A),b(l.closed,(function(){return S||(R="closed"),null}),j)),q?O():y((()=>{q=!0,g(),O()}))}))}function Ot(e,t){return function(e){try{return e.getReader({mode:"byob"}).releaseLock(),!0}catch(e){return!1}}(e)?function(e){let t,r,o,n,a,i=e.getReader(),l=!1,s=!1,d=!1,f=!1,h=!1,p=!1;const m=u((e=>{a=e}));function y(e){_(e.closed,(t=>(e!==i||(o.error(t),n.error(t),h&&p||a(void 0)),null)))}function g(){l&&(i.releaseLock(),i=e.getReader(),y(i),l=!1),b(i.read(),(e=>{var t,r;if(d=!1,f=!1,e.done)return h||o.close(),p||n.close(),null===(t=o.byobRequest)||void 0===t||t.respond(0),null===(r=n.byobRequest)||void 0===r||r.respond(0),h&&p||a(void 0),null;const l=e.value,u=l;let c=l;if(!h&&!p)try{c=le(l)}catch(e){return o.error(e),n.error(e),a(i.cancel(e)),null}return h||o.enqueue(u),p||n.enqueue(c),s=!1,d?S():f&&v(),null}),(()=>(s=!1,null)))}function w(t,r){l||(i.releaseLock(),i=e.getReader({mode:"byob"}),y(i),l=!0);const u=r?n:o,c=r?o:n;b(i.read(t),(e=>{var t;d=!1,f=!1;const o=r?p:h,n=r?h:p;if(e.done){o||u.close(),n||c.close();const r=e.value;return void 0!==r&&(o||u.byobRequest.respondWithNewView(r),n||null===(t=c.byobRequest)||void 0===t||t.respond(0)),o&&n||a(void 0),null}const l=e.value;if(n)o||u.byobRequest.respondWithNewView(l);else{let e;try{e=le(l)}catch(e){return u.error(e),c.error(e),a(i.cancel(e)),null}o||u.byobRequest.respondWithNewView(l),c.enqueue(e)}return s=!1,d?S():f&&v(),null}),(()=>(s=!1,null)))}function S(){if(s)return d=!0,c(void 0);s=!0;const e=o.byobRequest;return null===e?g():w(e.view,!1),c(void 0)}function v(){if(s)return f=!0,c(void 0);s=!0;const e=n.byobRequest;return null===e?g():w(e.view,!0),c(void 0)}function R(e){if(h=!0,t=e,p){const e=[t,r],o=i.cancel(e);a(o)}return m}function T(e){if(p=!0,r=e,h){const e=[t,r],o=i.cancel(e);a(o)}return m}const q=new ReadableStream({type:"bytes",start(e){o=e},pull:S,cancel:R}),C=new ReadableStream({type:"bytes",start(e){n=e},pull:v,cancel:T});return y(i),[q,C]}(e):function(e,t){const r=e.getReader();let o,n,a,i,l,s=!1,d=!1,f=!1,h=!1;const p=u((e=>{l=e}));function m(){return s?(d=!0,c(void 0)):(s=!0,b(r.read(),(e=>{if(d=!1,e.done)return f||a.close(),h||i.close(),f&&h||l(void 0),null;const t=e.value,r=t,o=t;return f||a.enqueue(r),h||i.enqueue(o),s=!1,d&&m(),null}),(()=>(s=!1,null))),c(void 0))}function y(e){if(f=!0,o=e,h){const e=[o,n],t=r.cancel(e);l(t)}return p}function g(e){if(h=!0,n=e,f){const e=[o,n],t=r.cancel(e);l(t)}return p}const w=new ReadableStream({start(e){a=e},pull:m,cancel:y}),S=new ReadableStream({start(e){i=e},pull:m,cancel:g});return _(r.closed,(e=>(a.error(e),i.error(e),f&&h||l(void 0),null))),[w,S]}(e)}class ReadableStreamDefaultController{constructor(){throw new TypeError("Illegal constructor")}get desiredSize(){if(!Bt(this))throw Dt("desiredSize");return Lt(this)}close(){if(!Bt(this))throw Dt("close");if(!Ft(this))throw new TypeError("The stream is not in a state that permits close");!function(e){if(!Ft(e))return;const t=e._controlledReadableStream;e._closeRequested=!0,0===e._queue.length&&(jt(e),Xt(t))}(this)}enqueue(e){if(!Bt(this))throw Dt("enqueue");if(!Ft(this))throw new TypeError("The stream is not in a state that permits enqueue");return function(e,t){if(!Ft(e))return;const r=e._controlledReadableStream;if(Ut(r)&&X(r)>0)G(r,t,!1);else{let r;try{r=e._strategySizeAlgorithm(t)}catch(t){throw zt(e,t),t}try{ue(e,t,r)}catch(t){throw zt(e,t),t}}At(e)}(this,e)}error(e){if(!Bt(this))throw Dt("error");zt(this,e)}[T](e){ce(this);const t=this._cancelAlgorithm(e);return jt(this),t}[q](e){const t=this._controlledReadableStream;if(this._queue.length>0){const r=se(this);this._closeRequested&&0===this._queue.length?(jt(this),Xt(t)):At(this),e._chunkSteps(r)}else U(t,e),At(this)}[C](){}}function Bt(e){return!!r(e)&&(!!Object.prototype.hasOwnProperty.call(e,"_controlledReadableStream")&&e instanceof ReadableStreamDefaultController)}function At(e){const t=function(e){const t=e._controlledReadableStream;if(!Ft(e))return!1;if(!e._started)return!1;if(Ut(t)&&X(t)>0)return!0;if(Lt(e)>0)return!0;return!1}(e);if(!t)return;if(e._pulling)return void(e._pullAgain=!0);e._pulling=!0;b(e._pullAlgorithm(),(()=>(e._pulling=!1,e._pullAgain&&(e._pullAgain=!1,At(e)),null)),(t=>(zt(e,t),null)))}function jt(e){e._pullAlgorithm=void 0,e._cancelAlgorithm=void 0,e._strategySizeAlgorithm=void 0}function zt(e,t){const r=e._controlledReadableStream;"readable"===r._state&&(ce(e),jt(e),Jt(r,t))}function Lt(e){const t=e._controlledReadableStream._state;return"errored"===t?null:"closed"===t?0:e._strategyHWM-e._queueTotalSize}function Ft(e){return!e._closeRequested&&"readable"===e._controlledReadableStream._state}function It(e,t,r,o){const n=Object.create(ReadableStreamDefaultController.prototype);let a,i,l;a=void 0!==t.start?()=>t.start(n):()=>{},i=void 0!==t.pull?()=>t.pull(n):()=>c(void 0),l=void 0!==t.cancel?e=>t.cancel(e):()=>c(void 0),function(e,t,r,o,n,a,i){t._controlledReadableStream=e,t._queue=void 0,t._queueTotalSize=void 0,ce(t),t._started=!1,t._closeRequested=!1,t._pullAgain=!1,t._pulling=!1,t._strategySizeAlgorithm=i,t._strategyHWM=a,t._pullAlgorithm=o,t._cancelAlgorithm=n,e._readableStreamController=t,b(c(r()),(()=>(t._started=!0,At(t),null)),(e=>(zt(t,e),null)))}(e,n,a,i,l,r,o)}function Dt(e){return new TypeError(`ReadableStreamDefaultController.prototype.${e} can only be used on a ReadableStreamDefaultController`)}function $t(e,t,r){return I(e,r),r=>w(e,t,[r])}function Mt(e,t,r){return I(e,r),r=>w(e,t,[r])}function Yt(e,t,r){return I(e,r),r=>g(e,t,[r])}function Qt(e,t){if("bytes"!==(e=`${e}`))throw new TypeError(`${t} '${e}' is not a valid enumeration value for ReadableStreamType`);return e}function Nt(e,t){if("byob"!==(e=`${e}`))throw new TypeError(`${t} '${e}' is not a valid enumeration value for ReadableStreamReaderMode`);return e}function Ht(e,t){F(e,t);const r=null==e?void 0:e.preventAbort,o=null==e?void 0:e.preventCancel,n=null==e?void 0:e.preventClose,a=null==e?void 0:e.signal;return void 0!==a&&function(e,t){if(!function(e){if("object"!=typeof e||null===e)return!1;try{return"boolean"==typeof e.aborted}catch(e){return!1}}(e))throw new TypeError(`${t} is not an AbortSignal.`)}(a,`${t} has member 'signal' that`),{preventAbort:Boolean(r),preventCancel:Boolean(o),preventClose:Boolean(n),signal:a}}function xt(e,t){F(e,t);const r=null==e?void 0:e.readable;M(r,"readable","ReadableWritablePair"),function(e,t){if(!H(e))throw new TypeError(`${t} is not a ReadableStream.`)}(r,`${t} has member 'readable' that`);const o=null==e?void 0:e.writable;return M(o,"writable","ReadableWritablePair"),function(e,t){if(!x(e))throw new TypeError(`${t} is not a WritableStream.`)}(o,`${t} has member 'writable' that`),{readable:r,writable:o}}Object.defineProperties(ReadableStreamDefaultController.prototype,{close:{enumerable:!0},enqueue:{enumerable:!0},error:{enumerable:!0},desiredSize:{enumerable:!0}}),n(ReadableStreamDefaultController.prototype.close,"close"),n(ReadableStreamDefaultController.prototype.enqueue,"enqueue"),n(ReadableStreamDefaultController.prototype.error,"error"),"symbol"==typeof e.toStringTag&&Object.defineProperty(ReadableStreamDefaultController.prototype,e.toStringTag,{value:"ReadableStreamDefaultController",configurable:!0});class ReadableStream{constructor(e={},t={}){void 0===e?e=null:D(e,"First parameter");const r=Ye(t,"Second parameter"),o=function(e,t){F(e,t);const r=e,o=null==r?void 0:r.autoAllocateChunkSize,n=null==r?void 0:r.cancel,a=null==r?void 0:r.pull,i=null==r?void 0:r.start,l=null==r?void 0:r.type;return{autoAllocateChunkSize:void 0===o?void 0:N(o,`${t} has member 'autoAllocateChunkSize' that`),cancel:void 0===n?void 0:$t(n,r,`${t} has member 'cancel' that`),pull:void 0===a?void 0:Mt(a,r,`${t} has member 'pull' that`),start:void 0===i?void 0:Yt(i,r,`${t} has member 'start' that`),type:void 0===l?void 0:Qt(l,`${t} has member 'type' that`)}}(e,"First parameter");var n;if((n=this)._state="readable",n._reader=void 0,n._storedError=void 0,n._disturbed=!1,"bytes"===o.type){if(void 0!==r.size)throw new RangeError("The strategy for a byte stream cannot have a size function");Oe(this,o,$e(r,0))}else{const e=Me(r);It(this,o,$e(r,1),e)}}get locked(){if(!Vt(this))throw Kt("locked");return Ut(this)}cancel(e){return Vt(this)?Ut(this)?d(new TypeError("Cannot cancel a stream that already has a reader")):Gt(this,e):d(Kt("cancel"))}getReader(e){if(!Vt(this))throw Kt("getReader");return void 0===function(e,t){F(e,t);const r=null==e?void 0:e.mode;return{mode:void 0===r?void 0:Nt(r,`${t} has member 'mode' that`)}}(e,"First parameter").mode?new ReadableStreamDefaultReader(this):function(e){return new ReadableStreamBYOBReader(e)}(this)}pipeThrough(e,t={}){if(!H(this))throw Kt("pipeThrough");$(e,1,"pipeThrough");const r=xt(e,"First parameter"),o=Ht(t,"Second parameter");if(this.locked)throw new TypeError("ReadableStream.prototype.pipeThrough cannot be used on a locked ReadableStream");if(r.writable.locked)throw new TypeError("ReadableStream.prototype.pipeThrough cannot be used on a locked WritableStream");return m(kt(this,r.writable,o.preventClose,o.preventAbort,o.preventCancel,o.signal)),r.readable}pipeTo(e,t={}){if(!H(this))return d(Kt("pipeTo"));if(void 0===e)return d("Parameter 1 is required in 'pipeTo'.");if(!x(e))return d(new TypeError("ReadableStream.prototype.pipeTo's first argument must be a WritableStream"));let r;try{r=Ht(t,"Second parameter")}catch(e){return d(e)}return this.locked?d(new TypeError("ReadableStream.prototype.pipeTo cannot be used on a locked ReadableStream")):e.locked?d(new TypeError("ReadableStream.prototype.pipeTo cannot be used on a locked WritableStream")):kt(this,e,r.preventClose,r.preventAbort,r.preventCancel,r.signal)}tee(){if(!H(this))throw Kt("tee");if(this.locked)throw new TypeError("Cannot tee a stream that already has a reader");return Ot(this)}values(e){if(!H(this))throw Kt("values");return function(e,t){const r=e.getReader(),o=new te(r,t),n=Object.create(re);return n._asyncIteratorImpl=o,n}(this,function(e,t){F(e,t);const r=null==e?void 0:e.preventCancel;return{preventCancel:Boolean(r)}}(e,"First parameter").preventCancel)}}function Vt(e){return!!r(e)&&(!!Object.prototype.hasOwnProperty.call(e,"_readableStreamController")&&e instanceof ReadableStream)}function Ut(e){return void 0!==e._reader}function Gt(e,r){if(e._disturbed=!0,"closed"===e._state)return c(void 0);if("errored"===e._state)return d(e._storedError);Xt(e);const o=e._reader;if(void 0!==o&&Fe(o)){const e=o._readIntoRequests;o._readIntoRequests=new S,e.forEach((e=>{e._closeSteps(void 0)}))}return p(e._readableStreamController[T](r),t)}function Xt(e){e._state="closed";const t=e._reader;if(void 0!==t&&(j(t),K(t))){const e=t._readRequests;t._readRequests=new S,e.forEach((e=>{e._closeSteps()}))}}function Jt(e,t){e._state="errored",e._storedError=t;const r=e._reader;void 0!==r&&(A(r,t),K(r)?Z(r,t):Ie(r,t))}function Kt(e){return new TypeError(`ReadableStream.prototype.${e} can only be used on a ReadableStream`)}function Zt(e,t){F(e,t);const r=null==e?void 0:e.highWaterMark;return M(r,"highWaterMark","QueuingStrategyInit"),{highWaterMark:Y(r)}}Object.defineProperties(ReadableStream.prototype,{cancel:{enumerable:!0},getReader:{enumerable:!0},pipeThrough:{enumerable:!0},pipeTo:{enumerable:!0},tee:{enumerable:!0},values:{enumerable:!0},locked:{enumerable:!0}}),n(ReadableStream.prototype.cancel,"cancel"),n(ReadableStream.prototype.getReader,"getReader"),n(ReadableStream.prototype.pipeThrough,"pipeThrough"),n(ReadableStream.prototype.pipeTo,"pipeTo"),n(ReadableStream.prototype.tee,"tee"),n(ReadableStream.prototype.values,"values"),"symbol"==typeof e.toStringTag&&Object.defineProperty(ReadableStream.prototype,e.toStringTag,{value:"ReadableStream",configurable:!0}),"symbol"==typeof e.asyncIterator&&Object.defineProperty(ReadableStream.prototype,e.asyncIterator,{value:ReadableStream.prototype.values,writable:!0,configurable:!0});const er=e=>e.byteLength;n(er,"size");class ByteLengthQueuingStrategy{constructor(e){$(e,1,"ByteLengthQueuingStrategy"),e=Zt(e,"First parameter"),this._byteLengthQueuingStrategyHighWaterMark=e.highWaterMark}get highWaterMark(){if(!rr(this))throw tr("highWaterMark");return this._byteLengthQueuingStrategyHighWaterMark}get size(){if(!rr(this))throw tr("size");return er}}function tr(e){return new TypeError(`ByteLengthQueuingStrategy.prototype.${e} can only be used on a ByteLengthQueuingStrategy`)}function rr(e){return!!r(e)&&(!!Object.prototype.hasOwnProperty.call(e,"_byteLengthQueuingStrategyHighWaterMark")&&e instanceof ByteLengthQueuingStrategy)}Object.defineProperties(ByteLengthQueuingStrategy.prototype,{highWaterMark:{enumerable:!0},size:{enumerable:!0}}),"symbol"==typeof e.toStringTag&&Object.defineProperty(ByteLengthQueuingStrategy.prototype,e.toStringTag,{value:"ByteLengthQueuingStrategy",configurable:!0});const or=()=>1;n(or,"size");class CountQueuingStrategy{constructor(e){$(e,1,"CountQueuingStrategy"),e=Zt(e,"First parameter"),this._countQueuingStrategyHighWaterMark=e.highWaterMark}get highWaterMark(){if(!ar(this))throw nr("highWaterMark");return this._countQueuingStrategyHighWaterMark}get size(){if(!ar(this))throw nr("size");return or}}function nr(e){return new TypeError(`CountQueuingStrategy.prototype.${e} can only be used on a CountQueuingStrategy`)}function ar(e){return!!r(e)&&(!!Object.prototype.hasOwnProperty.call(e,"_countQueuingStrategyHighWaterMark")&&e instanceof CountQueuingStrategy)}function ir(e,t,r){return I(e,r),r=>w(e,t,[r])}function lr(e,t,r){return I(e,r),r=>g(e,t,[r])}function sr(e,t,r){return I(e,r),(r,o)=>w(e,t,[r,o])}Object.defineProperties(CountQueuingStrategy.prototype,{highWaterMark:{enumerable:!0},size:{enumerable:!0}}),"symbol"==typeof e.toStringTag&&Object.defineProperty(CountQueuingStrategy.prototype,e.toStringTag,{value:"CountQueuingStrategy",configurable:!0});class TransformStream{constructor(e={},t={},r={}){void 0===e&&(e=null);const o=Ye(t,"Second parameter"),n=Ye(r,"Third parameter"),a=function(e,t){F(e,t);const r=null==e?void 0:e.flush,o=null==e?void 0:e.readableType,n=null==e?void 0:e.start,a=null==e?void 0:e.transform,i=null==e?void 0:e.writableType;return{flush:void 0===r?void 0:ir(r,e,`${t} has member 'flush' that`),readableType:o,start:void 0===n?void 0:lr(n,e,`${t} has member 'start' that`),transform:void 0===a?void 0:sr(a,e,`${t} has member 'transform' that`),writableType:i}}(e,"First parameter");if(void 0!==a.readableType)throw new RangeError("Invalid readableType specified");if(void 0!==a.writableType)throw new RangeError("Invalid writableType specified");const i=$e(n,0),l=Me(n),s=$e(o,1),f=Me(o);let b;!function(e,t,r,o,n,a){function i(){return t}function l(t){return function(e,t){const r=e._transformStreamController;if(e._backpressure){return p(e._backpressureChangePromise,(()=>{if("erroring"===(Ge(e._writable)?e._writable._state:e._writableState))throw Ge(e._writable)?e._writable._storedError:e._writableStoredError;return pr(r,t)}))}return pr(r,t)}(e,t)}function s(t){return function(e,t){return cr(e,t),c(void 0)}(e,t)}function u(){return function(e){const t=e._transformStreamController,r=t._flushAlgorithm();return hr(t),p(r,(()=>{if("errored"===e._readableState)throw e._readableStoredError;gr(e)&&wr(e)}),(t=>{throw cr(e,t),e._readableStoredError}))}(e)}function d(){return function(e){return fr(e,!1),e._backpressureChangePromise}(e)}function f(t){return dr(e,t),c(void 0)}e._writableState="writable",e._writableStoredError=void 0,e._writableHasInFlightOperation=!1,e._writableStarted=!1,e._writable=function(e,t,r,o,n,a,i){return new WritableStream({start(r){e._writableController=r;try{const t=r.signal;void 0!==t&&t.addEventListener("abort",(()=>{"writable"===e._writableState&&(e._writableState="erroring",t.reason&&(e._writableStoredError=t.reason))}))}catch(e){}return p(t(),(()=>(e._writableStarted=!0,Cr(e),null)),(t=>{throw e._writableStarted=!0,Rr(e,t),t}))},write:t=>(function(e){e._writableHasInFlightOperation=!0}(e),p(r(t),(()=>(function(e){e._writableHasInFlightOperation=!1}(e),Cr(e),null)),(t=>{throw function(e,t){e._writableHasInFlightOperation=!1,Rr(e,t)}(e,t),t}))),close:()=>(function(e){e._writableHasInFlightOperation=!0}(e),p(o(),(()=>(function(e){e._writableHasInFlightOperation=!1;"erroring"===e._writableState&&(e._writableStoredError=void 0);e._writableState="closed"}(e),null)),(t=>{throw function(e,t){e._writableHasInFlightOperation=!1,e._writableState,Rr(e,t)}(e,t),t}))),abort:t=>(e._writableState="errored",e._writableStoredError=t,n(t))},{highWaterMark:a,size:i})}(e,i,l,u,s,r,o),e._readableState="readable",e._readableStoredError=void 0,e._readableCloseRequested=!1,e._readablePulling=!1,e._readable=function(e,t,r,o,n,a){return new ReadableStream({start:r=>(e._readableController=r,t().catch((t=>{Sr(e,t)}))),pull:()=>(e._readablePulling=!0,r().catch((t=>{Sr(e,t)}))),cancel:t=>(e._readableState="closed",o(t))},{highWaterMark:n,size:a})}(e,i,d,f,n,a),e._backpressure=void 0,e._backpressureChangePromise=void 0,e._backpressureChangePromise_resolve=void 0,fr(e,!0),e._transformStreamController=void 0}(this,u((e=>{b=e})),s,f,i,l),function(e,t){const r=Object.create(TransformStreamDefaultController.prototype);let o,n;o=void 0!==t.transform?e=>t.transform(e,r):e=>{try{return _r(r,e),c(void 0)}catch(e){return d(e)}};n=void 0!==t.flush?()=>t.flush(r):()=>c(void 0);!function(e,t,r,o){t._controlledTransformStream=e,e._transformStreamController=t,t._transformAlgorithm=r,t._flushAlgorithm=o}(e,r,o,n)}(this,a),void 0!==a.start?b(a.start(this._transformStreamController)):b(void 0)}get readable(){if(!ur(this))throw yr("readable");return this._readable}get writable(){if(!ur(this))throw yr("writable");return this._writable}}function ur(e){return!!r(e)&&(!!Object.prototype.hasOwnProperty.call(e,"_transformStreamController")&&e instanceof TransformStream)}function cr(e,t){Sr(e,t),dr(e,t)}function dr(e,t){hr(e._transformStreamController),function(e,t){e._writableController.error(t);"writable"===e._writableState&&Tr(e,t)}(e,t),e._backpressure&&fr(e,!1)}function fr(e,t){void 0!==e._backpressureChangePromise&&e._backpressureChangePromise_resolve(),e._backpressureChangePromise=u((t=>{e._backpressureChangePromise_resolve=t})),e._backpressure=t}Object.defineProperties(TransformStream.prototype,{readable:{enumerable:!0},writable:{enumerable:!0}}),"symbol"==typeof e.toStringTag&&Object.defineProperty(TransformStream.prototype,e.toStringTag,{value:"TransformStream",configurable:!0});class TransformStreamDefaultController{constructor(){throw new TypeError("Illegal constructor")}get desiredSize(){if(!br(this))throw mr("desiredSize");return vr(this._controlledTransformStream)}enqueue(e){if(!br(this))throw mr("enqueue");_r(this,e)}error(e){if(!br(this))throw mr("error");var t;t=e,cr(this._controlledTransformStream,t)}terminate(){if(!br(this))throw mr("terminate");!function(e){const t=e._controlledTransformStream;gr(t)&&wr(t);const r=new TypeError("TransformStream terminated");dr(t,r)}(this)}}function br(e){return!!r(e)&&(!!Object.prototype.hasOwnProperty.call(e,"_controlledTransformStream")&&e instanceof TransformStreamDefaultController)}function hr(e){e._transformAlgorithm=void 0,e._flushAlgorithm=void 0}function _r(e,t){const r=e._controlledTransformStream;if(!gr(r))throw new TypeError("Readable side is not in a state that permits enqueue");try{!function(e,t){e._readablePulling=!1;try{e._readableController.enqueue(t)}catch(t){throw Sr(e,t),t}}(r,t)}catch(e){throw dr(r,e),r._readableStoredError}const o=function(e){return!function(e){if(!gr(e))return!1;if(e._readablePulling)return!0;if(vr(e)>0)return!0;return!1}(e)}(r);o!==r._backpressure&&fr(r,!0)}function pr(e,t){return p(e._transformAlgorithm(t),void 0,(t=>{throw cr(e._controlledTransformStream,t),t}))}function mr(e){return new TypeError(`TransformStreamDefaultController.prototype.${e} can only be used on a TransformStreamDefaultController`)}function yr(e){return new TypeError(`TransformStream.prototype.${e} can only be used on a TransformStream`)}function gr(e){return!e._readableCloseRequested&&"readable"===e._readableState}function wr(e){e._readableState="closed",e._readableCloseRequested=!0,e._readableController.close()}function Sr(e,t){"readable"===e._readableState&&(e._readableState="errored",e._readableStoredError=t),e._readableController.error(t)}function vr(e){return e._readableController.desiredSize}function Rr(e,t){"writable"!==e._writableState?qr(e):Tr(e,t)}function Tr(e,t){e._writableState="erroring",e._writableStoredError=t,!function(e){return e._writableHasInFlightOperation}(e)&&e._writableStarted&&qr(e)}function qr(e){e._writableState="errored"}function Cr(e){"erroring"===e._writableState&&qr(e)}Object.defineProperties(TransformStreamDefaultController.prototype,{enqueue:{enumerable:!0},error:{enumerable:!0},terminate:{enumerable:!0},desiredSize:{enumerable:!0}}),n(TransformStreamDefaultController.prototype.enqueue,"enqueue"),n(TransformStreamDefaultController.prototype.error,"error"),n(TransformStreamDefaultController.prototype.terminate,"terminate"),"symbol"==typeof e.toStringTag&&Object.defineProperty(TransformStreamDefaultController.prototype,e.toStringTag,{value:"TransformStreamDefaultController",configurable:!0});
+
+;// CONCATENATED MODULE: ./node_modules/formdata-node/lib/esm/isFunction.js
+const isFunction = (value) => (typeof value === "function");
+
+;// CONCATENATED MODULE: ./node_modules/formdata-node/lib/esm/blobHelpers.js
+/*! Based on fetch-blob. MIT License. Jimmy Wärting <https://jimmy.warting.se/opensource> & David Frank */
+
+const CHUNK_SIZE = 65536;
+async function* clonePart(part) {
+    const end = part.byteOffset + part.byteLength;
+    let position = part.byteOffset;
+    while (position !== end) {
+        const size = Math.min(end - position, CHUNK_SIZE);
+        const chunk = part.buffer.slice(position, position + size);
+        position += chunk.byteLength;
+        yield new Uint8Array(chunk);
+    }
+}
+async function* consumeNodeBlob(blob) {
+    let position = 0;
+    while (position !== blob.size) {
+        const chunk = blob.slice(position, Math.min(blob.size, position + CHUNK_SIZE));
+        const buffer = await chunk.arrayBuffer();
+        position += buffer.byteLength;
+        yield new Uint8Array(buffer);
+    }
+}
+async function* consumeBlobParts(parts, clone = false) {
+    for (const part of parts) {
+        if (ArrayBuffer.isView(part)) {
+            if (clone) {
+                yield* clonePart(part);
+            }
+            else {
+                yield part;
+            }
+        }
+        else if (isFunction(part.stream)) {
+            yield* part.stream();
+        }
+        else {
+            yield* consumeNodeBlob(part);
+        }
+    }
+}
+function* sliceBlob(blobParts, blobSize, start = 0, end) {
+    end !== null && end !== void 0 ? end : (end = blobSize);
+    let relativeStart = start < 0
+        ? Math.max(blobSize + start, 0)
+        : Math.min(start, blobSize);
+    let relativeEnd = end < 0
+        ? Math.max(blobSize + end, 0)
+        : Math.min(end, blobSize);
+    const span = Math.max(relativeEnd - relativeStart, 0);
+    let added = 0;
+    for (const part of blobParts) {
+        if (added >= span) {
+            break;
+        }
+        const partSize = ArrayBuffer.isView(part) ? part.byteLength : part.size;
+        if (relativeStart && partSize <= relativeStart) {
+            relativeStart -= partSize;
+            relativeEnd -= partSize;
+        }
+        else {
+            let chunk;
+            if (ArrayBuffer.isView(part)) {
+                chunk = part.subarray(relativeStart, Math.min(partSize, relativeEnd));
+                added += chunk.byteLength;
+            }
+            else {
+                chunk = part.slice(relativeStart, Math.min(partSize, relativeEnd));
+                added += chunk.size;
+            }
+            relativeEnd -= partSize;
+            relativeStart = 0;
+            yield chunk;
+        }
+    }
+}
+
+;// CONCATENATED MODULE: ./node_modules/formdata-node/lib/esm/Blob.js
+/*! Based on fetch-blob. MIT License. Jimmy Wärting <https://jimmy.warting.se/opensource> & David Frank */
+var __classPrivateFieldGet = (undefined && undefined.__classPrivateFieldGet) || function (receiver, state, kind, f) {
+    if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a getter");
+    if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot read private member from an object whose class did not declare it");
+    return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state.get(receiver);
+};
+var __classPrivateFieldSet = (undefined && undefined.__classPrivateFieldSet) || function (receiver, state, value, kind, f) {
+    if (kind === "m") throw new TypeError("Private method is not writable");
+    if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a setter");
+    if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot write private member to an object whose class did not declare it");
+    return (kind === "a" ? f.call(receiver, value) : f ? f.value = value : state.set(receiver, value)), value;
+};
+var _Blob_parts, _Blob_type, _Blob_size;
+
+
+
+class Blob {
+    constructor(blobParts = [], options = {}) {
+        _Blob_parts.set(this, []);
+        _Blob_type.set(this, "");
+        _Blob_size.set(this, 0);
+        options !== null && options !== void 0 ? options : (options = {});
+        if (typeof blobParts !== "object" || blobParts === null) {
+            throw new TypeError("Failed to construct 'Blob': "
+                + "The provided value cannot be converted to a sequence.");
+        }
+        if (!isFunction(blobParts[Symbol.iterator])) {
+            throw new TypeError("Failed to construct 'Blob': "
+                + "The object must have a callable @@iterator property.");
+        }
+        if (typeof options !== "object" && !isFunction(options)) {
+            throw new TypeError("Failed to construct 'Blob': parameter 2 cannot convert to dictionary.");
+        }
+        const encoder = new TextEncoder();
+        for (const raw of blobParts) {
+            let part;
+            if (ArrayBuffer.isView(raw)) {
+                part = new Uint8Array(raw.buffer.slice(raw.byteOffset, raw.byteOffset + raw.byteLength));
+            }
+            else if (raw instanceof ArrayBuffer) {
+                part = new Uint8Array(raw.slice(0));
+            }
+            else if (raw instanceof Blob) {
+                part = raw;
+            }
+            else {
+                part = encoder.encode(String(raw));
+            }
+            __classPrivateFieldSet(this, _Blob_size, __classPrivateFieldGet(this, _Blob_size, "f") + (ArrayBuffer.isView(part) ? part.byteLength : part.size), "f");
+            __classPrivateFieldGet(this, _Blob_parts, "f").push(part);
+        }
+        const type = options.type === undefined ? "" : String(options.type);
+        __classPrivateFieldSet(this, _Blob_type, /^[\x20-\x7E]*$/.test(type) ? type : "", "f");
+    }
+    static [(_Blob_parts = new WeakMap(), _Blob_type = new WeakMap(), _Blob_size = new WeakMap(), Symbol.hasInstance)](value) {
+        return Boolean(value
+            && typeof value === "object"
+            && isFunction(value.constructor)
+            && (isFunction(value.stream)
+                || isFunction(value.arrayBuffer))
+            && /^(Blob|File)$/.test(value[Symbol.toStringTag]));
+    }
+    get type() {
+        return __classPrivateFieldGet(this, _Blob_type, "f");
+    }
+    get size() {
+        return __classPrivateFieldGet(this, _Blob_size, "f");
+    }
+    slice(start, end, contentType) {
+        return new Blob(sliceBlob(__classPrivateFieldGet(this, _Blob_parts, "f"), this.size, start, end), {
+            type: contentType
+        });
+    }
+    async text() {
+        const decoder = new TextDecoder();
+        let result = "";
+        for await (const chunk of consumeBlobParts(__classPrivateFieldGet(this, _Blob_parts, "f"))) {
+            result += decoder.decode(chunk, { stream: true });
+        }
+        result += decoder.decode();
+        return result;
+    }
+    async arrayBuffer() {
+        const view = new Uint8Array(this.size);
+        let offset = 0;
+        for await (const chunk of consumeBlobParts(__classPrivateFieldGet(this, _Blob_parts, "f"))) {
+            view.set(chunk, offset);
+            offset += chunk.length;
+        }
+        return view.buffer;
+    }
+    stream() {
+        const iterator = consumeBlobParts(__classPrivateFieldGet(this, _Blob_parts, "f"), true);
+        return new ReadableStream({
+            async pull(controller) {
+                const { value, done } = await iterator.next();
+                if (done) {
+                    return queueMicrotask(() => controller.close());
+                }
+                controller.enqueue(value);
+            },
+            async cancel() {
+                await iterator.return();
+            }
+        });
+    }
+    get [Symbol.toStringTag]() {
+        return "Blob";
+    }
+}
+Object.defineProperties(Blob.prototype, {
+    type: { enumerable: true },
+    size: { enumerable: true },
+    slice: { enumerable: true },
+    stream: { enumerable: true },
+    text: { enumerable: true },
+    arrayBuffer: { enumerable: true }
+});
+
+;// CONCATENATED MODULE: ./node_modules/formdata-node/lib/esm/File.js
+var File_classPrivateFieldSet = (undefined && undefined.__classPrivateFieldSet) || function (receiver, state, value, kind, f) {
+    if (kind === "m") throw new TypeError("Private method is not writable");
+    if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a setter");
+    if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot write private member to an object whose class did not declare it");
+    return (kind === "a" ? f.call(receiver, value) : f ? f.value = value : state.set(receiver, value)), value;
+};
+var File_classPrivateFieldGet = (undefined && undefined.__classPrivateFieldGet) || function (receiver, state, kind, f) {
+    if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a getter");
+    if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot read private member from an object whose class did not declare it");
+    return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state.get(receiver);
+};
+var _File_name, _File_lastModified;
+
+class File extends Blob {
+    constructor(fileBits, name, options = {}) {
+        super(fileBits, options);
+        _File_name.set(this, void 0);
+        _File_lastModified.set(this, 0);
+        if (arguments.length < 2) {
+            throw new TypeError("Failed to construct 'File': 2 arguments required, "
+                + `but only ${arguments.length} present.`);
+        }
+        File_classPrivateFieldSet(this, _File_name, String(name), "f");
+        const lastModified = options.lastModified === undefined
+            ? Date.now()
+            : Number(options.lastModified);
+        if (!Number.isNaN(lastModified)) {
+            File_classPrivateFieldSet(this, _File_lastModified, lastModified, "f");
+        }
+    }
+    static [(_File_name = new WeakMap(), _File_lastModified = new WeakMap(), Symbol.hasInstance)](value) {
+        return value instanceof Blob
+            && value[Symbol.toStringTag] === "File"
+            && typeof value.name === "string";
+    }
+    get name() {
+        return File_classPrivateFieldGet(this, _File_name, "f");
+    }
+    get lastModified() {
+        return File_classPrivateFieldGet(this, _File_lastModified, "f");
+    }
+    get webkitRelativePath() {
+        return "";
+    }
+    get [Symbol.toStringTag]() {
+        return "File";
+    }
+}
+
+;// CONCATENATED MODULE: ./node_modules/formdata-node/lib/esm/isFile.js
+
+const isFile = (value) => value instanceof File;
+
+;// CONCATENATED MODULE: ./node_modules/formdata-node/lib/esm/isBlob.js
+
+const isBlob = (value) => value instanceof Blob;
+
+;// CONCATENATED MODULE: ./node_modules/formdata-node/lib/esm/deprecateConstructorEntries.js
+
+const deprecateConstructorEntries = (0,external_util_.deprecate)(() => { }, "Constructor \"entries\" argument is not spec-compliant "
+    + "and will be removed in next major release.");
+
+;// CONCATENATED MODULE: ./node_modules/formdata-node/lib/esm/FormData.js
+var FormData_classPrivateFieldGet = (undefined && undefined.__classPrivateFieldGet) || function (receiver, state, kind, f) {
+    if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a getter");
+    if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot read private member from an object whose class did not declare it");
+    return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state.get(receiver);
+};
+var _FormData_instances, _FormData_entries, _FormData_setEntry;
+
+
+
+
+
+
+class FormData {
+    constructor(entries) {
+        _FormData_instances.add(this);
+        _FormData_entries.set(this, new Map());
+        if (entries) {
+            deprecateConstructorEntries();
+            entries.forEach(({ name, value, fileName }) => this.append(name, value, fileName));
+        }
+    }
+    static [(_FormData_entries = new WeakMap(), _FormData_instances = new WeakSet(), Symbol.hasInstance)](value) {
+        return Boolean(value
+            && isFunction(value.constructor)
+            && value[Symbol.toStringTag] === "FormData"
+            && isFunction(value.append)
+            && isFunction(value.set)
+            && isFunction(value.get)
+            && isFunction(value.getAll)
+            && isFunction(value.has)
+            && isFunction(value.delete)
+            && isFunction(value.entries)
+            && isFunction(value.values)
+            && isFunction(value.keys)
+            && isFunction(value[Symbol.iterator])
+            && isFunction(value.forEach));
+    }
+    append(name, value, fileName) {
+        FormData_classPrivateFieldGet(this, _FormData_instances, "m", _FormData_setEntry).call(this, {
+            name,
+            fileName,
+            append: true,
+            rawValue: value,
+            argsLength: arguments.length
+        });
+    }
+    set(name, value, fileName) {
+        FormData_classPrivateFieldGet(this, _FormData_instances, "m", _FormData_setEntry).call(this, {
+            name,
+            fileName,
+            append: false,
+            rawValue: value,
+            argsLength: arguments.length
+        });
+    }
+    get(name) {
+        const field = FormData_classPrivateFieldGet(this, _FormData_entries, "f").get(String(name));
+        if (!field) {
+            return null;
+        }
+        return field[0];
+    }
+    getAll(name) {
+        const field = FormData_classPrivateFieldGet(this, _FormData_entries, "f").get(String(name));
+        if (!field) {
+            return [];
+        }
+        return field.slice();
+    }
+    has(name) {
+        return FormData_classPrivateFieldGet(this, _FormData_entries, "f").has(String(name));
+    }
+    delete(name) {
+        FormData_classPrivateFieldGet(this, _FormData_entries, "f").delete(String(name));
+    }
+    *keys() {
+        for (const key of FormData_classPrivateFieldGet(this, _FormData_entries, "f").keys()) {
+            yield key;
+        }
+    }
+    *entries() {
+        for (const name of this.keys()) {
+            const values = this.getAll(name);
+            for (const value of values) {
+                yield [name, value];
+            }
+        }
+    }
+    *values() {
+        for (const [, value] of this) {
+            yield value;
+        }
+    }
+    [(_FormData_setEntry = function _FormData_setEntry({ name, rawValue, append, fileName, argsLength }) {
+        const methodName = append ? "append" : "set";
+        if (argsLength < 2) {
+            throw new TypeError(`Failed to execute '${methodName}' on 'FormData': `
+                + `2 arguments required, but only ${argsLength} present.`);
+        }
+        name = String(name);
+        let value;
+        if (isFile(rawValue)) {
+            value = fileName === undefined
+                ? rawValue
+                : new File([rawValue], fileName, {
+                    type: rawValue.type,
+                    lastModified: rawValue.lastModified
+                });
+        }
+        else if (isBlob(rawValue)) {
+            value = new File([rawValue], fileName === undefined ? "blob" : fileName, {
+                type: rawValue.type
+            });
+        }
+        else if (fileName) {
+            throw new TypeError(`Failed to execute '${methodName}' on 'FormData': `
+                + "parameter 2 is not of type 'Blob'.");
+        }
+        else {
+            value = String(rawValue);
+        }
+        const values = FormData_classPrivateFieldGet(this, _FormData_entries, "f").get(name);
+        if (!values) {
+            return void FormData_classPrivateFieldGet(this, _FormData_entries, "f").set(name, [value]);
+        }
+        if (!append) {
+            return void FormData_classPrivateFieldGet(this, _FormData_entries, "f").set(name, [value]);
+        }
+        values.push(value);
+    }, Symbol.iterator)]() {
+        return this.entries();
+    }
+    forEach(callback, thisArg) {
+        for (const [name, value] of this) {
+            callback.call(thisArg, value, name, this);
+        }
+    }
+    get [Symbol.toStringTag]() {
+        return "FormData";
+    }
+    [external_util_.inspect.custom]() {
+        return this[Symbol.toStringTag];
+    }
+}
+
+;// CONCATENATED MODULE: ./node_modules/formdata-node/lib/esm/index.js
+
+
+
+
+// EXTERNAL MODULE: ./src/bill_com/common/constants.js
+var constants = __nccwpck_require__(9447);
+// EXTERNAL MODULE: ./src/common/airtable.js
+var airtable = __nccwpck_require__(5585);
+;// CONCATENATED MODULE: ./src/bill_com/bill_com_integration/create_bill.js
+/** @fileoverview Creates a Bill.com Bill based on a new Check Request. */
+
+
+
+
+
+
+
+/** Bill.com Vendor tax ID types. */
+const taxIdTypes = new Map([['EIN', '1'], ['SSN', '2']]);
+
+/** The Bill.com API connection. */
+let billComApi;
+
+/** The Bill.com Integration Airtable Base. */
+let billComIntegrationBase;
+
+/**
+ * @param {string} table
+ * @param {string} airtableId
+ * @return {!Promise<string>}
+ */
+async function getBillComId(table, airtableId) {
+  const record = await billComIntegrationBase.find(table, airtableId);
+  return record.get(constants/* MSO_BILL_COM_ID */.yG);
+}
+
+/**
+ * @param {?Object<string, *>} attachments
+ * @param {string} id - The Bill.com ID of the object to attach the document.
+ * @return {!Promise<undefined>}
+ */
+async function uploadAttachments(attachments, id) {
+  const data = new FormData();
+  data.set('devKey', billComApi.getDevKey());
+  data.set('sessionId', billComApi.getSessionId());
+  for (const attachment of (attachments || [])) {
+
+    // Fetch the attachment.
+    const response =
+        await (0,fetch/* fetch */.he)(
+            response => (0,fetch/* errorObject */.TJ)(
+                response.status, attachment.filename, response.statusText),
+            attachment.url);
+
+    // Download it.
+    const file = await response.blob();
+
+    // Upload it.
+    data.set('file', file, attachment.filename);
+    data.set('data', JSON.stringify({id: id, fileName: attachment.filename}));
+    await (0,api/* apiCall */.k_)('UploadAttachment', {}, data);
+  }
+}
+
+/**
+ * @param {!Record<!TField>} checkRequest
+ * @return {!Promise<string>} vendorId
+ */
+async function getVendorId(checkRequest) {
+  const NEW_VENDORS_TABLE = 'New Vendors';
+
+  // Get existing Vendor ID.
+  if (!checkRequest.get('New Vendor?')) {
+    return getBillComId('Existing Vendors', checkRequest.get('Vendor')[0]);
+  }
+
+  // Check if new Vendor and ID were already created.
+  const newVendorId = checkRequest.get('New Vendor')[0];
+  const newVendor =
+      await billComIntegrationBase.find(NEW_VENDORS_TABLE, newVendorId);
+  let vendorId = newVendor.get(constants/* MSO_BILL_COM_ID */.yG);
+  if (vendorId != null) return vendorId;
+
+  // Create new Vendor and ID.
+  const zipCode = newVendor.get('Zip Code');
+  const taxIdType = newVendor.get('Tax ID Type');
+  vendorId =
+      await billComApi.create(
+          'Vendor',
+          {
+            name: newVendor.get('Name'),
+            companyName: newVendor.get('Company/Alternate Name'),
+            address1: newVendor.get('Address Line 1'),
+            address2: newVendor.get('Address Line 2'),
+            addressCity: newVendor.get('City'),
+            addressState: newVendor.get('State'),
+            addressZip: zipCode && zipCode.toString(),
+            addressCountry: newVendor.get('Country'),
+            email: newVendor.get('Email'),
+            phone: newVendor.get('Phone'),
+            track1099: newVendor.get('1099 Vendor?'),
+            taxId: newVendor.get('Tax ID'),
+            taxIdType: taxIdType && taxIdTypes.get(taxIdType),
+          });
+  await billComIntegrationBase.update(
+      NEW_VENDORS_TABLE,
+      [{id: newVendorId, fields: {[constants/* MSO_BILL_COM_ID */.yG]: vendorId}}]);
+  await uploadAttachments(newVendor.get('W-9 Form'), vendorId);
+  return vendorId;
+}
+
+/**
+ * @param {!Api} api
+ * @param {!MsoBase=} airtableBase
+ * @return {!Promise<undefined>}
+ */
+async function main(api, airtableBase = new airtable/* MsoBase */.F()) {
+
+  billComApi = api;
+  billComIntegrationBase = airtableBase;
+
+  // Sync for each Org/MSO.
+  for await (const mso of billComIntegrationBase.iterateMsos()) {
+
+    // Get new Check Requests.
+    const msoRecordId = mso.getId();
+    const msoCode = mso.get('Code');
+    await billComApi.login(msoCode);
+    await billComIntegrationBase.selectAndUpdate(
+        'Check Requests',
+        'New',
+        async (newCheckRequest) => {
+
+          // Get the Check Request Line Items.
+          const billComLineItems = [];
+          for (const itemId of newCheckRequest.get('Line Items')) {
+            const item =
+                await billComIntegrationBase.find(
+                    'Check Request Line Items', itemId);
+            const date = item.get('Item Expense Date');
+            const description = item.get('Description');
+            const lineItem = {
+              entity: 'BillLineItem',
+              amount: item.get('Amount'),
+              chartOfAccountId:
+                await getBillComId(
+                    'Chart of Accounts', item.get('Category')[0]),
+              customerId:
+                await getBillComId(
+                    'Internal Customers', item.get('Project')[0]),
+              description:
+                date == undefined ?
+                    description :
+                    `${date}\n${item.get('Merchant Name')}\n` +
+                        `${item.get('Merchant Address')}\n` +
+                        `${item.get('Merchant City')} | ` +
+                        `${item.get('Merchant State')} | ` +
+                        `${item.get('Merchant Zip Code')}\n${description}`,
+            };
+
+            const project =
+                await billComIntegrationBase.find(
+                    'Internal Customers', item.get('Project')[0]);
+            if (mso.get('Use Customers?')) {
+              lineItem.customerId = project.get(constants/* MSO_BILL_COM_ID */.yG);
+            } else {
+              lineItem.actgClassId = project.get('MSO Bill.com Class ID')[0];
+            }
+            billComLineItems.push(lineItem);
+          }
+
+          // Compile Bill.com Bill based on Check Request.
+          const requester = newCheckRequest.get('Requester Name');
+          const notes = newCheckRequest.get('Notes');
+          const bill = {
+            vendorId: await getVendorId(newCheckRequest),
+            invoiceNumber:
+              newCheckRequest.get('Vendor Invoice ID') ||
+                  // Invoice number can currently be max 21 characters.
+                  // For default ID, take 15 from requester name
+                  // and 3 from unique part of Airtable Record ID,
+                  // with 3 to pretty divide these parts.
+                  `${requester.substring(0, 15)}` +
+                      ` - ${newCheckRequest.getId().substring(3, 6)}`,
+            invoiceDate: newCheckRequest.get('Invoice Date'),
+            dueDate: newCheckRequest.get('Due Date'),
+            description:
+              `Submitted by ${requester}` +
+                  ` (${newCheckRequest.get('Requester Email')}).` +
+                  (notes == undefined ? '' : `\n\nNotes:\n${notes}`),
+            billLineItems: billComLineItems,
+          };
+
+          // Create the Bill.
+          const newBillId =
+              await billComApi.createBill(bill, newCheckRequest, mso);
+
+          // Upload the Supporting Documents.
+          await uploadAttachments(
+              newCheckRequest.get('Supporting Documents'), newBillId);
+
+          return {
+            'Active': true,
+            'MSO': [msoRecordId],
+            'Vendor Invoice ID': bill.invoiceNumber,
+            [constants/* MSO_BILL_COM_ID */.yG]: newBillId,
+          };
+        });
+  }
+}
+
+
+/***/ }),
+
+/***/ 9902:
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
+
+__nccwpck_require__.r(__webpack_exports__);
+/* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
+/* harmony export */   "main": () => (/* binding */ main)
+/* harmony export */ });
+/* harmony import */ var _common_api_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(6362);
+/* harmony import */ var _common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(1444);
+/* harmony import */ var _common_constants_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(9447);
+/* harmony import */ var _common_utils_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(381);
+/* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(5585);
+/* harmony import */ var _common_sync_js__WEBPACK_IMPORTED_MODULE_5__ = __nccwpck_require__(3599);
+/**
+ * @fileoverview Checks whether Bills have been paid and syncs Bill.com data
+ * (e.g., Vendors, Chart of Accounts) into Airtable.
+ */
+
+
+
+
+
+
+
+
+
+/** Bill.com Bill Approval Statuses. */
+const approvalStatuses = new Map([
+  ['0', 'Unassigned'],
+  ['1', 'Assigned'],
+  ['4', 'Approving'],
+  ['3', 'Approved'],
+  ['5', 'Denied'],
+]);
+
+/** Bill.com Bill Payment Statuses. */
+const paymentStatuses = new Map([
+  ['1', 'Open'],
+  ['4', 'Scheduled'],
+  ['0', 'Paid In Full'],
+  ['2', 'Partial Payment'],
+]);
+
+/** Unit for writing to the Summary Table. */
+let summaryBlock = [];
+
+/**
+ * @param {string} name
+ * @param {string} city
+ * @param {string} state
+ * @return {string} The vendor name, including city and/or state if present.
+ */
+function vendorName(name, city, state) {
+  return (city == null && state == null) ? name : `${name} (${city}, ${state})`;
+}
+
+/**
+ * A helper for syncing data between Airtable and Bill.com.
+ * Only use while iterating airtableBase.
+ */
+class Syncer {
+
+  /**
+   * @param {!Api} billComApi
+   * @param {!MsoBase=} airtableBase
+   */
+  constructor(billComApi, airtableBase = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_4__/* .MsoBase */ .F()) {
+
+    /** @private @const {!Api} */
+    this.billComApi_ = billComApi;
+    /** @private @const {!MsoBase} */
+    this.airtableBase_ = airtableBase;
+  }
+
+  /**
+   * Syncs active and paid statuses of unpaid bills or invoices.
+   * @param {string} table
+   * @param {string} entity - Bill or Invoice.
+   * @return {!Promise<undefined>}
+   */
+  async syncUnpaid(table, entity) {
+    const airtableUnpaids = await this.airtableBase_.select(table, 'Unpaid');
+    if (airtableUnpaids.length === 0) return;
+
+    const BILL_COM_ID =
+        entity === 'Bill' ? _common_constants_js__WEBPACK_IMPORTED_MODULE_2__/* .MSO_BILL_COM_ID */ .yG : _common_constants_js__WEBPACK_IMPORTED_MODULE_2__/* .BILL_COM_ID_SUFFIX */ .dK;
+    const mapping = _common_sync_js__WEBPACK_IMPORTED_MODULE_5__/* .getMapping */ .tj(airtableUnpaids, BILL_COM_ID);
+    const billComUpdates =
+        await this.billComApi_.bulk('Read', entity, Array.from(mapping.keys()));
+    await this.airtableBase_.update(
+        table,
+        billComUpdates.flatMap(u => u.bulk).map(
+            u => {
+              const data = u.response_data;
+              const isPaid = data.paymentStatus === '0';
+              return {
+                id: mapping.get(data.id),
+                fields: {
+                  'Active': data.isActive === _common_api_js__WEBPACK_IMPORTED_MODULE_0__/* .ActiveStatus.ACTIVE */ .tV.ACTIVE,
+                  'Approval Status': approvalStatuses.get(data.approvalStatus),
+                  'Effective Amount': data.amount,
+                  'Payment Status': paymentStatuses.get(data.paymentStatus),
+                  'Paid': isPaid,
+                  'Paid Date': isPaid ? (0,_common_utils_js__WEBPACK_IMPORTED_MODULE_3__/* .getYyyyMmDd */ .PQ)(data.updatedTime) : null,
+                },
+              };
+            }));
+  }
+
+  /**
+   * Syncs entity data to table.
+   * @param {string} entity - A Bill.com entity name.
+   * @param {string} table - A corresponding Airtable Table name.
+   * @param {function(!Object<string, *>): !Object<string, *>} syncFunc
+   *   - Determines what entity data will be synced to table.
+   * @param {boolean=} useActiveFilter
+   * @return {!Promise<undefined>}
+   */
+  async sync(entity, table, syncFunc, useActiveFilter = true) {  
+
+    // Initialize sync changes.
+    const filters = useActiveFilter ? [_common_api_js__WEBPACK_IMPORTED_MODULE_0__/* .activeFilter */ .LT] : [];
+    if (entity === 'ChartOfAccount') {
+      // Expenses or Income.
+      filters.push((0,_common_api_js__WEBPACK_IMPORTED_MODULE_0__/* .filter */ .hX)('accountType', 'in', '7,9'));
+    }
+
+    const billComEntities = await this.billComApi_.list(entity, filters);
+    const changes = new Map();
+    for (const e of billComEntities) {
+      const change = syncFunc(e);
+      change.Active = true;
+      changes.set(e.id, change);
+    }
+
+    // Reconsider when BILL supports retrieving Vendor documents.
+    // if (entity === 'Vendor') {
+    //   for (const [id, change] of changes) {
+    //     const urls = await this.billComApi_.getDocumentPages(id);
+    //     change.Documents = urls.map(url => ({url: url}));
+    //   }
+    // }
+
+    const {updates, creates, removes} =
+        _common_sync_js__WEBPACK_IMPORTED_MODULE_5__/* .syncChanges */ .U4(
+            // Source
+            changes,
+            // Mapping
+            _common_sync_js__WEBPACK_IMPORTED_MODULE_5__/* .getMapping */ .tj(
+                await this.airtableBase_.select(table), _common_constants_js__WEBPACK_IMPORTED_MODULE_2__/* .MSO_BILL_COM_ID */ .yG));
+
+    const msoRecordId = this.airtableBase_.getCurrentMso().getId();
+    await this.airtableBase_.create(
+        table,
+        Array.from(
+            creates,
+            ([id, create]) => ({
+              fields: {MSO: [msoRecordId], [_common_constants_js__WEBPACK_IMPORTED_MODULE_2__/* .MSO_BILL_COM_ID */ .yG]: id, ...create},
+            })));
+    await this.airtableBase_.update(
+        table,
+        [
+          ...Array.from(updates, _common_sync_js__WEBPACK_IMPORTED_MODULE_5__/* .airtableRecordUpdate */ .vw),
+          ...Array.from(removes, _common_sync_js__WEBPACK_IMPORTED_MODULE_5__/* .airtableRecordDeactivate */ .g6),
+        ]);
+
+    summaryBlock.push([entity, ..._common_sync_js__WEBPACK_IMPORTED_MODULE_5__/* .summarize */ .Iz([updates, creates, removes])]);
+  }
+
+  /**
+   * Syncs entity name to table.
+   * @param {string} entity - A Bill.com entity name.
+   * @param {string} table - A corresponding Airtable Table name.
+   * @param {function(!Object<string, *>): string} nameFunc
+   *   - Determines what entity data constitutes the name.
+   * @return {!Promise<undefined>}
+   */
+  syncName(entity, table, nameFunc) {
+    return this.sync(entity, table, o => ({Name: nameFunc(o)}));
+  }
+
+  /**
+   * Syncs entity name to table.
+   * @param {string} entity - A Bill.com entity name.
+   * @param {string} table - A corresponding Airtable Table name.
+   * @param {string} nameKey
+   *   - Determines what entity data key corresponds to the name.
+   * @return {!Promise<undefined>}
+   */
+  syncNameKey(entity, table, nameKey) {
+    return this.syncName(entity, table, o => o[nameKey])
+  }
+
+  /**
+   * Sync anchorEntity Customers.
+   * @param {string} anchorEntity
+   * @return {!Promise<undefined>}
+   */
+  async syncCustomers(anchorEntity) {
+    const ALL_CUSTOMERS_TABLE = 'All Customers';
+    const BILL_COM_ID = `${anchorEntity} ${_common_constants_js__WEBPACK_IMPORTED_MODULE_2__/* .BILL_COM_ID_SUFFIX */ .dK}`;
+
+    await this.billComApi_.login(anchorEntity);
+
+    // Upsert MSO Bill.com Customers (in Airtable) into Anchor Entity Bill.com.
+    const airtableCustomers =
+        await this.airtableBase_.select(ALL_CUSTOMERS_TABLE);
+    const sourceAirtableCustomers =
+        airtableCustomers.filter(
+            // Skip any record that is neither active
+            // nor has an anchor entity Bill.com ID.
+            c => (c.get('Active') || c.get(BILL_COM_ID)) &&
+                // And temporarily skip Customers with long names.
+                c.get('Name').length < 42);
+    const {updates: billComUpdates, creates: billComCreates} =
+        _common_sync_js__WEBPACK_IMPORTED_MODULE_5__/* .syncChanges */ .U4(
+            // Source
+            new Map(
+                sourceAirtableCustomers.map(
+                    c => [
+                      c.getId(),
+                      {
+                        name: c.get('Name'),
+                        isActive: (0,_common_api_js__WEBPACK_IMPORTED_MODULE_0__/* .isActiveEnum */ .dA)(c.get('Active')),
+                        email: c.get('Email'),
+                      },
+                    ])),
+            // Mapping
+            _common_sync_js__WEBPACK_IMPORTED_MODULE_5__/* .getMapping */ .tj(sourceAirtableCustomers, BILL_COM_ID, false));
+    await this.billComApi_.bulk(
+        'Update',
+        'Customer',
+        Array.from(billComUpdates, ([id, update]) => ({id, ...update})));
+
+    // Upsert Anchor Entity Bill.com Customers into MSO Bill.com (and Airtable).
+    const hasEmailAirtableCustomers =
+        new Set(
+            _common_sync_js__WEBPACK_IMPORTED_MODULE_5__/* .filterMap */ .DZ(
+                airtableCustomers,
+                c => !!c.get('Email'),
+                c => c.get(BILL_COM_ID)));
+    const {updates: airtableUpdates, creates: airtableCreates} =
+        _common_sync_js__WEBPACK_IMPORTED_MODULE_5__/* .syncChanges */ .U4(
+            // Source
+            new Map(
+                _common_sync_js__WEBPACK_IMPORTED_MODULE_5__/* .filterMap */ .DZ(
+                    await this.billComApi_.listActive('Customer'),
+                    // Skip updates where email already exists.
+                    c => !hasEmailAirtableCustomers.has(c.id),
+                    c => [c.id, {name: c.name, email: c.email}])),
+            // Mapping
+            _common_sync_js__WEBPACK_IMPORTED_MODULE_5__/* .getMapping */ .tj(airtableCustomers, BILL_COM_ID));
+
+    await this.airtableBase_.update(
+        ALL_CUSTOMERS_TABLE,
+        [
+          ...(await Promise.all(
+              Array.from(
+                  billComCreates,
+                  async ([id, create]) => ({
+                    id,
+                    fields: {
+                      [BILL_COM_ID]:
+                        await this.billComApi_.create('Customer', create),
+                    },
+                  })))),
+          ...Array.from(
+              airtableUpdates,
+              ([id, update]) => ({id, fields: {Email: update.email}})),
+        ]);
+
+    // Create any active anchor entity Bill.com Customer not in Airtable;
+    // Create in both MSO Bill.com and Airtable.
+    const currentMso = this.airtableBase_.getCurrentMso();
+    await this.billComApi_.login(currentMso.get('Code'));
+    const msoRecordId = currentMso.getId();
+    await this.airtableBase_.create(
+        ALL_CUSTOMERS_TABLE,
+        await Promise.all(
+            Array.from(
+                airtableCreates,
+                async ([id, create]) => ({
+                  fields: {
+                    Active: true,
+                    MSO: [msoRecordId],
+                    Name: create.name,
+                    Email: create.email,
+                    [BILL_COM_ID]: id,
+                    [_common_constants_js__WEBPACK_IMPORTED_MODULE_2__/* .MSO_BILL_COM_ID */ .yG]:
+                      await this.billComApi_.create('Customer', create),
+                  }
+                }))));
+  }
+}
+
+/**
+ * @param {!Api} billComApi
+ * @param {!MsoBase=} airtableBase
+ * @return {!Promise<undefined>}
+ */
+async function main(billComApi, airtableBase = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_4__/* .MsoBase */ .F()) {
+  (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_1__/* .addSummaryTableHeaders */ .M9)(['MSO', 'Entity', 'Updates', 'Creates', 'Removes']);
+  const syncer = new Syncer(billComApi, airtableBase);
+  for await (const mso of airtableBase.iterateMsos()) {
+    const msoCode = mso.get('Code');
+    await billComApi.login(msoCode);
+    await syncer.syncUnpaid('Check Requests', 'Bill');
+    await syncer.sync(
+        'Vendor', 'Existing Vendors',
+        o => ({
+          'Name': vendorName(o.name, o.addressCity, o.addressState),
+          'Address': o.address1,
+          'City': o.addressCity,
+          'State': o.addressState,
+          'Zip Code': parseInt(o.addressZip),
+          'Email': o.email,
+          'Paid via BILL': !!o.lastPaymentDate,
+          'Pay By': o.payBy,
+        }));
+    await syncer.syncNameKey('ChartOfAccount', 'Chart of Accounts', 'name');
+    await syncer.syncNameKey('ActgClass', 'Classes', 'name');
+    await syncer.sync(
+        'Profile', 'User Role Profiles', o => ({Name: o.name}), false);
+    await syncer.sync(
+        'User', 'Users',
+        o => ({
+          'Name': `${o.firstName} ${o.lastName} (${o.email})`,
+          'Profile ID': o.profileId,
+        }));
+    await syncer.sync(
+        'Customer', 'All Customers', o => ({Name: o.name, Email: o.email}));
+
+    // Add summary.
+    const blockLength = summaryBlock.length;
+    (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_1__/* .addSummaryTableRow */ .QS)([msoCode, ...summaryBlock.shift()], blockLength);
+    summaryBlock.forEach(row => (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_1__/* .addSummaryTableRow */ .QS)(row));
+    summaryBlock = [];
+
+    if (msoCode !== _common_constants_js__WEBPACK_IMPORTED_MODULE_2__/* .PRIMARY_ORG */ .l3) continue;
+    // sync('Department', 'Departments', o => ({Name: o.name, Email: o.email}))
+    await syncer.syncUnpaid('Invoices', 'Invoice');
+    await syncer.syncCustomers('CPASF');
+    await syncer.syncCustomers('CEP');
+  }
+}
+
+
+/***/ }),
+
+/***/ 8655:
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
+
+__nccwpck_require__.r(__webpack_exports__);
+/* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
+/* harmony export */   "main": () => (/* binding */ main)
+/* harmony export */ });
+/* harmony import */ var _common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(1444);
+/* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(5585);
+/* harmony import */ var _common_inputs_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(1872);
+/* harmony import */ var _common_utils_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(381);
+/* harmony import */ var _common_sync_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(3599);
+/** @fileoverview Syncs Bill.com Bill Line Item data into Airtable. */
+
+
+
+
+
+
+
+
+/** Bill.com Bill Approval Statuses. */
+const approvalStatuses = new Map([
+  ['0', 'Unassigned'],
+  ['1', 'Assigned'],
+  ['4', 'Approving'],
+  ['3', 'Approved'],
+  ['5', 'Denied'],
+]);
+
+/** Bill.com Bill Payment Statuses. */
+const paymentStatuses = new Map([
+  ['1', 'Open'],
+  ['4', 'Scheduled'],
+  ['0', 'Paid In Full'],
+  ['2', 'Partial Payment'],
+]);
+
+/** The Bill.com API connection. */
+let billComApi;
+
+/**
+ * @param {string} entity
+ * @param {func(!Object<string, *>): *} dataFunc
+ * @return {!Promise<!Map<string, *>>}
+ */
+ async function getEntityData(entity, dataFunc) {
+  return new Map(
+      (await billComApi.listActive(entity)).map(e => [e.id, dataFunc(e)]));
+ }
+
+/**
+ * @param {string} entity
+ * @return {!Promise<!Map<string, string>>}
+ */
+function getNames(entity) {
+  return getEntityData(entity, e => e.name);
+}
+
+/**
+ * @param {string} entity
+ * @return {string}
+ */
+function billComIdFieldName(entity) {
+  return `Org Bill.com ${entity} ID`;
+}
+
+/**
+ * @param {string} entity
+ * @param {!RegExp} regex
+ * @return {?string[]}
+ */
+function matchDescription(entity, regex) {
+  return (entity.description || '').match(regex);
+}
+
+/**
+ * @param {string} time - ISO 8601 formatted datetime.
+ * @return {string} Normalized datetime
+ *    for comparing across Airtable and Bill.com.
+ */
+function normalizeTime(time) {
+  return time &&= time.substring(0, 23);
+}
+
+/**
+ * @param {string} sessionId
+ * @param {string} billId
+ * @return {string[]} billId document URLs
+ */
+async function getDocuments(sessionId, billId) {
+  const pages = await billComApi.dataCall('GetDocumentPages', {id: billId});
+  const docs = [];
+  for (let i = 1; i <= pages.documentPages.numPages; ++i) {
+    docs.push({
+      url: 
+        `${(0,_common_inputs_js__WEBPACK_IMPORTED_MODULE_2__/* .billComTransformUrl */ .hF)()}?sessionId=${sessionId}&entityId=${billId}` +
+            `&pageNumber=${i}`
+    });
+  }
+  return docs;
+}
+
+/**
+ * @param {!Object<string, *>} upsert
+ * @return {!Object<string, *>}
+ */
+async function inPlaceDocuments(upsert) {
+  upsert['Supporting Documents'] = await upsert['Supporting Documents']();
+  return upsert;
+}
+
+/**
+ * @param {!Api} api
+ * @param {!Base=} billComIntegrationBase
+ * @return {!Promise<undefined>}
+ */
+async function main(api, billComIntegrationBase = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .Base */ .X()) {
+  billComApi = api;
+
+  const BILL_REPORTING_TABLE = 'Bill Reporting';
+  const merchantRegex =
+      new RegExp(
+          '(?<date>.+)\\n(?<name>.+)\\n(?<address>.+)\\n' +
+              '(?<city>.+) \\| (?<state>.+) \\| (?<zip>.+)\\n' +
+              '(?<description>.+)');
+
+  (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .addSummaryTableHeaders */ .M9)(['Org', 'Updates', 'Creates', 'Removes']);
+  const orgs =
+      await billComIntegrationBase.select(
+          'Anchor Entities', BILL_REPORTING_TABLE);
+  for (const org of orgs) {
+
+    // Initialize reference data.
+    const orgCode = org.get('Local Code');
+    const orgId = org.getId();
+    const mso = orgCode.startsWith('C') ? 'RS' : orgCode;
+    await billComApi.login(orgCode);
+    const sessionId = billComApi.getSessionId();
+    const vendors =
+        await getEntityData(
+            'Vendor',
+            v => ({
+              name: v.name,
+              address: v.address1,
+              city: v.addressCity,
+              state: v.addressState,
+              zip: v.addressZip,
+            }));
+    const chartOfAccounts = await getNames('ChartOfAccount');
+    const customers = await getNames('Customer');
+    let classes;
+    try {
+      classes = await getNames('ActgClass');
+    } catch (err) {
+
+      // Handle no Classes.
+      if (err.message.match(/BDC_1145/)) {
+        (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .log */ .cM)(`${orgCode} does not use Classes: ${err.message}`);
+      } else {
+        throw err;
+      }
+    }
+
+    // Initialize sync changes.
+    const bills = await billComApi.listActive('Bill');
+    const changes = new Map();
+    const primaryBillComId = billComIdFieldName('Line Item');
+    for (const bill of bills) {
+
+      const submitterMatch = matchDescription(bill, /Submitted by (.+) \(/);
+      const vendor = vendors.get(bill.vendorId) || {};
+      for (const item of bill.billLineItems) {
+        const itemVendor =
+            (matchDescription(item, merchantRegex) || {}).groups || vendor;
+        const approvalStatus = approvalStatuses.get(bill.approvalStatus);
+        const paymentStatus = paymentStatuses.get(bill.paymentStatus);
+        changes.set(
+            item.id,
+            {
+              'Active': true,
+              'Org': [orgId],
+              'Submitted By': submitterMatch == null ? null : submitterMatch[1],
+              'Creation Date': (0,_common_utils_js__WEBPACK_IMPORTED_MODULE_3__/* .getYyyyMmDd */ .PQ)(item.createdTime),
+              'Invoice Date': bill.invoiceDate,
+              'Expense Date': itemVendor.date || bill.invoiceDate,
+              [billComIdFieldName('Vendor')]: bill.vendorId,
+              'Vendor Name': itemVendor.name,
+              'Vendor Address': itemVendor.address,
+              'Vendor City': itemVendor.city,
+              'Vendor State': itemVendor.state,
+              'Vendor Zip Code': itemVendor.zip,
+              'Description': itemVendor.description || item.description,
+              [billComIdFieldName('Chart of Account')]: item.chartOfAccountId,
+              'Chart of Account': chartOfAccounts.get(item.chartOfAccountId),
+              'Amount': item.amount,
+              [billComIdFieldName('Customer')]: item.customerId,
+              'Customer': customers.get(item.customerId),
+              [billComIdFieldName('Class')]: item?.actgClassId,
+              'Class': classes?.get(item?.actgClassId),
+              'Invoice ID': bill.invoiceNumber,
+              'Approval Status': approvalStatus,
+              'Approved': approvalStatus === 'Approved',
+              'Payment Status': paymentStatus,
+              'Paid': paymentStatus === 'Paid In Full',
+              [billComIdFieldName('Bill')]: bill.id,
+              'Supporting Documents': () => getDocuments(sessionId, bill.id),
+              'Last Updated Time': bill.updatedTime,
+            });
+      }
+    }
+
+    const airtableRecords =
+        await billComIntegrationBase.select(
+            BILL_REPORTING_TABLE, '', `Org = '${orgCode} (${mso})'`);
+    const {updates, creates, removes} =
+        _common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .syncChanges */ .U4(
+            // Source
+            changes,
+            // Mapping
+            _common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .getMapping */ .tj(airtableRecords, primaryBillComId));
+
+    // Create new table records from new Bill.com data.
+    await billComIntegrationBase.create(
+        BILL_REPORTING_TABLE,
+        await Promise.all(
+            Array.from(
+                creates,
+                async ([id, create]) => ({
+                  fields: {
+                    [primaryBillComId]: id,
+                    ...(await inPlaceDocuments(create)),
+                  },
+                }))));
+
+    // Update every existing table record based on the Bill.com data.
+    const airtableLastUpdatedTimes =
+        new Map(
+            airtableRecords.map(
+                r => [r.getId(), normalizeTime(r.get('Last Updated Time'))]));
+    await billComIntegrationBase.update(
+        BILL_REPORTING_TABLE,
+        [
+          ...(await Promise.all(
+              _common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .filterMap */ .DZ(
+                  Array.from(updates),
+                  ([id, update]) =>
+                      airtableLastUpdatedTimes.get(id) !==
+                          normalizeTime(update['Last Updated Time']),
+                  async ([id, update]) =>
+                      _common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .airtableRecordUpdate */ .vw(
+                          [id, await inPlaceDocuments(update)])))),
+          ...Array.from(removes, _common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .airtableRecordDeactivate */ .g6),
+        ]);
+    (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .addSummaryTableRow */ .QS)(
+        [orgCode, ..._common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .summarize */ .Iz([updates, creates, removes])]);
+  }
+}
+
+/***/ }),
+
+/***/ 7842:
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
+
+__nccwpck_require__.r(__webpack_exports__);
+/* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
+/* harmony export */   "main": () => (/* binding */ main)
+/* harmony export */ });
+/* harmony import */ var _common_api_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(6362);
+/* harmony import */ var _common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(1444);
+/* harmony import */ var _common_sync_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(3599);
+/* harmony import */ var _common_constants_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(9447);
+/* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(5585);
+/** @fileoverview Syncs Bill.com Customers from Airtable to Bill.com. */
+
+
+
+
+
+
+
+/**
+ * @param {!Api} billComApi
+ * @param {!MsoBase=} airtableBase
+ * @return {!Promise<undefined>}
+ */
+async function main(billComApi, airtableBase = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_3__/* .MsoBase */ .F()) {
+  const AIRTABLE_CUSTOMERS_TABLE = 'Internal Customers';
+
+  // Sync for each Org/MSO.
+  (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_1__/* .addSummaryTableHeaders */ .M9)(['MSO', 'Updates', 'Creates', 'Removes']);
+  for await (const mso of airtableBase.iterateMsos()) {
+    if (!mso.get('Use Customers?')) continue;
+
+    const msoCode = mso.get('Code');
+    await billComApi.login(msoCode);
+    const parentCustomerId = mso.get('Internal Customer ID');
+    const airtableCustomers =
+        await airtableBase.select(AIRTABLE_CUSTOMERS_TABLE);
+
+    const {updates, creates, removes} =
+        (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .syncChanges */ .U4)(
+            // Source
+            new Map(
+                airtableCustomers.map(
+                    c => [
+                      c.getId(),
+                      {
+                        name: c.get('Local Name'),
+                        isActive: _common_api_js__WEBPACK_IMPORTED_MODULE_0__/* .ActiveStatus.ACTIVE */ .tV.ACTIVE,
+                        parentCustomerId: parentCustomerId,
+                      },
+                    ])),
+            // Mapping
+            (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .getMapping */ .tj)(airtableCustomers, _common_constants_js__WEBPACK_IMPORTED_MODULE_2__/* .MSO_BILL_COM_ID */ .yG, false),
+            // Destination IDs
+            new Set(
+                Array.from(
+                    await billComApi.listActive(
+                        'Customer',
+                        [(0,_common_api_js__WEBPACK_IMPORTED_MODULE_0__/* .filter */ .hX)('parentCustomerId', '=', parentCustomerId)]),
+                    c => c.id)));
+
+    await airtableBase.update(
+        AIRTABLE_CUSTOMERS_TABLE,
+        await Promise.all(
+            Array.from(
+                creates,
+                async ([id, create]) => ({
+                  id,
+                  fields: {
+                    [_common_constants_js__WEBPACK_IMPORTED_MODULE_2__/* .MSO_BILL_COM_ID */ .yG]:
+                      await billComApi.create('Customer', create),
+                  },
+                }))));
+    await billComApi.bulk(
+        'Update',
+        'Customer',
+        [
+          ...Array.from(updates, ([id, update]) => ({id, ...update})),
+          ...Array.from(removes, id => ({id, isActive: _common_api_js__WEBPACK_IMPORTED_MODULE_0__/* .ActiveStatus.INACTIVE */ .tV.INACTIVE})),
+        ]);
+    (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_1__/* .addSummaryTableRow */ .QS)([msoCode, ...(0,_common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .summarize */ .Iz)([updates, creates, removes])]);
+  }
+}
+
+
+/***/ }),
+
+/***/ 6362:
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
 
 
 // EXPORTS
 __nccwpck_require__.d(__webpack_exports__, {
-  "ZP": () => (/* binding */ fetch)
+  "tV": () => (/* binding */ ActiveStatus),
+  "LT": () => (/* binding */ activeFilter),
+  "k_": () => (/* binding */ apiCall),
+  "hX": () => (/* binding */ filter),
+  "ac": () => (/* binding */ getApi),
+  "dA": () => (/* binding */ isActiveEnum)
 });
 
-// UNUSED EXPORTS: AbortError, Blob, FetchError, File, FormData, Headers, Request, Response, blobFrom, blobFromSync, fileFrom, fileFromSync, isRedirect
+// UNUSED EXPORTS: Api
+
+// EXTERNAL MODULE: ./src/bill_com/common/inputs.js
+var inputs = __nccwpck_require__(1872);
+;// CONCATENATED MODULE: ./node_modules/yocto-queue/index.js
+/*
+How it works:
+`this.#head` is an instance of `Node` which keeps track of its current value and nests another instance of `Node` that keeps the value that comes after it. When a value is provided to `.enqueue()`, the code needs to iterate through `this.#head`, going deeper and deeper to find the last value. However, iterating through every single item is slow. This problem is solved by saving a reference to the last value as `this.#tail` so that it can reference it to add a new value.
+*/
+
+class Node {
+	value;
+	next;
+
+	constructor(value) {
+		this.value = value;
+	}
+}
+
+class Queue {
+	#head;
+	#tail;
+	#size;
+
+	constructor() {
+		this.clear();
+	}
+
+	enqueue(value) {
+		const node = new Node(value);
+
+		if (this.#head) {
+			this.#tail.next = node;
+			this.#tail = node;
+		} else {
+			this.#head = node;
+			this.#tail = node;
+		}
+
+		this.#size++;
+	}
+
+	dequeue() {
+		const current = this.#head;
+		if (!current) {
+			return;
+		}
+
+		this.#head = this.#head.next;
+		this.#size--;
+		return current.value;
+	}
+
+	clear() {
+		this.#head = undefined;
+		this.#tail = undefined;
+		this.#size = 0;
+	}
+
+	get size() {
+		return this.#size;
+	}
+
+	* [Symbol.iterator]() {
+		let current = this.#head;
+
+		while (current) {
+			yield current.value;
+			current = current.next;
+		}
+	}
+}
+
+;// CONCATENATED MODULE: ./node_modules/p-limit/index.js
+
+
+function pLimit(concurrency) {
+	if (!((Number.isInteger(concurrency) || concurrency === Number.POSITIVE_INFINITY) && concurrency > 0)) {
+		throw new TypeError('Expected `concurrency` to be a number from 1 and up');
+	}
+
+	const queue = new Queue();
+	let activeCount = 0;
+
+	const next = () => {
+		activeCount--;
+
+		if (queue.size > 0) {
+			queue.dequeue()();
+		}
+	};
+
+	const run = async (fn, resolve, args) => {
+		activeCount++;
+
+		const result = (async () => fn(...args))();
+
+		resolve(result);
+
+		try {
+			await result;
+		} catch {}
+
+		next();
+	};
+
+	const enqueue = (fn, resolve, args) => {
+		queue.enqueue(run.bind(undefined, fn, resolve, args));
+
+		(async () => {
+			// This function needs to wait until the next microtask before comparing
+			// `activeCount` to `concurrency`, because `activeCount` is updated asynchronously
+			// when the run function is dequeued and called. The comparison in the if-statement
+			// needs to happen asynchronously as well to get an up-to-date value for `activeCount`.
+			await Promise.resolve();
+
+			if (activeCount < concurrency && queue.size > 0) {
+				queue.dequeue()();
+			}
+		})();
+	};
+
+	const generator = (fn, ...args) => new Promise(resolve => {
+		enqueue(fn, resolve, args);
+	});
+
+	Object.defineProperties(generator, {
+		activeCount: {
+			get: () => activeCount,
+		},
+		pendingCount: {
+			get: () => queue.size,
+		},
+		clearQueue: {
+			value: () => {
+				queue.clear();
+			},
+		},
+	});
+
+	return generator;
+}
+
+// EXTERNAL MODULE: ./src/common/inputs.js
+var common_inputs = __nccwpck_require__(4684);
+// EXTERNAL MODULE: ./src/common/airtable.js
+var airtable = __nccwpck_require__(5585);
+// EXTERNAL MODULE: ./src/common/utils.js + 1 modules
+var utils = __nccwpck_require__(381);
+// EXTERNAL MODULE: ./src/common/fetch.js + 23 modules
+var fetch = __nccwpck_require__(6100);
+// EXTERNAL MODULE: ./src/common/github_actions_core.js
+var github_actions_core = __nccwpck_require__(1444);
+// EXTERNAL MODULE: ./src/bill_com/common/constants.js
+var constants = __nccwpck_require__(9447);
+;// CONCATENATED MODULE: ./src/bill_com/common/api.js
+/**
+ * @fileoverview Shared code for interacting with the Bill.com API.
+ * For more information, check out the API documentation:
+ * https://developer.bill.com/hc/en-us/articles/360035447551-API-Structure
+ */
+
+
+
+
+
+
+
+
+
+
+/**
+ * Mirrors Bill.com's isActive enum.
+ * @enum {string}
+ */
+const ActiveStatus = {ACTIVE: '1', INACTIVE: '2'};
+
+/**
+ * The concurrent rate limit for Bill.com API requests
+ * per developer key per organization.
+ */
+const rateLimit = pLimit(3);
+
+/**
+ * @param {boolean=} test
+ * @return {string}
+ */
+function baseUrl(test = false) {
+  return `https://api${test ? '-stage' : ''}.bill.com`;
+}
+
+/**
+ * @param {string} endpoint 
+ * @param {!Object<string, *>} headers
+ * @param {(!URLSearchParams|!FormData)} body
+ * @param {boolean} test
+ * @return {!Promise<!Object<string, *>>} endpoint-specific response_data.
+ */
+async function apiCall(endpoint, headers, body, test) {
+  const getErrorObject = json => {
+    const data = json.response_data;
+    return (0,fetch/* errorObject */.TJ)(data.error_code, endpoint, data.error_message);
+  };
+
+  const response =
+      await rateLimit(
+          () => (0,fetch/* fetch */.he)(
+              async response => getErrorObject(await response.json()),
+              `${baseUrl(test)}/api/v2/${endpoint}.json`,
+              {method: 'POST', headers: headers, body: body}));
+
+  const json = await response.json();
+  (0,github_actions_core/* logJson */.u2)(endpoint, json);
+  if (json.response_status === 1) {
+    throw new Error((0,fetch/* errorMessage */.N3)(getErrorObject(json)));
+  }
+  return json.response_data;
+}
+
+/**
+ * @param {boolean} isActive
+ * @return {string}
+ */
+function isActiveEnum(isActive) {
+  return isActive ? ActiveStatus.ACTIVE : ActiveStatus.INACTIVE;
+}
+
+/**
+ * @param {string} field
+ * @param {string} op
+ * @param {string} value
+ * @return {!Object<string, string>} filter
+ */
+function filter(field, op, value) {
+  return {field: field, op: op, value: value};
+}
+
+/** @type {!Object<string, string>} */
+const activeFilter = filter('isActive', '=', ActiveStatus.ACTIVE);
+
+/**
+ * @param {string} entity
+ * @param {string} data
+ * @return {!Object<string, !Object<string, *>>}
+ */
+function entityData(entity, data) {
+  return {obj: {entity: entity, ...data}};
+}
+
+/**
+ * @param {!Record<!TField>} airtableRecord
+ * @param {string=} type - |Default|Final
+ * @return {?string[]} approvers MSO Bill.com IDs
+ */
+function getApproverIds(airtableRecord, type = '') {
+  return airtableRecord.get(
+      `${type}${type ? ' ' : ''}Approver ${constants/* MSO_BILL_COM_ID */.yG}s`);
+}
+
+/** A connection to the Bill.com API. */
+class Api {
+
+  /**
+   * @param {!Map<string, string>} orgIds - The organization ID
+   *   for each Anchor Entity.
+   * @param {string} userName
+   * @param {string} password
+   * @param {string} devKey
+   * @param {boolean} test
+   */
+  constructor(orgIds, userName, password, devKey, test) {
+
+    /** @private @const {!Map<string, string>} */
+    this.orgIds_ = orgIds;
+
+    /** @private @const {string} */
+    this.userName_ = userName;
+    /** @private @const {string} */
+    this.password_ = password;
+
+    /** @private @const {boolena} */
+    this.test_ = test;
+
+    /** @return {string} */
+    this.getDevKey = () => devKey;
+
+    /** 
+     * The ID of the current Bill.com API session
+     * (after successful authentication).
+     * @private {?string}
+     */
+    this.sessionId_ = null;
+    /** @return {?string} */
+    this.getSessionId = () => this.sessionId_;
+  }
+
+  /**
+   * @param {string} endpoint
+   * @param {!Object<string, string>} params
+   * @return {!Promise<!Object<string, *>>} endpoint-specific response_data.
+   */
+  call(endpoint, params) {
+    (0,github_actions_core/* log */.cM)(JSON.stringify(params));
+    return apiCall(
+        endpoint,
+        {'Content-Type': 'application/x-www-form-urlencoded'},
+        new URLSearchParams({
+          ...params, devKey: this.getDevKey(), sessionId: this.sessionId_}),
+        this.test_);
+  }
+
+  /** 
+   * Login to access anchorEntity's Bill.com API and receive a session ID.
+   * @param {string} anchorEntity
+   * @return {!Promise<undefined>}
+   */
+  async login(anchorEntity) {
+    const loginResponse =
+        await this.call(
+            'Login',
+            {
+              userName: this.userName_,
+              password: this.password_,
+              orgId: this.orgIds_.get(anchorEntity),
+            });
+    this.sessionId_ = loginResponse.sessionId;
+  }
+
+  /**
+   * Login to access the primary org's Bill.com API and receive a session ID.
+   * @return {!Promise<undefined>}
+   */
+  primaryOrgLogin() {
+    return this.login(constants/* PRIMARY_ORG */.l3);
+  }
+
+  /**
+   * @param {string} endpoint
+   * @param {!Object<string, *>} data
+   * @return {!Promise<!Object<string, *>>} endpoint-specific response_data.
+   */
+  dataCall(endpoint, data) {
+    return this.call(endpoint, {data: JSON.stringify(data)});
+  }
+
+  /**
+   * @param {string} entity
+   * @param {!Object<string, *>} data
+   * @return {!Promise<string>} The newly created entity ID.
+   */
+  async create(entity, data) {
+    const response =
+        await this.dataCall(`Crud/Create/${entity}`, entityData(entity, data));
+    return response.id;
+  }
+
+  /**
+   * @param {!Object<string, *>} bill
+   * @param {!Record<!TField>} airtableRecord
+   * @param {!Record<!TField>} mso
+   * @return {!Promise<string>} The newly created Bill ID.
+   */
+  async createBill(bill, airtableRecord, mso) {
+
+    // Create the Bill.
+    const invoiceNumber = bill.invoiceNumber;
+    let billId;
+    for (let i = 1; billId == undefined; ++i) {
+      try {
+        billId = await this.create('Bill', bill);
+      } catch (err) {
+
+        // Handle duplicate Vendor Invoice ID.
+        if (err.message.match(/BDC_(1171|5370)/)) {
+          (0,github_actions_core/* warn */.ZK)(err.message);
+          bill.invoiceNumber = `${invoiceNumber} (${i})`;
+          continue;
+        }
+        throw err;
+      }
+    }
+
+    // Set the Bill's approvers.
+    const approvers =
+        getApproverIds(airtableRecord) || getApproverIds(mso, 'Default') || [];             
+    await this.dataCall(
+        'SetApprovers',
+        {
+          entity: 'Bill',
+          objectId: billId,
+          approvers: [...approvers, ...getApproverIds(mso, 'Final')],
+        });
+    return billId;
+  }
+
+  /**
+   * @param {string} entity
+   * @param {!Object<string, string>[]=} filters
+   * @return {!Promise<!Object<string, *>[]>} entity list.
+   */
+  async list(entity, filters = []) {
+    const MAX = 999;
+    let fullList = [];
+    for (let start = 0; ; start += MAX) {
+      const response =
+          await this.dataCall(
+              `List/${entity}`, {start: start, max: MAX, filters: filters});
+      fullList = [...fullList, ...response];
+      if (response.length < MAX) break;
+    }
+
+    // Construct full Class names.
+    if (entity === 'ActgClass') {
+      const classes =
+          new Map(
+              fullList.map(
+                  e => [
+                    e.id,
+                    {name: e.name, parentActgClassId: e.parentActgClassId},
+                  ]));
+      for (const actgClass of fullList) {
+        let p = actgClass;
+        while (p = classes.get(p.parentActgClassId)) {
+          actgClass.name = p.name + ':' + actgClass.name;
+        }
+      }
+    }
+    return fullList;
+  }
+
+  /**
+   * @param {string} entity
+   * @param {!Object<string, string>[]=} filters
+   * @return {!Promise<!Object<string, *>[]>} entity list.
+   */
+  listActive(entity, filters = []) {
+    filters.push(activeFilter);
+    return this.list(entity, filters);
+  }
+  
+  /**
+   * @param {string} id
+   * @return {string[]} The document URLs.
+   */
+  async getDocumentPages(id) {
+    const pages = await this.dataCall('GetDocumentPages', {id: id});
+    const urlPrefix = baseUrl(this.test_) + pages.documentPages.fileUrl;
+    const docs = [];
+    for (let i = 1; i <= pages.documentPages.numPages; ++i) {
+      docs.push(urlPrefix + `&sessionId=${this.sessionId_}&pageNumber=${i}`);
+    }
+    return docs;
+  }
+
+  /**
+   * @param {string} op - Create|Read|Update|Delete
+   * @param {string} entity
+   * @param {(string[]|!Object<string, *>[])} data -
+   *   A list of IDs if op is Read or Delete, otherwise a list of entity data.
+   * @return {!Promise<!Object<string, *>[]>}
+   */
+  bulk(op, entity, data) {
+    const func =
+        ['Read', 'Delete'].includes(op) ?
+            (datum) => ({id: datum}) : (datum) => entityData(entity, datum);
+    return (0,utils/* batchAwait */.rE)(
+        (arr) => this.dataCall(`Bulk/Crud/${op}/${entity}`, {bulk: arr}),
+        data.map(func), 100);
+  }
+}
+
+/**
+ * Creates Api using orgIds from an Airtable Base.
+ * @param {string=} baseId
+ * @param {string=} userName
+ * @param {string=} password
+ * @param {string=} devKey
+ * @param {boolean=} test
+ * @return {!Promise<!Api>}
+ */
+async function getApi(
+    baseId = inputs/* airtableOrgIdsBaseId */.AG(),
+    apiKey = (0,common_inputs/* airtableApiKey */.Bd)(),
+    userName = inputs/* billComUserName */.jv(),
+    password = inputs/* billComPassword */.Mr(),
+    devKey = inputs/* billComDevKey */.Hc(),
+    test = false) {
+
+  const entities =
+      await new airtable/* Base */.X(baseId, apiKey).select('Anchor Entities', 'Org IDs');
+  const orgIds =
+      entities.map((e) => [e.get('Local Code'), e.get('Bill.com Org ID')]);
+  return new Api(new Map(orgIds), userName, password, devKey, test);
+}
+
+
+/***/ }),
+
+/***/ 9447:
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
+
+/* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
+/* harmony export */   "l3": () => (/* binding */ PRIMARY_ORG),
+/* harmony export */   "dK": () => (/* binding */ BILL_COM_ID_SUFFIX),
+/* harmony export */   "yG": () => (/* binding */ MSO_BILL_COM_ID)
+/* harmony export */ });
+/** @fileoverview Bill.com x Airtable constants. */
+
+/** The Primary Org. */
+const PRIMARY_ORG = 'RS';
+
+/** The Airtable Bill.com ID Field name suffix. */
+const BILL_COM_ID_SUFFIX = 'Bill.com ID';
+
+/** The MSO Bill.com ID Field name. */
+const MSO_BILL_COM_ID = `MSO ${BILL_COM_ID_SUFFIX}`;
+
+
+/***/ }),
+
+/***/ 1872:
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
+
+/* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
+/* harmony export */   "o8": () => (/* binding */ fileId),
+/* harmony export */   "AG": () => (/* binding */ airtableOrgIdsBaseId),
+/* harmony export */   "Hc": () => (/* binding */ billComDevKey),
+/* harmony export */   "jv": () => (/* binding */ billComUserName),
+/* harmony export */   "Mr": () => (/* binding */ billComPassword),
+/* harmony export */   "hF": () => (/* binding */ billComTransformUrl),
+/* harmony export */   "WI": () => (/* binding */ ecrApproverUserProfileId)
+/* harmony export */ });
+/* harmony import */ var _common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(1444);
+/**
+ * @fileoverview Lazy evaluated inputs
+ * @see bill_com/action.yml
+ */
+
+
+
+/** @type function(): string */
+const fileId = (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .getInput */ .Np)('file-id');
+const airtableOrgIdsBaseId = (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .getInput */ .Np)('airtable-org-ids-base-id');
+const billComDevKey = (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .getInput */ .Np)('bill-com-dev-key');
+const billComUserName = (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .getInput */ .Np)('bill-com-user-name');
+const billComPassword = (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .getInput */ .Np)('bill-com-password');
+const billComTransformUrl = (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .getInput */ .Np)('bill-com-transform-url');
+const ecrApproverUserProfileId =
+  (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .getInput */ .Np)('ecr-approver-user-profile-id');
+
+
+/***/ }),
+
+/***/ 702:
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
+
+__nccwpck_require__.r(__webpack_exports__);
+/* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
+/* harmony export */   "main": () => (/* binding */ main)
+/* harmony export */ });
+/* harmony import */ var _common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(1444);
+/* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(5585);
+/* harmony import */ var _common_sync_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(3599);
+/** @fileoverview Syncs Bill.com Vendors from Airtable to Bill.com. */
+ 
+
+
+
+
+/**
+ * @param {!Api} billComApi
+ * @param {!Base=} airtableBase
+ * @return {!Promise<undefined>}
+ */
+async function main(billComApi, airtableBase = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .Base */ .X()) {
+  const AIRTABLE_VENDORS_TABLE = 'Contacts';
+  const AIRTABLE_BILL_COM_ID_FIELD = 'Bill.com Vendor ID';
+
+  const airtableVendors =
+      await airtableBase.select(
+          AIRTABLE_VENDORS_TABLE, 'Github Action: Upsert Bill.com Vendors');
+
+  // Get changes.
+  const {updates, creates} =
+      (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_2__/* .syncChanges */ .U4)(
+          // Source
+          new Map(
+              airtableVendors.map(
+                  v => {
+                    const name =
+                        v.get('Legal first name') + ' ' + v.get('Last name');
+                    return [
+                      v.getId(),
+                      {
+                        name: `${name} (STV)`,
+                        nameOnCheck: name,
+                        address1: v.get('Mailing address (line 1)'),
+                        address2: v.get('Mailing address (line 2)'),
+                        addressCity: v.get('Mailing address (city)'),
+                        addressState: v.get('Mailing address (state short)'),
+                        addressZip:
+                          v.get('Mailing address (zip code)')?.toString(),
+                        addressCountry: 'USA',
+                        email: v.get('Email'),
+                        phone: v.get('Trimmed phone number'),
+                      },
+                    ];
+                  })),
+          // Mapping
+          (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_2__/* .getMapping */ .tj)(airtableVendors, AIRTABLE_BILL_COM_ID_FIELD, false));
+
+  // Perform sync.
+  await billComApi.primaryOrgLogin();
+  await airtableBase.update(
+      AIRTABLE_VENDORS_TABLE,
+      await Promise.all(
+          Array.from(
+              creates,
+              async ([id, create]) => ({
+                id,
+                fields: {
+                  [AIRTABLE_BILL_COM_ID_FIELD]:
+                    await billComApi.create('Vendor', create),
+                },
+              }))));
+  await billComApi.bulk(
+      'Update',
+      'Vendor',
+      Array.from(updates, ([id, update]) => ({id, ...update})));
+
+  // Add summary.
+  (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .addSummaryTableHeaders */ .M9)(['Updates', 'Creates']);
+  (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .addSummaryTableRow */ .QS)((0,_common_sync_js__WEBPACK_IMPORTED_MODULE_2__/* .summarize */ .Iz)([updates, creates]));
+}
+
+
+/***/ }),
+
+/***/ 3868:
+/***/ ((__webpack_module__, __unused_webpack___webpack_exports__, __nccwpck_require__) => {
+
+__nccwpck_require__.a(__webpack_module__, async (__webpack_handle_async_dependencies__) => {
+/* harmony import */ var _bill_com_integration_bulk_create_bills_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(3508);
+/* harmony import */ var _bill_com_integration_create_approver_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(8528);
+/* harmony import */ var _bill_com_integration_create_bill_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(9953);
+/* harmony import */ var _bill_com_integration_sync_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(9902);
+/* harmony import */ var _bill_com_integration_sync_bills_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(8655);
+/* harmony import */ var _bill_com_integration_sync_internal_customers_js__WEBPACK_IMPORTED_MODULE_5__ = __nccwpck_require__(7842);
+/* harmony import */ var _door_knocking_sync_vendors_js__WEBPACK_IMPORTED_MODULE_6__ = __nccwpck_require__(702);
+/* harmony import */ var _common_inputs_js__WEBPACK_IMPORTED_MODULE_7__ = __nccwpck_require__(1872);
+/* harmony import */ var _common_api_js__WEBPACK_IMPORTED_MODULE_8__ = __nccwpck_require__(6362);
+/* harmony import */ var _common_action_js__WEBPACK_IMPORTED_MODULE_9__ = __nccwpck_require__(518);
+/** @fileoverview Entrypoint for choosing which file to run. */
+
+
+
+
+
+
+
+
+
+
+
+
+await (0,_common_action_js__WEBPACK_IMPORTED_MODULE_9__/* .run */ .K)(async () => {
+  let imp;
+  switch ((0,_common_inputs_js__WEBPACK_IMPORTED_MODULE_7__/* .fileId */ .o8)()) {
+    case 'bill_com_integration_bulk_create_bills':
+      imp = _bill_com_integration_bulk_create_bills_js__WEBPACK_IMPORTED_MODULE_0__;
+      break;
+    case 'bill_com_integration_create_approver':
+      imp = _bill_com_integration_create_approver_js__WEBPACK_IMPORTED_MODULE_1__;
+      break;
+    case 'bill_com_integration_create_bill':
+      imp = _bill_com_integration_create_bill_js__WEBPACK_IMPORTED_MODULE_2__;
+      break;
+    case 'bill_com_integration_sync':
+      imp = _bill_com_integration_sync_js__WEBPACK_IMPORTED_MODULE_3__;
+      break;
+    case 'bill_com_integration_sync_bills':
+      imp = _bill_com_integration_sync_bills_js__WEBPACK_IMPORTED_MODULE_4__;
+      break;
+    case 'bill_com_integration_sync_internal_customers':
+      imp = _bill_com_integration_sync_internal_customers_js__WEBPACK_IMPORTED_MODULE_5__;
+      break;
+    case 'door_knocking_sync_vendors':
+      imp = _door_knocking_sync_vendors_js__WEBPACK_IMPORTED_MODULE_6__;
+      break;
+    default:
+      throw new Error(`Unknown file ID ${(0,_common_inputs_js__WEBPACK_IMPORTED_MODULE_7__/* .fileId */ .o8)()}`);
+  }
+  await imp.main(await (0,_common_api_js__WEBPACK_IMPORTED_MODULE_8__/* .getApi */ .ac)());
+});
+
+__webpack_handle_async_dependencies__();
+}, 1);
+
+/***/ }),
+
+/***/ 518:
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
+
+/* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
+/* harmony export */   "K": () => (/* binding */ run)
+/* harmony export */ });
+/* harmony import */ var _github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(1444);
+/**
+ * @fileoverview Runs and handles GitHub Action scripts,
+ * including status setting and summary writing.
+ */
+
+
+
+/**
+ * @param {function(): !Promise<undefined>} main
+ * @return {!Promise<undefined>}
+ */
+function run(main) {
+  return main().catch(_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .error */ .vU).finally(_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .writeSummary */ .A8);
+}
+
+
+/***/ }),
+
+/***/ 5585:
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
+
+/* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
+/* harmony export */   "X": () => (/* binding */ Base),
+/* harmony export */   "F": () => (/* binding */ MsoBase)
+/* harmony export */ });
+/* harmony import */ var airtable__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(5447);
+/* harmony import */ var _inputs_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(4684);
+/* harmony import */ var _utils_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(381);
+/* harmony import */ var _github_actions_core_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(1444);
+/** @fileoverview Utilities for interacting with Airtable. */
+
+/**
+ * The official Airtable JavaScript library.
+ * https://github.com/Airtable/airtable.js
+ */
+
+
+
+
+
+/**
+ * @param {string} querying e.g., selecting, updating, etc
+ * @param {string} table
+ * @param {!Error} err
+ */
+function throwError(querying, table, err) {
+  throw new Error(
+      `Error ${querying} records in Airtable Table ${table}: ${err}`);
+}
+
+/**
+ * @param {!Promise<*>} promise
+ * @param {string} querying e.g., selecting, updating, etc
+ * @param {string} table
+ * @return {!Promise<*>}
+ */
+function catchError(promise, querying, table) {
+  return promise.catch(err => throwError(querying, table, err));
+}
+
+/**
+ * Asynchronously calls func with portions of array that are at most
+ * the max number of records that can be created or updated
+ * via an Airtable API call.
+ * @param {function(!Array<*>): !Promise<*>} func
+ * @param {!Array<*>} array
+ * @return {!Promise<!Array<*>>}
+ */
+function batch(func, array) {
+  return (0,_utils_js__WEBPACK_IMPORTED_MODULE_2__/* .batchAsync */ .aE)(func, array, 10);
+}
+
+/** An Airtable Base to query. */
+class Base {
+
+  /**
+   * @param {string=} baseId
+   * @param {string=} apiKey
+   */
+  constructor(baseId = (0,_inputs_js__WEBPACK_IMPORTED_MODULE_1__/* .airtableBaseId */ .kt)(), apiKey = (0,_inputs_js__WEBPACK_IMPORTED_MODULE_1__/* .airtableApiKey */ .Bd)()) {
+
+    /** @private @const {!Base} */
+    this.base_ = new airtable__WEBPACK_IMPORTED_MODULE_0__({apiKey: apiKey}).base(baseId);
+  }
+
+  /**
+   * @param {string} table
+   * @param {string=} view
+   * @param {string=} filterByFormula
+   * @return {!Promise<!Array<!Record<!TField>>>}
+   */
+  select(table, view = '', filterByFormula = '') {
+    const params = {view: view, filterByFormula: filterByFormula};
+    return catchError(
+        this.base_(table).select(params).all(), 'selecting', table);
+  }
+
+  /**
+   * @param {string} table
+   * @param {!Object[]} updates
+   * @param {string} updates[].id
+   * @param {!Object<string, *>} updates[].fields
+   * @return {!Promise<!Array<*>>}
+   */
+  update(table, updates) {
+    return catchError(
+        batch(this.base_(table).update, updates), 'updating', table);
+  }
+
+  /**
+   * Runs fieldsFunc for each record from table view
+   * and updates each record's fields using fieldsFunc's return value,
+   * if there is one.
+   * @param {string} table
+   * @param {string} view
+   * @param {function(!Record<!TField>): !Promise<?Object<string, *>>} fieldsFunc
+   * @return {!Promise<!Array<*>>}
+   */
+   async selectAndUpdate(table, view, fieldsFunc) {
+    const updates = [];
+    let firstErr;
+    for (const record of await this.select(table, view)) {
+      try {
+        const fields = await fieldsFunc(record);
+        fields && updates.push({id: record.getId(), fields: fields});
+      } catch (err) {
+        (0,_github_actions_core_js__WEBPACK_IMPORTED_MODULE_3__/* .warn */ .ZK)(err.message);
+        firstErr ||= err;
+      }
+    }
+    const update = await this.update(table, updates);
+    firstErr && throwError('selectAndUpdating', table, firstErr);
+    return update;
+   }
+
+  /**
+   * @param {string} table
+   * @param {!Object[]} creates
+   * @param {!Object<string, *>} creates[].fields
+   * @return {!Promise<!Array<*>>}
+   */
+  create(table, creates) {
+    return catchError(
+        batch(this.base_(table).create, creates), 'creating', table);
+  }
+
+  /**
+   * @param {string} table
+   * @param {string} id
+   * @return {!Promise<!Record<!TField>>}
+   */
+  find(table, id) {
+    return catchError(this.base_(table).find(id), 'finding', table);
+  }
+}
+
+/**
+ * An Airtable Base where each Table is partitioned by MSO,
+ * enabling per MSO selects across Tables. Select methods should only be called
+ * while iterating via iterateMsos.
+ */
+class MsoBase extends Base {
+
+  /**
+   * @param {string=} baseId
+   * @param {string=} apiKey
+   */
+  constructor(baseId = (0,_inputs_js__WEBPACK_IMPORTED_MODULE_1__/* .airtableBaseId */ .kt)(), apiKey = (0,_inputs_js__WEBPACK_IMPORTED_MODULE_1__/* .airtableApiKey */ .Bd)()) {
+    super(baseId, apiKey);
+
+    /** @private {?Record<!TField>} */
+    this.currentMso_ = null;
+    /** @return {?Record<!TField>} */
+    this.getCurrentMso = () => this.currentMso_;
+  }
+
+  /** @override */
+  select(table, view = '', filterByFormula = '') {
+    const msoFilter = `MSO = '${this.currentMso_.get('Code')}'`;
+    return super.select(
+        table,
+        view,
+        filterByFormula === '' ?
+            msoFilter : `AND(${msoFilter}, ${filterByFormula})`);
+  }
+
+  /**
+   * @param {string=} view
+   * @return {!Promise<!Iterator<!Record<!TField>>>}
+   */
+  async* iterateMsos(view = 'Org IDs') {
+    for (this.currentMso_ of await super.select('MSOs', view)) {
+      yield this.currentMso_;
+    }
+    this.currentMso_ = null;
+  }
+}
+
+
+/***/ }),
+
+/***/ 6100:
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
+
+
+// EXPORTS
+__nccwpck_require__.d(__webpack_exports__, {
+  "N3": () => (/* binding */ errorMessage),
+  "TJ": () => (/* binding */ errorObject),
+  "he": () => (/* binding */ fetch_fetch)
+});
+
+// EXTERNAL MODULE: ./node_modules/retry/index.js
+var retry = __nccwpck_require__(5664);
+;// CONCATENATED MODULE: ./node_modules/is-network-error/index.js
+const objectToString = Object.prototype.toString;
+
+const isError = value => objectToString.call(value) === '[object Error]';
+
+const errorMessages = new Set([
+	'network error', // Chrome
+	'Failed to fetch', // Chrome
+	'NetworkError when attempting to fetch resource.', // Firefox
+	'The Internet connection appears to be offline.', // Safari 16
+	'Load failed', // Safari 17+
+	'Network request failed', // `cross-fetch`
+	'fetch failed', // Undici (Node.js)
+	'terminated', // Undici (Node.js)
+]);
+
+function isNetworkError(error) {
+	const isValid = error
+		&& isError(error)
+		&& error.name === 'TypeError'
+		&& typeof error.message === 'string';
+
+	if (!isValid) {
+		return false;
+	}
+
+	// We do an extra check for Safari 17+ as it has a very generic error message.
+	// Network errors in Safari have no stack.
+	if (error.message === 'Load failed') {
+		return error.stack === undefined;
+	}
+
+	return errorMessages.has(error.message);
+}
+
+;// CONCATENATED MODULE: ./node_modules/p-retry/index.js
+
+
+
+class AbortError extends Error {
+	constructor(message) {
+		super();
+
+		if (message instanceof Error) {
+			this.originalError = message;
+			({message} = message);
+		} else {
+			this.originalError = new Error(message);
+			this.originalError.stack = this.stack;
+		}
+
+		this.name = 'AbortError';
+		this.message = message;
+	}
+}
+
+const decorateErrorWithCounts = (error, attemptNumber, options) => {
+	// Minus 1 from attemptNumber because the first attempt does not count as a retry
+	const retriesLeft = options.retries - (attemptNumber - 1);
+
+	error.attemptNumber = attemptNumber;
+	error.retriesLeft = retriesLeft;
+	return error;
+};
+
+async function pRetry(input, options) {
+	return new Promise((resolve, reject) => {
+		options = {...options};
+		options.onFailedAttempt ??= () => {};
+		options.shouldRetry ??= () => true;
+		options.retries ??= 10;
+
+		const operation = retry.operation(options);
+
+		const abortHandler = () => {
+			operation.stop();
+			reject(options.signal?.reason);
+		};
+
+		if (options.signal && !options.signal.aborted) {
+			options.signal.addEventListener('abort', abortHandler, {once: true});
+		}
+
+		const cleanUp = () => {
+			options.signal?.removeEventListener('abort', abortHandler);
+			operation.stop();
+		};
+
+		operation.attempt(async attemptNumber => {
+			try {
+				const result = await input(attemptNumber);
+				cleanUp();
+				resolve(result);
+			} catch (error) {
+				try {
+					if (!(error instanceof Error)) {
+						throw new TypeError(`Non-error was thrown: "${error}". You should only throw errors.`);
+					}
+
+					if (error instanceof AbortError) {
+						throw error.originalError;
+					}
+
+					if (error instanceof TypeError && !isNetworkError(error)) {
+						throw error;
+					}
+
+					decorateErrorWithCounts(error, attemptNumber, options);
+
+					if (!(await options.shouldRetry(error))) {
+						operation.stop();
+						reject(error);
+					}
+
+					await options.onFailedAttempt(error);
+
+					if (!operation.retry(error)) {
+						throw operation.mainError();
+					}
+				} catch (finalError) {
+					decorateErrorWithCounts(finalError, attemptNumber, options);
+					cleanUp();
+					reject(finalError);
+				}
+			}
+		});
+	});
+}
 
 ;// CONCATENATED MODULE: external "node:http"
 const external_node_http_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:http");
@@ -20292,7 +23227,7 @@ const getNodeRequestOptions = request => {
 /**
  * AbortError interface for cancelled requests
  */
-class AbortError extends FetchBaseError {
+class abort_error_AbortError extends FetchBaseError {
 	constructor(message, type = 'aborted') {
 		super(message, type);
 	}
@@ -20363,7 +23298,7 @@ async function fetch(url, options_) {
 		let response = null;
 
 		const abort = () => {
-			const error = new AbortError('The operation was aborted.');
+			const error = new abort_error_AbortError('The operation was aborted.');
 			reject(error);
 			if (request.body && request.body instanceof external_node_stream_namespaceObject.Readable) {
 				request.body.destroy(error);
@@ -20712,2523 +23647,56 @@ function fixResponseChunkedTransferBadEnding(request, errorCallback) {
 	});
 }
 
-
-/***/ }),
-
-/***/ 3508:
-/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
-
-// ESM COMPAT FLAG
-__nccwpck_require__.r(__webpack_exports__);
-
-// EXPORTS
-__nccwpck_require__.d(__webpack_exports__, {
-  "main": () => (/* binding */ main)
-});
-
 // EXTERNAL MODULE: ./src/common/github_actions_core.js
 var github_actions_core = __nccwpck_require__(1444);
-// EXTERNAL MODULE: ./src/common/airtable.js
-var airtable = __nccwpck_require__(5585);
-// EXTERNAL MODULE: ./src/bill_com/common/constants.js
-var constants = __nccwpck_require__(9447);
-// EXTERNAL MODULE: ./node_modules/node-fetch/src/index.js + 20 modules
-var src = __nccwpck_require__(4028);
-// EXTERNAL MODULE: ./node_modules/papaparse/papaparse.js
-var papaparse = __nccwpck_require__(1826);
-// EXTERNAL MODULE: ./src/common/utils.js + 1 modules
-var utils = __nccwpck_require__(381);
-;// CONCATENATED MODULE: ./src/common/csv.js
-/** @fileoverview Utilities for parsing CSV files. */
+;// CONCATENATED MODULE: ./src/common/fetch.js
+/** @fileoverview Utilities for fetching resources. */
 
 
 
 
 
 /**
- * @param {!Object<string, *>} csv An Airtable Attachment Field.
- * @param {string[]} header Expected header.
- * @param {!Object<string, *>} config See https://www.papaparse.com/docs#config.
- *     Header and error are preset, and expects using chunk,
- *     which may return a Promise.
- * @return {!Promise<!Array<*>>}
- */
-async function parse(csv, header, config) {
-
-  // Download CSV.
-  const response = await (0,src/* default */.ZP)(csv.url);
-  if (!response.ok) {
-    (0,utils/* fetchError */.Tl)(response.status, csv.filename, response.statusText);
-  }
-
-  // Execute parse.
-  let firstChunk = true;
-  const promises = [];
-  return new Promise(
-      (resolve, reject) => papaparse.parse(
-          response.body,
-          {
-            ...config,
-            header: true,
-            error: (err, file) => reject(err),
-            complete: (results, parser) => resolve(Promise.all(promises)),
-            chunk:
-              (results, parser) => {
-
-                // Validate header during first chunk.
-                if (firstChunk) {
-                  firstChunk = false;
-                  const parsedHeader = results.meta.fields;
-                  if (JSON.stringify(parsedHeader) !== JSON.stringify(header)) {
-                    reject(
-                        new Error(
-                            `Parsed header: ${parsedHeader}` +
-                                `\nGiven header: ${header}`));
-                  }
-                }
-
-                // Parse chunk.
-                promises.push(config.chunk(results, parser));
-              },
-          }));
-}
-
-;// CONCATENATED MODULE: ./src/bill_com/bill_com_integration/bulk_create_bills.js
-/** @fileoverview Bulk creates single line item Bill.com Bills from a CSV. */
-
-
-
-
-
-
-/** The Bill.com Integration Airtable Base. */
-let billComIntegrationBase;
-
-/**
- * @param {string} table
- * @param {string} airtableId
- * @return {!Promise<string>}
- */
-async function getBillComId(table, airtableId) {
-  const record = await billComIntegrationBase.find(table, airtableId);
-  return record.get(constants/* MSO_BILL_COM_ID */.yG);
-}
-
-/**
- * @param {!Api} billComApi
- * @param {!MsoBase=} airtableBase
- * @return {!Promise<undefined>}
- */
-async function main(billComApi, airtableBase = new airtable/* MsoBase */.F()) {
-  billComIntegrationBase = airtableBase;
-
-  const header = [
-    'Invoice ID',
-    'Amount ($)',
-    'Description',
-    'Vendor ID',
-    'Name',
-    'Tax ID',
-    'Email',
-    'Phone',
-    'Address Line 1',
-    'Address Line 2',
-    'City',
-    'State',
-    'Zip Code',
-    'Country',
-  ];
-
-  let err;
-  for await (const mso of billComIntegrationBase.iterateMsos()) {
-
-    await billComApi.login(mso.get('Code'));
-    await billComIntegrationBase.selectAndUpdate(
-        'Bulk Check Requests',
-        'New',
-        async (record) => {
-
-          // Create parse config.
-          const submittedBy =
-              `Submitted by ${record.get('Requester Name')}` +
-                  ` (${record.get('Requester Email')})`;
-          const project =
-              await getBillComId(
-                  'Internal Customers', record.get('Project')[0]);
-          const category =
-              await getBillComId(
-                  'Chart of Accounts', record.get('Category')[0]);
-          const parseConfig = {
-            transformHeader: (header, index) => header.trim(),
-            chunk:
-              (results, parser) => Promise.all(
-                  results.data.map(
-                      async row => billComApi.createBill(
-                          {
-                            invoiceDate: record.get('Invoice Date'),
-                            dueDate: record.get('Due Date'),
-                            invoiceNumber: row['Invoice ID'],
-                            description: submittedBy,
-                            billLineItems: [{
-                              entity: 'BillLineItem',
-                              customerId: project,
-                              chartOfAccountId: category,
-                              description: row['Description'],
-                              amount:
-                                parseFloat(
-                                    row['Amount ($)'].replace(/[$,]/g, '')),
-                            }],
-                            vendorId:
-                              row['Vendor ID'] ||
-                                  await billComApi.create(
-                                      'Vendor',
-                                      {
-                                        name: row['Name'],
-                                        taxId: row['Tax ID'],
-                                        taxIdType: '2', // SSN
-                                        email: row['Email'],
-                                        phone: row['Phone'],
-                                        address1: row['Address Line 1'],
-                                        address2: row['Address Line 2'],
-                                        addressCity: row['City'],
-                                        addressState: row['State'],
-                                        addressZip: row['Zip Code'],
-                                        addressCountry: row['Country'] || 'USA',
-                                      }),
-                          },
-                          record,
-                          mso))),
-          };
-
-          // Parse CSV and create Bills.
-          try {
-            await Promise.all(
-                record.get('CSV').map(csv => parse(csv, header, parseConfig)));
-          } catch (e) {
-            err = e;
-            (0,github_actions_core/* warn */.ZK)(e.message);
-            return {'Error': true};
-          }
-          return {'Processed': true};
-        });
-  }
-  if (err) (0,github_actions_core/* error */.vU)(err);
-}
-
-
-/***/ }),
-
-/***/ 8528:
-/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
-
-__nccwpck_require__.r(__webpack_exports__);
-/* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
-/* harmony export */   "main": () => (/* binding */ main)
-/* harmony export */ });
-/* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(5585);
-/* harmony import */ var _common_inputs_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(1872);
-/** @fileoverview Creates a Bill.com Electronic Check Request Approver. */
-
-
-
-
-/**
- * @param {!Api} billComApi
- * @param {!Base=} billComIntegrationBase
- * @param {string=} approverUserProfileId
- * @param {string=} approverTable
- * @param {string=} createView
- * @return {!Promise<undefined>}
- */
-async function main(
-    billComApi,
-    billComIntegrationBase = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_0__/* .Base */ .X(),
-    approverUserProfileId = (0,_common_inputs_js__WEBPACK_IMPORTED_MODULE_1__/* .ecrApproverUserProfileId */ .WI)(),
-    approverTable = 'New Bill.com Approvers',
-    createView = 'New') {
-
-  await billComApi.primaryOrgLogin();
-  await billComIntegrationBase.selectAndUpdate(
-      approverTable,
-      createView,
-      async (record) => {
-        await billComApi.create(
-            'User',
-            {
-              profileId: approverUserProfileId,
-              firstName: record.get('First Name'),
-              lastName: record.get('Last Name'),
-              email: record.get('Email'),
-            });
-        return {Created: true};
-      });
-}
-
-
-/***/ }),
-
-/***/ 9953:
-/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
-
-// ESM COMPAT FLAG
-__nccwpck_require__.r(__webpack_exports__);
-
-// EXPORTS
-__nccwpck_require__.d(__webpack_exports__, {
-  "main": () => (/* binding */ main)
-});
-
-// EXTERNAL MODULE: ./node_modules/node-fetch/src/index.js + 20 modules
-var src = __nccwpck_require__(4028);
-// EXTERNAL MODULE: ./src/bill_com/common/api.js + 2 modules
-var api = __nccwpck_require__(6362);
-// EXTERNAL MODULE: ./src/common/utils.js + 1 modules
-var utils = __nccwpck_require__(381);
-// EXTERNAL MODULE: external "util"
-var external_util_ = __nccwpck_require__(3837);
-;// CONCATENATED MODULE: ./node_modules/web-streams-polyfill/dist/ponyfill.mjs
-/**
- * @license
- * web-streams-polyfill v4.0.0-beta.3
- * Copyright 2021 Mattias Buelens, Diwank Singh Tomer and other contributors.
- * This code is released under the MIT license.
- * SPDX-License-Identifier: MIT
- */
-const e="function"==typeof Symbol&&"symbol"==typeof Symbol.iterator?Symbol:e=>`Symbol(${e})`;function t(){}function r(e){return"object"==typeof e&&null!==e||"function"==typeof e}const o=t;function n(e,t){try{Object.defineProperty(e,"name",{value:t,configurable:!0})}catch(e){}}const a=Promise,i=Promise.prototype.then,l=Promise.resolve.bind(a),s=Promise.reject.bind(a);function u(e){return new a(e)}function c(e){return l(e)}function d(e){return s(e)}function f(e,t,r){return i.call(e,t,r)}function b(e,t,r){f(f(e,t,r),void 0,o)}function h(e,t){b(e,t)}function _(e,t){b(e,void 0,t)}function p(e,t,r){return f(e,t,r)}function m(e){f(e,void 0,o)}let y=e=>{if("function"==typeof queueMicrotask)y=queueMicrotask;else{const e=c(void 0);y=t=>f(e,t)}return y(e)};function g(e,t,r){if("function"!=typeof e)throw new TypeError("Argument is not a function");return Function.prototype.apply.call(e,t,r)}function w(e,t,r){try{return c(g(e,t,r))}catch(e){return d(e)}}class S{constructor(){this._cursor=0,this._size=0,this._front={_elements:[],_next:void 0},this._back=this._front,this._cursor=0,this._size=0}get length(){return this._size}push(e){const t=this._back;let r=t;16383===t._elements.length&&(r={_elements:[],_next:void 0}),t._elements.push(e),r!==t&&(this._back=r,t._next=r),++this._size}shift(){const e=this._front;let t=e;const r=this._cursor;let o=r+1;const n=e._elements,a=n[r];return 16384===o&&(t=e._next,o=0),--this._size,this._cursor=o,e!==t&&(this._front=t),n[r]=void 0,a}forEach(e){let t=this._cursor,r=this._front,o=r._elements;for(;!(t===o.length&&void 0===r._next||t===o.length&&(r=r._next,o=r._elements,t=0,0===o.length));)e(o[t]),++t}peek(){const e=this._front,t=this._cursor;return e._elements[t]}}const v=e("[[AbortSteps]]"),R=e("[[ErrorSteps]]"),T=e("[[CancelSteps]]"),q=e("[[PullSteps]]"),C=e("[[ReleaseSteps]]");function E(e,t){e._ownerReadableStream=t,t._reader=e,"readable"===t._state?O(e):"closed"===t._state?function(e){O(e),j(e)}(e):B(e,t._storedError)}function P(e,t){return Gt(e._ownerReadableStream,t)}function W(e){const t=e._ownerReadableStream;"readable"===t._state?A(e,new TypeError("Reader was released and can no longer be used to monitor the stream's closedness")):function(e,t){B(e,t)}(e,new TypeError("Reader was released and can no longer be used to monitor the stream's closedness")),t._readableStreamController[C](),t._reader=void 0,e._ownerReadableStream=void 0}function k(e){return new TypeError("Cannot "+e+" a stream using a released reader")}function O(e){e._closedPromise=u(((t,r)=>{e._closedPromise_resolve=t,e._closedPromise_reject=r}))}function B(e,t){O(e),A(e,t)}function A(e,t){void 0!==e._closedPromise_reject&&(m(e._closedPromise),e._closedPromise_reject(t),e._closedPromise_resolve=void 0,e._closedPromise_reject=void 0)}function j(e){void 0!==e._closedPromise_resolve&&(e._closedPromise_resolve(void 0),e._closedPromise_resolve=void 0,e._closedPromise_reject=void 0)}const z=Number.isFinite||function(e){return"number"==typeof e&&isFinite(e)},L=Math.trunc||function(e){return e<0?Math.ceil(e):Math.floor(e)};function F(e,t){if(void 0!==e&&("object"!=typeof(r=e)&&"function"!=typeof r))throw new TypeError(`${t} is not an object.`);var r}function I(e,t){if("function"!=typeof e)throw new TypeError(`${t} is not a function.`)}function D(e,t){if(!function(e){return"object"==typeof e&&null!==e||"function"==typeof e}(e))throw new TypeError(`${t} is not an object.`)}function $(e,t,r){if(void 0===e)throw new TypeError(`Parameter ${t} is required in '${r}'.`)}function M(e,t,r){if(void 0===e)throw new TypeError(`${t} is required in '${r}'.`)}function Y(e){return Number(e)}function Q(e){return 0===e?0:e}function N(e,t){const r=Number.MAX_SAFE_INTEGER;let o=Number(e);if(o=Q(o),!z(o))throw new TypeError(`${t} is not a finite number`);if(o=function(e){return Q(L(e))}(o),o<0||o>r)throw new TypeError(`${t} is outside the accepted range of 0 to ${r}, inclusive`);return z(o)&&0!==o?o:0}function H(e){if(!r(e))return!1;if("function"!=typeof e.getReader)return!1;try{return"boolean"==typeof e.locked}catch(e){return!1}}function x(e){if(!r(e))return!1;if("function"!=typeof e.getWriter)return!1;try{return"boolean"==typeof e.locked}catch(e){return!1}}function V(e,t){if(!Vt(e))throw new TypeError(`${t} is not a ReadableStream.`)}function U(e,t){e._reader._readRequests.push(t)}function G(e,t,r){const o=e._reader._readRequests.shift();r?o._closeSteps():o._chunkSteps(t)}function X(e){return e._reader._readRequests.length}function J(e){const t=e._reader;return void 0!==t&&!!K(t)}class ReadableStreamDefaultReader{constructor(e){if($(e,1,"ReadableStreamDefaultReader"),V(e,"First parameter"),Ut(e))throw new TypeError("This stream has already been locked for exclusive reading by another reader");E(this,e),this._readRequests=new S}get closed(){return K(this)?this._closedPromise:d(ee("closed"))}cancel(e){return K(this)?void 0===this._ownerReadableStream?d(k("cancel")):P(this,e):d(ee("cancel"))}read(){if(!K(this))return d(ee("read"));if(void 0===this._ownerReadableStream)return d(k("read from"));let e,t;const r=u(((r,o)=>{e=r,t=o}));return function(e,t){const r=e._ownerReadableStream;r._disturbed=!0,"closed"===r._state?t._closeSteps():"errored"===r._state?t._errorSteps(r._storedError):r._readableStreamController[q](t)}(this,{_chunkSteps:t=>e({value:t,done:!1}),_closeSteps:()=>e({value:void 0,done:!0}),_errorSteps:e=>t(e)}),r}releaseLock(){if(!K(this))throw ee("releaseLock");void 0!==this._ownerReadableStream&&function(e){W(e);const t=new TypeError("Reader was released");Z(e,t)}(this)}}function K(e){return!!r(e)&&(!!Object.prototype.hasOwnProperty.call(e,"_readRequests")&&e instanceof ReadableStreamDefaultReader)}function Z(e,t){const r=e._readRequests;e._readRequests=new S,r.forEach((e=>{e._errorSteps(t)}))}function ee(e){return new TypeError(`ReadableStreamDefaultReader.prototype.${e} can only be used on a ReadableStreamDefaultReader`)}Object.defineProperties(ReadableStreamDefaultReader.prototype,{cancel:{enumerable:!0},read:{enumerable:!0},releaseLock:{enumerable:!0},closed:{enumerable:!0}}),n(ReadableStreamDefaultReader.prototype.cancel,"cancel"),n(ReadableStreamDefaultReader.prototype.read,"read"),n(ReadableStreamDefaultReader.prototype.releaseLock,"releaseLock"),"symbol"==typeof e.toStringTag&&Object.defineProperty(ReadableStreamDefaultReader.prototype,e.toStringTag,{value:"ReadableStreamDefaultReader",configurable:!0});class te{constructor(e,t){this._ongoingPromise=void 0,this._isFinished=!1,this._reader=e,this._preventCancel=t}next(){const e=()=>this._nextSteps();return this._ongoingPromise=this._ongoingPromise?p(this._ongoingPromise,e,e):e(),this._ongoingPromise}return(e){const t=()=>this._returnSteps(e);return this._ongoingPromise?p(this._ongoingPromise,t,t):t()}_nextSteps(){if(this._isFinished)return Promise.resolve({value:void 0,done:!0});const e=this._reader;return void 0===e?d(k("iterate")):f(e.read(),(e=>{var t;return this._ongoingPromise=void 0,e.done&&(this._isFinished=!0,null===(t=this._reader)||void 0===t||t.releaseLock(),this._reader=void 0),e}),(e=>{var t;throw this._ongoingPromise=void 0,this._isFinished=!0,null===(t=this._reader)||void 0===t||t.releaseLock(),this._reader=void 0,e}))}_returnSteps(e){if(this._isFinished)return Promise.resolve({value:e,done:!0});this._isFinished=!0;const t=this._reader;if(void 0===t)return d(k("finish iterating"));if(this._reader=void 0,!this._preventCancel){const r=t.cancel(e);return t.releaseLock(),p(r,(()=>({value:e,done:!0})))}return t.releaseLock(),c({value:e,done:!0})}}const re={next(){return oe(this)?this._asyncIteratorImpl.next():d(ne("next"))},return(e){return oe(this)?this._asyncIteratorImpl.return(e):d(ne("return"))}};function oe(e){if(!r(e))return!1;if(!Object.prototype.hasOwnProperty.call(e,"_asyncIteratorImpl"))return!1;try{return e._asyncIteratorImpl instanceof te}catch(e){return!1}}function ne(e){return new TypeError(`ReadableStreamAsyncIterator.${e} can only be used on a ReadableSteamAsyncIterator`)}"symbol"==typeof e.asyncIterator&&Object.defineProperty(re,e.asyncIterator,{value(){return this},writable:!0,configurable:!0});const ae=Number.isNaN||function(e){return e!=e};function ie(e,t,r,o,n){new Uint8Array(e).set(new Uint8Array(r,o,n),t)}function le(e){const t=function(e,t,r){if(e.slice)return e.slice(t,r);const o=r-t,n=new ArrayBuffer(o);return ie(n,0,e,t,o),n}(e.buffer,e.byteOffset,e.byteOffset+e.byteLength);return new Uint8Array(t)}function se(e){const t=e._queue.shift();return e._queueTotalSize-=t.size,e._queueTotalSize<0&&(e._queueTotalSize=0),t.value}function ue(e,t,r){if("number"!=typeof(o=r)||ae(o)||o<0||r===1/0)throw new RangeError("Size must be a finite, non-NaN, non-negative number.");var o;e._queue.push({value:t,size:r}),e._queueTotalSize+=r}function ce(e){e._queue=new S,e._queueTotalSize=0}class ReadableStreamBYOBRequest{constructor(){throw new TypeError("Illegal constructor")}get view(){if(!fe(this))throw Be("view");return this._view}respond(e){if(!fe(this))throw Be("respond");if($(e,1,"respond"),e=N(e,"First parameter"),void 0===this._associatedReadableByteStreamController)throw new TypeError("This BYOB request has been invalidated");this._view.buffer,function(e,t){const r=e._pendingPullIntos.peek();if("closed"===e._controlledReadableByteStream._state){if(0!==t)throw new TypeError("bytesWritten must be 0 when calling respond() on a closed stream")}else{if(0===t)throw new TypeError("bytesWritten must be greater than 0 when calling respond() on a readable stream");if(r.bytesFilled+t>r.byteLength)throw new RangeError("bytesWritten out of range")}r.buffer=r.buffer,qe(e,t)}(this._associatedReadableByteStreamController,e)}respondWithNewView(e){if(!fe(this))throw Be("respondWithNewView");if($(e,1,"respondWithNewView"),!ArrayBuffer.isView(e))throw new TypeError("You can only respond with array buffer views");if(void 0===this._associatedReadableByteStreamController)throw new TypeError("This BYOB request has been invalidated");e.buffer,function(e,t){const r=e._pendingPullIntos.peek();if("closed"===e._controlledReadableByteStream._state){if(0!==t.byteLength)throw new TypeError("The view's length must be 0 when calling respondWithNewView() on a closed stream")}else if(0===t.byteLength)throw new TypeError("The view's length must be greater than 0 when calling respondWithNewView() on a readable stream");if(r.byteOffset+r.bytesFilled!==t.byteOffset)throw new RangeError("The region specified by view does not match byobRequest");if(r.bufferByteLength!==t.buffer.byteLength)throw new RangeError("The buffer of view has different capacity than byobRequest");if(r.bytesFilled+t.byteLength>r.byteLength)throw new RangeError("The region specified by view is larger than byobRequest");const o=t.byteLength;r.buffer=t.buffer,qe(e,o)}(this._associatedReadableByteStreamController,e)}}Object.defineProperties(ReadableStreamBYOBRequest.prototype,{respond:{enumerable:!0},respondWithNewView:{enumerable:!0},view:{enumerable:!0}}),n(ReadableStreamBYOBRequest.prototype.respond,"respond"),n(ReadableStreamBYOBRequest.prototype.respondWithNewView,"respondWithNewView"),"symbol"==typeof e.toStringTag&&Object.defineProperty(ReadableStreamBYOBRequest.prototype,e.toStringTag,{value:"ReadableStreamBYOBRequest",configurable:!0});class ReadableByteStreamController{constructor(){throw new TypeError("Illegal constructor")}get byobRequest(){if(!de(this))throw Ae("byobRequest");return function(e){if(null===e._byobRequest&&e._pendingPullIntos.length>0){const t=e._pendingPullIntos.peek(),r=new Uint8Array(t.buffer,t.byteOffset+t.bytesFilled,t.byteLength-t.bytesFilled),o=Object.create(ReadableStreamBYOBRequest.prototype);!function(e,t,r){e._associatedReadableByteStreamController=t,e._view=r}(o,e,r),e._byobRequest=o}return e._byobRequest}(this)}get desiredSize(){if(!de(this))throw Ae("desiredSize");return ke(this)}close(){if(!de(this))throw Ae("close");if(this._closeRequested)throw new TypeError("The stream has already been closed; do not close it again!");const e=this._controlledReadableByteStream._state;if("readable"!==e)throw new TypeError(`The stream (in ${e} state) is not in the readable state and cannot be closed`);!function(e){const t=e._controlledReadableByteStream;if(e._closeRequested||"readable"!==t._state)return;if(e._queueTotalSize>0)return void(e._closeRequested=!0);if(e._pendingPullIntos.length>0){if(e._pendingPullIntos.peek().bytesFilled>0){const t=new TypeError("Insufficient bytes to fill elements in the given buffer");throw Pe(e,t),t}}Ee(e),Xt(t)}(this)}enqueue(e){if(!de(this))throw Ae("enqueue");if($(e,1,"enqueue"),!ArrayBuffer.isView(e))throw new TypeError("chunk must be an array buffer view");if(0===e.byteLength)throw new TypeError("chunk must have non-zero byteLength");if(0===e.buffer.byteLength)throw new TypeError("chunk's buffer must have non-zero byteLength");if(this._closeRequested)throw new TypeError("stream is closed or draining");const t=this._controlledReadableByteStream._state;if("readable"!==t)throw new TypeError(`The stream (in ${t} state) is not in the readable state and cannot be enqueued to`);!function(e,t){const r=e._controlledReadableByteStream;if(e._closeRequested||"readable"!==r._state)return;const o=t.buffer,n=t.byteOffset,a=t.byteLength,i=o;if(e._pendingPullIntos.length>0){const t=e._pendingPullIntos.peek();t.buffer,0,Re(e),t.buffer=t.buffer,"none"===t.readerType&&ge(e,t)}if(J(r))if(function(e){const t=e._controlledReadableByteStream._reader;for(;t._readRequests.length>0;){if(0===e._queueTotalSize)return;We(e,t._readRequests.shift())}}(e),0===X(r))me(e,i,n,a);else{e._pendingPullIntos.length>0&&Ce(e);G(r,new Uint8Array(i,n,a),!1)}else Le(r)?(me(e,i,n,a),Te(e)):me(e,i,n,a);be(e)}(this,e)}error(e){if(!de(this))throw Ae("error");Pe(this,e)}[T](e){he(this),ce(this);const t=this._cancelAlgorithm(e);return Ee(this),t}[q](e){const t=this._controlledReadableByteStream;if(this._queueTotalSize>0)return void We(this,e);const r=this._autoAllocateChunkSize;if(void 0!==r){let t;try{t=new ArrayBuffer(r)}catch(t){return void e._errorSteps(t)}const o={buffer:t,bufferByteLength:r,byteOffset:0,byteLength:r,bytesFilled:0,elementSize:1,viewConstructor:Uint8Array,readerType:"default"};this._pendingPullIntos.push(o)}U(t,e),be(this)}[C](){if(this._pendingPullIntos.length>0){const e=this._pendingPullIntos.peek();e.readerType="none",this._pendingPullIntos=new S,this._pendingPullIntos.push(e)}}}function de(e){return!!r(e)&&(!!Object.prototype.hasOwnProperty.call(e,"_controlledReadableByteStream")&&e instanceof ReadableByteStreamController)}function fe(e){return!!r(e)&&(!!Object.prototype.hasOwnProperty.call(e,"_associatedReadableByteStreamController")&&e instanceof ReadableStreamBYOBRequest)}function be(e){const t=function(e){const t=e._controlledReadableByteStream;if("readable"!==t._state)return!1;if(e._closeRequested)return!1;if(!e._started)return!1;if(J(t)&&X(t)>0)return!0;if(Le(t)&&ze(t)>0)return!0;if(ke(e)>0)return!0;return!1}(e);if(!t)return;if(e._pulling)return void(e._pullAgain=!0);e._pulling=!0;b(e._pullAlgorithm(),(()=>(e._pulling=!1,e._pullAgain&&(e._pullAgain=!1,be(e)),null)),(t=>(Pe(e,t),null)))}function he(e){Re(e),e._pendingPullIntos=new S}function _e(e,t){let r=!1;"closed"===e._state&&(r=!0);const o=pe(t);"default"===t.readerType?G(e,o,r):function(e,t,r){const o=e._reader._readIntoRequests.shift();r?o._closeSteps(t):o._chunkSteps(t)}(e,o,r)}function pe(e){const t=e.bytesFilled,r=e.elementSize;return new e.viewConstructor(e.buffer,e.byteOffset,t/r)}function me(e,t,r,o){e._queue.push({buffer:t,byteOffset:r,byteLength:o}),e._queueTotalSize+=o}function ye(e,t,r,o){let n;try{n=t.slice(r,r+o)}catch(t){throw Pe(e,t),t}me(e,n,0,o)}function ge(e,t){t.bytesFilled>0&&ye(e,t.buffer,t.byteOffset,t.bytesFilled),Ce(e)}function we(e,t){const r=t.elementSize,o=t.bytesFilled-t.bytesFilled%r,n=Math.min(e._queueTotalSize,t.byteLength-t.bytesFilled),a=t.bytesFilled+n,i=a-a%r;let l=n,s=!1;i>o&&(l=i-t.bytesFilled,s=!0);const u=e._queue;for(;l>0;){const r=u.peek(),o=Math.min(l,r.byteLength),n=t.byteOffset+t.bytesFilled;ie(t.buffer,n,r.buffer,r.byteOffset,o),r.byteLength===o?u.shift():(r.byteOffset+=o,r.byteLength-=o),e._queueTotalSize-=o,Se(e,o,t),l-=o}return s}function Se(e,t,r){r.bytesFilled+=t}function ve(e){0===e._queueTotalSize&&e._closeRequested?(Ee(e),Xt(e._controlledReadableByteStream)):be(e)}function Re(e){null!==e._byobRequest&&(e._byobRequest._associatedReadableByteStreamController=void 0,e._byobRequest._view=null,e._byobRequest=null)}function Te(e){for(;e._pendingPullIntos.length>0;){if(0===e._queueTotalSize)return;const t=e._pendingPullIntos.peek();we(e,t)&&(Ce(e),_e(e._controlledReadableByteStream,t))}}function qe(e,t){const r=e._pendingPullIntos.peek();Re(e);"closed"===e._controlledReadableByteStream._state?function(e,t){"none"===t.readerType&&Ce(e);const r=e._controlledReadableByteStream;if(Le(r))for(;ze(r)>0;)_e(r,Ce(e))}(e,r):function(e,t,r){if(Se(0,t,r),"none"===r.readerType)return ge(e,r),void Te(e);if(r.bytesFilled<r.elementSize)return;Ce(e);const o=r.bytesFilled%r.elementSize;if(o>0){const t=r.byteOffset+r.bytesFilled;ye(e,r.buffer,t-o,o)}r.bytesFilled-=o,_e(e._controlledReadableByteStream,r),Te(e)}(e,t,r),be(e)}function Ce(e){return e._pendingPullIntos.shift()}function Ee(e){e._pullAlgorithm=void 0,e._cancelAlgorithm=void 0}function Pe(e,t){const r=e._controlledReadableByteStream;"readable"===r._state&&(he(e),ce(e),Ee(e),Jt(r,t))}function We(e,t){const r=e._queue.shift();e._queueTotalSize-=r.byteLength,ve(e);const o=new Uint8Array(r.buffer,r.byteOffset,r.byteLength);t._chunkSteps(o)}function ke(e){const t=e._controlledReadableByteStream._state;return"errored"===t?null:"closed"===t?0:e._strategyHWM-e._queueTotalSize}function Oe(e,t,r){const o=Object.create(ReadableByteStreamController.prototype);let n,a,i;n=void 0!==t.start?()=>t.start(o):()=>{},a=void 0!==t.pull?()=>t.pull(o):()=>c(void 0),i=void 0!==t.cancel?e=>t.cancel(e):()=>c(void 0);const l=t.autoAllocateChunkSize;if(0===l)throw new TypeError("autoAllocateChunkSize must be greater than 0");!function(e,t,r,o,n,a,i){t._controlledReadableByteStream=e,t._pullAgain=!1,t._pulling=!1,t._byobRequest=null,t._queue=t._queueTotalSize=void 0,ce(t),t._closeRequested=!1,t._started=!1,t._strategyHWM=a,t._pullAlgorithm=o,t._cancelAlgorithm=n,t._autoAllocateChunkSize=i,t._pendingPullIntos=new S,e._readableStreamController=t,b(c(r()),(()=>(t._started=!0,be(t),null)),(e=>(Pe(t,e),null)))}(e,o,n,a,i,r,l)}function Be(e){return new TypeError(`ReadableStreamBYOBRequest.prototype.${e} can only be used on a ReadableStreamBYOBRequest`)}function Ae(e){return new TypeError(`ReadableByteStreamController.prototype.${e} can only be used on a ReadableByteStreamController`)}function je(e,t){e._reader._readIntoRequests.push(t)}function ze(e){return e._reader._readIntoRequests.length}function Le(e){const t=e._reader;return void 0!==t&&!!Fe(t)}Object.defineProperties(ReadableByteStreamController.prototype,{close:{enumerable:!0},enqueue:{enumerable:!0},error:{enumerable:!0},byobRequest:{enumerable:!0},desiredSize:{enumerable:!0}}),n(ReadableByteStreamController.prototype.close,"close"),n(ReadableByteStreamController.prototype.enqueue,"enqueue"),n(ReadableByteStreamController.prototype.error,"error"),"symbol"==typeof e.toStringTag&&Object.defineProperty(ReadableByteStreamController.prototype,e.toStringTag,{value:"ReadableByteStreamController",configurable:!0});class ReadableStreamBYOBReader{constructor(e){if($(e,1,"ReadableStreamBYOBReader"),V(e,"First parameter"),Ut(e))throw new TypeError("This stream has already been locked for exclusive reading by another reader");if(!de(e._readableStreamController))throw new TypeError("Cannot construct a ReadableStreamBYOBReader for a stream not constructed with a byte source");E(this,e),this._readIntoRequests=new S}get closed(){return Fe(this)?this._closedPromise:d(De("closed"))}cancel(e){return Fe(this)?void 0===this._ownerReadableStream?d(k("cancel")):P(this,e):d(De("cancel"))}read(e){if(!Fe(this))return d(De("read"));if(!ArrayBuffer.isView(e))return d(new TypeError("view must be an array buffer view"));if(0===e.byteLength)return d(new TypeError("view must have non-zero byteLength"));if(0===e.buffer.byteLength)return d(new TypeError("view's buffer must have non-zero byteLength"));if(e.buffer,void 0===this._ownerReadableStream)return d(k("read from"));let t,r;const o=u(((e,o)=>{t=e,r=o}));return function(e,t,r){const o=e._ownerReadableStream;o._disturbed=!0,"errored"===o._state?r._errorSteps(o._storedError):function(e,t,r){const o=e._controlledReadableByteStream;let n=1;t.constructor!==DataView&&(n=t.constructor.BYTES_PER_ELEMENT);const a=t.constructor,i=t.buffer,l={buffer:i,bufferByteLength:i.byteLength,byteOffset:t.byteOffset,byteLength:t.byteLength,bytesFilled:0,elementSize:n,viewConstructor:a,readerType:"byob"};if(e._pendingPullIntos.length>0)return e._pendingPullIntos.push(l),void je(o,r);if("closed"!==o._state){if(e._queueTotalSize>0){if(we(e,l)){const t=pe(l);return ve(e),void r._chunkSteps(t)}if(e._closeRequested){const t=new TypeError("Insufficient bytes to fill elements in the given buffer");return Pe(e,t),void r._errorSteps(t)}}e._pendingPullIntos.push(l),je(o,r),be(e)}else{const e=new a(l.buffer,l.byteOffset,0);r._closeSteps(e)}}(o._readableStreamController,t,r)}(this,e,{_chunkSteps:e=>t({value:e,done:!1}),_closeSteps:e=>t({value:e,done:!0}),_errorSteps:e=>r(e)}),o}releaseLock(){if(!Fe(this))throw De("releaseLock");void 0!==this._ownerReadableStream&&function(e){W(e);const t=new TypeError("Reader was released");Ie(e,t)}(this)}}function Fe(e){return!!r(e)&&(!!Object.prototype.hasOwnProperty.call(e,"_readIntoRequests")&&e instanceof ReadableStreamBYOBReader)}function Ie(e,t){const r=e._readIntoRequests;e._readIntoRequests=new S,r.forEach((e=>{e._errorSteps(t)}))}function De(e){return new TypeError(`ReadableStreamBYOBReader.prototype.${e} can only be used on a ReadableStreamBYOBReader`)}function $e(e,t){const{highWaterMark:r}=e;if(void 0===r)return t;if(ae(r)||r<0)throw new RangeError("Invalid highWaterMark");return r}function Me(e){const{size:t}=e;return t||(()=>1)}function Ye(e,t){F(e,t);const r=null==e?void 0:e.highWaterMark,o=null==e?void 0:e.size;return{highWaterMark:void 0===r?void 0:Y(r),size:void 0===o?void 0:Qe(o,`${t} has member 'size' that`)}}function Qe(e,t){return I(e,t),t=>Y(e(t))}function Ne(e,t,r){return I(e,r),r=>w(e,t,[r])}function He(e,t,r){return I(e,r),()=>w(e,t,[])}function xe(e,t,r){return I(e,r),r=>g(e,t,[r])}function Ve(e,t,r){return I(e,r),(r,o)=>w(e,t,[r,o])}Object.defineProperties(ReadableStreamBYOBReader.prototype,{cancel:{enumerable:!0},read:{enumerable:!0},releaseLock:{enumerable:!0},closed:{enumerable:!0}}),n(ReadableStreamBYOBReader.prototype.cancel,"cancel"),n(ReadableStreamBYOBReader.prototype.read,"read"),n(ReadableStreamBYOBReader.prototype.releaseLock,"releaseLock"),"symbol"==typeof e.toStringTag&&Object.defineProperty(ReadableStreamBYOBReader.prototype,e.toStringTag,{value:"ReadableStreamBYOBReader",configurable:!0});const Ue="function"==typeof AbortController;class WritableStream{constructor(e={},t={}){void 0===e?e=null:D(e,"First parameter");const r=Ye(t,"Second parameter"),o=function(e,t){F(e,t);const r=null==e?void 0:e.abort,o=null==e?void 0:e.close,n=null==e?void 0:e.start,a=null==e?void 0:e.type,i=null==e?void 0:e.write;return{abort:void 0===r?void 0:Ne(r,e,`${t} has member 'abort' that`),close:void 0===o?void 0:He(o,e,`${t} has member 'close' that`),start:void 0===n?void 0:xe(n,e,`${t} has member 'start' that`),write:void 0===i?void 0:Ve(i,e,`${t} has member 'write' that`),type:a}}(e,"First parameter");var n;(n=this)._state="writable",n._storedError=void 0,n._writer=void 0,n._writableStreamController=void 0,n._writeRequests=new S,n._inFlightWriteRequest=void 0,n._closeRequest=void 0,n._inFlightCloseRequest=void 0,n._pendingAbortRequest=void 0,n._backpressure=!1;if(void 0!==o.type)throw new RangeError("Invalid type is specified");const a=Me(r);!function(e,t,r,o){const n=Object.create(WritableStreamDefaultController.prototype);let a,i,l,s;a=void 0!==t.start?()=>t.start(n):()=>{};i=void 0!==t.write?e=>t.write(e,n):()=>c(void 0);l=void 0!==t.close?()=>t.close():()=>c(void 0);s=void 0!==t.abort?e=>t.abort(e):()=>c(void 0);!function(e,t,r,o,n,a,i,l){t._controlledWritableStream=e,e._writableStreamController=t,t._queue=void 0,t._queueTotalSize=void 0,ce(t),t._abortReason=void 0,t._abortController=function(){if(Ue)return new AbortController}(),t._started=!1,t._strategySizeAlgorithm=l,t._strategyHWM=i,t._writeAlgorithm=o,t._closeAlgorithm=n,t._abortAlgorithm=a;const s=bt(t);nt(e,s);const u=r();b(c(u),(()=>(t._started=!0,dt(t),null)),(r=>(t._started=!0,Ze(e,r),null)))}(e,n,a,i,l,s,r,o)}(this,o,$e(r,1),a)}get locked(){if(!Ge(this))throw _t("locked");return Xe(this)}abort(e){return Ge(this)?Xe(this)?d(new TypeError("Cannot abort a stream that already has a writer")):Je(this,e):d(_t("abort"))}close(){return Ge(this)?Xe(this)?d(new TypeError("Cannot close a stream that already has a writer")):rt(this)?d(new TypeError("Cannot close an already-closing stream")):Ke(this):d(_t("close"))}getWriter(){if(!Ge(this))throw _t("getWriter");return new WritableStreamDefaultWriter(this)}}function Ge(e){return!!r(e)&&(!!Object.prototype.hasOwnProperty.call(e,"_writableStreamController")&&e instanceof WritableStream)}function Xe(e){return void 0!==e._writer}function Je(e,t){var r;if("closed"===e._state||"errored"===e._state)return c(void 0);e._writableStreamController._abortReason=t,null===(r=e._writableStreamController._abortController)||void 0===r||r.abort(t);const o=e._state;if("closed"===o||"errored"===o)return c(void 0);if(void 0!==e._pendingAbortRequest)return e._pendingAbortRequest._promise;let n=!1;"erroring"===o&&(n=!0,t=void 0);const a=u(((r,o)=>{e._pendingAbortRequest={_promise:void 0,_resolve:r,_reject:o,_reason:t,_wasAlreadyErroring:n}}));return e._pendingAbortRequest._promise=a,n||et(e,t),a}function Ke(e){const t=e._state;if("closed"===t||"errored"===t)return d(new TypeError(`The stream (in ${t} state) is not in the writable state and cannot be closed`));const r=u(((t,r)=>{const o={_resolve:t,_reject:r};e._closeRequest=o})),o=e._writer;var n;return void 0!==o&&e._backpressure&&"writable"===t&&Et(o),ue(n=e._writableStreamController,lt,0),dt(n),r}function Ze(e,t){"writable"!==e._state?tt(e):et(e,t)}function et(e,t){const r=e._writableStreamController;e._state="erroring",e._storedError=t;const o=e._writer;void 0!==o&&it(o,t),!function(e){if(void 0===e._inFlightWriteRequest&&void 0===e._inFlightCloseRequest)return!1;return!0}(e)&&r._started&&tt(e)}function tt(e){e._state="errored",e._writableStreamController[R]();const t=e._storedError;if(e._writeRequests.forEach((e=>{e._reject(t)})),e._writeRequests=new S,void 0===e._pendingAbortRequest)return void ot(e);const r=e._pendingAbortRequest;if(e._pendingAbortRequest=void 0,r._wasAlreadyErroring)return r._reject(t),void ot(e);b(e._writableStreamController[v](r._reason),(()=>(r._resolve(),ot(e),null)),(t=>(r._reject(t),ot(e),null)))}function rt(e){return void 0!==e._closeRequest||void 0!==e._inFlightCloseRequest}function ot(e){void 0!==e._closeRequest&&(e._closeRequest._reject(e._storedError),e._closeRequest=void 0);const t=e._writer;void 0!==t&&St(t,e._storedError)}function nt(e,t){const r=e._writer;void 0!==r&&t!==e._backpressure&&(t?function(e){Rt(e)}(r):Et(r)),e._backpressure=t}Object.defineProperties(WritableStream.prototype,{abort:{enumerable:!0},close:{enumerable:!0},getWriter:{enumerable:!0},locked:{enumerable:!0}}),n(WritableStream.prototype.abort,"abort"),n(WritableStream.prototype.close,"close"),n(WritableStream.prototype.getWriter,"getWriter"),"symbol"==typeof e.toStringTag&&Object.defineProperty(WritableStream.prototype,e.toStringTag,{value:"WritableStream",configurable:!0});class WritableStreamDefaultWriter{constructor(e){if($(e,1,"WritableStreamDefaultWriter"),function(e,t){if(!Ge(e))throw new TypeError(`${t} is not a WritableStream.`)}(e,"First parameter"),Xe(e))throw new TypeError("This stream has already been locked for exclusive writing by another writer");this._ownerWritableStream=e,e._writer=this;const t=e._state;if("writable"===t)!rt(e)&&e._backpressure?Rt(this):qt(this),gt(this);else if("erroring"===t)Tt(this,e._storedError),gt(this);else if("closed"===t)qt(this),gt(r=this),vt(r);else{const t=e._storedError;Tt(this,t),wt(this,t)}var r}get closed(){return at(this)?this._closedPromise:d(mt("closed"))}get desiredSize(){if(!at(this))throw mt("desiredSize");if(void 0===this._ownerWritableStream)throw yt("desiredSize");return function(e){const t=e._ownerWritableStream,r=t._state;if("errored"===r||"erroring"===r)return null;if("closed"===r)return 0;return ct(t._writableStreamController)}(this)}get ready(){return at(this)?this._readyPromise:d(mt("ready"))}abort(e){return at(this)?void 0===this._ownerWritableStream?d(yt("abort")):function(e,t){return Je(e._ownerWritableStream,t)}(this,e):d(mt("abort"))}close(){if(!at(this))return d(mt("close"));const e=this._ownerWritableStream;return void 0===e?d(yt("close")):rt(e)?d(new TypeError("Cannot close an already-closing stream")):Ke(this._ownerWritableStream)}releaseLock(){if(!at(this))throw mt("releaseLock");void 0!==this._ownerWritableStream&&function(e){const t=e._ownerWritableStream,r=new TypeError("Writer was released and can no longer be used to monitor the stream's closedness");it(e,r),function(e,t){"pending"===e._closedPromiseState?St(e,t):function(e,t){wt(e,t)}(e,t)}(e,r),t._writer=void 0,e._ownerWritableStream=void 0}(this)}write(e){return at(this)?void 0===this._ownerWritableStream?d(yt("write to")):function(e,t){const r=e._ownerWritableStream,o=r._writableStreamController,n=function(e,t){try{return e._strategySizeAlgorithm(t)}catch(t){return ft(e,t),1}}(o,t);if(r!==e._ownerWritableStream)return d(yt("write to"));const a=r._state;if("errored"===a)return d(r._storedError);if(rt(r)||"closed"===a)return d(new TypeError("The stream is closing or closed and cannot be written to"));if("erroring"===a)return d(r._storedError);const i=function(e){return u(((t,r)=>{const o={_resolve:t,_reject:r};e._writeRequests.push(o)}))}(r);return function(e,t,r){try{ue(e,t,r)}catch(t){return void ft(e,t)}const o=e._controlledWritableStream;if(!rt(o)&&"writable"===o._state){nt(o,bt(e))}dt(e)}(o,t,n),i}(this,e):d(mt("write"))}}function at(e){return!!r(e)&&(!!Object.prototype.hasOwnProperty.call(e,"_ownerWritableStream")&&e instanceof WritableStreamDefaultWriter)}function it(e,t){"pending"===e._readyPromiseState?Ct(e,t):function(e,t){Tt(e,t)}(e,t)}Object.defineProperties(WritableStreamDefaultWriter.prototype,{abort:{enumerable:!0},close:{enumerable:!0},releaseLock:{enumerable:!0},write:{enumerable:!0},closed:{enumerable:!0},desiredSize:{enumerable:!0},ready:{enumerable:!0}}),n(WritableStreamDefaultWriter.prototype.abort,"abort"),n(WritableStreamDefaultWriter.prototype.close,"close"),n(WritableStreamDefaultWriter.prototype.releaseLock,"releaseLock"),n(WritableStreamDefaultWriter.prototype.write,"write"),"symbol"==typeof e.toStringTag&&Object.defineProperty(WritableStreamDefaultWriter.prototype,e.toStringTag,{value:"WritableStreamDefaultWriter",configurable:!0});const lt={};class WritableStreamDefaultController{constructor(){throw new TypeError("Illegal constructor")}get abortReason(){if(!st(this))throw pt("abortReason");return this._abortReason}get signal(){if(!st(this))throw pt("signal");if(void 0===this._abortController)throw new TypeError("WritableStreamDefaultController.prototype.signal is not supported");return this._abortController.signal}error(e){if(!st(this))throw pt("error");"writable"===this._controlledWritableStream._state&&ht(this,e)}[v](e){const t=this._abortAlgorithm(e);return ut(this),t}[R](){ce(this)}}function st(e){return!!r(e)&&(!!Object.prototype.hasOwnProperty.call(e,"_controlledWritableStream")&&e instanceof WritableStreamDefaultController)}function ut(e){e._writeAlgorithm=void 0,e._closeAlgorithm=void 0,e._abortAlgorithm=void 0,e._strategySizeAlgorithm=void 0}function ct(e){return e._strategyHWM-e._queueTotalSize}function dt(e){const t=e._controlledWritableStream;if(!e._started)return;if(void 0!==t._inFlightWriteRequest)return;if("erroring"===t._state)return void tt(t);if(0===e._queue.length)return;const r=e._queue.peek().value;r===lt?function(e){const t=e._controlledWritableStream;(function(e){e._inFlightCloseRequest=e._closeRequest,e._closeRequest=void 0})(t),se(e);const r=e._closeAlgorithm();ut(e),b(r,(()=>(function(e){e._inFlightCloseRequest._resolve(void 0),e._inFlightCloseRequest=void 0,"erroring"===e._state&&(e._storedError=void 0,void 0!==e._pendingAbortRequest&&(e._pendingAbortRequest._resolve(),e._pendingAbortRequest=void 0)),e._state="closed";const t=e._writer;void 0!==t&&vt(t)}(t),null)),(e=>(function(e,t){e._inFlightCloseRequest._reject(t),e._inFlightCloseRequest=void 0,void 0!==e._pendingAbortRequest&&(e._pendingAbortRequest._reject(t),e._pendingAbortRequest=void 0),Ze(e,t)}(t,e),null)))}(e):function(e,t){const r=e._controlledWritableStream;!function(e){e._inFlightWriteRequest=e._writeRequests.shift()}(r);b(e._writeAlgorithm(t),(()=>{!function(e){e._inFlightWriteRequest._resolve(void 0),e._inFlightWriteRequest=void 0}(r);const t=r._state;if(se(e),!rt(r)&&"writable"===t){const t=bt(e);nt(r,t)}return dt(e),null}),(t=>("writable"===r._state&&ut(e),function(e,t){e._inFlightWriteRequest._reject(t),e._inFlightWriteRequest=void 0,Ze(e,t)}(r,t),null)))}(e,r)}function ft(e,t){"writable"===e._controlledWritableStream._state&&ht(e,t)}function bt(e){return ct(e)<=0}function ht(e,t){const r=e._controlledWritableStream;ut(e),et(r,t)}function _t(e){return new TypeError(`WritableStream.prototype.${e} can only be used on a WritableStream`)}function pt(e){return new TypeError(`WritableStreamDefaultController.prototype.${e} can only be used on a WritableStreamDefaultController`)}function mt(e){return new TypeError(`WritableStreamDefaultWriter.prototype.${e} can only be used on a WritableStreamDefaultWriter`)}function yt(e){return new TypeError("Cannot "+e+" a stream using a released writer")}function gt(e){e._closedPromise=u(((t,r)=>{e._closedPromise_resolve=t,e._closedPromise_reject=r,e._closedPromiseState="pending"}))}function wt(e,t){gt(e),St(e,t)}function St(e,t){void 0!==e._closedPromise_reject&&(m(e._closedPromise),e._closedPromise_reject(t),e._closedPromise_resolve=void 0,e._closedPromise_reject=void 0,e._closedPromiseState="rejected")}function vt(e){void 0!==e._closedPromise_resolve&&(e._closedPromise_resolve(void 0),e._closedPromise_resolve=void 0,e._closedPromise_reject=void 0,e._closedPromiseState="resolved")}function Rt(e){e._readyPromise=u(((t,r)=>{e._readyPromise_resolve=t,e._readyPromise_reject=r})),e._readyPromiseState="pending"}function Tt(e,t){Rt(e),Ct(e,t)}function qt(e){Rt(e),Et(e)}function Ct(e,t){void 0!==e._readyPromise_reject&&(m(e._readyPromise),e._readyPromise_reject(t),e._readyPromise_resolve=void 0,e._readyPromise_reject=void 0,e._readyPromiseState="rejected")}function Et(e){void 0!==e._readyPromise_resolve&&(e._readyPromise_resolve(void 0),e._readyPromise_resolve=void 0,e._readyPromise_reject=void 0,e._readyPromiseState="fulfilled")}Object.defineProperties(WritableStreamDefaultController.prototype,{abortReason:{enumerable:!0},signal:{enumerable:!0},error:{enumerable:!0}}),"symbol"==typeof e.toStringTag&&Object.defineProperty(WritableStreamDefaultController.prototype,e.toStringTag,{value:"WritableStreamDefaultController",configurable:!0});const Pt="undefined"!=typeof DOMException?DOMException:void 0;const Wt=function(e){if("function"!=typeof e&&"object"!=typeof e)return!1;try{return new e,!0}catch(e){return!1}}(Pt)?Pt:function(){const e=function(e,t){this.message=e||"",this.name=t||"Error",Error.captureStackTrace&&Error.captureStackTrace(this,this.constructor)};return e.prototype=Object.create(Error.prototype),Object.defineProperty(e.prototype,"constructor",{value:e,writable:!0,configurable:!0}),e}();function kt(e,t,r,o,n,a){const i=e.getReader(),l=t.getWriter();Vt(e)&&(e._disturbed=!0);let s,_,g,w=!1,S=!1,v="readable",R="writable",T=!1,q=!1;const C=u((e=>{g=e}));let E=Promise.resolve(void 0);return u(((P,W)=>{let k;function O(){if(w)return;const e=u(((e,t)=>{!function r(o){o?e():f(function(){if(w)return c(!0);return f(l.ready,(()=>f(i.read(),(e=>!!e.done||(E=l.write(e.value),m(E),!1)))))}(),r,t)}(!1)}));m(e)}function B(){return v="closed",r?L():z((()=>(Ge(t)&&(T=rt(t),R=t._state),T||"closed"===R?c(void 0):"erroring"===R||"errored"===R?d(_):(T=!0,l.close()))),!1,void 0),null}function A(e){return w||(v="errored",s=e,o?L(!0,e):z((()=>l.abort(e)),!0,e)),null}function j(e){return S||(R="errored",_=e,n?L(!0,e):z((()=>i.cancel(e)),!0,e)),null}if(void 0!==a&&(k=()=>{const e=void 0!==a.reason?a.reason:new Wt("Aborted","AbortError"),t=[];o||t.push((()=>"writable"===R?l.abort(e):c(void 0))),n||t.push((()=>"readable"===v?i.cancel(e):c(void 0))),z((()=>Promise.all(t.map((e=>e())))),!0,e)},a.aborted?k():a.addEventListener("abort",k)),Vt(e)&&(v=e._state,s=e._storedError),Ge(t)&&(R=t._state,_=t._storedError,T=rt(t)),Vt(e)&&Ge(t)&&(q=!0,g()),"errored"===v)A(s);else if("erroring"===R||"errored"===R)j(_);else if("closed"===v)B();else if(T||"closed"===R){const e=new TypeError("the destination writable stream closed before all data could be piped to it");n?L(!0,e):z((()=>i.cancel(e)),!0,e)}function z(e,t,r){function o(){return"writable"!==R||T?n():h(function(){let e;return c(function t(){if(e!==E)return e=E,p(E,t,t)}())}(),n),null}function n(){return e?b(e(),(()=>F(t,r)),(e=>F(!0,e))):F(t,r),null}w||(w=!0,q?o():h(C,o))}function L(e,t){z(void 0,e,t)}function F(e,t){return S=!0,l.releaseLock(),i.releaseLock(),void 0!==a&&a.removeEventListener("abort",k),e?W(t):P(void 0),null}w||(b(i.closed,B,A),b(l.closed,(function(){return S||(R="closed"),null}),j)),q?O():y((()=>{q=!0,g(),O()}))}))}function Ot(e,t){return function(e){try{return e.getReader({mode:"byob"}).releaseLock(),!0}catch(e){return!1}}(e)?function(e){let t,r,o,n,a,i=e.getReader(),l=!1,s=!1,d=!1,f=!1,h=!1,p=!1;const m=u((e=>{a=e}));function y(e){_(e.closed,(t=>(e!==i||(o.error(t),n.error(t),h&&p||a(void 0)),null)))}function g(){l&&(i.releaseLock(),i=e.getReader(),y(i),l=!1),b(i.read(),(e=>{var t,r;if(d=!1,f=!1,e.done)return h||o.close(),p||n.close(),null===(t=o.byobRequest)||void 0===t||t.respond(0),null===(r=n.byobRequest)||void 0===r||r.respond(0),h&&p||a(void 0),null;const l=e.value,u=l;let c=l;if(!h&&!p)try{c=le(l)}catch(e){return o.error(e),n.error(e),a(i.cancel(e)),null}return h||o.enqueue(u),p||n.enqueue(c),s=!1,d?S():f&&v(),null}),(()=>(s=!1,null)))}function w(t,r){l||(i.releaseLock(),i=e.getReader({mode:"byob"}),y(i),l=!0);const u=r?n:o,c=r?o:n;b(i.read(t),(e=>{var t;d=!1,f=!1;const o=r?p:h,n=r?h:p;if(e.done){o||u.close(),n||c.close();const r=e.value;return void 0!==r&&(o||u.byobRequest.respondWithNewView(r),n||null===(t=c.byobRequest)||void 0===t||t.respond(0)),o&&n||a(void 0),null}const l=e.value;if(n)o||u.byobRequest.respondWithNewView(l);else{let e;try{e=le(l)}catch(e){return u.error(e),c.error(e),a(i.cancel(e)),null}o||u.byobRequest.respondWithNewView(l),c.enqueue(e)}return s=!1,d?S():f&&v(),null}),(()=>(s=!1,null)))}function S(){if(s)return d=!0,c(void 0);s=!0;const e=o.byobRequest;return null===e?g():w(e.view,!1),c(void 0)}function v(){if(s)return f=!0,c(void 0);s=!0;const e=n.byobRequest;return null===e?g():w(e.view,!0),c(void 0)}function R(e){if(h=!0,t=e,p){const e=[t,r],o=i.cancel(e);a(o)}return m}function T(e){if(p=!0,r=e,h){const e=[t,r],o=i.cancel(e);a(o)}return m}const q=new ReadableStream({type:"bytes",start(e){o=e},pull:S,cancel:R}),C=new ReadableStream({type:"bytes",start(e){n=e},pull:v,cancel:T});return y(i),[q,C]}(e):function(e,t){const r=e.getReader();let o,n,a,i,l,s=!1,d=!1,f=!1,h=!1;const p=u((e=>{l=e}));function m(){return s?(d=!0,c(void 0)):(s=!0,b(r.read(),(e=>{if(d=!1,e.done)return f||a.close(),h||i.close(),f&&h||l(void 0),null;const t=e.value,r=t,o=t;return f||a.enqueue(r),h||i.enqueue(o),s=!1,d&&m(),null}),(()=>(s=!1,null))),c(void 0))}function y(e){if(f=!0,o=e,h){const e=[o,n],t=r.cancel(e);l(t)}return p}function g(e){if(h=!0,n=e,f){const e=[o,n],t=r.cancel(e);l(t)}return p}const w=new ReadableStream({start(e){a=e},pull:m,cancel:y}),S=new ReadableStream({start(e){i=e},pull:m,cancel:g});return _(r.closed,(e=>(a.error(e),i.error(e),f&&h||l(void 0),null))),[w,S]}(e)}class ReadableStreamDefaultController{constructor(){throw new TypeError("Illegal constructor")}get desiredSize(){if(!Bt(this))throw Dt("desiredSize");return Lt(this)}close(){if(!Bt(this))throw Dt("close");if(!Ft(this))throw new TypeError("The stream is not in a state that permits close");!function(e){if(!Ft(e))return;const t=e._controlledReadableStream;e._closeRequested=!0,0===e._queue.length&&(jt(e),Xt(t))}(this)}enqueue(e){if(!Bt(this))throw Dt("enqueue");if(!Ft(this))throw new TypeError("The stream is not in a state that permits enqueue");return function(e,t){if(!Ft(e))return;const r=e._controlledReadableStream;if(Ut(r)&&X(r)>0)G(r,t,!1);else{let r;try{r=e._strategySizeAlgorithm(t)}catch(t){throw zt(e,t),t}try{ue(e,t,r)}catch(t){throw zt(e,t),t}}At(e)}(this,e)}error(e){if(!Bt(this))throw Dt("error");zt(this,e)}[T](e){ce(this);const t=this._cancelAlgorithm(e);return jt(this),t}[q](e){const t=this._controlledReadableStream;if(this._queue.length>0){const r=se(this);this._closeRequested&&0===this._queue.length?(jt(this),Xt(t)):At(this),e._chunkSteps(r)}else U(t,e),At(this)}[C](){}}function Bt(e){return!!r(e)&&(!!Object.prototype.hasOwnProperty.call(e,"_controlledReadableStream")&&e instanceof ReadableStreamDefaultController)}function At(e){const t=function(e){const t=e._controlledReadableStream;if(!Ft(e))return!1;if(!e._started)return!1;if(Ut(t)&&X(t)>0)return!0;if(Lt(e)>0)return!0;return!1}(e);if(!t)return;if(e._pulling)return void(e._pullAgain=!0);e._pulling=!0;b(e._pullAlgorithm(),(()=>(e._pulling=!1,e._pullAgain&&(e._pullAgain=!1,At(e)),null)),(t=>(zt(e,t),null)))}function jt(e){e._pullAlgorithm=void 0,e._cancelAlgorithm=void 0,e._strategySizeAlgorithm=void 0}function zt(e,t){const r=e._controlledReadableStream;"readable"===r._state&&(ce(e),jt(e),Jt(r,t))}function Lt(e){const t=e._controlledReadableStream._state;return"errored"===t?null:"closed"===t?0:e._strategyHWM-e._queueTotalSize}function Ft(e){return!e._closeRequested&&"readable"===e._controlledReadableStream._state}function It(e,t,r,o){const n=Object.create(ReadableStreamDefaultController.prototype);let a,i,l;a=void 0!==t.start?()=>t.start(n):()=>{},i=void 0!==t.pull?()=>t.pull(n):()=>c(void 0),l=void 0!==t.cancel?e=>t.cancel(e):()=>c(void 0),function(e,t,r,o,n,a,i){t._controlledReadableStream=e,t._queue=void 0,t._queueTotalSize=void 0,ce(t),t._started=!1,t._closeRequested=!1,t._pullAgain=!1,t._pulling=!1,t._strategySizeAlgorithm=i,t._strategyHWM=a,t._pullAlgorithm=o,t._cancelAlgorithm=n,e._readableStreamController=t,b(c(r()),(()=>(t._started=!0,At(t),null)),(e=>(zt(t,e),null)))}(e,n,a,i,l,r,o)}function Dt(e){return new TypeError(`ReadableStreamDefaultController.prototype.${e} can only be used on a ReadableStreamDefaultController`)}function $t(e,t,r){return I(e,r),r=>w(e,t,[r])}function Mt(e,t,r){return I(e,r),r=>w(e,t,[r])}function Yt(e,t,r){return I(e,r),r=>g(e,t,[r])}function Qt(e,t){if("bytes"!==(e=`${e}`))throw new TypeError(`${t} '${e}' is not a valid enumeration value for ReadableStreamType`);return e}function Nt(e,t){if("byob"!==(e=`${e}`))throw new TypeError(`${t} '${e}' is not a valid enumeration value for ReadableStreamReaderMode`);return e}function Ht(e,t){F(e,t);const r=null==e?void 0:e.preventAbort,o=null==e?void 0:e.preventCancel,n=null==e?void 0:e.preventClose,a=null==e?void 0:e.signal;return void 0!==a&&function(e,t){if(!function(e){if("object"!=typeof e||null===e)return!1;try{return"boolean"==typeof e.aborted}catch(e){return!1}}(e))throw new TypeError(`${t} is not an AbortSignal.`)}(a,`${t} has member 'signal' that`),{preventAbort:Boolean(r),preventCancel:Boolean(o),preventClose:Boolean(n),signal:a}}function xt(e,t){F(e,t);const r=null==e?void 0:e.readable;M(r,"readable","ReadableWritablePair"),function(e,t){if(!H(e))throw new TypeError(`${t} is not a ReadableStream.`)}(r,`${t} has member 'readable' that`);const o=null==e?void 0:e.writable;return M(o,"writable","ReadableWritablePair"),function(e,t){if(!x(e))throw new TypeError(`${t} is not a WritableStream.`)}(o,`${t} has member 'writable' that`),{readable:r,writable:o}}Object.defineProperties(ReadableStreamDefaultController.prototype,{close:{enumerable:!0},enqueue:{enumerable:!0},error:{enumerable:!0},desiredSize:{enumerable:!0}}),n(ReadableStreamDefaultController.prototype.close,"close"),n(ReadableStreamDefaultController.prototype.enqueue,"enqueue"),n(ReadableStreamDefaultController.prototype.error,"error"),"symbol"==typeof e.toStringTag&&Object.defineProperty(ReadableStreamDefaultController.prototype,e.toStringTag,{value:"ReadableStreamDefaultController",configurable:!0});class ReadableStream{constructor(e={},t={}){void 0===e?e=null:D(e,"First parameter");const r=Ye(t,"Second parameter"),o=function(e,t){F(e,t);const r=e,o=null==r?void 0:r.autoAllocateChunkSize,n=null==r?void 0:r.cancel,a=null==r?void 0:r.pull,i=null==r?void 0:r.start,l=null==r?void 0:r.type;return{autoAllocateChunkSize:void 0===o?void 0:N(o,`${t} has member 'autoAllocateChunkSize' that`),cancel:void 0===n?void 0:$t(n,r,`${t} has member 'cancel' that`),pull:void 0===a?void 0:Mt(a,r,`${t} has member 'pull' that`),start:void 0===i?void 0:Yt(i,r,`${t} has member 'start' that`),type:void 0===l?void 0:Qt(l,`${t} has member 'type' that`)}}(e,"First parameter");var n;if((n=this)._state="readable",n._reader=void 0,n._storedError=void 0,n._disturbed=!1,"bytes"===o.type){if(void 0!==r.size)throw new RangeError("The strategy for a byte stream cannot have a size function");Oe(this,o,$e(r,0))}else{const e=Me(r);It(this,o,$e(r,1),e)}}get locked(){if(!Vt(this))throw Kt("locked");return Ut(this)}cancel(e){return Vt(this)?Ut(this)?d(new TypeError("Cannot cancel a stream that already has a reader")):Gt(this,e):d(Kt("cancel"))}getReader(e){if(!Vt(this))throw Kt("getReader");return void 0===function(e,t){F(e,t);const r=null==e?void 0:e.mode;return{mode:void 0===r?void 0:Nt(r,`${t} has member 'mode' that`)}}(e,"First parameter").mode?new ReadableStreamDefaultReader(this):function(e){return new ReadableStreamBYOBReader(e)}(this)}pipeThrough(e,t={}){if(!H(this))throw Kt("pipeThrough");$(e,1,"pipeThrough");const r=xt(e,"First parameter"),o=Ht(t,"Second parameter");if(this.locked)throw new TypeError("ReadableStream.prototype.pipeThrough cannot be used on a locked ReadableStream");if(r.writable.locked)throw new TypeError("ReadableStream.prototype.pipeThrough cannot be used on a locked WritableStream");return m(kt(this,r.writable,o.preventClose,o.preventAbort,o.preventCancel,o.signal)),r.readable}pipeTo(e,t={}){if(!H(this))return d(Kt("pipeTo"));if(void 0===e)return d("Parameter 1 is required in 'pipeTo'.");if(!x(e))return d(new TypeError("ReadableStream.prototype.pipeTo's first argument must be a WritableStream"));let r;try{r=Ht(t,"Second parameter")}catch(e){return d(e)}return this.locked?d(new TypeError("ReadableStream.prototype.pipeTo cannot be used on a locked ReadableStream")):e.locked?d(new TypeError("ReadableStream.prototype.pipeTo cannot be used on a locked WritableStream")):kt(this,e,r.preventClose,r.preventAbort,r.preventCancel,r.signal)}tee(){if(!H(this))throw Kt("tee");if(this.locked)throw new TypeError("Cannot tee a stream that already has a reader");return Ot(this)}values(e){if(!H(this))throw Kt("values");return function(e,t){const r=e.getReader(),o=new te(r,t),n=Object.create(re);return n._asyncIteratorImpl=o,n}(this,function(e,t){F(e,t);const r=null==e?void 0:e.preventCancel;return{preventCancel:Boolean(r)}}(e,"First parameter").preventCancel)}}function Vt(e){return!!r(e)&&(!!Object.prototype.hasOwnProperty.call(e,"_readableStreamController")&&e instanceof ReadableStream)}function Ut(e){return void 0!==e._reader}function Gt(e,r){if(e._disturbed=!0,"closed"===e._state)return c(void 0);if("errored"===e._state)return d(e._storedError);Xt(e);const o=e._reader;if(void 0!==o&&Fe(o)){const e=o._readIntoRequests;o._readIntoRequests=new S,e.forEach((e=>{e._closeSteps(void 0)}))}return p(e._readableStreamController[T](r),t)}function Xt(e){e._state="closed";const t=e._reader;if(void 0!==t&&(j(t),K(t))){const e=t._readRequests;t._readRequests=new S,e.forEach((e=>{e._closeSteps()}))}}function Jt(e,t){e._state="errored",e._storedError=t;const r=e._reader;void 0!==r&&(A(r,t),K(r)?Z(r,t):Ie(r,t))}function Kt(e){return new TypeError(`ReadableStream.prototype.${e} can only be used on a ReadableStream`)}function Zt(e,t){F(e,t);const r=null==e?void 0:e.highWaterMark;return M(r,"highWaterMark","QueuingStrategyInit"),{highWaterMark:Y(r)}}Object.defineProperties(ReadableStream.prototype,{cancel:{enumerable:!0},getReader:{enumerable:!0},pipeThrough:{enumerable:!0},pipeTo:{enumerable:!0},tee:{enumerable:!0},values:{enumerable:!0},locked:{enumerable:!0}}),n(ReadableStream.prototype.cancel,"cancel"),n(ReadableStream.prototype.getReader,"getReader"),n(ReadableStream.prototype.pipeThrough,"pipeThrough"),n(ReadableStream.prototype.pipeTo,"pipeTo"),n(ReadableStream.prototype.tee,"tee"),n(ReadableStream.prototype.values,"values"),"symbol"==typeof e.toStringTag&&Object.defineProperty(ReadableStream.prototype,e.toStringTag,{value:"ReadableStream",configurable:!0}),"symbol"==typeof e.asyncIterator&&Object.defineProperty(ReadableStream.prototype,e.asyncIterator,{value:ReadableStream.prototype.values,writable:!0,configurable:!0});const er=e=>e.byteLength;n(er,"size");class ByteLengthQueuingStrategy{constructor(e){$(e,1,"ByteLengthQueuingStrategy"),e=Zt(e,"First parameter"),this._byteLengthQueuingStrategyHighWaterMark=e.highWaterMark}get highWaterMark(){if(!rr(this))throw tr("highWaterMark");return this._byteLengthQueuingStrategyHighWaterMark}get size(){if(!rr(this))throw tr("size");return er}}function tr(e){return new TypeError(`ByteLengthQueuingStrategy.prototype.${e} can only be used on a ByteLengthQueuingStrategy`)}function rr(e){return!!r(e)&&(!!Object.prototype.hasOwnProperty.call(e,"_byteLengthQueuingStrategyHighWaterMark")&&e instanceof ByteLengthQueuingStrategy)}Object.defineProperties(ByteLengthQueuingStrategy.prototype,{highWaterMark:{enumerable:!0},size:{enumerable:!0}}),"symbol"==typeof e.toStringTag&&Object.defineProperty(ByteLengthQueuingStrategy.prototype,e.toStringTag,{value:"ByteLengthQueuingStrategy",configurable:!0});const or=()=>1;n(or,"size");class CountQueuingStrategy{constructor(e){$(e,1,"CountQueuingStrategy"),e=Zt(e,"First parameter"),this._countQueuingStrategyHighWaterMark=e.highWaterMark}get highWaterMark(){if(!ar(this))throw nr("highWaterMark");return this._countQueuingStrategyHighWaterMark}get size(){if(!ar(this))throw nr("size");return or}}function nr(e){return new TypeError(`CountQueuingStrategy.prototype.${e} can only be used on a CountQueuingStrategy`)}function ar(e){return!!r(e)&&(!!Object.prototype.hasOwnProperty.call(e,"_countQueuingStrategyHighWaterMark")&&e instanceof CountQueuingStrategy)}function ir(e,t,r){return I(e,r),r=>w(e,t,[r])}function lr(e,t,r){return I(e,r),r=>g(e,t,[r])}function sr(e,t,r){return I(e,r),(r,o)=>w(e,t,[r,o])}Object.defineProperties(CountQueuingStrategy.prototype,{highWaterMark:{enumerable:!0},size:{enumerable:!0}}),"symbol"==typeof e.toStringTag&&Object.defineProperty(CountQueuingStrategy.prototype,e.toStringTag,{value:"CountQueuingStrategy",configurable:!0});class TransformStream{constructor(e={},t={},r={}){void 0===e&&(e=null);const o=Ye(t,"Second parameter"),n=Ye(r,"Third parameter"),a=function(e,t){F(e,t);const r=null==e?void 0:e.flush,o=null==e?void 0:e.readableType,n=null==e?void 0:e.start,a=null==e?void 0:e.transform,i=null==e?void 0:e.writableType;return{flush:void 0===r?void 0:ir(r,e,`${t} has member 'flush' that`),readableType:o,start:void 0===n?void 0:lr(n,e,`${t} has member 'start' that`),transform:void 0===a?void 0:sr(a,e,`${t} has member 'transform' that`),writableType:i}}(e,"First parameter");if(void 0!==a.readableType)throw new RangeError("Invalid readableType specified");if(void 0!==a.writableType)throw new RangeError("Invalid writableType specified");const i=$e(n,0),l=Me(n),s=$e(o,1),f=Me(o);let b;!function(e,t,r,o,n,a){function i(){return t}function l(t){return function(e,t){const r=e._transformStreamController;if(e._backpressure){return p(e._backpressureChangePromise,(()=>{if("erroring"===(Ge(e._writable)?e._writable._state:e._writableState))throw Ge(e._writable)?e._writable._storedError:e._writableStoredError;return pr(r,t)}))}return pr(r,t)}(e,t)}function s(t){return function(e,t){return cr(e,t),c(void 0)}(e,t)}function u(){return function(e){const t=e._transformStreamController,r=t._flushAlgorithm();return hr(t),p(r,(()=>{if("errored"===e._readableState)throw e._readableStoredError;gr(e)&&wr(e)}),(t=>{throw cr(e,t),e._readableStoredError}))}(e)}function d(){return function(e){return fr(e,!1),e._backpressureChangePromise}(e)}function f(t){return dr(e,t),c(void 0)}e._writableState="writable",e._writableStoredError=void 0,e._writableHasInFlightOperation=!1,e._writableStarted=!1,e._writable=function(e,t,r,o,n,a,i){return new WritableStream({start(r){e._writableController=r;try{const t=r.signal;void 0!==t&&t.addEventListener("abort",(()=>{"writable"===e._writableState&&(e._writableState="erroring",t.reason&&(e._writableStoredError=t.reason))}))}catch(e){}return p(t(),(()=>(e._writableStarted=!0,Cr(e),null)),(t=>{throw e._writableStarted=!0,Rr(e,t),t}))},write:t=>(function(e){e._writableHasInFlightOperation=!0}(e),p(r(t),(()=>(function(e){e._writableHasInFlightOperation=!1}(e),Cr(e),null)),(t=>{throw function(e,t){e._writableHasInFlightOperation=!1,Rr(e,t)}(e,t),t}))),close:()=>(function(e){e._writableHasInFlightOperation=!0}(e),p(o(),(()=>(function(e){e._writableHasInFlightOperation=!1;"erroring"===e._writableState&&(e._writableStoredError=void 0);e._writableState="closed"}(e),null)),(t=>{throw function(e,t){e._writableHasInFlightOperation=!1,e._writableState,Rr(e,t)}(e,t),t}))),abort:t=>(e._writableState="errored",e._writableStoredError=t,n(t))},{highWaterMark:a,size:i})}(e,i,l,u,s,r,o),e._readableState="readable",e._readableStoredError=void 0,e._readableCloseRequested=!1,e._readablePulling=!1,e._readable=function(e,t,r,o,n,a){return new ReadableStream({start:r=>(e._readableController=r,t().catch((t=>{Sr(e,t)}))),pull:()=>(e._readablePulling=!0,r().catch((t=>{Sr(e,t)}))),cancel:t=>(e._readableState="closed",o(t))},{highWaterMark:n,size:a})}(e,i,d,f,n,a),e._backpressure=void 0,e._backpressureChangePromise=void 0,e._backpressureChangePromise_resolve=void 0,fr(e,!0),e._transformStreamController=void 0}(this,u((e=>{b=e})),s,f,i,l),function(e,t){const r=Object.create(TransformStreamDefaultController.prototype);let o,n;o=void 0!==t.transform?e=>t.transform(e,r):e=>{try{return _r(r,e),c(void 0)}catch(e){return d(e)}};n=void 0!==t.flush?()=>t.flush(r):()=>c(void 0);!function(e,t,r,o){t._controlledTransformStream=e,e._transformStreamController=t,t._transformAlgorithm=r,t._flushAlgorithm=o}(e,r,o,n)}(this,a),void 0!==a.start?b(a.start(this._transformStreamController)):b(void 0)}get readable(){if(!ur(this))throw yr("readable");return this._readable}get writable(){if(!ur(this))throw yr("writable");return this._writable}}function ur(e){return!!r(e)&&(!!Object.prototype.hasOwnProperty.call(e,"_transformStreamController")&&e instanceof TransformStream)}function cr(e,t){Sr(e,t),dr(e,t)}function dr(e,t){hr(e._transformStreamController),function(e,t){e._writableController.error(t);"writable"===e._writableState&&Tr(e,t)}(e,t),e._backpressure&&fr(e,!1)}function fr(e,t){void 0!==e._backpressureChangePromise&&e._backpressureChangePromise_resolve(),e._backpressureChangePromise=u((t=>{e._backpressureChangePromise_resolve=t})),e._backpressure=t}Object.defineProperties(TransformStream.prototype,{readable:{enumerable:!0},writable:{enumerable:!0}}),"symbol"==typeof e.toStringTag&&Object.defineProperty(TransformStream.prototype,e.toStringTag,{value:"TransformStream",configurable:!0});class TransformStreamDefaultController{constructor(){throw new TypeError("Illegal constructor")}get desiredSize(){if(!br(this))throw mr("desiredSize");return vr(this._controlledTransformStream)}enqueue(e){if(!br(this))throw mr("enqueue");_r(this,e)}error(e){if(!br(this))throw mr("error");var t;t=e,cr(this._controlledTransformStream,t)}terminate(){if(!br(this))throw mr("terminate");!function(e){const t=e._controlledTransformStream;gr(t)&&wr(t);const r=new TypeError("TransformStream terminated");dr(t,r)}(this)}}function br(e){return!!r(e)&&(!!Object.prototype.hasOwnProperty.call(e,"_controlledTransformStream")&&e instanceof TransformStreamDefaultController)}function hr(e){e._transformAlgorithm=void 0,e._flushAlgorithm=void 0}function _r(e,t){const r=e._controlledTransformStream;if(!gr(r))throw new TypeError("Readable side is not in a state that permits enqueue");try{!function(e,t){e._readablePulling=!1;try{e._readableController.enqueue(t)}catch(t){throw Sr(e,t),t}}(r,t)}catch(e){throw dr(r,e),r._readableStoredError}const o=function(e){return!function(e){if(!gr(e))return!1;if(e._readablePulling)return!0;if(vr(e)>0)return!0;return!1}(e)}(r);o!==r._backpressure&&fr(r,!0)}function pr(e,t){return p(e._transformAlgorithm(t),void 0,(t=>{throw cr(e._controlledTransformStream,t),t}))}function mr(e){return new TypeError(`TransformStreamDefaultController.prototype.${e} can only be used on a TransformStreamDefaultController`)}function yr(e){return new TypeError(`TransformStream.prototype.${e} can only be used on a TransformStream`)}function gr(e){return!e._readableCloseRequested&&"readable"===e._readableState}function wr(e){e._readableState="closed",e._readableCloseRequested=!0,e._readableController.close()}function Sr(e,t){"readable"===e._readableState&&(e._readableState="errored",e._readableStoredError=t),e._readableController.error(t)}function vr(e){return e._readableController.desiredSize}function Rr(e,t){"writable"!==e._writableState?qr(e):Tr(e,t)}function Tr(e,t){e._writableState="erroring",e._writableStoredError=t,!function(e){return e._writableHasInFlightOperation}(e)&&e._writableStarted&&qr(e)}function qr(e){e._writableState="errored"}function Cr(e){"erroring"===e._writableState&&qr(e)}Object.defineProperties(TransformStreamDefaultController.prototype,{enqueue:{enumerable:!0},error:{enumerable:!0},terminate:{enumerable:!0},desiredSize:{enumerable:!0}}),n(TransformStreamDefaultController.prototype.enqueue,"enqueue"),n(TransformStreamDefaultController.prototype.error,"error"),n(TransformStreamDefaultController.prototype.terminate,"terminate"),"symbol"==typeof e.toStringTag&&Object.defineProperty(TransformStreamDefaultController.prototype,e.toStringTag,{value:"TransformStreamDefaultController",configurable:!0});
-
-;// CONCATENATED MODULE: ./node_modules/formdata-node/lib/esm/isFunction.js
-const isFunction = (value) => (typeof value === "function");
-
-;// CONCATENATED MODULE: ./node_modules/formdata-node/lib/esm/blobHelpers.js
-/*! Based on fetch-blob. MIT License. Jimmy Wärting <https://jimmy.warting.se/opensource> & David Frank */
-
-const CHUNK_SIZE = 65536;
-async function* clonePart(part) {
-    const end = part.byteOffset + part.byteLength;
-    let position = part.byteOffset;
-    while (position !== end) {
-        const size = Math.min(end - position, CHUNK_SIZE);
-        const chunk = part.buffer.slice(position, position + size);
-        position += chunk.byteLength;
-        yield new Uint8Array(chunk);
-    }
-}
-async function* consumeNodeBlob(blob) {
-    let position = 0;
-    while (position !== blob.size) {
-        const chunk = blob.slice(position, Math.min(blob.size, position + CHUNK_SIZE));
-        const buffer = await chunk.arrayBuffer();
-        position += buffer.byteLength;
-        yield new Uint8Array(buffer);
-    }
-}
-async function* consumeBlobParts(parts, clone = false) {
-    for (const part of parts) {
-        if (ArrayBuffer.isView(part)) {
-            if (clone) {
-                yield* clonePart(part);
-            }
-            else {
-                yield part;
-            }
-        }
-        else if (isFunction(part.stream)) {
-            yield* part.stream();
-        }
-        else {
-            yield* consumeNodeBlob(part);
-        }
-    }
-}
-function* sliceBlob(blobParts, blobSize, start = 0, end) {
-    end !== null && end !== void 0 ? end : (end = blobSize);
-    let relativeStart = start < 0
-        ? Math.max(blobSize + start, 0)
-        : Math.min(start, blobSize);
-    let relativeEnd = end < 0
-        ? Math.max(blobSize + end, 0)
-        : Math.min(end, blobSize);
-    const span = Math.max(relativeEnd - relativeStart, 0);
-    let added = 0;
-    for (const part of blobParts) {
-        if (added >= span) {
-            break;
-        }
-        const partSize = ArrayBuffer.isView(part) ? part.byteLength : part.size;
-        if (relativeStart && partSize <= relativeStart) {
-            relativeStart -= partSize;
-            relativeEnd -= partSize;
-        }
-        else {
-            let chunk;
-            if (ArrayBuffer.isView(part)) {
-                chunk = part.subarray(relativeStart, Math.min(partSize, relativeEnd));
-                added += chunk.byteLength;
-            }
-            else {
-                chunk = part.slice(relativeStart, Math.min(partSize, relativeEnd));
-                added += chunk.size;
-            }
-            relativeEnd -= partSize;
-            relativeStart = 0;
-            yield chunk;
-        }
-    }
-}
-
-;// CONCATENATED MODULE: ./node_modules/formdata-node/lib/esm/Blob.js
-/*! Based on fetch-blob. MIT License. Jimmy Wärting <https://jimmy.warting.se/opensource> & David Frank */
-var __classPrivateFieldGet = (undefined && undefined.__classPrivateFieldGet) || function (receiver, state, kind, f) {
-    if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a getter");
-    if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot read private member from an object whose class did not declare it");
-    return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state.get(receiver);
-};
-var __classPrivateFieldSet = (undefined && undefined.__classPrivateFieldSet) || function (receiver, state, value, kind, f) {
-    if (kind === "m") throw new TypeError("Private method is not writable");
-    if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a setter");
-    if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot write private member to an object whose class did not declare it");
-    return (kind === "a" ? f.call(receiver, value) : f ? f.value = value : state.set(receiver, value)), value;
-};
-var _Blob_parts, _Blob_type, _Blob_size;
-
-
-
-class Blob {
-    constructor(blobParts = [], options = {}) {
-        _Blob_parts.set(this, []);
-        _Blob_type.set(this, "");
-        _Blob_size.set(this, 0);
-        options !== null && options !== void 0 ? options : (options = {});
-        if (typeof blobParts !== "object" || blobParts === null) {
-            throw new TypeError("Failed to construct 'Blob': "
-                + "The provided value cannot be converted to a sequence.");
-        }
-        if (!isFunction(blobParts[Symbol.iterator])) {
-            throw new TypeError("Failed to construct 'Blob': "
-                + "The object must have a callable @@iterator property.");
-        }
-        if (typeof options !== "object" && !isFunction(options)) {
-            throw new TypeError("Failed to construct 'Blob': parameter 2 cannot convert to dictionary.");
-        }
-        const encoder = new TextEncoder();
-        for (const raw of blobParts) {
-            let part;
-            if (ArrayBuffer.isView(raw)) {
-                part = new Uint8Array(raw.buffer.slice(raw.byteOffset, raw.byteOffset + raw.byteLength));
-            }
-            else if (raw instanceof ArrayBuffer) {
-                part = new Uint8Array(raw.slice(0));
-            }
-            else if (raw instanceof Blob) {
-                part = raw;
-            }
-            else {
-                part = encoder.encode(String(raw));
-            }
-            __classPrivateFieldSet(this, _Blob_size, __classPrivateFieldGet(this, _Blob_size, "f") + (ArrayBuffer.isView(part) ? part.byteLength : part.size), "f");
-            __classPrivateFieldGet(this, _Blob_parts, "f").push(part);
-        }
-        const type = options.type === undefined ? "" : String(options.type);
-        __classPrivateFieldSet(this, _Blob_type, /^[\x20-\x7E]*$/.test(type) ? type : "", "f");
-    }
-    static [(_Blob_parts = new WeakMap(), _Blob_type = new WeakMap(), _Blob_size = new WeakMap(), Symbol.hasInstance)](value) {
-        return Boolean(value
-            && typeof value === "object"
-            && isFunction(value.constructor)
-            && (isFunction(value.stream)
-                || isFunction(value.arrayBuffer))
-            && /^(Blob|File)$/.test(value[Symbol.toStringTag]));
-    }
-    get type() {
-        return __classPrivateFieldGet(this, _Blob_type, "f");
-    }
-    get size() {
-        return __classPrivateFieldGet(this, _Blob_size, "f");
-    }
-    slice(start, end, contentType) {
-        return new Blob(sliceBlob(__classPrivateFieldGet(this, _Blob_parts, "f"), this.size, start, end), {
-            type: contentType
-        });
-    }
-    async text() {
-        const decoder = new TextDecoder();
-        let result = "";
-        for await (const chunk of consumeBlobParts(__classPrivateFieldGet(this, _Blob_parts, "f"))) {
-            result += decoder.decode(chunk, { stream: true });
-        }
-        result += decoder.decode();
-        return result;
-    }
-    async arrayBuffer() {
-        const view = new Uint8Array(this.size);
-        let offset = 0;
-        for await (const chunk of consumeBlobParts(__classPrivateFieldGet(this, _Blob_parts, "f"))) {
-            view.set(chunk, offset);
-            offset += chunk.length;
-        }
-        return view.buffer;
-    }
-    stream() {
-        const iterator = consumeBlobParts(__classPrivateFieldGet(this, _Blob_parts, "f"), true);
-        return new ReadableStream({
-            async pull(controller) {
-                const { value, done } = await iterator.next();
-                if (done) {
-                    return queueMicrotask(() => controller.close());
-                }
-                controller.enqueue(value);
-            },
-            async cancel() {
-                await iterator.return();
-            }
-        });
-    }
-    get [Symbol.toStringTag]() {
-        return "Blob";
-    }
-}
-Object.defineProperties(Blob.prototype, {
-    type: { enumerable: true },
-    size: { enumerable: true },
-    slice: { enumerable: true },
-    stream: { enumerable: true },
-    text: { enumerable: true },
-    arrayBuffer: { enumerable: true }
-});
-
-;// CONCATENATED MODULE: ./node_modules/formdata-node/lib/esm/File.js
-var File_classPrivateFieldSet = (undefined && undefined.__classPrivateFieldSet) || function (receiver, state, value, kind, f) {
-    if (kind === "m") throw new TypeError("Private method is not writable");
-    if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a setter");
-    if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot write private member to an object whose class did not declare it");
-    return (kind === "a" ? f.call(receiver, value) : f ? f.value = value : state.set(receiver, value)), value;
-};
-var File_classPrivateFieldGet = (undefined && undefined.__classPrivateFieldGet) || function (receiver, state, kind, f) {
-    if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a getter");
-    if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot read private member from an object whose class did not declare it");
-    return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state.get(receiver);
-};
-var _File_name, _File_lastModified;
-
-class File extends Blob {
-    constructor(fileBits, name, options = {}) {
-        super(fileBits, options);
-        _File_name.set(this, void 0);
-        _File_lastModified.set(this, 0);
-        if (arguments.length < 2) {
-            throw new TypeError("Failed to construct 'File': 2 arguments required, "
-                + `but only ${arguments.length} present.`);
-        }
-        File_classPrivateFieldSet(this, _File_name, String(name), "f");
-        const lastModified = options.lastModified === undefined
-            ? Date.now()
-            : Number(options.lastModified);
-        if (!Number.isNaN(lastModified)) {
-            File_classPrivateFieldSet(this, _File_lastModified, lastModified, "f");
-        }
-    }
-    static [(_File_name = new WeakMap(), _File_lastModified = new WeakMap(), Symbol.hasInstance)](value) {
-        return value instanceof Blob
-            && value[Symbol.toStringTag] === "File"
-            && typeof value.name === "string";
-    }
-    get name() {
-        return File_classPrivateFieldGet(this, _File_name, "f");
-    }
-    get lastModified() {
-        return File_classPrivateFieldGet(this, _File_lastModified, "f");
-    }
-    get webkitRelativePath() {
-        return "";
-    }
-    get [Symbol.toStringTag]() {
-        return "File";
-    }
-}
-
-;// CONCATENATED MODULE: ./node_modules/formdata-node/lib/esm/isFile.js
-
-const isFile = (value) => value instanceof File;
-
-;// CONCATENATED MODULE: ./node_modules/formdata-node/lib/esm/isBlob.js
-
-const isBlob = (value) => value instanceof Blob;
-
-;// CONCATENATED MODULE: ./node_modules/formdata-node/lib/esm/deprecateConstructorEntries.js
-
-const deprecateConstructorEntries = (0,external_util_.deprecate)(() => { }, "Constructor \"entries\" argument is not spec-compliant "
-    + "and will be removed in next major release.");
-
-;// CONCATENATED MODULE: ./node_modules/formdata-node/lib/esm/FormData.js
-var FormData_classPrivateFieldGet = (undefined && undefined.__classPrivateFieldGet) || function (receiver, state, kind, f) {
-    if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a getter");
-    if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot read private member from an object whose class did not declare it");
-    return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state.get(receiver);
-};
-var _FormData_instances, _FormData_entries, _FormData_setEntry;
-
-
-
-
-
-
-class FormData {
-    constructor(entries) {
-        _FormData_instances.add(this);
-        _FormData_entries.set(this, new Map());
-        if (entries) {
-            deprecateConstructorEntries();
-            entries.forEach(({ name, value, fileName }) => this.append(name, value, fileName));
-        }
-    }
-    static [(_FormData_entries = new WeakMap(), _FormData_instances = new WeakSet(), Symbol.hasInstance)](value) {
-        return Boolean(value
-            && isFunction(value.constructor)
-            && value[Symbol.toStringTag] === "FormData"
-            && isFunction(value.append)
-            && isFunction(value.set)
-            && isFunction(value.get)
-            && isFunction(value.getAll)
-            && isFunction(value.has)
-            && isFunction(value.delete)
-            && isFunction(value.entries)
-            && isFunction(value.values)
-            && isFunction(value.keys)
-            && isFunction(value[Symbol.iterator])
-            && isFunction(value.forEach));
-    }
-    append(name, value, fileName) {
-        FormData_classPrivateFieldGet(this, _FormData_instances, "m", _FormData_setEntry).call(this, {
-            name,
-            fileName,
-            append: true,
-            rawValue: value,
-            argsLength: arguments.length
-        });
-    }
-    set(name, value, fileName) {
-        FormData_classPrivateFieldGet(this, _FormData_instances, "m", _FormData_setEntry).call(this, {
-            name,
-            fileName,
-            append: false,
-            rawValue: value,
-            argsLength: arguments.length
-        });
-    }
-    get(name) {
-        const field = FormData_classPrivateFieldGet(this, _FormData_entries, "f").get(String(name));
-        if (!field) {
-            return null;
-        }
-        return field[0];
-    }
-    getAll(name) {
-        const field = FormData_classPrivateFieldGet(this, _FormData_entries, "f").get(String(name));
-        if (!field) {
-            return [];
-        }
-        return field.slice();
-    }
-    has(name) {
-        return FormData_classPrivateFieldGet(this, _FormData_entries, "f").has(String(name));
-    }
-    delete(name) {
-        FormData_classPrivateFieldGet(this, _FormData_entries, "f").delete(String(name));
-    }
-    *keys() {
-        for (const key of FormData_classPrivateFieldGet(this, _FormData_entries, "f").keys()) {
-            yield key;
-        }
-    }
-    *entries() {
-        for (const name of this.keys()) {
-            const values = this.getAll(name);
-            for (const value of values) {
-                yield [name, value];
-            }
-        }
-    }
-    *values() {
-        for (const [, value] of this) {
-            yield value;
-        }
-    }
-    [(_FormData_setEntry = function _FormData_setEntry({ name, rawValue, append, fileName, argsLength }) {
-        const methodName = append ? "append" : "set";
-        if (argsLength < 2) {
-            throw new TypeError(`Failed to execute '${methodName}' on 'FormData': `
-                + `2 arguments required, but only ${argsLength} present.`);
-        }
-        name = String(name);
-        let value;
-        if (isFile(rawValue)) {
-            value = fileName === undefined
-                ? rawValue
-                : new File([rawValue], fileName, {
-                    type: rawValue.type,
-                    lastModified: rawValue.lastModified
-                });
-        }
-        else if (isBlob(rawValue)) {
-            value = new File([rawValue], fileName === undefined ? "blob" : fileName, {
-                type: rawValue.type
-            });
-        }
-        else if (fileName) {
-            throw new TypeError(`Failed to execute '${methodName}' on 'FormData': `
-                + "parameter 2 is not of type 'Blob'.");
-        }
-        else {
-            value = String(rawValue);
-        }
-        const values = FormData_classPrivateFieldGet(this, _FormData_entries, "f").get(name);
-        if (!values) {
-            return void FormData_classPrivateFieldGet(this, _FormData_entries, "f").set(name, [value]);
-        }
-        if (!append) {
-            return void FormData_classPrivateFieldGet(this, _FormData_entries, "f").set(name, [value]);
-        }
-        values.push(value);
-    }, Symbol.iterator)]() {
-        return this.entries();
-    }
-    forEach(callback, thisArg) {
-        for (const [name, value] of this) {
-            callback.call(thisArg, value, name, this);
-        }
-    }
-    get [Symbol.toStringTag]() {
-        return "FormData";
-    }
-    [external_util_.inspect.custom]() {
-        return this[Symbol.toStringTag];
-    }
-}
-
-;// CONCATENATED MODULE: ./node_modules/formdata-node/lib/esm/index.js
-
-
-
-
-// EXTERNAL MODULE: ./src/bill_com/common/constants.js
-var constants = __nccwpck_require__(9447);
-// EXTERNAL MODULE: ./src/common/airtable.js
-var airtable = __nccwpck_require__(5585);
-;// CONCATENATED MODULE: ./src/bill_com/bill_com_integration/create_bill.js
-/** @fileoverview Creates a Bill.com Bill based on a new Check Request. */
-
-
-
-
-
-
-
-
-/** Bill.com Vendor tax ID types. */
-const taxIdTypes = new Map([['EIN', '1'], ['SSN', '2']]);
-
-/** The Bill.com API connection. */
-let billComApi;
-
-/** The Bill.com Integration Airtable Base. */
-let billComIntegrationBase;
-
-/**
- * @param {string} table
- * @param {string} airtableId
- * @return {!Promise<string>}
- */
-async function getBillComId(table, airtableId) {
-  const record = await billComIntegrationBase.find(table, airtableId);
-  return record.get(constants/* MSO_BILL_COM_ID */.yG);
-}
-
-/**
- * @param {?Object<string, *>} attachments
- * @param {string} id - The Bill.com ID of the object to attach the document.
- * @return {!Promise<undefined>}
- */
-async function uploadAttachments(attachments, id) {
-  const data = new FormData();
-  data.set('devKey', billComApi.getDevKey());
-  data.set('sessionId', billComApi.getSessionId());
-  for (const attachment of (attachments || [])) {
-
-    // Fetch the attachment.
-    const response = await (0,src/* default */.ZP)(attachment.url);
-    if (!response.ok) {
-      (0,utils/* fetchError */.Tl)(response.status, attachment.filename, response.statusText);
-    }
-
-    // Download it.
-    const file = await response.blob();
-
-    // Upload it.
-    data.set('file', file, attachment.filename);
-    data.set('data', JSON.stringify({id: id, fileName: attachment.filename}));
-    await (0,api/* apiCall */.k_)('UploadAttachment', {}, data);
-  }
-}
-
-/**
- * @param {!Record<!TField>} checkRequest
- * @return {!Promise<string>} vendorId
- */
-async function getVendorId(checkRequest) {
-  const NEW_VENDORS_TABLE = 'New Vendors';
-
-  // Get existing Vendor ID.
-  if (!checkRequest.get('New Vendor?')) {
-    return getBillComId('Existing Vendors', checkRequest.get('Vendor')[0]);
-  }
-
-  // Check if new Vendor and ID were already created.
-  const newVendorId = checkRequest.get('New Vendor')[0];
-  const newVendor =
-      await billComIntegrationBase.find(NEW_VENDORS_TABLE, newVendorId);
-  let vendorId = newVendor.get(constants/* MSO_BILL_COM_ID */.yG);
-  if (vendorId != null) return vendorId;
-
-  // Create new Vendor and ID.
-  const zipCode = newVendor.get('Zip Code');
-  const taxIdType = newVendor.get('Tax ID Type');
-  vendorId =
-      await billComApi.create(
-          'Vendor',
-          {
-            name: newVendor.get('Name'),
-            companyName: newVendor.get('Company/Alternate Name'),
-            address1: newVendor.get('Address Line 1'),
-            address2: newVendor.get('Address Line 2'),
-            addressCity: newVendor.get('City'),
-            addressState: newVendor.get('State'),
-            addressZip: zipCode && zipCode.toString(),
-            addressCountry: newVendor.get('Country'),
-            email: newVendor.get('Email'),
-            phone: newVendor.get('Phone'),
-            track1099: newVendor.get('1099 Vendor?'),
-            taxId: newVendor.get('Tax ID'),
-            taxIdType: taxIdType && taxIdTypes.get(taxIdType),
-          });
-  await billComIntegrationBase.update(
-      NEW_VENDORS_TABLE,
-      [{id: newVendorId, fields: {[constants/* MSO_BILL_COM_ID */.yG]: vendorId}}]);
-  await uploadAttachments(newVendor.get('W-9 Form'), vendorId);
-  return vendorId;
-}
-
-/**
- * @param {!Api} api
- * @param {!MsoBase=} airtableBase
- * @return {!Promise<undefined>}
- */
-async function main(api, airtableBase = new airtable/* MsoBase */.F()) {
-
-  billComApi = api;
-  billComIntegrationBase = airtableBase;
-
-  // Sync for each Org/MSO.
-  for await (const mso of billComIntegrationBase.iterateMsos()) {
-
-    // Get new Check Requests.
-    const msoRecordId = mso.getId();
-    const msoCode = mso.get('Code');
-    await billComApi.login(msoCode);
-    await billComIntegrationBase.selectAndUpdate(
-        'Check Requests',
-        'New',
-        async (newCheckRequest) => {
-
-          // Get the Check Request Line Items.
-          const billComLineItems = [];
-          for (const itemId of newCheckRequest.get('Line Items')) {
-            const item =
-                await billComIntegrationBase.find(
-                    'Check Request Line Items', itemId);
-            const date = item.get('Item Expense Date');
-            const description = item.get('Description');
-            const lineItem = {
-              entity: 'BillLineItem',
-              amount: item.get('Amount'),
-              chartOfAccountId:
-                await getBillComId(
-                    'Chart of Accounts', item.get('Category')[0]),
-              customerId:
-                await getBillComId(
-                    'Internal Customers', item.get('Project')[0]),
-              description:
-                date == undefined ?
-                    description :
-                    `${date}\n${item.get('Merchant Name')}\n` +
-                        `${item.get('Merchant Address')}\n` +
-                        `${item.get('Merchant City')} | ` +
-                        `${item.get('Merchant State')} | ` +
-                        `${item.get('Merchant Zip Code')}\n${description}`,
-            };
-
-            const project =
-                await billComIntegrationBase.find(
-                    'Internal Customers', item.get('Project')[0]);
-            if (mso.get('Use Customers?')) {
-              lineItem.customerId = project.get(constants/* MSO_BILL_COM_ID */.yG);
-            } else {
-              lineItem.actgClassId = project.get('MSO Bill.com Class ID')[0];
-            }
-            billComLineItems.push(lineItem);
-          }
-
-          // Compile Bill.com Bill based on Check Request.
-          const requester = newCheckRequest.get('Requester Name');
-          const notes = newCheckRequest.get('Notes');
-          const bill = {
-            vendorId: await getVendorId(newCheckRequest),
-            invoiceNumber:
-              newCheckRequest.get('Vendor Invoice ID') ||
-                  // Invoice number can currently be max 21 characters.
-                  // For default ID, take 15 from requester name
-                  // and 3 from unique part of Airtable Record ID,
-                  // with 3 to pretty divide these parts.
-                  `${requester.substring(0, 15)}` +
-                      ` - ${newCheckRequest.getId().substring(3, 6)}`,
-            invoiceDate: newCheckRequest.get('Invoice Date'),
-            dueDate: newCheckRequest.get('Due Date'),
-            description:
-              `Submitted by ${requester}` +
-                  ` (${newCheckRequest.get('Requester Email')}).` +
-                  (notes == undefined ? '' : `\n\nNotes:\n${notes}`),
-            billLineItems: billComLineItems,
-          };
-
-          // Create the Bill.
-          const newBillId =
-              await billComApi.createBill(bill, newCheckRequest, mso);
-
-          // Upload the Supporting Documents.
-          await uploadAttachments(
-              newCheckRequest.get('Supporting Documents'), newBillId);
-
-          return {
-            'Active': true,
-            'MSO': [msoRecordId],
-            'Vendor Invoice ID': bill.invoiceNumber,
-            [constants/* MSO_BILL_COM_ID */.yG]: newBillId,
-          };
-        });
-  }
-}
-
-
-/***/ }),
-
-/***/ 9902:
-/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
-
-__nccwpck_require__.r(__webpack_exports__);
-/* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
-/* harmony export */   "main": () => (/* binding */ main)
-/* harmony export */ });
-/* harmony import */ var _common_api_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(6362);
-/* harmony import */ var _common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(1444);
-/* harmony import */ var _common_constants_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(9447);
-/* harmony import */ var _common_utils_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(381);
-/* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(5585);
-/* harmony import */ var _common_sync_js__WEBPACK_IMPORTED_MODULE_5__ = __nccwpck_require__(3599);
-/**
- * @fileoverview Checks whether Bills have been paid and syncs Bill.com data
- * (e.g., Vendors, Chart of Accounts) into Airtable.
- */
-
-
-
-
-
-
-
-
-
-/** Bill.com Bill Approval Statuses. */
-const approvalStatuses = new Map([
-  ['0', 'Unassigned'],
-  ['1', 'Assigned'],
-  ['4', 'Approving'],
-  ['3', 'Approved'],
-  ['5', 'Denied'],
-]);
-
-/** Bill.com Bill Payment Statuses. */
-const paymentStatuses = new Map([
-  ['1', 'Open'],
-  ['4', 'Scheduled'],
-  ['0', 'Paid In Full'],
-  ['2', 'Partial Payment'],
-]);
-
-/** Unit for writing to the Summary Table. */
-let summaryBlock = [];
-
-/**
- * @param {string} name
- * @param {string} city
- * @param {string} state
- * @return {string} The vendor name, including city and/or state if present.
- */
-function vendorName(name, city, state) {
-  return (city == null && state == null) ? name : `${name} (${city}, ${state})`;
-}
-
-/**
- * A helper for syncing data between Airtable and Bill.com.
- * Only use while iterating airtableBase.
- */
-class Syncer {
-
-  /**
-   * @param {!Api} billComApi
-   * @param {!MsoBase=} airtableBase
-   */
-  constructor(billComApi, airtableBase = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_4__/* .MsoBase */ .F()) {
-
-    /** @private @const {!Api} */
-    this.billComApi_ = billComApi;
-    /** @private @const {!MsoBase} */
-    this.airtableBase_ = airtableBase;
-  }
-
-  /**
-   * Syncs active and paid statuses of unpaid bills or invoices.
-   * @param {string} table
-   * @param {string} entity - Bill or Invoice.
-   * @return {!Promise<undefined>}
-   */
-  async syncUnpaid(table, entity) {
-    const airtableUnpaids = await this.airtableBase_.select(table, 'Unpaid');
-    if (airtableUnpaids.length === 0) return;
-
-    const BILL_COM_ID =
-        entity === 'Bill' ? _common_constants_js__WEBPACK_IMPORTED_MODULE_2__/* .MSO_BILL_COM_ID */ .yG : _common_constants_js__WEBPACK_IMPORTED_MODULE_2__/* .BILL_COM_ID_SUFFIX */ .dK;
-    const mapping = _common_sync_js__WEBPACK_IMPORTED_MODULE_5__/* .getMapping */ .tj(airtableUnpaids, BILL_COM_ID);
-    const billComUpdates =
-        await this.billComApi_.bulk('Read', entity, Array.from(mapping.keys()));
-    await this.airtableBase_.update(
-        table,
-        billComUpdates.flatMap(u => u.bulk).map(
-            u => {
-              const data = u.response_data;
-              const isPaid = data.paymentStatus === '0';
-              return {
-                id: mapping.get(data.id),
-                fields: {
-                  'Active': data.isActive === _common_api_js__WEBPACK_IMPORTED_MODULE_0__/* .ActiveStatus.ACTIVE */ .tV.ACTIVE,
-                  'Approval Status': approvalStatuses.get(data.approvalStatus),
-                  'Effective Amount': data.amount,
-                  'Payment Status': paymentStatuses.get(data.paymentStatus),
-                  'Paid': isPaid,
-                  'Paid Date': isPaid ? (0,_common_utils_js__WEBPACK_IMPORTED_MODULE_3__/* .getYyyyMmDd */ .PQ)(data.updatedTime) : null,
-                },
-              };
-            }));
-  }
-
-  /**
-   * Syncs entity data to table.
-   * @param {string} entity - A Bill.com entity name.
-   * @param {string} table - A corresponding Airtable Table name.
-   * @param {function(!Object<string, *>): !Object<string, *>} syncFunc
-   *   - Determines what entity data will be synced to table.
-   * @param {boolean=} useActiveFilter
-   * @return {!Promise<undefined>}
-   */
-  async sync(entity, table, syncFunc, useActiveFilter = true) {  
-
-    // Initialize sync changes.
-    const filters = useActiveFilter ? [_common_api_js__WEBPACK_IMPORTED_MODULE_0__/* .activeFilter */ .LT] : [];
-    if (entity === 'ChartOfAccount') {
-      // Expenses or Income.
-      filters.push((0,_common_api_js__WEBPACK_IMPORTED_MODULE_0__/* .filter */ .hX)('accountType', 'in', '7,9'));
-    }
-
-    const billComEntities = await this.billComApi_.list(entity, filters);
-    const changes = new Map();
-    for (const e of billComEntities) {
-      const change = syncFunc(e);
-      change.Active = true;
-      changes.set(e.id, change);
-    }
-
-    // Reconsider when BILL supports retrieving Vendor documents.
-    // if (entity === 'Vendor') {
-    //   for (const [id, change] of changes) {
-    //     const urls = await this.billComApi_.getDocumentPages(id);
-    //     change.Documents = urls.map(url => ({url: url}));
-    //   }
-    // }
-
-    const {updates, creates, removes} =
-        _common_sync_js__WEBPACK_IMPORTED_MODULE_5__/* .syncChanges */ .U4(
-            // Source
-            changes,
-            // Mapping
-            _common_sync_js__WEBPACK_IMPORTED_MODULE_5__/* .getMapping */ .tj(
-                await this.airtableBase_.select(table), _common_constants_js__WEBPACK_IMPORTED_MODULE_2__/* .MSO_BILL_COM_ID */ .yG));
-
-    const msoRecordId = this.airtableBase_.getCurrentMso().getId();
-    await this.airtableBase_.create(
-        table,
-        Array.from(
-            creates,
-            ([id, create]) => ({
-              fields: {MSO: [msoRecordId], [_common_constants_js__WEBPACK_IMPORTED_MODULE_2__/* .MSO_BILL_COM_ID */ .yG]: id, ...create},
-            })));
-    await this.airtableBase_.update(
-        table,
-        [
-          ...Array.from(updates, _common_sync_js__WEBPACK_IMPORTED_MODULE_5__/* .airtableRecordUpdate */ .vw),
-          ...Array.from(removes, _common_sync_js__WEBPACK_IMPORTED_MODULE_5__/* .airtableRecordDeactivate */ .g6),
-        ]);
-
-    summaryBlock.push([entity, ..._common_sync_js__WEBPACK_IMPORTED_MODULE_5__/* .summarize */ .Iz([updates, creates, removes])]);
-  }
-
-  /**
-   * Syncs entity name to table.
-   * @param {string} entity - A Bill.com entity name.
-   * @param {string} table - A corresponding Airtable Table name.
-   * @param {function(!Object<string, *>): string} nameFunc
-   *   - Determines what entity data constitutes the name.
-   * @return {!Promise<undefined>}
-   */
-  syncName(entity, table, nameFunc) {
-    return this.sync(entity, table, o => ({Name: nameFunc(o)}));
-  }
-
-  /**
-   * Syncs entity name to table.
-   * @param {string} entity - A Bill.com entity name.
-   * @param {string} table - A corresponding Airtable Table name.
-   * @param {string} nameKey
-   *   - Determines what entity data key corresponds to the name.
-   * @return {!Promise<undefined>}
-   */
-  syncNameKey(entity, table, nameKey) {
-    return this.syncName(entity, table, o => o[nameKey])
-  }
-
-  /**
-   * Sync anchorEntity Customers.
-   * @param {string} anchorEntity
-   * @return {!Promise<undefined>}
-   */
-  async syncCustomers(anchorEntity) {
-    const ALL_CUSTOMERS_TABLE = 'All Customers';
-    const BILL_COM_ID = `${anchorEntity} ${_common_constants_js__WEBPACK_IMPORTED_MODULE_2__/* .BILL_COM_ID_SUFFIX */ .dK}`;
-
-    await this.billComApi_.login(anchorEntity);
-
-    // Upsert MSO Bill.com Customers (in Airtable) into Anchor Entity Bill.com.
-    const airtableCustomers =
-        await this.airtableBase_.select(ALL_CUSTOMERS_TABLE);
-    const sourceAirtableCustomers =
-        airtableCustomers.filter(
-            // Skip any record that is neither active
-            // nor has an anchor entity Bill.com ID.
-            c => (c.get('Active') || c.get(BILL_COM_ID)) &&
-                // And temporarily skip Customers with long names.
-                c.get('Name').length < 42);
-    const {updates: billComUpdates, creates: billComCreates} =
-        _common_sync_js__WEBPACK_IMPORTED_MODULE_5__/* .syncChanges */ .U4(
-            // Source
-            new Map(
-                sourceAirtableCustomers.map(
-                    c => [
-                      c.getId(),
-                      {
-                        name: c.get('Name'),
-                        isActive: (0,_common_api_js__WEBPACK_IMPORTED_MODULE_0__/* .isActiveEnum */ .dA)(c.get('Active')),
-                        email: c.get('Email'),
-                      },
-                    ])),
-            // Mapping
-            _common_sync_js__WEBPACK_IMPORTED_MODULE_5__/* .getMapping */ .tj(sourceAirtableCustomers, BILL_COM_ID, false));
-    await this.billComApi_.bulk(
-        'Update',
-        'Customer',
-        Array.from(billComUpdates, ([id, update]) => ({id, ...update})));
-
-    // Upsert Anchor Entity Bill.com Customers into MSO Bill.com (and Airtable).
-    const hasEmailAirtableCustomers =
-        new Set(
-            _common_sync_js__WEBPACK_IMPORTED_MODULE_5__/* .filterMap */ .DZ(
-                airtableCustomers,
-                c => !!c.get('Email'),
-                c => c.get(BILL_COM_ID)));
-    const {updates: airtableUpdates, creates: airtableCreates} =
-        _common_sync_js__WEBPACK_IMPORTED_MODULE_5__/* .syncChanges */ .U4(
-            // Source
-            new Map(
-                _common_sync_js__WEBPACK_IMPORTED_MODULE_5__/* .filterMap */ .DZ(
-                    await this.billComApi_.listActive('Customer'),
-                    // Skip updates where email already exists.
-                    c => !hasEmailAirtableCustomers.has(c.id),
-                    c => [c.id, {name: c.name, email: c.email}])),
-            // Mapping
-            _common_sync_js__WEBPACK_IMPORTED_MODULE_5__/* .getMapping */ .tj(airtableCustomers, BILL_COM_ID));
-
-    await this.airtableBase_.update(
-        ALL_CUSTOMERS_TABLE,
-        [
-          ...(await Promise.all(
-              Array.from(
-                  billComCreates,
-                  async ([id, create]) => ({
-                    id,
-                    fields: {
-                      [BILL_COM_ID]:
-                        await this.billComApi_.create('Customer', create),
-                    },
-                  })))),
-          ...Array.from(
-              airtableUpdates,
-              ([id, update]) => ({id, fields: {Email: update.email}})),
-        ]);
-
-    // Create any active anchor entity Bill.com Customer not in Airtable;
-    // Create in both MSO Bill.com and Airtable.
-    const currentMso = this.airtableBase_.getCurrentMso();
-    await this.billComApi_.login(currentMso.get('Code'));
-    const msoRecordId = currentMso.getId();
-    await this.airtableBase_.create(
-        ALL_CUSTOMERS_TABLE,
-        await Promise.all(
-            Array.from(
-                airtableCreates,
-                async ([id, create]) => ({
-                  fields: {
-                    Active: true,
-                    MSO: [msoRecordId],
-                    Name: create.name,
-                    Email: create.email,
-                    [BILL_COM_ID]: id,
-                    [_common_constants_js__WEBPACK_IMPORTED_MODULE_2__/* .MSO_BILL_COM_ID */ .yG]:
-                      await this.billComApi_.create('Customer', create),
-                  }
-                }))));
-  }
-}
-
-/**
- * @param {!Api} billComApi
- * @param {!MsoBase=} airtableBase
- * @return {!Promise<undefined>}
- */
-async function main(billComApi, airtableBase = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_4__/* .MsoBase */ .F()) {
-  (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_1__/* .addSummaryTableHeaders */ .M9)(['MSO', 'Entity', 'Updates', 'Creates', 'Removes']);
-  const syncer = new Syncer(billComApi, airtableBase);
-  for await (const mso of airtableBase.iterateMsos()) {
-    const msoCode = mso.get('Code');
-    await billComApi.login(msoCode);
-    await syncer.syncUnpaid('Check Requests', 'Bill');
-    await syncer.sync(
-        'Vendor', 'Existing Vendors',
-        o => ({
-          'Name': vendorName(o.name, o.addressCity, o.addressState),
-          'Address': o.address1,
-          'City': o.addressCity,
-          'State': o.addressState,
-          'Zip Code': parseInt(o.addressZip),
-          'Email': o.email,
-          'Paid via BILL': !!o.lastPaymentDate,
-          'Pay By': o.payBy,
-        }));
-    await syncer.syncNameKey('ChartOfAccount', 'Chart of Accounts', 'name');
-    await syncer.syncNameKey('ActgClass', 'Classes', 'name');
-    await syncer.sync(
-        'Profile', 'User Role Profiles', o => ({Name: o.name}), false);
-    await syncer.sync(
-        'User', 'Users',
-        o => ({
-          'Name': `${o.firstName} ${o.lastName} (${o.email})`,
-          'Profile ID': o.profileId,
-        }));
-    await syncer.sync(
-        'Customer', 'All Customers', o => ({Name: o.name, Email: o.email}));
-
-    // Add summary.
-    const blockLength = summaryBlock.length;
-    (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_1__/* .addSummaryTableRow */ .QS)([msoCode, ...summaryBlock.shift()], blockLength);
-    summaryBlock.forEach(row => (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_1__/* .addSummaryTableRow */ .QS)(row));
-    summaryBlock = [];
-
-    if (msoCode !== _common_constants_js__WEBPACK_IMPORTED_MODULE_2__/* .PRIMARY_ORG */ .l3) continue;
-    // sync('Department', 'Departments', o => ({Name: o.name, Email: o.email}))
-    await syncer.syncUnpaid('Invoices', 'Invoice');
-    await syncer.syncCustomers('CPASF');
-    await syncer.syncCustomers('CEP');
-  }
-}
-
-
-/***/ }),
-
-/***/ 8655:
-/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
-
-__nccwpck_require__.r(__webpack_exports__);
-/* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
-/* harmony export */   "main": () => (/* binding */ main)
-/* harmony export */ });
-/* harmony import */ var _common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(1444);
-/* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(5585);
-/* harmony import */ var _common_inputs_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(1872);
-/* harmony import */ var _common_utils_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(381);
-/* harmony import */ var _common_sync_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(3599);
-/** @fileoverview Syncs Bill.com Bill Line Item data into Airtable. */
-
-
-
-
-
-
-
-
-/** Bill.com Bill Approval Statuses. */
-const approvalStatuses = new Map([
-  ['0', 'Unassigned'],
-  ['1', 'Assigned'],
-  ['4', 'Approving'],
-  ['3', 'Approved'],
-  ['5', 'Denied'],
-]);
-
-/** Bill.com Bill Payment Statuses. */
-const paymentStatuses = new Map([
-  ['1', 'Open'],
-  ['4', 'Scheduled'],
-  ['0', 'Paid In Full'],
-  ['2', 'Partial Payment'],
-]);
-
-/** The Bill.com API connection. */
-let billComApi;
-
-/**
- * @param {string} entity
- * @param {func(!Object<string, *>): *} dataFunc
- * @return {!Promise<!Map<string, *>>}
- */
- async function getEntityData(entity, dataFunc) {
-  return new Map(
-      (await billComApi.listActive(entity)).map(e => [e.id, dataFunc(e)]));
- }
-
-/**
- * @param {string} entity
- * @return {!Promise<!Map<string, string>>}
- */
-function getNames(entity) {
-  return getEntityData(entity, e => e.name);
-}
-
-/**
- * @param {string} entity
+ * @param {!Object<string, *>} errorObject
+ * @param {Response=} response
  * @return {string}
  */
-function billComIdFieldName(entity) {
-  return `Org Bill.com ${entity} ID`;
+function errorMessage(errorObject, response = undefined) {
+  return `Error ${errorObject.code || response?.status}` +
+      ` (from ${errorObject.context || response?.url}):` +
+      ` ${errorObject.message || response?.statusText}`;
 }
 
 /**
- * @param {string} entity
- * @param {!RegExp} regex
- * @return {?string[]}
+ * Fetches with retry.
+ * @param {function(!Response): !Promise<!Object<string, *>>)} getErrorObject
+ * @param {...*} fetchArgs
+ * @return {!Response}
+ * @see Window.fetch
  */
-function matchDescription(entity, regex) {
-  return (entity.description || '').match(regex);
-}
-
-/**
- * @param {string} time - ISO 8601 formatted datetime.
- * @return {string} Normalized datetime
- *    for comparing across Airtable and Bill.com.
- */
-function normalizeTime(time) {
-  return time &&= time.substring(0, 23);
-}
-
-/**
- * @param {string} sessionId
- * @param {string} billId
- * @return {string[]} billId document URLs
- */
-async function getDocuments(sessionId, billId) {
-  const pages = await billComApi.dataCall('GetDocumentPages', {id: billId});
-  const docs = [];
-  for (let i = 1; i <= pages.documentPages.numPages; ++i) {
-    docs.push({
-      url: 
-        `${(0,_common_inputs_js__WEBPACK_IMPORTED_MODULE_2__/* .billComTransformUrl */ .hF)()}?sessionId=${sessionId}&entityId=${billId}` +
-            `&pageNumber=${i}`
-    });
-  }
-  return docs;
-}
-
-/**
- * @param {!Object<string, *>} upsert
- * @return {!Object<string, *>}
- */
-async function inPlaceDocuments(upsert) {
-  upsert['Supporting Documents'] = await upsert['Supporting Documents']();
-  return upsert;
-}
-
-/**
- * @param {!Api} api
- * @param {!Base=} billComIntegrationBase
- * @return {!Promise<undefined>}
- */
-async function main(api, billComIntegrationBase = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .Base */ .X()) {
-  billComApi = api;
-
-  const BILL_REPORTING_TABLE = 'Bill Reporting';
-  const merchantRegex =
-      new RegExp(
-          '(?<date>.+)\\n(?<name>.+)\\n(?<address>.+)\\n' +
-              '(?<city>.+) \\| (?<state>.+) \\| (?<zip>.+)\\n' +
-              '(?<description>.+)');
-
-  (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .addSummaryTableHeaders */ .M9)(['Org', 'Updates', 'Creates', 'Removes']);
-  const orgs =
-      await billComIntegrationBase.select(
-          'Anchor Entities', BILL_REPORTING_TABLE);
-  for (const org of orgs) {
-
-    // Initialize reference data.
-    const orgCode = org.get('Local Code');
-    const orgId = org.getId();
-    const mso = orgCode.startsWith('C') ? 'RS' : orgCode;
-    await billComApi.login(orgCode);
-    const sessionId = billComApi.getSessionId();
-    const vendors =
-        await getEntityData(
-            'Vendor',
-            v => ({
-              name: v.name,
-              address: v.address1,
-              city: v.addressCity,
-              state: v.addressState,
-              zip: v.addressZip,
-            }));
-    const chartOfAccounts = await getNames('ChartOfAccount');
-    const customers = await getNames('Customer');
-    let classes;
-    try {
-      classes = await getNames('ActgClass');
-    } catch (err) {
-
-      // Handle no Classes.
-      if (err.message.match(/BDC_1145/)) {
-        (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .log */ .cM)(`${orgCode} does not use Classes: ${err.message}`);
-      } else {
-        throw err;
-      }
-    }
-
-    // Initialize sync changes.
-    const bills = await billComApi.listActive('Bill');
-    const changes = new Map();
-    const primaryBillComId = billComIdFieldName('Line Item');
-    for (const bill of bills) {
-
-      const submitterMatch = matchDescription(bill, /Submitted by (.+) \(/);
-      const vendor = vendors.get(bill.vendorId) || {};
-      for (const item of bill.billLineItems) {
-        const itemVendor =
-            (matchDescription(item, merchantRegex) || {}).groups || vendor;
-        const approvalStatus = approvalStatuses.get(bill.approvalStatus);
-        const paymentStatus = paymentStatuses.get(bill.paymentStatus);
-        changes.set(
-            item.id,
-            {
-              'Active': true,
-              'Org': [orgId],
-              'Submitted By': submitterMatch == null ? null : submitterMatch[1],
-              'Creation Date': (0,_common_utils_js__WEBPACK_IMPORTED_MODULE_3__/* .getYyyyMmDd */ .PQ)(item.createdTime),
-              'Invoice Date': bill.invoiceDate,
-              'Expense Date': itemVendor.date || bill.invoiceDate,
-              [billComIdFieldName('Vendor')]: bill.vendorId,
-              'Vendor Name': itemVendor.name,
-              'Vendor Address': itemVendor.address,
-              'Vendor City': itemVendor.city,
-              'Vendor State': itemVendor.state,
-              'Vendor Zip Code': itemVendor.zip,
-              'Description': itemVendor.description || item.description,
-              [billComIdFieldName('Chart of Account')]: item.chartOfAccountId,
-              'Chart of Account': chartOfAccounts.get(item.chartOfAccountId),
-              'Amount': item.amount,
-              [billComIdFieldName('Customer')]: item.customerId,
-              'Customer': customers.get(item.customerId),
-              [billComIdFieldName('Class')]: item?.actgClassId,
-              'Class': classes?.get(item?.actgClassId),
-              'Invoice ID': bill.invoiceNumber,
-              'Approval Status': approvalStatus,
-              'Approved': approvalStatus === 'Approved',
-              'Payment Status': paymentStatus,
-              'Paid': paymentStatus === 'Paid In Full',
-              [billComIdFieldName('Bill')]: bill.id,
-              'Supporting Documents': () => getDocuments(sessionId, bill.id),
-              'Last Updated Time': bill.updatedTime,
-            });
-      }
-    }
-
-    const airtableRecords =
-        await billComIntegrationBase.select(
-            BILL_REPORTING_TABLE, '', `Org = '${orgCode} (${mso})'`);
-    const {updates, creates, removes} =
-        _common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .syncChanges */ .U4(
-            // Source
-            changes,
-            // Mapping
-            _common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .getMapping */ .tj(airtableRecords, primaryBillComId));
-
-    // Create new table records from new Bill.com data.
-    await billComIntegrationBase.create(
-        BILL_REPORTING_TABLE,
-        await Promise.all(
-            Array.from(
-                creates,
-                async ([id, create]) => ({
-                  fields: {
-                    [primaryBillComId]: id,
-                    ...(await inPlaceDocuments(create)),
-                  },
-                }))));
-
-    // Update every existing table record based on the Bill.com data.
-    const airtableLastUpdatedTimes =
-        new Map(
-            airtableRecords.map(
-                r => [r.getId(), normalizeTime(r.get('Last Updated Time'))]));
-    await billComIntegrationBase.update(
-        BILL_REPORTING_TABLE,
-        [
-          ...(await Promise.all(
-              _common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .filterMap */ .DZ(
-                  Array.from(updates),
-                  ([id, update]) =>
-                      airtableLastUpdatedTimes.get(id) !==
-                          normalizeTime(update['Last Updated Time']),
-                  async ([id, update]) =>
-                      _common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .airtableRecordUpdate */ .vw(
-                          [id, await inPlaceDocuments(update)])))),
-          ...Array.from(removes, _common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .airtableRecordDeactivate */ .g6),
-        ]);
-    (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .addSummaryTableRow */ .QS)(
-        [orgCode, ..._common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .summarize */ .Iz([updates, creates, removes])]);
-  }
-}
-
-/***/ }),
-
-/***/ 7842:
-/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
-
-__nccwpck_require__.r(__webpack_exports__);
-/* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
-/* harmony export */   "main": () => (/* binding */ main)
-/* harmony export */ });
-/* harmony import */ var _common_api_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(6362);
-/* harmony import */ var _common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(1444);
-/* harmony import */ var _common_sync_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(3599);
-/* harmony import */ var _common_constants_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(9447);
-/* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(5585);
-/** @fileoverview Syncs Bill.com Customers from Airtable to Bill.com. */
-
-
-
-
-
-
-
-/**
- * @param {!Api} billComApi
- * @param {!MsoBase=} airtableBase
- * @return {!Promise<undefined>}
- */
-async function main(billComApi, airtableBase = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_3__/* .MsoBase */ .F()) {
-  const AIRTABLE_CUSTOMERS_TABLE = 'Internal Customers';
-
-  // Sync for each Org/MSO.
-  (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_1__/* .addSummaryTableHeaders */ .M9)(['MSO', 'Updates', 'Creates', 'Removes']);
-  for await (const mso of airtableBase.iterateMsos()) {
-    if (!mso.get('Use Customers?')) continue;
-
-    const msoCode = mso.get('Code');
-    await billComApi.login(msoCode);
-    const parentCustomerId = mso.get('Internal Customer ID');
-    const airtableCustomers =
-        await airtableBase.select(AIRTABLE_CUSTOMERS_TABLE);
-
-    const {updates, creates, removes} =
-        (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .syncChanges */ .U4)(
-            // Source
-            new Map(
-                airtableCustomers.map(
-                    c => [
-                      c.getId(),
-                      {
-                        name: c.get('Local Name'),
-                        isActive: _common_api_js__WEBPACK_IMPORTED_MODULE_0__/* .ActiveStatus.ACTIVE */ .tV.ACTIVE,
-                        parentCustomerId: parentCustomerId,
-                      },
-                    ])),
-            // Mapping
-            (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .getMapping */ .tj)(airtableCustomers, _common_constants_js__WEBPACK_IMPORTED_MODULE_2__/* .MSO_BILL_COM_ID */ .yG, false),
-            // Destination IDs
-            new Set(
-                Array.from(
-                    await billComApi.listActive(
-                        'Customer',
-                        [(0,_common_api_js__WEBPACK_IMPORTED_MODULE_0__/* .filter */ .hX)('parentCustomerId', '=', parentCustomerId)]),
-                    c => c.id)));
-
-    await airtableBase.update(
-        AIRTABLE_CUSTOMERS_TABLE,
-        await Promise.all(
-            Array.from(
-                creates,
-                async ([id, create]) => ({
-                  id,
-                  fields: {
-                    [_common_constants_js__WEBPACK_IMPORTED_MODULE_2__/* .MSO_BILL_COM_ID */ .yG]:
-                      await billComApi.create('Customer', create),
-                  },
-                }))));
-    await billComApi.bulk(
-        'Update',
-        'Customer',
-        [
-          ...Array.from(updates, ([id, update]) => ({id, ...update})),
-          ...Array.from(removes, id => ({id, isActive: _common_api_js__WEBPACK_IMPORTED_MODULE_0__/* .ActiveStatus.INACTIVE */ .tV.INACTIVE})),
-        ]);
-    (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_1__/* .addSummaryTableRow */ .QS)([msoCode, ...(0,_common_sync_js__WEBPACK_IMPORTED_MODULE_4__/* .summarize */ .Iz)([updates, creates, removes])]);
-  }
-}
-
-
-/***/ }),
-
-/***/ 6362:
-/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
-
-
-// EXPORTS
-__nccwpck_require__.d(__webpack_exports__, {
-  "tV": () => (/* binding */ ActiveStatus),
-  "LT": () => (/* binding */ activeFilter),
-  "k_": () => (/* binding */ apiCall),
-  "hX": () => (/* binding */ filter),
-  "ac": () => (/* binding */ getApi),
-  "dA": () => (/* binding */ isActiveEnum)
-});
-
-// UNUSED EXPORTS: Api
-
-// EXTERNAL MODULE: ./node_modules/node-fetch/src/index.js + 20 modules
-var src = __nccwpck_require__(4028);
-// EXTERNAL MODULE: ./src/bill_com/common/inputs.js
-var inputs = __nccwpck_require__(1872);
-;// CONCATENATED MODULE: ./node_modules/yocto-queue/index.js
-/*
-How it works:
-`this.#head` is an instance of `Node` which keeps track of its current value and nests another instance of `Node` that keeps the value that comes after it. When a value is provided to `.enqueue()`, the code needs to iterate through `this.#head`, going deeper and deeper to find the last value. However, iterating through every single item is slow. This problem is solved by saving a reference to the last value as `this.#tail` so that it can reference it to add a new value.
-*/
-
-class Node {
-	value;
-	next;
-
-	constructor(value) {
-		this.value = value;
-	}
-}
-
-class Queue {
-	#head;
-	#tail;
-	#size;
-
-	constructor() {
-		this.clear();
-	}
-
-	enqueue(value) {
-		const node = new Node(value);
-
-		if (this.#head) {
-			this.#tail.next = node;
-			this.#tail = node;
-		} else {
-			this.#head = node;
-			this.#tail = node;
-		}
-
-		this.#size++;
-	}
-
-	dequeue() {
-		const current = this.#head;
-		if (!current) {
-			return;
-		}
-
-		this.#head = this.#head.next;
-		this.#size--;
-		return current.value;
-	}
-
-	clear() {
-		this.#head = undefined;
-		this.#tail = undefined;
-		this.#size = 0;
-	}
-
-	get size() {
-		return this.#size;
-	}
-
-	* [Symbol.iterator]() {
-		let current = this.#head;
-
-		while (current) {
-			yield current.value;
-			current = current.next;
-		}
-	}
-}
-
-;// CONCATENATED MODULE: ./node_modules/p-limit/index.js
-
-
-function pLimit(concurrency) {
-	if (!((Number.isInteger(concurrency) || concurrency === Number.POSITIVE_INFINITY) && concurrency > 0)) {
-		throw new TypeError('Expected `concurrency` to be a number from 1 and up');
-	}
-
-	const queue = new Queue();
-	let activeCount = 0;
-
-	const next = () => {
-		activeCount--;
-
-		if (queue.size > 0) {
-			queue.dequeue()();
-		}
-	};
-
-	const run = async (fn, resolve, args) => {
-		activeCount++;
-
-		const result = (async () => fn(...args))();
-
-		resolve(result);
-
-		try {
-			await result;
-		} catch {}
-
-		next();
-	};
-
-	const enqueue = (fn, resolve, args) => {
-		queue.enqueue(run.bind(undefined, fn, resolve, args));
-
-		(async () => {
-			// This function needs to wait until the next microtask before comparing
-			// `activeCount` to `concurrency`, because `activeCount` is updated asynchronously
-			// when the run function is dequeued and called. The comparison in the if-statement
-			// needs to happen asynchronously as well to get an up-to-date value for `activeCount`.
-			await Promise.resolve();
-
-			if (activeCount < concurrency && queue.size > 0) {
-				queue.dequeue()();
-			}
-		})();
-	};
-
-	const generator = (fn, ...args) => new Promise(resolve => {
-		enqueue(fn, resolve, args);
-	});
-
-	Object.defineProperties(generator, {
-		activeCount: {
-			get: () => activeCount,
-		},
-		pendingCount: {
-			get: () => queue.size,
-		},
-		clearQueue: {
-			value: () => {
-				queue.clear();
-			},
-		},
-	});
-
-	return generator;
-}
-
-// EXTERNAL MODULE: ./src/common/inputs.js
-var common_inputs = __nccwpck_require__(4684);
-// EXTERNAL MODULE: ./src/common/airtable.js
-var airtable = __nccwpck_require__(5585);
-// EXTERNAL MODULE: ./src/common/utils.js + 1 modules
-var utils = __nccwpck_require__(381);
-// EXTERNAL MODULE: ./src/common/github_actions_core.js
-var github_actions_core = __nccwpck_require__(1444);
-// EXTERNAL MODULE: ./src/bill_com/common/constants.js
-var constants = __nccwpck_require__(9447);
-;// CONCATENATED MODULE: ./src/bill_com/common/api.js
-/**
- * @fileoverview Shared code for interacting with the Bill.com API.
- * For more information, check out the API documentation:
- * https://developer.bill.com/hc/en-us/articles/360035447551-API-Structure
- */
-
-
-
-
-
-
-
-
-
-
-/**
- * Mirrors Bill.com's isActive enum.
- * @enum {string}
- */
-const ActiveStatus = {ACTIVE: '1', INACTIVE: '2'};
-
-/**
- * The concurrent rate limit for Bill.com API requests
- * per developer key per organization.
- */
-const rateLimit = pLimit(3);
-
-/**
- * @param {boolean=} test
- * @return {string}
- */
-function baseUrl(test = false) {
-  return `https://api${test ? '-stage' : ''}.bill.com`;
-}
-
-/**
- * @param {string} endpoint 
- * @param {!Object<string, *>} headers
- * @param {(!URLSearchParams|!FormData)} body
- * @param {boolean} test
- * @return {!Promise<!Object<string, *>>} endpoint-specific response_data.
- */
-async function apiCall(endpoint, headers, body, test) {
-  const response =
-      await rateLimit(
-          () => (0,src/* default */.ZP)(
-              `${baseUrl(test)}/api/v2/${endpoint}.json`,
-              {method: 'POST', headers: headers, body: body}));
-  const json = await response.json();
-  (0,github_actions_core/* logJson */.u2)(endpoint, json);
-  const data = json.response_data;
-  if (json.response_status === 1) {
-    (0,utils/* fetchError */.Tl)(data.error_code, endpoint, data.error_message);
-  }
-  return data;
-}
-
-/**
- * @param {boolean} isActive
- * @return {string}
- */
-function isActiveEnum(isActive) {
-  return isActive ? ActiveStatus.ACTIVE : ActiveStatus.INACTIVE;
-}
-
-/**
- * @param {string} field
- * @param {string} op
- * @param {string} value
- * @return {!Object<string, string>} filter
- */
-function filter(field, op, value) {
-  return {field: field, op: op, value: value};
-}
-
-/** @type {!Object<string, string>} */
-const activeFilter = filter('isActive', '=', ActiveStatus.ACTIVE);
-
-/**
- * @param {string} entity
- * @param {string} data
- * @return {!Object<string, !Object<string, *>>}
- */
-function entityData(entity, data) {
-  return {obj: {entity: entity, ...data}};
-}
-
-/**
- * @param {!Record<!TField>} airtableRecord
- * @param {string=} type - |Default|Final
- * @return {?string[]} approvers MSO Bill.com IDs
- */
-function getApproverIds(airtableRecord, type = '') {
-  return airtableRecord.get(
-      `${type}${type ? ' ' : ''}Approver ${constants/* MSO_BILL_COM_ID */.yG}s`);
-}
-
-/** A connection to the Bill.com API. */
-class Api {
-
-  /**
-   * @param {!Map<string, string>} orgIds - The organization ID
-   *   for each Anchor Entity.
-   * @param {string} userName
-   * @param {string} password
-   * @param {string} devKey
-   * @param {boolean} test
-   */
-  constructor(orgIds, userName, password, devKey, test) {
-
-    /** @private @const {!Map<string, string>} */
-    this.orgIds_ = orgIds;
-
-    /** @private @const {string} */
-    this.userName_ = userName;
-    /** @private @const {string} */
-    this.password_ = password;
-
-    /** @private @const {boolena} */
-    this.test_ = test;
-
-    /** @return {string} */
-    this.getDevKey = () => devKey;
-
-    /** 
-     * The ID of the current Bill.com API session
-     * (after successful authentication).
-     * @private {?string}
-     */
-    this.sessionId_ = null;
-    /** @return {?string} */
-    this.getSessionId = () => this.sessionId_;
-  }
-
-  /**
-   * @param {string} endpoint
-   * @param {!Object<string, string>} params
-   * @return {!Promise<!Object<string, *>>} endpoint-specific response_data.
-   */
-  call(endpoint, params) {
-    (0,github_actions_core/* log */.cM)(JSON.stringify(params));
-    return apiCall(
-        endpoint,
-        {'Content-Type': 'application/x-www-form-urlencoded'},
-        new URLSearchParams({
-          ...params, devKey: this.getDevKey(), sessionId: this.sessionId_}),
-        this.test_);
-  }
-
-  /** 
-   * Login to access anchorEntity's Bill.com API and receive a session ID.
-   * @param {string} anchorEntity
-   * @return {!Promise<undefined>}
-   */
-  async login(anchorEntity) {
-    const loginResponse =
-        await this.call(
-            'Login',
-            {
-              userName: this.userName_,
-              password: this.password_,
-              orgId: this.orgIds_.get(anchorEntity),
-            });
-    this.sessionId_ = loginResponse.sessionId;
-  }
-
-  /**
-   * Login to access the primary org's Bill.com API and receive a session ID.
-   * @return {!Promise<undefined>}
-   */
-  primaryOrgLogin() {
-    return this.login(constants/* PRIMARY_ORG */.l3);
-  }
-
-  /**
-   * @param {string} endpoint
-   * @param {!Object<string, *>} data
-   * @return {!Promise<!Object<string, *>>} endpoint-specific response_data.
-   */
-  dataCall(endpoint, data) {
-    return this.call(endpoint, {data: JSON.stringify(data)});
-  }
-
-  /**
-   * @param {string} entity
-   * @param {!Object<string, *>} data
-   * @return {!Promise<string>} The newly created entity ID.
-   */
-  async create(entity, data) {
-    const response =
-        await this.dataCall(`Crud/Create/${entity}`, entityData(entity, data));
-    return response.id;
-  }
-
-  /**
-   * @param {!Object<string, *>} bill
-   * @param {!Record<!TField>} airtableRecord
-   * @param {!Record<!TField>} mso
-   * @return {!Promise<string>} The newly created Bill ID.
-   */
-  async createBill(bill, airtableRecord, mso) {
-
-    // Create the Bill.
-    const invoiceNumber = bill.invoiceNumber;
-    let billId;
-    for (let i = 1; billId == undefined; ++i) {
-      try {
-        billId = await this.create('Bill', bill);
-      } catch (err) {
-
-        // Handle duplicate Vendor Invoice ID.
-        if (err.message.match(/BDC_(1171|5370)/)) {
-          (0,github_actions_core/* warn */.ZK)(err.message);
-          bill.invoiceNumber = `${invoiceNumber} (${i})`;
-          continue;
+function fetch_fetch(getErrorObject, ...fetchArgs) {
+  return pRetry(
+      async () => {
+        const response = await fetch(...fetchArgs);
+        if (!response.ok) {
+          const message =
+              errorMessage(await getErrorObject(response), response);
+          (0,github_actions_core/* warn */.ZK)(message);
+          throw new Error(message);
         }
-        throw err;
-      }
-    }
-
-    // Set the Bill's approvers.
-    const approvers =
-        getApproverIds(airtableRecord) || getApproverIds(mso, 'Default') || [];             
-    await this.dataCall(
-        'SetApprovers',
-        {
-          entity: 'Bill',
-          objectId: billId,
-          approvers: [...approvers, ...getApproverIds(mso, 'Final')],
-        });
-    return billId;
-  }
-
-  /**
-   * @param {string} entity
-   * @param {!Object<string, string>[]=} filters
-   * @return {!Promise<!Object<string, *>[]>} entity list.
-   */
-  async list(entity, filters = []) {
-    const MAX = 999;
-    let fullList = [];
-    for (let start = 0; ; start += MAX) {
-      const response =
-          await this.dataCall(
-              `List/${entity}`, {start: start, max: MAX, filters: filters});
-      fullList = [...fullList, ...response];
-      if (response.length < MAX) break;
-    }
-
-    // Construct full Class names.
-    if (entity === 'ActgClass') {
-      const classes =
-          new Map(
-              fullList.map(
-                  e => [
-                    e.id,
-                    {name: e.name, parentActgClassId: e.parentActgClassId},
-                  ]));
-      for (const actgClass of fullList) {
-        let p = actgClass;
-        while (p = classes.get(p.parentActgClassId)) {
-          actgClass.name = p.name + ':' + actgClass.name;
-        }
-      }
-    }
-    return fullList;
-  }
-
-  /**
-   * @param {string} entity
-   * @param {!Object<string, string>[]=} filters
-   * @return {!Promise<!Object<string, *>[]>} entity list.
-   */
-  listActive(entity, filters = []) {
-    filters.push(activeFilter);
-    return this.list(entity, filters);
-  }
-  
-  /**
-   * @param {string} id
-   * @return {string[]} The document URLs.
-   */
-  async getDocumentPages(id) {
-    const pages = await this.dataCall('GetDocumentPages', {id: id});
-    const urlPrefix = baseUrl(this.test_) + pages.documentPages.fileUrl;
-    const docs = [];
-    for (let i = 1; i <= pages.documentPages.numPages; ++i) {
-      docs.push(urlPrefix + `&sessionId=${this.sessionId_}&pageNumber=${i}`);
-    }
-    return docs;
-  }
-
-  /**
-   * @param {string} op - Create|Read|Update|Delete
-   * @param {string} entity
-   * @param {(string[]|!Object<string, *>[])} data -
-   *   A list of IDs if op is Read or Delete, otherwise a list of entity data.
-   * @return {!Promise<!Object<string, *>[]>}
-   */
-  bulk(op, entity, data) {
-    const func =
-        ['Read', 'Delete'].includes(op) ?
-            (datum) => ({id: datum}) : (datum) => entityData(entity, datum);
-    return (0,utils/* batchAwait */.rE)(
-        (arr) => this.dataCall(`Bulk/Crud/${op}/${entity}`, {bulk: arr}),
-        data.map(func), 100);
-  }
+        return response;
+      },
+      {retries: 1});
 }
 
 /**
- * Creates Api using orgIds from an Airtable Base.
- * @param {string=} baseId
- * @param {string=} userName
- * @param {string=} password
- * @param {string=} devKey
- * @param {boolean=} test
- * @return {!Promise<!Api>}
+ * @param {(string|number)} code
+ * @param {string} context
+ * @param {string} message
+ * @return {!Object<string, *>} named error Object
  */
-async function getApi(
-    baseId = inputs/* airtableOrgIdsBaseId */.AG(),
-    apiKey = (0,common_inputs/* airtableApiKey */.Bd)(),
-    userName = inputs/* billComUserName */.jv(),
-    password = inputs/* billComPassword */.Mr(),
-    devKey = inputs/* billComDevKey */.Hc(),
-    test = false) {
-
-  const entities =
-      await new airtable/* Base */.X(baseId, apiKey).select('Anchor Entities', 'Org IDs');
-  const orgIds =
-      entities.map((e) => [e.get('Local Code'), e.get('Bill.com Org ID')]);
-  return new Api(new Map(orgIds), userName, password, devKey, test);
-}
-
-
-/***/ }),
-
-/***/ 9447:
-/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
-
-/* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
-/* harmony export */   "l3": () => (/* binding */ PRIMARY_ORG),
-/* harmony export */   "dK": () => (/* binding */ BILL_COM_ID_SUFFIX),
-/* harmony export */   "yG": () => (/* binding */ MSO_BILL_COM_ID)
-/* harmony export */ });
-/** @fileoverview Bill.com x Airtable constants. */
-
-/** The Primary Org. */
-const PRIMARY_ORG = 'RS';
-
-/** The Airtable Bill.com ID Field name suffix. */
-const BILL_COM_ID_SUFFIX = 'Bill.com ID';
-
-/** The MSO Bill.com ID Field name. */
-const MSO_BILL_COM_ID = `MSO ${BILL_COM_ID_SUFFIX}`;
-
-
-/***/ }),
-
-/***/ 1872:
-/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
-
-/* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
-/* harmony export */   "o8": () => (/* binding */ fileId),
-/* harmony export */   "AG": () => (/* binding */ airtableOrgIdsBaseId),
-/* harmony export */   "Hc": () => (/* binding */ billComDevKey),
-/* harmony export */   "jv": () => (/* binding */ billComUserName),
-/* harmony export */   "Mr": () => (/* binding */ billComPassword),
-/* harmony export */   "hF": () => (/* binding */ billComTransformUrl),
-/* harmony export */   "WI": () => (/* binding */ ecrApproverUserProfileId)
-/* harmony export */ });
-/* harmony import */ var _common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(1444);
-/**
- * @fileoverview Lazy evaluated inputs
- * @see bill_com/action.yml
- */
-
-
-
-/** @type function(): string */
-const fileId = (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .getInput */ .Np)('file-id');
-const airtableOrgIdsBaseId = (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .getInput */ .Np)('airtable-org-ids-base-id');
-const billComDevKey = (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .getInput */ .Np)('bill-com-dev-key');
-const billComUserName = (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .getInput */ .Np)('bill-com-user-name');
-const billComPassword = (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .getInput */ .Np)('bill-com-password');
-const billComTransformUrl = (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .getInput */ .Np)('bill-com-transform-url');
-const ecrApproverUserProfileId =
-  (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .getInput */ .Np)('ecr-approver-user-profile-id');
-
-
-/***/ }),
-
-/***/ 702:
-/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
-
-__nccwpck_require__.r(__webpack_exports__);
-/* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
-/* harmony export */   "main": () => (/* binding */ main)
-/* harmony export */ });
-/* harmony import */ var _common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(1444);
-/* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(5585);
-/* harmony import */ var _common_sync_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(3599);
-/** @fileoverview Syncs Bill.com Vendors from Airtable to Bill.com. */
- 
-
-
-
-
-/**
- * @param {!Api} billComApi
- * @param {!Base=} airtableBase
- * @return {!Promise<undefined>}
- */
-async function main(billComApi, airtableBase = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_1__/* .Base */ .X()) {
-  const AIRTABLE_VENDORS_TABLE = 'Contacts';
-  const AIRTABLE_BILL_COM_ID_FIELD = 'Bill.com Vendor ID';
-
-  const airtableVendors =
-      await airtableBase.select(
-          AIRTABLE_VENDORS_TABLE, 'Github Action: Upsert Bill.com Vendors');
-
-  // Get changes.
-  const {updates, creates} =
-      (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_2__/* .syncChanges */ .U4)(
-          // Source
-          new Map(
-              airtableVendors.map(
-                  v => {
-                    const name =
-                        v.get('Legal first name') + ' ' + v.get('Last name');
-                    return [
-                      v.getId(),
-                      {
-                        name: `${name} (STV)`,
-                        nameOnCheck: name,
-                        address1: v.get('Mailing address (line 1)'),
-                        address2: v.get('Mailing address (line 2)'),
-                        addressCity: v.get('Mailing address (city)'),
-                        addressState: v.get('Mailing address (state short)'),
-                        addressZip:
-                          v.get('Mailing address (zip code)')?.toString(),
-                        addressCountry: 'USA',
-                        email: v.get('Email'),
-                        phone: v.get('Trimmed phone number'),
-                      },
-                    ];
-                  })),
-          // Mapping
-          (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_2__/* .getMapping */ .tj)(airtableVendors, AIRTABLE_BILL_COM_ID_FIELD, false));
-
-  // Perform sync.
-  await billComApi.primaryOrgLogin();
-  await airtableBase.update(
-      AIRTABLE_VENDORS_TABLE,
-      await Promise.all(
-          Array.from(
-              creates,
-              async ([id, create]) => ({
-                id,
-                fields: {
-                  [AIRTABLE_BILL_COM_ID_FIELD]:
-                    await billComApi.create('Vendor', create),
-                },
-              }))));
-  await billComApi.bulk(
-      'Update',
-      'Vendor',
-      Array.from(updates, ([id, update]) => ({id, ...update})));
-
-  // Add summary.
-  (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .addSummaryTableHeaders */ .M9)(['Updates', 'Creates']);
-  (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .addSummaryTableRow */ .QS)((0,_common_sync_js__WEBPACK_IMPORTED_MODULE_2__/* .summarize */ .Iz)([updates, creates]));
-}
-
-
-/***/ }),
-
-/***/ 3868:
-/***/ ((__webpack_module__, __unused_webpack___webpack_exports__, __nccwpck_require__) => {
-
-__nccwpck_require__.a(__webpack_module__, async (__webpack_handle_async_dependencies__) => {
-/* harmony import */ var _bill_com_integration_bulk_create_bills_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(3508);
-/* harmony import */ var _bill_com_integration_create_approver_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(8528);
-/* harmony import */ var _bill_com_integration_create_bill_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(9953);
-/* harmony import */ var _bill_com_integration_sync_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(9902);
-/* harmony import */ var _bill_com_integration_sync_bills_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(8655);
-/* harmony import */ var _bill_com_integration_sync_internal_customers_js__WEBPACK_IMPORTED_MODULE_5__ = __nccwpck_require__(7842);
-/* harmony import */ var _door_knocking_sync_vendors_js__WEBPACK_IMPORTED_MODULE_6__ = __nccwpck_require__(702);
-/* harmony import */ var _common_inputs_js__WEBPACK_IMPORTED_MODULE_7__ = __nccwpck_require__(1872);
-/* harmony import */ var _common_api_js__WEBPACK_IMPORTED_MODULE_8__ = __nccwpck_require__(6362);
-/* harmony import */ var _common_action_js__WEBPACK_IMPORTED_MODULE_9__ = __nccwpck_require__(518);
-/** @fileoverview Entrypoint for choosing which file to run. */
-
-
-
-
-
-
-
-
-
-
-
-
-await (0,_common_action_js__WEBPACK_IMPORTED_MODULE_9__/* .run */ .K)(async () => {
-  let imp;
-  switch ((0,_common_inputs_js__WEBPACK_IMPORTED_MODULE_7__/* .fileId */ .o8)()) {
-    case 'bill_com_integration_bulk_create_bills':
-      imp = _bill_com_integration_bulk_create_bills_js__WEBPACK_IMPORTED_MODULE_0__;
-      break;
-    case 'bill_com_integration_create_approver':
-      imp = _bill_com_integration_create_approver_js__WEBPACK_IMPORTED_MODULE_1__;
-      break;
-    case 'bill_com_integration_create_bill':
-      imp = _bill_com_integration_create_bill_js__WEBPACK_IMPORTED_MODULE_2__;
-      break;
-    case 'bill_com_integration_sync':
-      imp = _bill_com_integration_sync_js__WEBPACK_IMPORTED_MODULE_3__;
-      break;
-    case 'bill_com_integration_sync_bills':
-      imp = _bill_com_integration_sync_bills_js__WEBPACK_IMPORTED_MODULE_4__;
-      break;
-    case 'bill_com_integration_sync_internal_customers':
-      imp = _bill_com_integration_sync_internal_customers_js__WEBPACK_IMPORTED_MODULE_5__;
-      break;
-    case 'door_knocking_sync_vendors':
-      imp = _door_knocking_sync_vendors_js__WEBPACK_IMPORTED_MODULE_6__;
-      break;
-    default:
-      throw new Error(`Unknown file ID ${(0,_common_inputs_js__WEBPACK_IMPORTED_MODULE_7__/* .fileId */ .o8)()}`);
-  }
-  await imp.main(await (0,_common_api_js__WEBPACK_IMPORTED_MODULE_8__/* .getApi */ .ac)());
-});
-
-__webpack_handle_async_dependencies__();
-}, 1);
-
-/***/ }),
-
-/***/ 518:
-/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
-
-/* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
-/* harmony export */   "K": () => (/* binding */ run)
-/* harmony export */ });
-/* harmony import */ var _github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(1444);
-/**
- * @fileoverview Runs and handles GitHub Action scripts,
- * including status setting and summary writing.
- */
-
-
-
-/**
- * @param {function(): !Promise<undefined>} main
- * @return {!Promise<undefined>}
- */
-function run(main) {
-  return main().catch(_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .error */ .vU).finally(_github_actions_core_js__WEBPACK_IMPORTED_MODULE_0__/* .writeSummary */ .A8);
-}
-
-
-/***/ }),
-
-/***/ 5585:
-/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
-
-/* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
-/* harmony export */   "X": () => (/* binding */ Base),
-/* harmony export */   "F": () => (/* binding */ MsoBase)
-/* harmony export */ });
-/* harmony import */ var airtable__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(5447);
-/* harmony import */ var _inputs_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(4684);
-/* harmony import */ var _utils_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(381);
-/* harmony import */ var _github_actions_core_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(1444);
-/** @fileoverview Utilities for interacting with Airtable. */
-
-/**
- * The official Airtable JavaScript library.
- * https://github.com/Airtable/airtable.js
- */
-
-
-
-
-
-/**
- * @param {string} querying e.g., selecting, updating, etc
- * @param {string} table
- * @param {!Error} err
- */
-function throwError(querying, table, err) {
-  throw new Error(
-      `Error ${querying} records in Airtable Table ${table}: ${err}`);
-}
-
-/**
- * @param {!Promise<*>} promise
- * @param {string} querying e.g., selecting, updating, etc
- * @param {string} table
- * @return {!Promise<*>}
- */
-function catchError(promise, querying, table) {
-  return promise.catch(err => throwError(querying, table, err));
-}
-
-/**
- * Asynchronously calls func with portions of array that are at most
- * the max number of records that can be created or updated
- * via an Airtable API call.
- * @param {function(!Array<*>): !Promise<*>} func
- * @param {!Array<*>} array
- * @return {!Promise<!Array<*>>}
- */
-function batch(func, array) {
-  return (0,_utils_js__WEBPACK_IMPORTED_MODULE_2__/* .batchAsync */ .aE)(func, array, 10);
-}
-
-/** An Airtable Base to query. */
-class Base {
-
-  /**
-   * @param {string=} baseId
-   * @param {string=} apiKey
-   */
-  constructor(baseId = (0,_inputs_js__WEBPACK_IMPORTED_MODULE_1__/* .airtableBaseId */ .kt)(), apiKey = (0,_inputs_js__WEBPACK_IMPORTED_MODULE_1__/* .airtableApiKey */ .Bd)()) {
-
-    /** @private @const {!Base} */
-    this.base_ = new airtable__WEBPACK_IMPORTED_MODULE_0__({apiKey: apiKey}).base(baseId);
-  }
-
-  /**
-   * @param {string} table
-   * @param {string=} view
-   * @param {string=} filterByFormula
-   * @return {!Promise<!Array<!Record<!TField>>>}
-   */
-  select(table, view = '', filterByFormula = '') {
-    const params = {view: view, filterByFormula: filterByFormula};
-    return catchError(
-        this.base_(table).select(params).all(), 'selecting', table);
-  }
-
-  /**
-   * @param {string} table
-   * @param {!Object[]} updates
-   * @param {string} updates[].id
-   * @param {!Object<string, *>} updates[].fields
-   * @return {!Promise<!Array<*>>}
-   */
-  update(table, updates) {
-    return catchError(
-        batch(this.base_(table).update, updates), 'updating', table);
-  }
-
-  /**
-   * Runs fieldsFunc for each record from table view
-   * and updates each record's fields using fieldsFunc's return value,
-   * if there is one.
-   * @param {string} table
-   * @param {string} view
-   * @param {function(!Record<!TField>): !Promise<?Object<string, *>>} fieldsFunc
-   * @return {!Promise<!Array<*>>}
-   */
-   async selectAndUpdate(table, view, fieldsFunc) {
-    const updates = [];
-    let firstErr;
-    for (const record of await this.select(table, view)) {
-      try {
-        const fields = await fieldsFunc(record);
-        fields && updates.push({id: record.getId(), fields: fields});
-      } catch (err) {
-        (0,_github_actions_core_js__WEBPACK_IMPORTED_MODULE_3__/* .warn */ .ZK)(err.message);
-        firstErr ||= err;
-      }
-    }
-    const update = await this.update(table, updates);
-    firstErr && throwError('selectAndUpdating', table, firstErr);
-    return update;
-   }
-
-  /**
-   * @param {string} table
-   * @param {!Object[]} creates
-   * @param {!Object<string, *>} creates[].fields
-   * @return {!Promise<!Array<*>>}
-   */
-  create(table, creates) {
-    return catchError(
-        batch(this.base_(table).create, creates), 'creating', table);
-  }
-
-  /**
-   * @param {string} table
-   * @param {string} id
-   * @return {!Promise<!Record<!TField>>}
-   */
-  find(table, id) {
-    return catchError(this.base_(table).find(id), 'finding', table);
-  }
-}
-
-/**
- * An Airtable Base where each Table is partitioned by MSO,
- * enabling per MSO selects across Tables. Select methods should only be called
- * while iterating via iterateMsos.
- */
-class MsoBase extends Base {
-
-  /**
-   * @param {string=} baseId
-   * @param {string=} apiKey
-   */
-  constructor(baseId = (0,_inputs_js__WEBPACK_IMPORTED_MODULE_1__/* .airtableBaseId */ .kt)(), apiKey = (0,_inputs_js__WEBPACK_IMPORTED_MODULE_1__/* .airtableApiKey */ .Bd)()) {
-    super(baseId, apiKey);
-
-    /** @private {?Record<!TField>} */
-    this.currentMso_ = null;
-    /** @return {?Record<!TField>} */
-    this.getCurrentMso = () => this.currentMso_;
-  }
-
-  /** @override */
-  select(table, view = '', filterByFormula = '') {
-    const msoFilter = `MSO = '${this.currentMso_.get('Code')}'`;
-    return super.select(
-        table,
-        view,
-        filterByFormula === '' ?
-            msoFilter : `AND(${msoFilter}, ${filterByFormula})`);
-  }
-
-  /**
-   * @param {string=} view
-   * @return {!Promise<!Iterator<!Record<!TField>>>}
-   */
-  async* iterateMsos(view = 'Org IDs') {
-    for (this.currentMso_ of await super.select('MSOs', view)) {
-      yield this.currentMso_;
-    }
-    this.currentMso_ = null;
-  }
+function errorObject(code, context, message) {
+  return {code: code, context: context, message: message};
 }
 
 
@@ -23508,10 +23976,11 @@ function summarize(changes) {
 __nccwpck_require__.d(__webpack_exports__, {
   "aE": () => (/* binding */ batchAsync),
   "rE": () => (/* binding */ batchAwait),
-  "Tl": () => (/* binding */ fetchError),
   "PQ": () => (/* binding */ getYyyyMmDd),
   "ss": () => (/* binding */ lazyCache)
 });
+
+// UNUSED EXPORTS: fetchError
 
 ;// CONCATENATED MODULE: external "node:assert/strict"
 const strict_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:assert/strict");

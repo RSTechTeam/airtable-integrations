@@ -1,6 +1,27 @@
 import * as fetch from '../../../src/common/fetch.js';
 import {jest} from '@jest/globals';
 
+test('errorObject creates error Object', () => {
+  expect(fetch.errorObject('code', 'context', 'message')).toEqual(
+      {code: 'code', context: 'context', message: 'message'});
+});
+
+describe('errorMessage', () => {
+
+  const errorObject = fetch.errorObject('code', '', '');
+
+  test('without response has no fallback', () => {
+    expect(fetch.errorMessage(errorObject)).toBe(
+        'Error code (from undefined): undefined');
+  });
+
+  test('with response has fallback', () => {
+    const response = {status: 'status', url: 'url'};
+    expect(fetch.errorMessage(errorObject, response)).toBe(
+        'Error code (from url): undefined');
+  });
+});
+
 describe('fetch', () => {
 
   const err = jest.fn(response => ({}));
@@ -21,9 +42,4 @@ describe('fetch', () => {
     await testFetch('https://github.com');
     expect(err).not.toBeCalled();
   });
-});
-
-test('errorObject creates error Object', () => {
-  expect(fetch.errorObject('code', 'context', 'message')).toEqual(
-      {code: 'code', context: 'context', message: 'message'});
 });

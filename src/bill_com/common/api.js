@@ -4,12 +4,12 @@
  * https://developer.bill.com/hc/en-us/articles/360035447551-API-Structure
  */
 
-import fetch from 'node-fetch';
 import * as inputs from './inputs.js';
 import pLimit from 'p-limit';
 import {airtableApiKey} from '../../common/inputs.js';
 import {Base} from '../../common/airtable.js';
-import {batchAwait, fetchError} from '../../common/utils.js';
+import {batchAwait} from '../../common/utils.js';
+import {errorMessage, errorObject, fetch} from '../../common/fetch.js';
 import {log, logJson, warn} from '../../common/github_actions_core.js';
 import {MSO_BILL_COM_ID, PRIMARY_ORG} from './constants.js';
 
@@ -41,18 +41,24 @@ function baseUrl(test = false) {
  * @return {!Promise<!Object<string, *>>} endpoint-specific response_data.
  */
 export async function apiCall(endpoint, headers, body, test) {
+  const getErrorObject = json => {
+    const data = json.response_data;
+    return errorObject(data.error_code, endpoint, data.error_message);
+  };
+
   const response =
       await rateLimit(
           () => fetch(
+              async response => getErrorObject(await response.json()),
               `${baseUrl(test)}/api/v2/${endpoint}.json`,
               {method: 'POST', headers: headers, body: body}));
+
   const json = await response.json();
   logJson(endpoint, json);
-  const data = json.response_data;
   if (json.response_status === 1) {
-    fetchError(data.error_code, endpoint, data.error_message);
+    throw new Error(errorMessage(getErrorObject(json)));
   }
-  return data;
+  return json.response_data;
 }
 
 /**

@@ -5,22 +5,30 @@ import {default as nodeFetch} from 'node-fetch';
 import {warn} from '../common/github_actions_core.js';
 
 /**
+ * @param {!Object<string, *>} errorObject
+ * @param {Response=} response
+ * @return {string}
+ */
+export function errorMessage(errorObject, response = undefined) {
+  return `Error ${errorObject.code || response?.status}` +
+      ` (from ${errorObject.context || response?.url}):` +
+      ` ${errorObject.message || response?.statusText}`;
+}
+
+/**
  * Fetches with retry.
- * @param {function(!Response): !Promise<!Object<string, *>>)} errFunc
+ * @param {function(!Response): !Promise<!Object<string, *>>)} getErrorObject
  * @param {...*} fetchArgs
  * @return {!Response}
  * @see Window.fetch
  */
-export function fetch(errFunc, ...fetchArgs) {
+export function fetch(getErrorObject, ...fetchArgs) {
   return pRetry(
       async () => {
         const response = await nodeFetch(...fetchArgs);
         if (!response.ok) {
-          const err = await errFunc(response);
           const message =
-              `Error ${err.code || response.status}` +
-                  ` (from ${err.context || response.url}):` +
-                  ` ${err.message || response.statusText}`;
+              errorMessage(await getErrorObject(response), response);
           warn(message);
           throw new Error(message);
         }

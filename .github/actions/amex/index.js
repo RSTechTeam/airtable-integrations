@@ -14804,6 +14804,289 @@ License: MIT
 
 /***/ }),
 
+/***/ 5664:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+module.exports = __nccwpck_require__(543);
+
+/***/ }),
+
+/***/ 543:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+var RetryOperation = __nccwpck_require__(2395);
+
+exports.operation = function(options) {
+  var timeouts = exports.timeouts(options);
+  return new RetryOperation(timeouts, {
+      forever: options && (options.forever || options.retries === Infinity),
+      unref: options && options.unref,
+      maxRetryTime: options && options.maxRetryTime
+  });
+};
+
+exports.timeouts = function(options) {
+  if (options instanceof Array) {
+    return [].concat(options);
+  }
+
+  var opts = {
+    retries: 10,
+    factor: 2,
+    minTimeout: 1 * 1000,
+    maxTimeout: Infinity,
+    randomize: false
+  };
+  for (var key in options) {
+    opts[key] = options[key];
+  }
+
+  if (opts.minTimeout > opts.maxTimeout) {
+    throw new Error('minTimeout is greater than maxTimeout');
+  }
+
+  var timeouts = [];
+  for (var i = 0; i < opts.retries; i++) {
+    timeouts.push(this.createTimeout(i, opts));
+  }
+
+  if (options && options.forever && !timeouts.length) {
+    timeouts.push(this.createTimeout(i, opts));
+  }
+
+  // sort the array numerically ascending
+  timeouts.sort(function(a,b) {
+    return a - b;
+  });
+
+  return timeouts;
+};
+
+exports.createTimeout = function(attempt, opts) {
+  var random = (opts.randomize)
+    ? (Math.random() + 1)
+    : 1;
+
+  var timeout = Math.round(random * Math.max(opts.minTimeout, 1) * Math.pow(opts.factor, attempt));
+  timeout = Math.min(timeout, opts.maxTimeout);
+
+  return timeout;
+};
+
+exports.wrap = function(obj, options, methods) {
+  if (options instanceof Array) {
+    methods = options;
+    options = null;
+  }
+
+  if (!methods) {
+    methods = [];
+    for (var key in obj) {
+      if (typeof obj[key] === 'function') {
+        methods.push(key);
+      }
+    }
+  }
+
+  for (var i = 0; i < methods.length; i++) {
+    var method   = methods[i];
+    var original = obj[method];
+
+    obj[method] = function retryWrapper(original) {
+      var op       = exports.operation(options);
+      var args     = Array.prototype.slice.call(arguments, 1);
+      var callback = args.pop();
+
+      args.push(function(err) {
+        if (op.retry(err)) {
+          return;
+        }
+        if (err) {
+          arguments[0] = op.mainError();
+        }
+        callback.apply(this, arguments);
+      });
+
+      op.attempt(function() {
+        original.apply(obj, args);
+      });
+    }.bind(obj, original);
+    obj[method].options = options;
+  }
+};
+
+
+/***/ }),
+
+/***/ 2395:
+/***/ ((module) => {
+
+function RetryOperation(timeouts, options) {
+  // Compatibility for the old (timeouts, retryForever) signature
+  if (typeof options === 'boolean') {
+    options = { forever: options };
+  }
+
+  this._originalTimeouts = JSON.parse(JSON.stringify(timeouts));
+  this._timeouts = timeouts;
+  this._options = options || {};
+  this._maxRetryTime = options && options.maxRetryTime || Infinity;
+  this._fn = null;
+  this._errors = [];
+  this._attempts = 1;
+  this._operationTimeout = null;
+  this._operationTimeoutCb = null;
+  this._timeout = null;
+  this._operationStart = null;
+  this._timer = null;
+
+  if (this._options.forever) {
+    this._cachedTimeouts = this._timeouts.slice(0);
+  }
+}
+module.exports = RetryOperation;
+
+RetryOperation.prototype.reset = function() {
+  this._attempts = 1;
+  this._timeouts = this._originalTimeouts.slice(0);
+}
+
+RetryOperation.prototype.stop = function() {
+  if (this._timeout) {
+    clearTimeout(this._timeout);
+  }
+  if (this._timer) {
+    clearTimeout(this._timer);
+  }
+
+  this._timeouts       = [];
+  this._cachedTimeouts = null;
+};
+
+RetryOperation.prototype.retry = function(err) {
+  if (this._timeout) {
+    clearTimeout(this._timeout);
+  }
+
+  if (!err) {
+    return false;
+  }
+  var currentTime = new Date().getTime();
+  if (err && currentTime - this._operationStart >= this._maxRetryTime) {
+    this._errors.push(err);
+    this._errors.unshift(new Error('RetryOperation timeout occurred'));
+    return false;
+  }
+
+  this._errors.push(err);
+
+  var timeout = this._timeouts.shift();
+  if (timeout === undefined) {
+    if (this._cachedTimeouts) {
+      // retry forever, only keep last error
+      this._errors.splice(0, this._errors.length - 1);
+      timeout = this._cachedTimeouts.slice(-1);
+    } else {
+      return false;
+    }
+  }
+
+  var self = this;
+  this._timer = setTimeout(function() {
+    self._attempts++;
+
+    if (self._operationTimeoutCb) {
+      self._timeout = setTimeout(function() {
+        self._operationTimeoutCb(self._attempts);
+      }, self._operationTimeout);
+
+      if (self._options.unref) {
+          self._timeout.unref();
+      }
+    }
+
+    self._fn(self._attempts);
+  }, timeout);
+
+  if (this._options.unref) {
+      this._timer.unref();
+  }
+
+  return true;
+};
+
+RetryOperation.prototype.attempt = function(fn, timeoutOps) {
+  this._fn = fn;
+
+  if (timeoutOps) {
+    if (timeoutOps.timeout) {
+      this._operationTimeout = timeoutOps.timeout;
+    }
+    if (timeoutOps.cb) {
+      this._operationTimeoutCb = timeoutOps.cb;
+    }
+  }
+
+  var self = this;
+  if (this._operationTimeoutCb) {
+    this._timeout = setTimeout(function() {
+      self._operationTimeoutCb();
+    }, self._operationTimeout);
+  }
+
+  this._operationStart = new Date().getTime();
+
+  this._fn(this._attempts);
+};
+
+RetryOperation.prototype.try = function(fn) {
+  console.log('Using RetryOperation.try() is deprecated');
+  this.attempt(fn);
+};
+
+RetryOperation.prototype.start = function(fn) {
+  console.log('Using RetryOperation.start() is deprecated');
+  this.attempt(fn);
+};
+
+RetryOperation.prototype.start = RetryOperation.prototype.try;
+
+RetryOperation.prototype.errors = function() {
+  return this._errors;
+};
+
+RetryOperation.prototype.attempts = function() {
+  return this._attempts;
+};
+
+RetryOperation.prototype.mainError = function() {
+  if (this._errors.length === 0) {
+    return null;
+  }
+
+  var counts = {};
+  var mainError = null;
+  var mainErrorCount = 0;
+
+  for (var i = 0; i < this._errors.length; i++) {
+    var error = this._errors[i];
+    var message = error.message;
+    var count = (counts[message] || 0) + 1;
+
+    counts[message] = count;
+
+    if (count >= mainErrorCount) {
+      mainError = error;
+      mainErrorCount = count;
+    }
+  }
+
+  return mainError;
+};
+
+
+/***/ }),
+
 /***/ 9427:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
@@ -18578,7 +18861,7 @@ __nccwpck_require__.a(__webpack_module__, async (__webpack_handle_async_dependen
 /* harmony import */ var _common_inputs_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(4684);
 /* harmony import */ var _common_sync_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(3599);
 /* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(5585);
-/* harmony import */ var _common_csv_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(2066);
+/* harmony import */ var _common_csv_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(2625);
 /* harmony import */ var _common_action_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(518);
 /** @fileoverview Imports an Amex CSV update into Airtable. */
 
@@ -18887,7 +19170,7 @@ class MsoBase extends (/* unused pure expression or super */ null && (Base)) {
 
 /***/ }),
 
-/***/ 2066:
+/***/ 2625:
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
 
 
@@ -18895,6 +19178,139 @@ class MsoBase extends (/* unused pure expression or super */ null && (Base)) {
 __nccwpck_require__.d(__webpack_exports__, {
   "Q": () => (/* binding */ parse)
 });
+
+// EXTERNAL MODULE: ./node_modules/papaparse/papaparse.js
+var papaparse = __nccwpck_require__(1826);
+// EXTERNAL MODULE: ./node_modules/retry/index.js
+var retry = __nccwpck_require__(5664);
+;// CONCATENATED MODULE: ./node_modules/is-network-error/index.js
+const objectToString = Object.prototype.toString;
+
+const isError = value => objectToString.call(value) === '[object Error]';
+
+const errorMessages = new Set([
+	'network error', // Chrome
+	'Failed to fetch', // Chrome
+	'NetworkError when attempting to fetch resource.', // Firefox
+	'The Internet connection appears to be offline.', // Safari 16
+	'Load failed', // Safari 17+
+	'Network request failed', // `cross-fetch`
+	'fetch failed', // Undici (Node.js)
+	'terminated', // Undici (Node.js)
+]);
+
+function isNetworkError(error) {
+	const isValid = error
+		&& isError(error)
+		&& error.name === 'TypeError'
+		&& typeof error.message === 'string';
+
+	if (!isValid) {
+		return false;
+	}
+
+	// We do an extra check for Safari 17+ as it has a very generic error message.
+	// Network errors in Safari have no stack.
+	if (error.message === 'Load failed') {
+		return error.stack === undefined;
+	}
+
+	return errorMessages.has(error.message);
+}
+
+;// CONCATENATED MODULE: ./node_modules/p-retry/index.js
+
+
+
+class AbortError extends Error {
+	constructor(message) {
+		super();
+
+		if (message instanceof Error) {
+			this.originalError = message;
+			({message} = message);
+		} else {
+			this.originalError = new Error(message);
+			this.originalError.stack = this.stack;
+		}
+
+		this.name = 'AbortError';
+		this.message = message;
+	}
+}
+
+const decorateErrorWithCounts = (error, attemptNumber, options) => {
+	// Minus 1 from attemptNumber because the first attempt does not count as a retry
+	const retriesLeft = options.retries - (attemptNumber - 1);
+
+	error.attemptNumber = attemptNumber;
+	error.retriesLeft = retriesLeft;
+	return error;
+};
+
+async function pRetry(input, options) {
+	return new Promise((resolve, reject) => {
+		options = {...options};
+		options.onFailedAttempt ??= () => {};
+		options.shouldRetry ??= () => true;
+		options.retries ??= 10;
+
+		const operation = retry.operation(options);
+
+		const abortHandler = () => {
+			operation.stop();
+			reject(options.signal?.reason);
+		};
+
+		if (options.signal && !options.signal.aborted) {
+			options.signal.addEventListener('abort', abortHandler, {once: true});
+		}
+
+		const cleanUp = () => {
+			options.signal?.removeEventListener('abort', abortHandler);
+			operation.stop();
+		};
+
+		operation.attempt(async attemptNumber => {
+			try {
+				const result = await input(attemptNumber);
+				cleanUp();
+				resolve(result);
+			} catch (error) {
+				try {
+					if (!(error instanceof Error)) {
+						throw new TypeError(`Non-error was thrown: "${error}". You should only throw errors.`);
+					}
+
+					if (error instanceof AbortError) {
+						throw error.originalError;
+					}
+
+					if (error instanceof TypeError && !isNetworkError(error)) {
+						throw error;
+					}
+
+					decorateErrorWithCounts(error, attemptNumber, options);
+
+					if (!(await options.shouldRetry(error))) {
+						operation.stop();
+						reject(error);
+					}
+
+					await options.onFailedAttempt(error);
+
+					if (!operation.retry(error)) {
+						throw operation.mainError();
+					}
+				} catch (finalError) {
+					decorateErrorWithCounts(finalError, attemptNumber, options);
+					cleanUp();
+					reject(finalError);
+				}
+			}
+		});
+	});
+}
 
 ;// CONCATENATED MODULE: external "node:http"
 const external_node_http_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:http");
@@ -20606,7 +21022,7 @@ const getNodeRequestOptions = request => {
 /**
  * AbortError interface for cancelled requests
  */
-class AbortError extends FetchBaseError {
+class abort_error_AbortError extends FetchBaseError {
 	constructor(message, type = 'aborted') {
 		super(message, type);
 	}
@@ -20677,7 +21093,7 @@ async function fetch(url, options_) {
 		let response = null;
 
 		const abort = () => {
-			const error = new AbortError('The operation was aborted.');
+			const error = new abort_error_AbortError('The operation was aborted.');
 			reject(error);
 			if (request.body && request.body instanceof external_node_stream_namespaceObject.Readable) {
 				request.body.destroy(error);
@@ -21026,13 +21442,60 @@ function fixResponseChunkedTransferBadEnding(request, errorCallback) {
 	});
 }
 
-// EXTERNAL MODULE: ./node_modules/papaparse/papaparse.js
-var papaparse = __nccwpck_require__(1826);
-// EXTERNAL MODULE: ./src/common/utils.js + 1 modules
-var utils = __nccwpck_require__(381);
+// EXTERNAL MODULE: ./src/common/github_actions_core.js
+var github_actions_core = __nccwpck_require__(1444);
+;// CONCATENATED MODULE: ./src/common/fetch.js
+/** @fileoverview Utilities for fetching resources. */
+
+
+
+
+
+/**
+ * @param {!Object<string, *>} errorObject
+ * @param {Response=} response
+ * @return {string}
+ */
+function errorMessage(errorObject, response = undefined) {
+  return `Error ${errorObject.code || response?.status}` +
+      ` (from ${errorObject.context || response?.url}):` +
+      ` ${errorObject.message || response?.statusText}`;
+}
+
+/**
+ * Fetches with retry.
+ * @param {function(!Response): !Promise<!Object<string, *>>)} getErrorObject
+ * @param {...*} fetchArgs
+ * @return {!Response}
+ * @see Window.fetch
+ */
+function fetch_fetch(getErrorObject, ...fetchArgs) {
+  return pRetry(
+      async () => {
+        const response = await fetch(...fetchArgs);
+        if (!response.ok) {
+          const message =
+              errorMessage(await getErrorObject(response), response);
+          (0,github_actions_core/* warn */.ZK)(message);
+          throw new Error(message);
+        }
+        return response;
+      },
+      {retries: 1});
+}
+
+/**
+ * @param {(string|number)} code
+ * @param {string} context
+ * @param {string} message
+ * @return {!Object<string, *>} named error Object
+ */
+function errorObject(code, context, message) {
+  return {code: code, context: context, message: message};
+}
+
 ;// CONCATENATED MODULE: ./src/common/csv.js
 /** @fileoverview Utilities for parsing CSV files. */
-
 
 
 
@@ -21048,10 +21511,11 @@ var utils = __nccwpck_require__(381);
 async function parse(csv, header, config) {
 
   // Download CSV.
-  const response = await fetch(csv.url);
-  if (!response.ok) {
-    (0,utils/* fetchError */.Tl)(response.status, csv.filename, response.statusText);
-  }
+  const response =
+      await fetch_fetch(
+          response => errorObject(
+              response.status, csv.filename, response.statusText),
+          csv.url);
 
   // Execute parse.
   let firstChunk = true;
@@ -21355,11 +21819,10 @@ function summarize(changes) {
 // EXPORTS
 __nccwpck_require__.d(__webpack_exports__, {
   "aE": () => (/* binding */ batchAsync),
-  "Tl": () => (/* binding */ fetchError),
   "ss": () => (/* binding */ lazyCache)
 });
 
-// UNUSED EXPORTS: batchAwait, getYyyyMmDd
+// UNUSED EXPORTS: batchAwait, fetchError, getYyyyMmDd
 
 ;// CONCATENATED MODULE: external "node:assert/strict"
 const strict_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:assert/strict");

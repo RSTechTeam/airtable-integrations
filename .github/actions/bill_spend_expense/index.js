@@ -17130,11 +17130,11 @@ async function apiCall(endpoint, params = {}) {
           resolve => rateLimit(
               async () => {
                 resolve(
-                    await (0,_common_fetch_js__WEBPACK_IMPORTED_MODULE_3__/* .fetch */ .h)(
+                    await (0,_common_fetch_js__WEBPACK_IMPORTED_MODULE_3__/* .fetch */ .he)(
                         async response => {
                           const json = await response.json();
                           const err = json[0];
-                          return (0,_common_fetch_js__WEBPACK_IMPORTED_MODULE_3__/* .errorObject */ .T)(err?.code, endpoint, err?.message)
+                          return (0,_common_fetch_js__WEBPACK_IMPORTED_MODULE_3__/* .errorObject */ .TJ)(err?.code, endpoint, err?.message)
                         },
                         'https://gateway.prod.bill.com/connect/v3/spend/' +
                             `${endpoint}?${new URLSearchParams(params)}`,
@@ -17510,9 +17510,11 @@ class MsoBase extends (/* unused pure expression or super */ null && (Base)) {
 
 // EXPORTS
 __nccwpck_require__.d(__webpack_exports__, {
-  "T": () => (/* binding */ errorObject),
-  "h": () => (/* binding */ fetch_fetch)
+  "TJ": () => (/* binding */ errorObject),
+  "he": () => (/* binding */ fetch_fetch)
 });
+
+// UNUSED EXPORTS: errorMessage
 
 // EXTERNAL MODULE: ./node_modules/retry/index.js
 var retry = __nccwpck_require__(5664);
@@ -19785,22 +19787,30 @@ var github_actions_core = __nccwpck_require__(1444);
 
 
 /**
+ * @param {!Object<string, *>} errorObject
+ * @param {Response=} response
+ * @return {string}
+ */
+function errorMessage(errorObject, response = undefined) {
+  return `Error ${errorObject.code || response?.status}` +
+      ` (from ${errorObject.context || response?.url}):` +
+      ` ${errorObject.message || response?.statusText}`;
+}
+
+/**
  * Fetches with retry.
- * @param {function(!Response): !Promise<!Object<string, *>>)} errFunc
+ * @param {function(!Response): !Promise<!Object<string, *>>)} getErrorObject
  * @param {...*} fetchArgs
  * @return {!Response}
  * @see Window.fetch
  */
-function fetch_fetch(errFunc, ...fetchArgs) {
+function fetch_fetch(getErrorObject, ...fetchArgs) {
   return pRetry(
       async () => {
         const response = await fetch(...fetchArgs);
         if (!response.ok) {
-          const err = await errFunc(response);
           const message =
-              `Error ${err.code || response.status}` +
-                  ` (from ${err.context || response.url}):` +
-                  ` ${err.message || response.statusText}`;
+              errorMessage(await getErrorObject(response), response);
           (0,github_actions_core/* warn */.ZK)(message);
           throw new Error(message);
         }

@@ -29,7 +29,7 @@ describe('lazyCache', () => {
 });
 
 test('fetchError throws', () => {
-  expect(() => fetchError('code', 'context', 'message')).toThrow();
+  expect(() => utils.fetchError('code', 'context', 'message')).toThrow();
 });
 
 

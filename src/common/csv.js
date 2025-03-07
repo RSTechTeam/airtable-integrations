@@ -1,8 +1,7 @@
 /** @fileoverview Utilities for parsing CSV files. */
 
-import fetch from 'node-fetch';
 import Papa from 'papaparse';
-import {fetchError} from './utils.js';
+import {errorObject, fetch} from './fetch.js';
 
 /**
  * @param {!Object<string, *>} csv An Airtable Attachment Field.
@@ -15,10 +14,11 @@ import {fetchError} from './utils.js';
 export async function parse(csv, header, config) {
 
   // Download CSV.
-  const response = await fetch(csv.url);
-  if (!response.ok) {
-    fetchError(response.status, csv.filename, response.statusText);
-  }
+  const response =
+      await fetch(
+          response => errorObject(
+              response.status, csv.filename, response.statusText),
+          csv.url);
 
   // Execute parse.
   let firstChunk = true;
