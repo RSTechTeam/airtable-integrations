@@ -17514,7 +17514,7 @@ __nccwpck_require__.d(__webpack_exports__, {
   "he": () => (/* binding */ fetch_fetch)
 });
 
-// UNUSED EXPORTS: errorMessage
+// UNUSED EXPORTS: errorMessage, fetchAttachment
 
 // EXTERNAL MODULE: ./node_modules/retry/index.js
 var retry = __nccwpck_require__(5664);
@@ -19829,6 +19829,14 @@ function errorObject(code, context, message) {
   return {code: code, context: context, message: message};
 }
 
+/**
+ * @param {!Object<string, *>} attachment
+ * @return {!Response}
+ */
+function fetchAttachment(attachment) {
+  return fetch_fetch(response => ({context: attachment.filename}), attachment.url);
+}
+
 
 /***/ }),
 
@@ -20080,7 +20088,7 @@ __nccwpck_require__.d(__webpack_exports__, {
   "ss": () => (/* binding */ lazyCache)
 });
 
-// UNUSED EXPORTS: batchAwait, fetchError
+// UNUSED EXPORTS: batchAwait
 
 ;// CONCATENATED MODULE: external "node:assert/strict"
 const strict_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:assert/strict");
@@ -20096,15 +20104,6 @@ const strict_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)
 function lazyCache(producer) {
   let result;
   return () => result || (result = producer());
-}
-
-/**
- * @param {(string|number)} code
- * @param {string} context
- * @param {string} message
- */
-function fetchError(code, context, message) {
-  throw new Error(`Error ${code} (from ${context}): ${message}`);
 }
 
 /**

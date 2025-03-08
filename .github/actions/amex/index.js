@@ -21494,6 +21494,14 @@ function errorObject(code, context, message) {
   return {code: code, context: context, message: message};
 }
 
+/**
+ * @param {!Object<string, *>} attachment
+ * @return {!Response}
+ */
+function fetchAttachment(attachment) {
+  return fetch_fetch(response => ({context: attachment.filename}), attachment.url);
+}
+
 ;// CONCATENATED MODULE: ./src/common/csv.js
 /** @fileoverview Utilities for parsing CSV files. */
 
@@ -21510,14 +21518,7 @@ function errorObject(code, context, message) {
  */
 async function parse(csv, header, config) {
 
-  // Download CSV.
-  const response =
-      await fetch_fetch(
-          response => errorObject(
-              response.status, csv.filename, response.statusText),
-          csv.url);
-
-  // Execute parse.
+  const response = await fetchAttachment(csv);
   let firstChunk = true;
   const promises = [];
   return new Promise(
@@ -21822,7 +21823,7 @@ __nccwpck_require__.d(__webpack_exports__, {
   "ss": () => (/* binding */ lazyCache)
 });
 
-// UNUSED EXPORTS: batchAwait, fetchError, getYyyyMmDd
+// UNUSED EXPORTS: batchAwait, getYyyyMmDd
 
 ;// CONCATENATED MODULE: external "node:assert/strict"
 const strict_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:assert/strict");
@@ -21838,15 +21839,6 @@ const strict_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)
 function lazyCache(producer) {
   let result;
   return () => result || (result = producer());
-}
-
-/**
- * @param {(string|number)} code
- * @param {string} context
- * @param {string} message
- */
-function fetchError(code, context, message) {
-  throw new Error(`Error ${code} (from ${context}): ${message}`);
 }
 
 /**

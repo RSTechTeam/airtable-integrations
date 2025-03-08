@@ -46,3 +46,11 @@ export function fetch(getErrorObject, ...fetchArgs) {
 export function errorObject(code, context, message) {
   return {code: code, context: context, message: message};
 }
+
+/**
+ * @param {!Object<string, *>} attachment
+ * @return {!Response}
+ */
+export function fetchAttachment(attachment) {
+  return fetch(response => ({context: attachment.filename}), attachment.url);
+}

@@ -1,7 +1,7 @@
 /** @fileoverview Creates a Bill.com Bill based on a new Check Request. */
 
 import {apiCall} from '../common/api.js';
-import {errorObject, fetch} from '../../common/fetch.js';
+import {fetchAttachment} from '../../common/fetch.js';
 import {FormData} from 'formdata-node';
 import {MSO_BILL_COM_ID} from '../common/constants.js';
 import {MsoBase} from '../../common/airtable.js';
@@ -36,14 +36,8 @@ async function uploadAttachments(attachments, id) {
   data.set('sessionId', billComApi.getSessionId());
   for (const attachment of (attachments || [])) {
 
-    // Fetch the attachment.
-    const response =
-        await fetch(
-            response => errorObject(
-                response.status, attachment.filename, response.statusText),
-            attachment.url);
-
-    // Download it.
+    // Download the attachment.
+    const response = await fetchAttachment(attachment);
     const file = await response.blob();
 
     // Upload it.

@@ -18891,14 +18891,7 @@ var fetch = __nccwpck_require__(6100);
  */
 async function parse(csv, header, config) {
 
-  // Download CSV.
-  const response =
-      await (0,fetch/* fetch */.he)(
-          response => (0,fetch/* errorObject */.TJ)(
-              response.status, csv.filename, response.statusText),
-          csv.url);
-
-  // Execute parse.
+  const response = await (0,fetch/* fetchAttachment */.ce)(csv);
   let firstChunk = true;
   const promises = [];
   return new Promise(
@@ -19588,14 +19581,8 @@ async function uploadAttachments(attachments, id) {
   data.set('sessionId', billComApi.getSessionId());
   for (const attachment of (attachments || [])) {
 
-    // Fetch the attachment.
-    const response =
-        await (0,fetch/* fetch */.he)(
-            response => (0,fetch/* errorObject */.TJ)(
-                response.status, attachment.filename, response.statusText),
-            attachment.url);
-
-    // Download it.
+    // Download the attachment.
+    const response = await (0,fetch/* fetchAttachment */.ce)(attachment);
     const file = await response.blob();
 
     // Upload it.
@@ -21383,7 +21370,8 @@ class MsoBase extends Base {
 __nccwpck_require__.d(__webpack_exports__, {
   "N3": () => (/* binding */ errorMessage),
   "TJ": () => (/* binding */ errorObject),
-  "he": () => (/* binding */ fetch_fetch)
+  "he": () => (/* binding */ fetch_fetch),
+  "ce": () => (/* binding */ fetchAttachment)
 });
 
 // EXTERNAL MODULE: ./node_modules/retry/index.js
@@ -23699,6 +23687,14 @@ function errorObject(code, context, message) {
   return {code: code, context: context, message: message};
 }
 
+/**
+ * @param {!Object<string, *>} attachment
+ * @return {!Response}
+ */
+function fetchAttachment(attachment) {
+  return fetch_fetch(response => ({context: attachment.filename}), attachment.url);
+}
+
 
 /***/ }),
 
@@ -23980,8 +23976,6 @@ __nccwpck_require__.d(__webpack_exports__, {
   "ss": () => (/* binding */ lazyCache)
 });
 
-// UNUSED EXPORTS: fetchError
-
 ;// CONCATENATED MODULE: external "node:assert/strict"
 const strict_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:assert/strict");
 ;// CONCATENATED MODULE: ./src/common/utils.js
@@ -23996,15 +23990,6 @@ const strict_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)
 function lazyCache(producer) {
   let result;
   return () => result || (result = producer());
-}
-
-/**
- * @param {(string|number)} code
- * @param {string} context
- * @param {string} message
- */
-function fetchError(code, context, message) {
-  throw new Error(`Error ${code} (from ${context}): ${message}`);
 }
 
 /**

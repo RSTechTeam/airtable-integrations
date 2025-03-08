@@ -22,6 +22,8 @@ describe('errorMessage', () => {
   });
 });
 
+const goodUrl = 'https://github.com';
+
 describe('fetch', () => {
 
   const err = jest.fn(response => ({}));
@@ -39,7 +41,11 @@ describe('fetch', () => {
   });
 
   test('success', async () => {
-    await testFetch('https://github.com');
+    await testFetch(goodUrl);
     expect(err).not.toBeCalled();
   });
+});
+
+test('fetchAttachment fetches without error', () => {
+  return fetch.fetchAttachment({url: goodUrl});
 });

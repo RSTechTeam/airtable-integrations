@@ -28,10 +28,6 @@ describe('lazyCache', () => {
   });
 });
 
-test('fetchError throws', () => {
-  expect(() => utils.fetchError('code', 'context', 'message')).toThrow();
-});
-
 
 describe.each`
   name       | batchFunc           | asyncExecutionOrder

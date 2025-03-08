@@ -12,15 +12,6 @@ export function lazyCache(producer) {
 }
 
 /**
- * @param {(string|number)} code
- * @param {string} context
- * @param {string} message
- */
-export function fetchError(code, context, message) {
-  throw new Error(`Error ${code} (from ${context}): ${message}`);
-}
-
-/**
  * @param {!Array<*>} array
  * @param {number} size - A positive integer
  * @return {!Iterator<!Array<*>>} size-length portions of array
