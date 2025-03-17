@@ -56,6 +56,7 @@ export async function apiCall(endpoint, headers, body, test) {
   const json = await response.json();
   logJson(endpoint, json);
   if (json.response_status === 1) {
+    log(response.status);
     throw new Error(errorMessage(getErrorObject(json)));
   }
   return json.response_data;

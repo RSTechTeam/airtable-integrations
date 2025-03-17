@@ -20668,6 +20668,7 @@ async function apiCall(endpoint, headers, body, test) {
   const json = await response.json();
   (0,github_actions_core/* logJson */.u2)(endpoint, json);
   if (json.response_status === 1) {
+    (0,github_actions_core/* log */.cM)(response.status);
     throw new Error((0,fetch/* errorMessage */.N3)(getErrorObject(json)));
   }
   return json.response_data;
