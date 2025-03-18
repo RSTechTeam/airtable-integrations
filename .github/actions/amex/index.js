@@ -21453,7 +21453,7 @@ var github_actions_core = __nccwpck_require__(1444);
 
 /**
  * Fetches with retry.
- * @param {!Object<string, function(!Response): *>} errorFuncs
+ * @param {!Object<string, function(!Response): !Promise<*>>} errorFuncs
  * @param {...*} fetchArgs
  * @return {!Response}
  * @see Window.fetch
@@ -21464,9 +21464,7 @@ function fetch_fetch(
   return pRetry(
       async () => {
         const response = await fetch(...fetchArgs);
-        const error = hasError(response);
-        (0,github_actions_core/* log */.cM)(`debug: ${error}`);
-        if (!response.ok || error) {
+        if (!response.ok || await hasError(response)) {
           const errorObject = await getErrorObject(response);
           const message =
               `Error ${errorObject.code || response.status}` +
@@ -21555,13 +21553,12 @@ async function parse(csv, header, config) {
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
 
 /* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
-/* harmony export */   "cM": () => (/* binding */ log),
 /* harmony export */   "ZK": () => (/* binding */ warn),
 /* harmony export */   "Np": () => (/* binding */ getInput),
 /* harmony export */   "vU": () => (/* binding */ error),
 /* harmony export */   "A8": () => (/* binding */ writeSummary)
 /* harmony export */ });
-/* unused harmony exports addSummaryTableHeaders, addSummaryTableRow, logJson */
+/* unused harmony exports log, addSummaryTableHeaders, addSummaryTableRow, logJson */
 /* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(6024);
 /* harmony import */ var _utils_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(381);
 /**

@@ -20660,7 +20660,6 @@ async function apiCall(endpoint, headers, body, test) {
                 hasError:
                   async response => {
                     const json = await response.clone().json();
-                    (0,github_actions_core/* log */.cM)(`debug1: ${json.response_status === 1}`);
                     return json.response_status === 1;
                   },
                 getErrorObject:
@@ -23650,7 +23649,7 @@ var github_actions_core = __nccwpck_require__(1444);
 
 /**
  * Fetches with retry.
- * @param {!Object<string, function(!Response): *>} errorFuncs
+ * @param {!Object<string, function(!Response): !Promise<*>>} errorFuncs
  * @param {...*} fetchArgs
  * @return {!Response}
  * @see Window.fetch
@@ -23661,9 +23660,7 @@ function fetch_fetch(
   return pRetry(
       async () => {
         const response = await fetch(...fetchArgs);
-        const error = hasError(response);
-        (0,github_actions_core/* log */.cM)(`debug: ${error}`);
-        if (!response.ok || error) {
+        if (!response.ok || await hasError(response)) {
           const errorObject = await getErrorObject(response);
           const message =
               `Error ${errorObject.code || response.status}` +
