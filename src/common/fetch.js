@@ -6,23 +6,21 @@ import {warn} from '../common/github_actions_core.js';
 
 /**
  * Fetches with retry.
- * @param {!Object<string, function(!Response): !Promise<*>>} errorFuncs
+ * @param {function(!Response): !Promise<!Object<string, *>>} getErrorObject
  * @param {...*} fetchArgs
  * @return {!Response}
  * @see Window.fetch
  */
-export function fetch(
-    {hasError = response => false, getErrorObject}, ...fetchArgs) {
-
+export function fetch(getErrorObject, ...fetchArgs) {
   return pRetry(
       async () => {
         const response = await nodeFetch(...fetchArgs);
-        if (!response.ok || await hasError(response)) {
-          const errorObject = await getErrorObject(response);
+        const {hasError, errorParts} = await getErrorObject(response);
+        if (!response.ok || hasError) {
           const message =
-              `Error ${errorObject.code || response.status}` +
-                  ` (from ${errorObject.context || response.url}):` +
-                  ` ${errorObject.message || response.statusText}`;
+              `Error ${errorParts.code || response.status}` +
+                  ` (from ${errorParts.context || response.url}):` +
+                  ` ${errorParts.message || response.statusText}`;
           warn(message);
           throw new Error(message);
         }
@@ -35,9 +33,9 @@ export function fetch(
  * @param {(string|number)} code
  * @param {string} context
  * @param {string} message
- * @return {!Object<string, *>} named error Object
+ * @return {!Object<string, *>} named error parts Object
  */
-export function errorObject(code, context, message) {
+export function errorParts(code, context, message) {
   return {code: code, context: context, message: message};
 }
 
@@ -47,6 +45,6 @@ export function errorObject(code, context, message) {
  */
 export function fetchAttachment(attachment) {
   return fetch(
-      {getErrorObject: response => ({context: attachment.filename})},
+      response => ({errorParts: {context: attachment.filename}}),
       attachment.url);
 }

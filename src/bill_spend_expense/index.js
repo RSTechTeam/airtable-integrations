@@ -8,7 +8,7 @@ import pLimit from 'p-limit';
 import {airtableRecordUpdate, getMapping, syncChanges} from '../common/sync.js';
 import {Base} from '../common/airtable.js';
 import {billSpendExpenseApiKey} from './inputs.js';
-import {errorObject, fetch} from '../common/fetch.js';
+import {errorParts, fetch} from '../common/fetch.js';
 import {getYyyyMmDd} from '../common/utils.js';
 import {logJson} from '../common/github_actions_core.js';
 import {run} from '../common/action.js';
@@ -30,13 +30,13 @@ async function apiCall(endpoint, params = {}) {
               async () => {
                 resolve(
                     await fetch(
-                        {
-                          getErrorObject:
-                            async response => {
-                              const json = await response.json();
-                              const err = json[0];
-                              return errorObject(err?.code, endpoint, err?.message)
-                            },
+                        async response => {
+                          const json = await response.json();
+                          const err = json[0];
+                          return {
+                            errorParts:
+                              errorParts(err?.code, endpoint, err?.message),
+                          };
                         },
                         'https://gateway.prod.bill.com/connect/v3/spend/' +
                             `${endpoint}?${new URLSearchParams(params)}`,

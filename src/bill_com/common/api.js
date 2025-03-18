@@ -9,7 +9,7 @@ import pLimit from 'p-limit';
 import {airtableApiKey} from '../../common/inputs.js';
 import {Base} from '../../common/airtable.js';
 import {batchAwait} from '../../common/utils.js';
-import {errorObject, fetch} from '../../common/fetch.js';
+import {errorParts, fetch} from '../../common/fetch.js';
 import {log, logJson, warn} from '../../common/github_actions_core.js';
 import {MSO_BILL_COM_ID, PRIMARY_ORG} from './constants.js';
 
@@ -42,24 +42,19 @@ function baseUrl(test = false) {
  */
 export async function apiCall(endpoint, headers, body, test) {
   let json;
-  const response =
-      await rateLimit(
-          () => fetch(
-              {
-                hasError:
-                  async response => {
-                    json = await response.json();
-                    return json.response_status === 1;
-                  },
-                getErrorObject:
-                  async response => {
-                    const data = (json || await response.json()).response_data;
-                    return errorObject(
-                        data.error_code, endpoint, data.error_message);
-                  },
-              },
-              `${baseUrl(test)}/api/v2/${endpoint}.json`,
-              {method: 'POST', headers: headers, body: body}));
+  await rateLimit(
+      () => fetch(
+          async response => {
+            json = await response.json();
+            const data = json.response_data;
+            return {
+              hasError: json.response_status === 1,
+              errorParts:
+                errorParts(data.error_code, endpoint, data.error_message),
+            };
+          },
+          `${baseUrl(test)}/api/v2/${endpoint}.json`,
+          {method: 'POST', headers: headers, body: body}));
 
   logJson(endpoint, json);
   return json.response_data;

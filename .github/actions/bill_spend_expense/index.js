@@ -17131,13 +17131,13 @@ async function apiCall(endpoint, params = {}) {
               async () => {
                 resolve(
                     await (0,_common_fetch_js__WEBPACK_IMPORTED_MODULE_3__/* .fetch */ .he)(
-                        {
-                          getErrorObject:
-                            async response => {
-                              const json = await response.json();
-                              const err = json[0];
-                              return (0,_common_fetch_js__WEBPACK_IMPORTED_MODULE_3__/* .errorObject */ .TJ)(err?.code, endpoint, err?.message)
-                            },
+                        async response => {
+                          const json = await response.json();
+                          const err = json[0];
+                          return {
+                            errorParts:
+                              (0,_common_fetch_js__WEBPACK_IMPORTED_MODULE_3__/* .errorParts */ .wD)(err?.code, endpoint, err?.message),
+                          };
                         },
                         'https://gateway.prod.bill.com/connect/v3/spend/' +
                             `${endpoint}?${new URLSearchParams(params)}`,
@@ -17513,7 +17513,7 @@ class MsoBase extends (/* unused pure expression or super */ null && (Base)) {
 
 // EXPORTS
 __nccwpck_require__.d(__webpack_exports__, {
-  "TJ": () => (/* binding */ errorObject),
+  "wD": () => (/* binding */ errorParts),
   "he": () => (/* binding */ fetch_fetch)
 });
 
@@ -19791,23 +19791,21 @@ var github_actions_core = __nccwpck_require__(1444);
 
 /**
  * Fetches with retry.
- * @param {!Object<string, function(!Response): !Promise<*>>} errorFuncs
+ * @param {function(!Response): !Promise<!Object<string, *>>} getErrorObject
  * @param {...*} fetchArgs
  * @return {!Response}
  * @see Window.fetch
  */
-function fetch_fetch(
-    {hasError = response => false, getErrorObject}, ...fetchArgs) {
-
+function fetch_fetch(getErrorObject, ...fetchArgs) {
   return pRetry(
       async () => {
         const response = await fetch(...fetchArgs);
-        if (!response.ok || await hasError(response)) {
-          const errorObject = await getErrorObject(response);
+        const {hasError, errorParts} = await getErrorObject(response);
+        if (!response.ok || hasError) {
           const message =
-              `Error ${errorObject.code || response.status}` +
-                  ` (from ${errorObject.context || response.url}):` +
-                  ` ${errorObject.message || response.statusText}`;
+              `Error ${errorParts.code || response.status}` +
+                  ` (from ${errorParts.context || response.url}):` +
+                  ` ${errorParts.message || response.statusText}`;
           (0,github_actions_core/* warn */.ZK)(message);
           throw new Error(message);
         }
@@ -19820,9 +19818,9 @@ function fetch_fetch(
  * @param {(string|number)} code
  * @param {string} context
  * @param {string} message
- * @return {!Object<string, *>} named error Object
+ * @return {!Object<string, *>} named error parts Object
  */
-function errorObject(code, context, message) {
+function errorParts(code, context, message) {
   return {code: code, context: context, message: message};
 }
 
@@ -19832,7 +19830,7 @@ function errorObject(code, context, message) {
  */
 function fetchAttachment(attachment) {
   return fetch_fetch(
-      {getErrorObject: response => ({context: attachment.filename})},
+      response => ({errorParts: {context: attachment.filename}}),
       attachment.url);
 }
 

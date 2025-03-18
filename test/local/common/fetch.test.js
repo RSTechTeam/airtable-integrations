@@ -1,32 +1,20 @@
 import * as fetch from '../../../src/common/fetch.js';
 import {jest} from '@jest/globals';
 
-test('errorObject creates error Object', () => {
-  expect(fetch.errorObject('code', 'context', 'message')).toEqual(
+test('errorParts creates error parts Object', () => {
+  expect(fetch.errorParts('code', 'context', 'message')).toEqual(
       {code: 'code', context: 'context', message: 'message'});
 });
 
 const URL = 'https://github.com';
 
 describe('fetch', () => {
-
-  const err = jest.fn(response => ({}));
   const testFetch =
-      hasError => fetch.fetch(
-          {hasError: response => hasError, getErrorObject: err}, URL);
+      hasError => fetch.fetch(response => ({hasError, errorParts: {}}), URL);
 
-  afterEach(err.mockClear);
+  test('throws if error', () => expect(testFetch(true)).rejects.toThrow());
 
-  test('throws after retries', async () => {
-    const response = testFetch(true);
-    await expect(response).rejects.toThrow();
-    expect(err.mock.calls.length).toBeGreaterThan(1);
-  });
-
-  test('success', async () => {
-    await testFetch(false);
-    expect(err).not.toBeCalled();
-  });
+  test('success', () => testFetch(false));
 });
 
 test('fetchAttachment fetches without error', () => {
