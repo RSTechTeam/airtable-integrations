@@ -6,7 +6,7 @@
  */
 import Airtable from 'airtable';
 import {airtableApiKey, airtableBaseId} from './inputs.js';
-import {batchAsync} from './utils.js';
+import {batchAsync, retry} from './utils.js';
 import {warn} from './github_actions_core.js';
 
 /**
@@ -20,13 +20,13 @@ function throwError(querying, table, err) {
 }
 
 /**
- * @param {!Promise<*>} promise
+ * @param {function(): !Promise<*>} func
  * @param {string} querying e.g., selecting, updating, etc
  * @param {string} table
  * @return {!Promise<*>}
  */
-function catchError(promise, querying, table) {
-  return promise.catch(err => throwError(querying, table, err));
+function catchError(func, querying, table) {
+  return retry(() => func().catch(err => throwError(querying, table, err)));
 }
 
 /**
@@ -63,7 +63,7 @@ export class Base {
   select(table, view = '', filterByFormula = '') {
     const params = {view: view, filterByFormula: filterByFormula};
     return catchError(
-        this.base_(table).select(params).all(), 'selecting', table);
+        () => this.base_(table).select(params).all(), 'selecting', table);
   }
 
   /**
@@ -75,7 +75,7 @@ export class Base {
    */
   update(table, updates) {
     return catchError(
-        batch(this.base_(table).update, updates), 'updating', table);
+        () => batch(this.base_(table).update, updates), 'updating', table);
   }
 
   /**
@@ -112,7 +112,7 @@ export class Base {
    */
   create(table, creates) {
     return catchError(
-        batch(this.base_(table).create, creates), 'creating', table);
+        () => batch(this.base_(table).create, creates), 'creating', table);
   }
 
   /**
@@ -121,7 +121,7 @@ export class Base {
    * @return {!Promise<!Record<!TField>>}
    */
   find(table, id) {
-    return catchError(this.base_(table).find(id), 'finding', table);
+    return catchError(() => this.base_(table).find(id), 'finding', table);
   }
 }
 

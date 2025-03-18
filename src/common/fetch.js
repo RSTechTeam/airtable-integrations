@@ -1,7 +1,7 @@
 /** @fileoverview Utilities for fetching resources. */
 
-import pRetry from 'p-retry';
 import {default as nodeFetch} from 'node-fetch';
+import {retry} from '../common/utils.js';
 import {warn} from '../common/github_actions_core.js';
 
 /**
@@ -12,7 +12,7 @@ import {warn} from '../common/github_actions_core.js';
  * @see Window.fetch
  */
 export function fetch(getErrorObject, ...fetchArgs) {
-  return pRetry(
+  return retry(
       async () => {
         const response = await nodeFetch(...fetchArgs);
         const {hasError, errorParts} = await getErrorObject(response);
@@ -25,8 +25,7 @@ export function fetch(getErrorObject, ...fetchArgs) {
           throw new Error(message);
         }
         return response;
-      },
-      {retries: 1});
+      });
 }
 
 /**

@@ -18861,7 +18861,7 @@ __nccwpck_require__.a(__webpack_module__, async (__webpack_handle_async_dependen
 /* harmony import */ var _common_inputs_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(4684);
 /* harmony import */ var _common_sync_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(3599);
 /* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(5585);
-/* harmony import */ var _common_csv_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(2625);
+/* harmony import */ var _common_csv_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(1165);
 /* harmony import */ var _common_action_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(518);
 /** @fileoverview Imports an Amex CSV update into Airtable. */
 
@@ -18996,7 +18996,7 @@ function run(main) {
 /* unused harmony export MsoBase */
 /* harmony import */ var airtable__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(5447);
 /* harmony import */ var _inputs_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(4684);
-/* harmony import */ var _utils_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(381);
+/* harmony import */ var _utils_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(8899);
 /* harmony import */ var _github_actions_core_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(1444);
 /** @fileoverview Utilities for interacting with Airtable. */
 
@@ -19020,13 +19020,13 @@ function throwError(querying, table, err) {
 }
 
 /**
- * @param {!Promise<*>} promise
+ * @param {function(): !Promise<*>} func
  * @param {string} querying e.g., selecting, updating, etc
  * @param {string} table
  * @return {!Promise<*>}
  */
-function catchError(promise, querying, table) {
-  return promise.catch(err => throwError(querying, table, err));
+function catchError(func, querying, table) {
+  return (0,_utils_js__WEBPACK_IMPORTED_MODULE_2__/* .retry */ .XD)(() => func().catch(err => throwError(querying, table, err)));
 }
 
 /**
@@ -19063,7 +19063,7 @@ class Base {
   select(table, view = '', filterByFormula = '') {
     const params = {view: view, filterByFormula: filterByFormula};
     return catchError(
-        this.base_(table).select(params).all(), 'selecting', table);
+        () => this.base_(table).select(params).all(), 'selecting', table);
   }
 
   /**
@@ -19075,7 +19075,7 @@ class Base {
    */
   update(table, updates) {
     return catchError(
-        batch(this.base_(table).update, updates), 'updating', table);
+        () => batch(this.base_(table).update, updates), 'updating', table);
   }
 
   /**
@@ -19112,7 +19112,7 @@ class Base {
    */
   create(table, creates) {
     return catchError(
-        batch(this.base_(table).create, creates), 'creating', table);
+        () => batch(this.base_(table).create, creates), 'creating', table);
   }
 
   /**
@@ -19121,7 +19121,7 @@ class Base {
    * @return {!Promise<!Record<!TField>>}
    */
   find(table, id) {
-    return catchError(this.base_(table).find(id), 'finding', table);
+    return catchError(() => this.base_(table).find(id), 'finding', table);
   }
 }
 
@@ -19170,7 +19170,7 @@ class MsoBase extends (/* unused pure expression or super */ null && (Base)) {
 
 /***/ }),
 
-/***/ 2625:
+/***/ 1165:
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
 
 
@@ -19181,137 +19181,6 @@ __nccwpck_require__.d(__webpack_exports__, {
 
 // EXTERNAL MODULE: ./node_modules/papaparse/papaparse.js
 var papaparse = __nccwpck_require__(1826);
-// EXTERNAL MODULE: ./node_modules/retry/index.js
-var retry = __nccwpck_require__(5664);
-;// CONCATENATED MODULE: ./node_modules/is-network-error/index.js
-const objectToString = Object.prototype.toString;
-
-const isError = value => objectToString.call(value) === '[object Error]';
-
-const errorMessages = new Set([
-	'network error', // Chrome
-	'Failed to fetch', // Chrome
-	'NetworkError when attempting to fetch resource.', // Firefox
-	'The Internet connection appears to be offline.', // Safari 16
-	'Load failed', // Safari 17+
-	'Network request failed', // `cross-fetch`
-	'fetch failed', // Undici (Node.js)
-	'terminated', // Undici (Node.js)
-]);
-
-function isNetworkError(error) {
-	const isValid = error
-		&& isError(error)
-		&& error.name === 'TypeError'
-		&& typeof error.message === 'string';
-
-	if (!isValid) {
-		return false;
-	}
-
-	// We do an extra check for Safari 17+ as it has a very generic error message.
-	// Network errors in Safari have no stack.
-	if (error.message === 'Load failed') {
-		return error.stack === undefined;
-	}
-
-	return errorMessages.has(error.message);
-}
-
-;// CONCATENATED MODULE: ./node_modules/p-retry/index.js
-
-
-
-class AbortError extends Error {
-	constructor(message) {
-		super();
-
-		if (message instanceof Error) {
-			this.originalError = message;
-			({message} = message);
-		} else {
-			this.originalError = new Error(message);
-			this.originalError.stack = this.stack;
-		}
-
-		this.name = 'AbortError';
-		this.message = message;
-	}
-}
-
-const decorateErrorWithCounts = (error, attemptNumber, options) => {
-	// Minus 1 from attemptNumber because the first attempt does not count as a retry
-	const retriesLeft = options.retries - (attemptNumber - 1);
-
-	error.attemptNumber = attemptNumber;
-	error.retriesLeft = retriesLeft;
-	return error;
-};
-
-async function pRetry(input, options) {
-	return new Promise((resolve, reject) => {
-		options = {...options};
-		options.onFailedAttempt ??= () => {};
-		options.shouldRetry ??= () => true;
-		options.retries ??= 10;
-
-		const operation = retry.operation(options);
-
-		const abortHandler = () => {
-			operation.stop();
-			reject(options.signal?.reason);
-		};
-
-		if (options.signal && !options.signal.aborted) {
-			options.signal.addEventListener('abort', abortHandler, {once: true});
-		}
-
-		const cleanUp = () => {
-			options.signal?.removeEventListener('abort', abortHandler);
-			operation.stop();
-		};
-
-		operation.attempt(async attemptNumber => {
-			try {
-				const result = await input(attemptNumber);
-				cleanUp();
-				resolve(result);
-			} catch (error) {
-				try {
-					if (!(error instanceof Error)) {
-						throw new TypeError(`Non-error was thrown: "${error}". You should only throw errors.`);
-					}
-
-					if (error instanceof AbortError) {
-						throw error.originalError;
-					}
-
-					if (error instanceof TypeError && !isNetworkError(error)) {
-						throw error;
-					}
-
-					decorateErrorWithCounts(error, attemptNumber, options);
-
-					if (!(await options.shouldRetry(error))) {
-						operation.stop();
-						reject(error);
-					}
-
-					await options.onFailedAttempt(error);
-
-					if (!operation.retry(error)) {
-						throw operation.mainError();
-					}
-				} catch (finalError) {
-					decorateErrorWithCounts(finalError, attemptNumber, options);
-					cleanUp();
-					reject(finalError);
-				}
-			}
-		});
-	});
-}
-
 ;// CONCATENATED MODULE: external "node:http"
 const external_node_http_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:http");
 ;// CONCATENATED MODULE: external "node:https"
@@ -21022,7 +20891,7 @@ const getNodeRequestOptions = request => {
 /**
  * AbortError interface for cancelled requests
  */
-class abort_error_AbortError extends FetchBaseError {
+class AbortError extends FetchBaseError {
 	constructor(message, type = 'aborted') {
 		super(message, type);
 	}
@@ -21093,7 +20962,7 @@ async function fetch(url, options_) {
 		let response = null;
 
 		const abort = () => {
-			const error = new abort_error_AbortError('The operation was aborted.');
+			const error = new AbortError('The operation was aborted.');
 			reject(error);
 			if (request.body && request.body instanceof external_node_stream_namespaceObject.Readable) {
 				request.body.destroy(error);
@@ -21442,6 +21311,8 @@ function fixResponseChunkedTransferBadEnding(request, errorCallback) {
 	});
 }
 
+// EXTERNAL MODULE: ./src/common/utils.js + 3 modules
+var utils = __nccwpck_require__(8899);
 // EXTERNAL MODULE: ./src/common/github_actions_core.js
 var github_actions_core = __nccwpck_require__(1444);
 ;// CONCATENATED MODULE: ./src/common/fetch.js
@@ -21459,7 +21330,7 @@ var github_actions_core = __nccwpck_require__(1444);
  * @see Window.fetch
  */
 function fetch_fetch(getErrorObject, ...fetchArgs) {
-  return pRetry(
+  return (0,utils/* retry */.XD)(
       async () => {
         const response = await fetch(...fetchArgs);
         const {hasError, errorParts} = await getErrorObject(response);
@@ -21472,8 +21343,7 @@ function fetch_fetch(getErrorObject, ...fetchArgs) {
           throw new Error(message);
         }
         return response;
-      },
-      {retries: 1});
+      });
 }
 
 /**
@@ -21558,7 +21428,7 @@ async function parse(csv, header, config) {
 /* harmony export */ });
 /* unused harmony exports log, addSummaryTableHeaders, addSummaryTableRow, logJson */
 /* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(6024);
-/* harmony import */ var _utils_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(381);
+/* harmony import */ var _utils_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(8899);
 /**
  * @fileoverview Shared code for interacting with core GitHub Action functions.
  */
@@ -21808,22 +21678,155 @@ function summarize(changes) {
 
 /***/ }),
 
-/***/ 381:
+/***/ 8899:
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
 
 
 // EXPORTS
 __nccwpck_require__.d(__webpack_exports__, {
   "aE": () => (/* binding */ batchAsync),
-  "ss": () => (/* binding */ lazyCache)
+  "ss": () => (/* binding */ lazyCache),
+  "XD": () => (/* binding */ utils_retry)
 });
 
 // UNUSED EXPORTS: batchAwait, getYyyyMmDd
 
 ;// CONCATENATED MODULE: external "node:assert/strict"
 const strict_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:assert/strict");
+// EXTERNAL MODULE: ./node_modules/retry/index.js
+var retry = __nccwpck_require__(5664);
+;// CONCATENATED MODULE: ./node_modules/is-network-error/index.js
+const objectToString = Object.prototype.toString;
+
+const isError = value => objectToString.call(value) === '[object Error]';
+
+const errorMessages = new Set([
+	'network error', // Chrome
+	'Failed to fetch', // Chrome
+	'NetworkError when attempting to fetch resource.', // Firefox
+	'The Internet connection appears to be offline.', // Safari 16
+	'Load failed', // Safari 17+
+	'Network request failed', // `cross-fetch`
+	'fetch failed', // Undici (Node.js)
+	'terminated', // Undici (Node.js)
+]);
+
+function isNetworkError(error) {
+	const isValid = error
+		&& isError(error)
+		&& error.name === 'TypeError'
+		&& typeof error.message === 'string';
+
+	if (!isValid) {
+		return false;
+	}
+
+	// We do an extra check for Safari 17+ as it has a very generic error message.
+	// Network errors in Safari have no stack.
+	if (error.message === 'Load failed') {
+		return error.stack === undefined;
+	}
+
+	return errorMessages.has(error.message);
+}
+
+;// CONCATENATED MODULE: ./node_modules/p-retry/index.js
+
+
+
+class AbortError extends Error {
+	constructor(message) {
+		super();
+
+		if (message instanceof Error) {
+			this.originalError = message;
+			({message} = message);
+		} else {
+			this.originalError = new Error(message);
+			this.originalError.stack = this.stack;
+		}
+
+		this.name = 'AbortError';
+		this.message = message;
+	}
+}
+
+const decorateErrorWithCounts = (error, attemptNumber, options) => {
+	// Minus 1 from attemptNumber because the first attempt does not count as a retry
+	const retriesLeft = options.retries - (attemptNumber - 1);
+
+	error.attemptNumber = attemptNumber;
+	error.retriesLeft = retriesLeft;
+	return error;
+};
+
+async function pRetry(input, options) {
+	return new Promise((resolve, reject) => {
+		options = {...options};
+		options.onFailedAttempt ??= () => {};
+		options.shouldRetry ??= () => true;
+		options.retries ??= 10;
+
+		const operation = retry.operation(options);
+
+		const abortHandler = () => {
+			operation.stop();
+			reject(options.signal?.reason);
+		};
+
+		if (options.signal && !options.signal.aborted) {
+			options.signal.addEventListener('abort', abortHandler, {once: true});
+		}
+
+		const cleanUp = () => {
+			options.signal?.removeEventListener('abort', abortHandler);
+			operation.stop();
+		};
+
+		operation.attempt(async attemptNumber => {
+			try {
+				const result = await input(attemptNumber);
+				cleanUp();
+				resolve(result);
+			} catch (error) {
+				try {
+					if (!(error instanceof Error)) {
+						throw new TypeError(`Non-error was thrown: "${error}". You should only throw errors.`);
+					}
+
+					if (error instanceof AbortError) {
+						throw error.originalError;
+					}
+
+					if (error instanceof TypeError && !isNetworkError(error)) {
+						throw error;
+					}
+
+					decorateErrorWithCounts(error, attemptNumber, options);
+
+					if (!(await options.shouldRetry(error))) {
+						operation.stop();
+						reject(error);
+					}
+
+					await options.onFailedAttempt(error);
+
+					if (!operation.retry(error)) {
+						throw operation.mainError();
+					}
+				} catch (finalError) {
+					decorateErrorWithCounts(finalError, attemptNumber, options);
+					cleanUp();
+					reject(finalError);
+				}
+			}
+		});
+	});
+}
+
 ;// CONCATENATED MODULE: ./src/common/utils.js
 /** @fileoverview Shared code for Bill.com x Airtable Repository. */
+
 
 
 
@@ -21834,6 +21837,14 @@ const strict_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)
 function lazyCache(producer) {
   let result;
   return () => result || (result = producer());
+}
+
+/**
+ * @param {function(): !Promise<*>} func
+ * @return {!Promise<*>} func return value, if resolves
+ */
+function utils_retry(func) {
+  return pRetry(func, {retries: 1});
 }
 
 /**

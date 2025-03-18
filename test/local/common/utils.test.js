@@ -28,6 +28,21 @@ describe('lazyCache', () => {
   });
 });
 
+describe('retry', () => {
+
+  test('retries on throw', async () => {
+    const reject = jest.fn(() => Promise.reject(new Error()));
+    await expect(utils.retry(reject)).rejects.toThrow();
+    expect(reject.mock.calls.length).toBeGreaterThan(1);
+  });
+
+  test('no retry on success', async () => {
+    const resolve = jest.fn(() => Promise.resolve('test'));
+    await utils.retry(resolve);
+    expect(resolve).toBeCalledTimes(1);
+  });
+});
+
 
 describe.each`
   name       | batchFunc           | asyncExecutionOrder

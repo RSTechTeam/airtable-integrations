@@ -1,6 +1,7 @@
 /** @fileoverview Shared code for Bill.com x Airtable Repository. */
 
 import assert from 'node:assert/strict';
+import pRetry from 'p-retry';
 
 /**
  * @param {function(): *} producer
@@ -9,6 +10,14 @@ import assert from 'node:assert/strict';
 export function lazyCache(producer) {
   let result;
   return () => result || (result = producer());
+}
+
+/**
+ * @param {function(): !Promise<*>} func
+ * @return {!Promise<*>} func return value, if resolves
+ */
+export function retry(func) {
+  return pRetry(func, {retries: 1});
 }
 
 /**
