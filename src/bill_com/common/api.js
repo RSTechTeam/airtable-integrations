@@ -48,7 +48,7 @@ export async function apiCall(endpoint, headers, body, test) {
                 hasError:
                   async response => {
                     const json = await response.clone().json();
-                    log(`debug: ${json}`);
+                    logJson('debug', json);
                     return json.response_status === 1;
                   },
                 getErrorObject:
