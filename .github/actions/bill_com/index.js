@@ -20653,18 +20653,19 @@ function baseUrl(test = false) {
  * @return {!Promise<!Object<string, *>>} endpoint-specific response_data.
  */
 async function apiCall(endpoint, headers, body, test) {
+  let json;
   const response =
       await rateLimit(
           () => (0,fetch/* fetch */.he)(
               {
-                // hasError:
-                //   async response => {
-                //     const json = await response.clone().json();
-                //     return json.response_status === 1;
-                //   },
+                hasError:
+                  async response => {
+                    json = await response.json();
+                    return json.response_status === 1;
+                  },
                 getErrorObject:
                   async response => {
-                    const data = (await response.json()).response_data;
+                    const data = (json || await response.json()).response_data;
                     return (0,fetch/* errorObject */.TJ)(
                         data.error_code, endpoint, data.error_message);
                   },
@@ -20672,11 +20673,7 @@ async function apiCall(endpoint, headers, body, test) {
               `${baseUrl(test)}/api/v2/${endpoint}.json`,
               {method: 'POST', headers: headers, body: body}));
 
-  const json = await response.json();
   (0,github_actions_core/* logJson */.u2)(endpoint, json);
-  if (json.response_status === 1) {
-    throw new Error(`${endpoint} ${json.response_data.error_code}`);
-  }
   return json.response_data;
 }
 

@@ -41,18 +41,19 @@ function baseUrl(test = false) {
  * @return {!Promise<!Object<string, *>>} endpoint-specific response_data.
  */
 export async function apiCall(endpoint, headers, body, test) {
+  let json;
   const response =
       await rateLimit(
           () => fetch(
               {
-                // hasError:
-                //   async response => {
-                //     const json = await response.clone().json();
-                //     return json.response_status === 1;
-                //   },
+                hasError:
+                  async response => {
+                    json = await response.json();
+                    return json.response_status === 1;
+                  },
                 getErrorObject:
                   async response => {
-                    const data = (await response.json()).response_data;
+                    const data = (json || await response.json()).response_data;
                     return errorObject(
                         data.error_code, endpoint, data.error_message);
                   },
@@ -60,11 +61,7 @@ export async function apiCall(endpoint, headers, body, test) {
               `${baseUrl(test)}/api/v2/${endpoint}.json`,
               {method: 'POST', headers: headers, body: body}));
 
-  const json = await response.json();
   logJson(endpoint, json);
-  if (json.response_status === 1) {
-    throw new Error(`${endpoint} ${json.response_data.error_code}`);
-  }
   return json.response_data;
 }
 
