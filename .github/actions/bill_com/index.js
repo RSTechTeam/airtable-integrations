@@ -20653,24 +20653,27 @@ function baseUrl(test = false) {
  * @return {!Promise<!Object<string, *>>} endpoint-specific response_data.
  */
 async function apiCall(endpoint, headers, body, test) {
-  const getErrorObject = json => {
-    const data = json.response_data;
-    return (0,fetch/* errorObject */.TJ)(data.error_code, endpoint, data.error_message);
-  };
-
   const response =
       await rateLimit(
           () => (0,fetch/* fetch */.he)(
-              async response => getErrorObject(await response.json()),
+              {
+                hasError:
+                  async response => {
+                    const json = await response.clone().json();
+                    return json.response_status === 1;
+                  },
+                getErrorObject:
+                  async response => {
+                    const data = (await response.json()).response_data;
+                    return (0,fetch/* errorObject */.TJ)(
+                        data.error_code, endpoint, data.error_message);
+                  },
+              },
               `${baseUrl(test)}/api/v2/${endpoint}.json`,
               {method: 'POST', headers: headers, body: body}));
 
   const json = await response.json();
   (0,github_actions_core/* logJson */.u2)(endpoint, json);
-  if (json.response_status === 1) {
-    (0,github_actions_core/* log */.cM)(response.status);
-    throw new Error((0,fetch/* errorMessage */.N3)(getErrorObject(json)));
-  }
   return json.response_data;
 }
 
@@ -21369,7 +21372,6 @@ class MsoBase extends Base {
 
 // EXPORTS
 __nccwpck_require__.d(__webpack_exports__, {
-  "N3": () => (/* binding */ errorMessage),
   "TJ": () => (/* binding */ errorObject),
   "he": () => (/* binding */ fetch_fetch),
   "ce": () => (/* binding */ fetchAttachment)
@@ -23646,30 +23648,24 @@ var github_actions_core = __nccwpck_require__(1444);
 
 
 /**
- * @param {!Object<string, *>} errorObject
- * @param {Response=} response
- * @return {string}
- */
-function errorMessage(errorObject, response = undefined) {
-  return `Error ${errorObject.code || response?.status}` +
-      ` (from ${errorObject.context || response?.url}):` +
-      ` ${errorObject.message || response?.statusText}`;
-}
-
-/**
  * Fetches with retry.
- * @param {function(!Response): !Promise<!Object<string, *>>)} getErrorObject
+ * @param {!Object<string, function(!Response): *>} errorFuncs
  * @param {...*} fetchArgs
  * @return {!Response}
  * @see Window.fetch
  */
-function fetch_fetch(getErrorObject, ...fetchArgs) {
+function fetch_fetch(
+    {hasError = response => false, getErrorObject}, ...fetchArgs) {
+
   return pRetry(
       async () => {
         const response = await fetch(...fetchArgs);
-        if (!response.ok) {
+        if (!response.ok || hasError(response)) {
+          const errorObject = await getErrorObject(response);
           const message =
-              errorMessage(await getErrorObject(response), response);
+              `Error ${errorObject.code || response.status}` +
+                  ` (from ${errorObject.context || response.url}):` +
+                  ` ${errorObject.message || response.statusText}`;
           (0,github_actions_core/* warn */.ZK)(message);
           throw new Error(message);
         }
@@ -23693,7 +23689,9 @@ function errorObject(code, context, message) {
  * @return {!Response}
  */
 function fetchAttachment(attachment) {
-  return fetch_fetch(response => ({context: attachment.filename}), attachment.url);
+  return fetch_fetch(
+      {getErrorObject: response => ({context: attachment.filename})},
+      attachment.url);
 }
 
 

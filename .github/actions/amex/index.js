@@ -21452,30 +21452,24 @@ var github_actions_core = __nccwpck_require__(1444);
 
 
 /**
- * @param {!Object<string, *>} errorObject
- * @param {Response=} response
- * @return {string}
- */
-function errorMessage(errorObject, response = undefined) {
-  return `Error ${errorObject.code || response?.status}` +
-      ` (from ${errorObject.context || response?.url}):` +
-      ` ${errorObject.message || response?.statusText}`;
-}
-
-/**
  * Fetches with retry.
- * @param {function(!Response): !Promise<!Object<string, *>>)} getErrorObject
+ * @param {!Object<string, function(!Response): *>} errorFuncs
  * @param {...*} fetchArgs
  * @return {!Response}
  * @see Window.fetch
  */
-function fetch_fetch(getErrorObject, ...fetchArgs) {
+function fetch_fetch(
+    {hasError = response => false, getErrorObject}, ...fetchArgs) {
+
   return pRetry(
       async () => {
         const response = await fetch(...fetchArgs);
-        if (!response.ok) {
+        if (!response.ok || hasError(response)) {
+          const errorObject = await getErrorObject(response);
           const message =
-              errorMessage(await getErrorObject(response), response);
+              `Error ${errorObject.code || response.status}` +
+                  ` (from ${errorObject.context || response.url}):` +
+                  ` ${errorObject.message || response.statusText}`;
           (0,github_actions_core/* warn */.ZK)(message);
           throw new Error(message);
         }
@@ -21499,7 +21493,9 @@ function errorObject(code, context, message) {
  * @return {!Response}
  */
 function fetchAttachment(attachment) {
-  return fetch_fetch(response => ({context: attachment.filename}), attachment.url);
+  return fetch_fetch(
+      {getErrorObject: response => ({context: attachment.filename})},
+      attachment.url);
 }
 
 ;// CONCATENATED MODULE: ./src/common/csv.js

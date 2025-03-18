@@ -30,10 +30,13 @@ async function apiCall(endpoint, params = {}) {
               async () => {
                 resolve(
                     await fetch(
-                        async response => {
-                          const json = await response.json();
-                          const err = json[0];
-                          return errorObject(err?.code, endpoint, err?.message)
+                        {
+                          getErrorObject:
+                            async response => {
+                              const json = await response.json();
+                              const err = json[0];
+                              return errorObject(err?.code, endpoint, err?.message)
+                            },
                         },
                         'https://gateway.prod.bill.com/connect/v3/spend/' +
                             `${endpoint}?${new URLSearchParams(params)}`,

@@ -5,30 +5,24 @@ import {default as nodeFetch} from 'node-fetch';
 import {warn} from '../common/github_actions_core.js';
 
 /**
- * @param {!Object<string, *>} errorObject
- * @param {Response=} response
- * @return {string}
- */
-export function errorMessage(errorObject, response = undefined) {
-  return `Error ${errorObject.code || response?.status}` +
-      ` (from ${errorObject.context || response?.url}):` +
-      ` ${errorObject.message || response?.statusText}`;
-}
-
-/**
  * Fetches with retry.
- * @param {function(!Response): !Promise<!Object<string, *>>)} getErrorObject
+ * @param {!Object<string, function(!Response): *>} errorFuncs
  * @param {...*} fetchArgs
  * @return {!Response}
  * @see Window.fetch
  */
-export function fetch(getErrorObject, ...fetchArgs) {
+export function fetch(
+    {hasError = response => false, getErrorObject}, ...fetchArgs) {
+
   return pRetry(
       async () => {
         const response = await nodeFetch(...fetchArgs);
-        if (!response.ok) {
+        if (!response.ok || hasError(response)) {
+          const errorObject = await getErrorObject(response);
           const message =
-              errorMessage(await getErrorObject(response), response);
+              `Error ${errorObject.code || response.status}` +
+                  ` (from ${errorObject.context || response.url}):` +
+                  ` ${errorObject.message || response.statusText}`;
           warn(message);
           throw new Error(message);
         }
@@ -52,5 +46,7 @@ export function errorObject(code, context, message) {
  * @return {!Response}
  */
 export function fetchAttachment(attachment) {
-  return fetch(response => ({context: attachment.filename}), attachment.url);
+  return fetch(
+      {getErrorObject: response => ({context: attachment.filename})},
+      attachment.url);
 }
