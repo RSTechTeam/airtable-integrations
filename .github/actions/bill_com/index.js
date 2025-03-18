@@ -20660,6 +20660,7 @@ async function apiCall(endpoint, headers, body, test) {
                 hasError:
                   async response => {
                     const json = await response.clone().json();
+                    (0,github_actions_core/* log */.cM)(`debug: ${json}`);
                     return json.response_status === 1;
                   },
                 getErrorObject:
