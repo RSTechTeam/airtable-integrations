@@ -17126,24 +17126,21 @@ const delay = 60 * 1000;
  */
 async function apiCall(endpoint, params = {}) {
   let json;
-  await new Promise(
-      resolve => rateLimit(
-          async () => {
-            resolve(
-                await (0,_common_fetch_js__WEBPACK_IMPORTED_MODULE_3__/* .fetch */ .he)(
-                    async response => {
-                      json = await response.json();
-                      const err = json[0];
-                      return {
-                        errorParts:
-                          (0,_common_fetch_js__WEBPACK_IMPORTED_MODULE_3__/* .errorParts */ .wD)(err?.code, endpoint, err?.message),
-                      };
-                    },
-                    'https://gateway.prod.bill.com/connect/v3/spend/' +
-                        `${endpoint}?${new URLSearchParams(params)}`,
-                    {headers: {apiToken: (0,_inputs_js__WEBPACK_IMPORTED_MODULE_2__/* .billSpendExpenseApiKey */ .s)()}}));
-            await (0,node_timers_promises__WEBPACK_IMPORTED_MODULE_7__.setTimeout)(delay);
-          }));
+  await rateLimit(
+      async () => {
+        await (0,_common_fetch_js__WEBPACK_IMPORTED_MODULE_3__/* .fetch */ .he)(
+            async response => {
+              json = await response.json();
+              const err = json[0];
+              return {
+                errorParts: (0,_common_fetch_js__WEBPACK_IMPORTED_MODULE_3__/* .errorParts */ .wD)(err?.code, endpoint, err?.message),
+              };
+            },
+            `https://gateway.prod.bill.com/connect/v3/spend/${endpoint}` +
+                `?${new URLSearchParams(params)}`,
+            {headers: {apiToken: (0,_inputs_js__WEBPACK_IMPORTED_MODULE_2__/* .billSpendExpenseApiKey */ .s)()}});
+        await (0,node_timers_promises__WEBPACK_IMPORTED_MODULE_7__.setTimeout)(delay);
+      });
 
   (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_5__/* .logJson */ .u2)(endpoint, json);
   return json;
