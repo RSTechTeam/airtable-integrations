@@ -21464,7 +21464,7 @@ function fetch_fetch(
   return pRetry(
       async () => {
         const response = await fetch(...fetchArgs);
-        if (!response.ok || (await hasError(response))) {
+        if (!response.ok || await hasError(response)) {
           const errorObject = await getErrorObject(response);
           const message =
               `Error ${errorObject.code || response.status}` +
@@ -21596,6 +21596,7 @@ function getInput(input) {
  */
 function error(err) {
   _actions_core__WEBPACK_IMPORTED_MODULE_0__.setFailed(err);
+  log('hi');
   throw err;
 }
 

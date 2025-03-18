@@ -33,6 +33,7 @@ export function getInput(input) {
  */
 export function error(err) {
   core.setFailed(err);
+  log('hi');
   throw err;
 }
 
