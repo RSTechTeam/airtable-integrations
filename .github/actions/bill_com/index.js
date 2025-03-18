@@ -20657,11 +20657,11 @@ async function apiCall(endpoint, headers, body, test) {
       await rateLimit(
           () => (0,fetch/* fetch */.he)(
               {
-                hasError:
-                  async response => {
-                    const json = await response.clone().json();
-                    return json.response_status === 1;
-                  },
+                // hasError:
+                //   async response => {
+                //     const json = await response.clone().json();
+                //     return json.response_status === 1;
+                //   },
                 getErrorObject:
                   async response => {
                     const data = (await response.json()).response_data;
@@ -20674,6 +20674,9 @@ async function apiCall(endpoint, headers, body, test) {
 
   const json = await response.json();
   (0,github_actions_core/* logJson */.u2)(endpoint, json);
+  if (json.response_status === 1) {
+    throw new Error(`${endpoint} ${json.response_data.error_code}`);
+  }
   return json.response_data;
 }
 
