@@ -2,7 +2,7 @@
 
 import pRetry from 'p-retry';
 import {default as nodeFetch} from 'node-fetch';
-import {warn} from '../common/github_actions_core.js';
+import {log, warn} from '../common/github_actions_core.js';
 
 /**
  * Fetches with retry.
@@ -17,7 +17,9 @@ export function fetch(
   return pRetry(
       async () => {
         const response = await nodeFetch(...fetchArgs);
-        if (!response.ok || hasError(response)) {
+        const error = hasError(response);
+        log(`debug: ${error}`);
+        if (!response.ok || error) {
           const errorObject = await getErrorObject(response);
           const message =
               `Error ${errorObject.code || response.status}` +

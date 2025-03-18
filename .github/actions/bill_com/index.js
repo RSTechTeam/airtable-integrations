@@ -20660,7 +20660,7 @@ async function apiCall(endpoint, headers, body, test) {
                 hasError:
                   async response => {
                     const json = await response.clone().json();
-                    (0,github_actions_core/* logJson */.u2)('debug', json);
+                    (0,github_actions_core/* log */.cM)(`debug1: ${json.response_status === 1}`);
                     return json.response_status === 1;
                   },
                 getErrorObject:
@@ -23661,7 +23661,9 @@ function fetch_fetch(
   return pRetry(
       async () => {
         const response = await fetch(...fetchArgs);
-        if (!response.ok || hasError(response)) {
+        const error = hasError(response);
+        (0,github_actions_core/* log */.cM)(`debug: ${error}`);
+        if (!response.ok || error) {
           const errorObject = await getErrorObject(response);
           const message =
               `Error ${errorObject.code || response.status}` +
