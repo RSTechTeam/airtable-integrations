@@ -17,7 +17,7 @@ export function fetch(
   return pRetry(
       async () => {
         const response = await nodeFetch(...fetchArgs);
-        if (!response.ok || await hasError(response)) {
+        if (!response.ok || (await hasError(response))) {
           const errorObject = await getErrorObject(response);
           const message =
               `Error ${errorObject.code || response.status}` +
