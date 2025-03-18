@@ -24,27 +24,26 @@ const delay = 60 * 1000;
  * @return {!Promise<!Object<string, *>>} endpoint-specific json.
  */
 async function apiCall(endpoint, params = {}) {
-  const response =
-      await new Promise(
-          resolve => rateLimit(
-              async () => {
-                resolve(
-                    await fetch(
-                        async response => {
-                          const json = await response.json();
-                          const err = json[0];
-                          return {
-                            errorParts:
-                              errorParts(err?.code, endpoint, err?.message),
-                          };
-                        },
-                        'https://gateway.prod.bill.com/connect/v3/spend/' +
-                            `${endpoint}?${new URLSearchParams(params)}`,
-                        {headers: {apiToken: billSpendExpenseApiKey()}}));
-                await setTimeout(delay);
-              }));
+  let json;
+  await new Promise(
+      resolve => rateLimit(
+          async () => {
+            resolve(
+                await fetch(
+                    async response => {
+                      json = await response.json();
+                      const err = json[0];
+                      return {
+                        errorParts:
+                          errorParts(err?.code, endpoint, err?.message),
+                      };
+                    },
+                    'https://gateway.prod.bill.com/connect/v3/spend/' +
+                        `${endpoint}?${new URLSearchParams(params)}`,
+                    {headers: {apiToken: billSpendExpenseApiKey()}}));
+            await setTimeout(delay);
+          }));
 
-  const json = await response.json();
   logJson(endpoint, json);
   return json;
 }
