@@ -25,21 +25,24 @@ const delay = 60 * 1000;
  */
 async function apiCall(endpoint, params = {}) {
   let json;
-  await rateLimit(
-      async () => {
-        await fetch(
-            async response => {
-              json = await response.json();
-              const err = json[0];
-              return {
-                errorParts: errorParts(err?.code, endpoint, err?.message),
-              };
-            },
-            `https://gateway.prod.bill.com/connect/v3/spend/${endpoint}` +
-                `?${new URLSearchParams(params)}`,
-            {headers: {apiToken: billSpendExpenseApiKey()}});
-        await setTimeout(delay);
-      });
+  await new Promise(
+      resolve => rateLimit(
+          async () => {
+            resolve(
+                await fetch(
+                    async response => {
+                      json = await response.json();
+                      const err = json[0];
+                      return {
+                        errorParts:
+                          errorParts(err?.code, endpoint, err?.message),
+                      };
+                    },
+                    'https://gateway.prod.bill.com/connect/v3/spend/' +
+                        `${endpoint}?${new URLSearchParams(params)}`,
+                    {headers: {apiToken: billSpendExpenseApiKey()}}));
+            await setTimeout(delay);
+          }));
 
   logJson(endpoint, json);
   return json;
