@@ -50,7 +50,7 @@ export async function apiCall(endpoint, headers, body, test) {
             return {
               hasError: json.response_status === 1,
               errorParts:
-                errorParts(data.error_code, endpoint, data.error_message),
+                errorParts(data?.error_code, endpoint, data?.error_message),
             };
           },
           `${baseUrl(test)}/api/v2/${endpoint}.json`,
