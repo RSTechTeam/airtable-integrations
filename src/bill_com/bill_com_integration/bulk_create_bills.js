@@ -71,7 +71,7 @@ export async function main(billComApi, airtableBase = new MsoBase()) {
                           {
                             invoiceDate: record.get('Invoice Date'),
                             dueDate: record.get('Due Date'),
-                            invoiceNumber: row['Invoice ID'],
+                            invoiceNumber: row['Invoice ID'].substring(0, 21),
                             description: submittedBy,
                             billLineItems: [{
                               entity: 'BillLineItem',
