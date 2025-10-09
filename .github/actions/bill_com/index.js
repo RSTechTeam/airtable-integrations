@@ -21055,7 +21055,7 @@ async function main(billComApi, airtableBase = new _common_airtable_js__WEBPACK_
                         addressState: v.get('Mailing address (state short)'),
                         addressZip:
                           v.get('Mailing address (zip code)')?.toString(),
-                        addressCountry: 'USA',
+                        // addressCountry: 'USA',
                         email: v.get('Email'),
                         phone: v.get('Trimmed phone number'),
                       },
