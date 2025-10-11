@@ -18914,6 +18914,7 @@ async function parse(csv, header, config) {
                         new Error(
                             `Parsed header: ${parsedHeader}` +
                                 `\nGiven header: ${header}`));
+                    return;
                   }
                 }
 
