@@ -11,7 +11,7 @@ jobs:
       - run: npm ci
       - run: npm test
         env:
-          AIRTABLE_API_KEY: ${{ secrets.AIRTABLE_API_KEY }}
+          AIRTABLE_API_KEY: ${{ secrets.TEST_AIRTABLE_PAT }}
           AIRTABLE_BASE_ID: ${{ secrets.TEST_BASE_ID }}
           AIRTABLE_ORG_IDS_BASE_ID: ${{ secrets.TEST_BASE_ID }}
           BILL_COM_DEV_KEY: ${{ secrets.TEST_DEV_KEY }}
