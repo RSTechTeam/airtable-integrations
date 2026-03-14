@@ -11,6 +11,6 @@ jobs:
     steps:
       - uses: RSTechTeam/airtable-integrations/.github/actions/bill_spend_expense@main
         with:
-          airtable-api-key: ${{ secrets.AIRTABLE_API_KEY }}
+          airtable-api-key: ${{ secrets.EXPENSE_SOURCES_AIRTABLE_PAT }}
           airtable-base-id: ${{ secrets.EXPENSE_SOURCES_BASE_ID }}
           bill-spend-expense-api-key: ${{ secrets.BILL_SPEND_EXPENSE_API_KEY }}
