@@ -39,27 +39,24 @@ jobs:
     steps:
       - id: get-file-id
         run: echo "id=${{ inputs.file-id || matrix.file-id }}" >> $GITHUB_OUTPUT
-      - id: get-airtable-ids
+      - id: get-airtable-base-id
         if: matrix.file-id && steps.get-file-id.outputs.id == matrix.file-id
         run: |
           case ${{ matrix.file-id }} in
             door_knocking*)
-              api_pat=${{ secrets.AIRTABLE_API_KEY }}
-              base_id=${{ secrets.DOOR_KNOCKING_BASE_ID }}
+              id=${{ secrets.DOOR_KNOCKING_BASE_ID }}
               ;;
             *)
-              api_pat=${{ secrets.BILL_COM_INTEGRATION_AIRTABLE_PAT }}
-              base_id=${{ secrets.BILL_COM_INTEGRATION_BASE_ID }}
+              id=${{ secrets.BILL_COM_INTEGRATION_BASE_ID }}
               ;;
           esac
-          echo "api_pat=$api_pat" >> $GITHUB_OUTPUT
-          echo "base_id=$base_id" >> $GITHUB_OUTPUT
+          echo "id=$id" >> $GITHUB_OUTPUT
       - if: matrix.file-id && steps.get-file-id.outputs.id == matrix.file-id
         uses: RSTechTeam/airtable-integrations/.github/actions/bill_com@main
         with:
           file-id: ${{ matrix.file-id }}
-          airtable-api-key: ${{ steps.get-airtable-ids.outputs.api_pat }}
-          airtable-base-id: ${{ steps.get-airtable-ids.outputs.base_id }}
+          airtable-api-key: ${{ secrets.AIRTABLE_API_KEY }}
+          airtable-base-id: ${{ steps.get-airtable-base-id.outputs.id }}
           airtable-org-ids-base-id: ${{ secrets.BILL_COM_INTEGRATION_BASE_ID }}
           bill-com-dev-key: ${{ secrets.BILL_COM_DEV_KEY }}
           bill-com-user-name: ${{ secrets.BILL_COM_USER_NAME }}
