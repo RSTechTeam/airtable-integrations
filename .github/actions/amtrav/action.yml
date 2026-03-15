@@ -14,5 +14,5 @@ inputs:
     description: 'The ID of the AmTrav Credit Card whose transactions should be integrated'
     required: true
 runs:
-  using: 'node20'
+  using: 'node24'
   main: 'index.js'
