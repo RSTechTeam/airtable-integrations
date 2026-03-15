@@ -12,7 +12,6 @@ const selectId = (view) => selectField(view, 'ID');
 describe('select', () => {
 
   test('given no table, throws', () => {
-    // expect(() => base.select('')).toThrow();
     return expect(base.select('')).rejects.toThrow();
   });
 
@@ -59,7 +58,7 @@ describe('update', () => {
   });
 
   test('given no table (with non-empty updates), throws', () => {
-    expect(() => update('', '', '', '')).toThrow();
+    return expect(update('', '', '', '')).rejects.toThrow();
   });
 
   test('updates records', async () => {
@@ -114,7 +113,7 @@ describe('create', () => {
   };
 
   test('given no table (with non-empty creates), throws', () => {
-    expect(() => create('')).toThrow();
+    return expect(create('')).rejects.toThrow();
   });
 
   test('creates records', async () => {
@@ -130,7 +129,7 @@ describe('find', () => {
 
   const find = (tbl, id) => base.find(tbl, recordIds.get(id));
 
-  test('given no table, throws', () => expect(() => find('', 1)).toThrow());
+  test('given no table, throws', () => expect(find('', 1)).rejects.toThrow());
   test('given no id, throws', () => expect(find(table, '')).rejects.toThrow());
   test('finds record', async () => {
     const record = await find(table, 1);
