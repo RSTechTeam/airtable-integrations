@@ -29,5 +29,5 @@ inputs:
     description: 'The Bill.com User Profile ID for ECR Approvers'
     required: false
 runs:
-  using: 'node20'
+  using: 'node24'
   main: 'index.js'
