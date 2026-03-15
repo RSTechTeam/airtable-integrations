@@ -1,4 +1,3 @@
-import * as airtable from '../../../src/common/airtable.js';
 import {airtableBase} from '../../test_utils.js';
 
 const base = airtableBase();
@@ -13,7 +12,8 @@ const selectId = (view) => selectField(view, 'ID');
 describe('select', () => {
 
   test('given no table, throws', () => {
-    expect(() => base.select('')).toThrow();
+    // expect(() => base.select('')).toThrow();
+    return expect(base.select('')).rejects.toThrow();
   });
 
   test('given no view, defaults to whole table', () => {
