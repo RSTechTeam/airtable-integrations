@@ -5,7 +5,6 @@ import {fetchAttachment} from '../../common/fetch.js';
 import {FormData} from 'formdata-node';
 import {MSO_BILL_COM_ID} from '../common/constants.js';
 import {MsoBase} from '../../common/airtable.js';
-import {log} from '../../common/github_actions_core.js';
 
 /** Bill.com Vendor tax ID types. */
 const taxIdTypes = new Map([['EIN', '1'], ['SSN', '2']]);
@@ -143,9 +142,6 @@ export async function main(api, airtableBase = new MsoBase()) {
                         `${item.get('Merchant State')} | ` +
                         `${item.get('Merchant Zip Code')}\n${description}`,
             };
-            log('hi');
-            log(item.get('Merchant Name'));
-            log(item.description);
 
             const project =
                 await billComIntegrationBase.find(

@@ -19543,11 +19543,8 @@ class FormData {
 var constants = __nccwpck_require__(9447);
 // EXTERNAL MODULE: ./src/common/airtable.js
 var airtable = __nccwpck_require__(5585);
-// EXTERNAL MODULE: ./src/common/github_actions_core.js
-var github_actions_core = __nccwpck_require__(1444);
 ;// CONCATENATED MODULE: ./src/bill_com/bill_com_integration/create_bill.js
 /** @fileoverview Creates a Bill.com Bill based on a new Check Request. */
-
 
 
 
@@ -19691,9 +19688,6 @@ async function main(api, airtableBase = new airtable/* MsoBase */.F()) {
                         `${item.get('Merchant State')} | ` +
                         `${item.get('Merchant Zip Code')}\n${description}`,
             };
-            (0,github_actions_core/* log */.cM)('hi');
-            (0,github_actions_core/* log */.cM)(item.get('Merchant Name'));
-            (0,github_actions_core/* log */.cM)(item.description);
 
             const project =
                 await billComIntegrationBase.find(
