@@ -1,11 +1,23 @@
 /** @fileoverview Imports an Abacus CSV update into Airtable. */
 
+import Client from 'ssh2-sftp-client';
 import {addSummaryTableHeaders, addSummaryTableRow} from '../common/github_actions_core.js';
 import {airtableImportRecordId} from '../common/inputs.js';
 import {airtableRecordUpdate, getMapping, syncChanges} from '../common/sync.js';
 import {Base} from '../common/airtable.js';
+import {emburseSftpKey, emburseSftpUsername} from './inputs.js';
 import {parse} from '../common/csv.js';
+import {Readable} from 'node:stream';
 import {run} from '../common/action.js';
+
+/**
+ * @param {?string} timestamp
+ * @return {string} timestamp's Date string,
+ *    or today's Date string if no timestamp given
+ */
+function getDateString(timestamp) {
+  return new Date(timestamp).toDateString();
+}
 
 await run(async () => {
 
@@ -86,12 +98,33 @@ await run(async () => {
       },
   };
 
+  // Get CSVs.
+  const importRecordId = airtableImportRecordId();
+  let effectiveParse;
+  let csvs;
+  if (importRecordId) {
+    effectiveParse = parse;
+    const importRecord =
+        await expenseSources.find('Abacus Imports', importRecordId);
+    csvs = importRecord.get('CSVs');
+  } else {
+    effectiveParse = parse;
+    const sftp = new Client();
+    await sftp.connect({
+      host: 'sftp.spend.emburse.com',
+      username: emburseSftpUsername(),
+      privateKey: emburseSftpKey(),
+    });
+    const files =
+        await sftp.list(
+            '', file => getDateString(file.modifyTime) === getDateString());
+    const buffers = await Promise.all(files.map(f => sftp.get(f.name)));
+    csvs = buffers.map(Readable.from);
+  }
+
   // Parse CSVs with above config.
-  const importRecord =
-      await expenseSources.find('Abacus Imports', airtableImportRecordId());
   await Promise.all(
-      importRecord.get('CSVs').map(
-          csv => parse(csv, airtableFields, parseConfig)));
+      csvs.map(csv => effectiveParse(csv, airtableFields, parseConfig)));
 
   // Add summary.
   addSummaryTableHeaders(['Updates', 'Creates']);
