@@ -26,7 +26,7 @@ function getDateString(timestamp) {
 }
 log('a');
 await run(async () => {
-
+  log('b');
   /** Abacus Data Airtable Table name. */
   const ABACUS_TABLE = 'Abacus Data';
 
@@ -51,7 +51,7 @@ await run(async () => {
   const expenseSources = new Base();
   const expenseRecords =
       getMapping(await expenseSources.select(ABACUS_TABLE), 'Expense ID');
-
+  log('c');
   // Create parse config.
   const airtableFields = Array.from(mapping.values());
   let updateCount = 0;
