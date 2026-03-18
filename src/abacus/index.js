@@ -1,5 +1,11 @@
 /** @fileoverview Imports an Abacus CSV update into Airtable. */
 
+import {dirname} from 'node:path';
+import {fileURLToPath} from 'node:url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
 import Client from 'ssh2-sftp-client';
 import {addSummaryTableHeaders, addSummaryTableRow} from '../common/github_actions_core.js';
 import {airtableImportRecordId} from '../common/inputs.js';
@@ -117,7 +123,7 @@ await run(async () => {
     });
     const files =
         await sftp.list(
-            '/', file => getDateString(file.modifyTime) === getDateString());
+            '', file => getDateString(file.modifyTime) === getDateString());
     const buffers = await Promise.all(files.map(f => sftp.get(f.name)));
     csvs = buffers.map(Readable.from);
   }

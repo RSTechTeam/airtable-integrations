@@ -18547,7 +18547,7 @@ var _Object$setPrototypeO;
 function _defineProperty(obj, key, value) { key = _toPropertyKey(key); if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
 function _toPropertyKey(arg) { var key = _toPrimitive(arg, "string"); return typeof key === "symbol" ? key : String(key); }
 function _toPrimitive(input, hint) { if (typeof input !== "object" || input === null) return input; var prim = input[Symbol.toPrimitive]; if (prim !== undefined) { var res = prim.call(input, hint || "default"); if (typeof res !== "object") return res; throw new TypeError("@@toPrimitive must return a primitive value."); } return (hint === "string" ? String : Number)(input); }
-var finished = __nccwpck_require__(9411);
+var finished = __nccwpck_require__(5981);
 var kLastResolve = Symbol('lastResolve');
 var kLastReject = Symbol('lastReject');
 var kError = Symbol('error');
@@ -19015,7 +19015,7 @@ module.exports = {
 
 /***/ }),
 
-/***/ 9411:
+/***/ 5981:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 // Ported from https://github.com/mafintosh/end-of-stream with
@@ -19199,7 +19199,7 @@ function destroyer(stream, reading, writing, callback) {
   stream.on('close', function () {
     closed = true;
   });
-  if (eos === undefined) eos = __nccwpck_require__(9411);
+  if (eos === undefined) eos = __nccwpck_require__(5981);
   eos(stream, {
     readable: reading,
     writable: writing
@@ -19310,7 +19310,7 @@ if (process.env.READABLE_STREAM === 'disable' && Stream) {
   exports.Duplex = __nccwpck_require__(8035);
   exports.Transform = __nccwpck_require__(7240);
   exports.PassThrough = __nccwpck_require__(4543);
-  exports.finished = __nccwpck_require__(9411);
+  exports.finished = __nccwpck_require__(5981);
   exports.pipeline = __nccwpck_require__(9122);
 }
 
@@ -19721,7 +19721,7 @@ module.exports = {
 const { Client } = __nccwpck_require__(62);
 const fs = __nccwpck_require__(7561);
 const concat = __nccwpck_require__(1012);
-const { join, parse } = __nccwpck_require__(8330);
+const { join, parse } = __nccwpck_require__(9411);
 const {
   globalListener,
   addTempListeners,
@@ -21213,7 +21213,7 @@ module.exports = SftpClient;
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 const { statSync, constants, accessSync } = __nccwpck_require__(7561);
-const { dirname } = __nccwpck_require__(8330);
+const { dirname } = __nccwpck_require__(9411);
 const { errorCode } = __nccwpck_require__(3505);
 
 function eventHandled(client) {
@@ -47939,7 +47939,7 @@ module.exports = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:fs");
 
 /***/ }),
 
-/***/ 8330:
+/***/ 9411:
 /***/ ((module) => {
 
 module.exports = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:path");
@@ -47964,6 +47964,13 @@ module.exports = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:stream"
 /***/ ((module) => {
 
 module.exports = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:stream/web");
+
+/***/ }),
+
+/***/ 1041:
+/***/ ((module) => {
+
+module.exports = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:url");
 
 /***/ }),
 
@@ -48157,7 +48164,7 @@ const File = _File
 /* harmony export */ });
 /* unused harmony exports blobFrom, blobFromSync, fileFrom, fileFromSync */
 /* harmony import */ var node_fs__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(7561);
-/* harmony import */ var node_path__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(8330);
+/* harmony import */ var node_path__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(9411);
 /* harmony import */ var node_domexception__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(3244);
 /* harmony import */ var _file_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(3169);
 /* harmony import */ var _index_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(5738);
@@ -48585,16 +48592,24 @@ return new B(c,{type:"multipart/form-data; boundary="+b})}
 /***/ ((__webpack_module__, __unused_webpack___webpack_exports__, __nccwpck_require__) => {
 
 __nccwpck_require__.a(__webpack_module__, async (__webpack_handle_async_dependencies__) => {
-/* harmony import */ var ssh2_sftp_client__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(4287);
-/* harmony import */ var _common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(1444);
-/* harmony import */ var _common_inputs_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(4684);
-/* harmony import */ var _common_sync_js__WEBPACK_IMPORTED_MODULE_8__ = __nccwpck_require__(3599);
-/* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(5585);
-/* harmony import */ var _inputs_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(2568);
-/* harmony import */ var _common_csv_js__WEBPACK_IMPORTED_MODULE_5__ = __nccwpck_require__(3936);
-/* harmony import */ var node_stream__WEBPACK_IMPORTED_MODULE_6__ = __nccwpck_require__(4492);
-/* harmony import */ var _common_action_js__WEBPACK_IMPORTED_MODULE_7__ = __nccwpck_require__(518);
+/* harmony import */ var node_path__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(9411);
+/* harmony import */ var node_url__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(1041);
+/* harmony import */ var ssh2_sftp_client__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(4287);
+/* harmony import */ var _common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(1444);
+/* harmony import */ var _common_inputs_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(4684);
+/* harmony import */ var _common_sync_js__WEBPACK_IMPORTED_MODULE_10__ = __nccwpck_require__(3599);
+/* harmony import */ var _common_airtable_js__WEBPACK_IMPORTED_MODULE_5__ = __nccwpck_require__(5585);
+/* harmony import */ var _inputs_js__WEBPACK_IMPORTED_MODULE_6__ = __nccwpck_require__(2568);
+/* harmony import */ var _common_csv_js__WEBPACK_IMPORTED_MODULE_7__ = __nccwpck_require__(1614);
+/* harmony import */ var node_stream__WEBPACK_IMPORTED_MODULE_8__ = __nccwpck_require__(4492);
+/* harmony import */ var _common_action_js__WEBPACK_IMPORTED_MODULE_9__ = __nccwpck_require__(518);
 /** @fileoverview Imports an Abacus CSV update into Airtable. */
+
+
+
+
+const __filename = (0,node_url__WEBPACK_IMPORTED_MODULE_1__.fileURLToPath)("file:///Users/justisallen/Documents/GitHub/airtable-integrations/src/abacus/index.js");
+const __dirname = (0,node_path__WEBPACK_IMPORTED_MODULE_0__.dirname)(__filename);
 
 
 
@@ -48615,7 +48630,7 @@ function getDateString(timestamp) {
   return new Date(timestamp).toDateString();
 }
 
-await (0,_common_action_js__WEBPACK_IMPORTED_MODULE_7__/* .run */ .K)(async () => {
+await (0,_common_action_js__WEBPACK_IMPORTED_MODULE_9__/* .run */ .K)(async () => {
 
   /** Abacus Data Airtable Table name. */
   const ABACUS_TABLE = 'Abacus Data';
@@ -48638,9 +48653,9 @@ await (0,_common_action_js__WEBPACK_IMPORTED_MODULE_7__/* .run */ .K)(async () =
 
   // For existing Abacus Airtable Records,
   // map Abacus Expense ID to Airtable Record ID.
-  const expenseSources = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_3__/* .Base */ .X();
+  const expenseSources = new _common_airtable_js__WEBPACK_IMPORTED_MODULE_5__/* .Base */ .X();
   const expenseRecords =
-      (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_8__/* .getMapping */ .tj)(await expenseSources.select(ABACUS_TABLE), 'Expense ID');
+      (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_10__/* .getMapping */ .tj)(await expenseSources.select(ABACUS_TABLE), 'Expense ID');
 
   // Create parse config.
   const airtableFields = Array.from(mapping.values());
@@ -48673,7 +48688,7 @@ await (0,_common_action_js__WEBPACK_IMPORTED_MODULE_7__/* .run */ .K)(async () =
         }
 
         const {updates, creates} =
-            (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_8__/* .syncChanges */ .U4)(
+            (0,_common_sync_js__WEBPACK_IMPORTED_MODULE_10__/* .syncChanges */ .U4)(
                 // Source
                 new Map(results.data.map(row => [row['Expense ID'], row])),
                 // Mapping
@@ -48686,7 +48701,7 @@ await (0,_common_action_js__WEBPACK_IMPORTED_MODULE_7__/* .run */ .K)(async () =
         // Launch upserts.
         return Promise.all([
           expenseSources.update(
-              ABACUS_TABLE, Array.from(updates, _common_sync_js__WEBPACK_IMPORTED_MODULE_8__/* .airtableRecordUpdate */ .vw)),
+              ABACUS_TABLE, Array.from(updates, _common_sync_js__WEBPACK_IMPORTED_MODULE_10__/* .airtableRecordUpdate */ .vw)),
           expenseSources.create(
               ABACUS_TABLE,
               Array.from(creates, ([, create]) => ({fields: create}))),
@@ -48695,27 +48710,27 @@ await (0,_common_action_js__WEBPACK_IMPORTED_MODULE_7__/* .run */ .K)(async () =
   };
 
   // Get CSVs.
-  const importRecordId = (0,_common_inputs_js__WEBPACK_IMPORTED_MODULE_2__/* .airtableImportRecordId */ .pN)();
+  const importRecordId = (0,_common_inputs_js__WEBPACK_IMPORTED_MODULE_4__/* .airtableImportRecordId */ .pN)();
   let effectiveParse;
   let csvs;
   if (importRecordId) {
-    effectiveParse = _common_csv_js__WEBPACK_IMPORTED_MODULE_5__/* .parseAttachment */ .c;
+    effectiveParse = _common_csv_js__WEBPACK_IMPORTED_MODULE_7__/* .parseAttachment */ .c;
     const importRecord =
         await expenseSources.find('Abacus Imports', importRecordId);
     csvs = importRecord.get('CSVs');
   } else {
-    effectiveParse = _common_csv_js__WEBPACK_IMPORTED_MODULE_5__/* .parse */ .Q;
-    const sftp = new ssh2_sftp_client__WEBPACK_IMPORTED_MODULE_0__();
+    effectiveParse = _common_csv_js__WEBPACK_IMPORTED_MODULE_7__/* .parse */ .Q;
+    const sftp = new ssh2_sftp_client__WEBPACK_IMPORTED_MODULE_2__();
     await sftp.connect({
       host: 'sftp.spend.emburse.com',
-      username: (0,_inputs_js__WEBPACK_IMPORTED_MODULE_4__/* .emburseSftpUsername */ .H)(),
-      privateKey: (0,_inputs_js__WEBPACK_IMPORTED_MODULE_4__/* .emburseSftpKey */ .O)(),
+      username: (0,_inputs_js__WEBPACK_IMPORTED_MODULE_6__/* .emburseSftpUsername */ .H)(),
+      privateKey: (0,_inputs_js__WEBPACK_IMPORTED_MODULE_6__/* .emburseSftpKey */ .O)(),
     });
     const files =
         await sftp.list(
-            '/', file => getDateString(file.modifyTime) === getDateString());
+            '', file => getDateString(file.modifyTime) === getDateString());
     const buffers = await Promise.all(files.map(f => sftp.get(f.name)));
-    csvs = buffers.map(node_stream__WEBPACK_IMPORTED_MODULE_6__.Readable.from);
+    csvs = buffers.map(node_stream__WEBPACK_IMPORTED_MODULE_8__.Readable.from);
   }
 
   // Parse CSVs with above config.
@@ -48723,8 +48738,8 @@ await (0,_common_action_js__WEBPACK_IMPORTED_MODULE_7__/* .run */ .K)(async () =
       csvs.map(csv => effectiveParse(csv, airtableFields, parseConfig)));
 
   // Add summary.
-  (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_1__/* .addSummaryTableHeaders */ .M9)(['Updates', 'Creates']);
-  (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_1__/* .addSummaryTableRow */ .QS)([updateCount, createCount]);
+  (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_3__/* .addSummaryTableHeaders */ .M9)(['Updates', 'Creates']);
+  (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_3__/* .addSummaryTableRow */ .QS)([updateCount, createCount]);
 });
 
 __webpack_handle_async_dependencies__();
@@ -48962,7 +48977,7 @@ class MsoBase extends (/* unused pure expression or super */ null && (Base)) {
 
 /***/ }),
 
-/***/ 3936:
+/***/ 1614:
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
 
 
@@ -50004,8 +50019,8 @@ Object.defineProperties(Response.prototype, {
 	clone: {enumerable: true}
 });
 
-;// CONCATENATED MODULE: external "node:url"
-const external_node_url_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:url");
+// EXTERNAL MODULE: external "node:url"
+var external_node_url_ = __nccwpck_require__(1041);
 ;// CONCATENATED MODULE: ./node_modules/node-fetch/src/utils/get-search.js
 const getSearch = parsedURL => {
 	if (parsedURL.search) {
@@ -50512,7 +50527,7 @@ class Request extends Body {
 
 	/** @returns {string} */
 	get url() {
-		return (0,external_node_url_namespaceObject.format)(this[request_INTERNALS].parsedURL);
+		return (0,external_node_url_.format)(this[request_INTERNALS].parsedURL);
 	}
 
 	/** @returns {Headers} */
