@@ -48629,7 +48629,7 @@ const __dirname = (0,node_path__WEBPACK_IMPORTED_MODULE_0__.dirname)(__filename)
 function getDateString(timestamp) {
   return new Date(timestamp).toDateString();
 }
-
+(0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_3__/* .log */ .cM)('a');
 await (0,_common_action_js__WEBPACK_IMPORTED_MODULE_9__/* .run */ .K)(async () => {
 
   /** Abacus Data Airtable Table name. */
@@ -48710,15 +48710,18 @@ await (0,_common_action_js__WEBPACK_IMPORTED_MODULE_9__/* .run */ .K)(async () =
   };
 
   // Get CSVs.
+  (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_3__/* .log */ .cM)('b');
   const importRecordId = (0,_common_inputs_js__WEBPACK_IMPORTED_MODULE_4__/* .airtableImportRecordId */ .pN)();
   let effectiveParse;
   let csvs;
   if (importRecordId) {
+    (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_3__/* .log */ .cM)('c');
     effectiveParse = _common_csv_js__WEBPACK_IMPORTED_MODULE_7__/* .parseAttachment */ .c;
     const importRecord =
         await expenseSources.find('Abacus Imports', importRecordId);
     csvs = importRecord.get('CSVs');
   } else {
+    (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_3__/* .log */ .cM)('d');
     effectiveParse = _common_csv_js__WEBPACK_IMPORTED_MODULE_7__/* .parse */ .Q;
     const sftp = new ssh2_sftp_client__WEBPACK_IMPORTED_MODULE_2__();
     await sftp.connect({
@@ -51240,6 +51243,7 @@ async function parseAttachment(csv, header, config) {
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
 
 /* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
+/* harmony export */   "cM": () => (/* binding */ log),
 /* harmony export */   "ZK": () => (/* binding */ warn),
 /* harmony export */   "Np": () => (/* binding */ getInput),
 /* harmony export */   "vU": () => (/* binding */ error),
@@ -51247,7 +51251,7 @@ async function parseAttachment(csv, header, config) {
 /* harmony export */   "QS": () => (/* binding */ addSummaryTableRow),
 /* harmony export */   "A8": () => (/* binding */ writeSummary)
 /* harmony export */ });
-/* unused harmony exports log, logJson */
+/* unused harmony export logJson */
 /* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(6024);
 /* harmony import */ var _utils_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(8899);
 /**

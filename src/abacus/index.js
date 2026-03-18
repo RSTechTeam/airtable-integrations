@@ -7,7 +7,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 import Client from 'ssh2-sftp-client';
-import {addSummaryTableHeaders, addSummaryTableRow} from '../common/github_actions_core.js';
+import {addSummaryTableHeaders, addSummaryTableRow, log} from '../common/github_actions_core.js';
 import {airtableImportRecordId} from '../common/inputs.js';
 import {airtableRecordUpdate, getMapping, syncChanges} from '../common/sync.js';
 import {Base} from '../common/airtable.js';
@@ -24,7 +24,7 @@ import {run} from '../common/action.js';
 function getDateString(timestamp) {
   return new Date(timestamp).toDateString();
 }
-
+log('a');
 await run(async () => {
 
   /** Abacus Data Airtable Table name. */
@@ -105,15 +105,18 @@ await run(async () => {
   };
 
   // Get CSVs.
+  log('b');
   const importRecordId = airtableImportRecordId();
   let effectiveParse;
   let csvs;
   if (importRecordId) {
+    log('c');
     effectiveParse = parseAttachment;
     const importRecord =
         await expenseSources.find('Abacus Imports', importRecordId);
     csvs = importRecord.get('CSVs');
   } else {
+    log('d');
     effectiveParse = parse;
     const sftp = new Client();
     await sftp.connect({
