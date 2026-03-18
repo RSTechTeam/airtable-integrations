@@ -6,7 +6,7 @@ on:
     inputs:
       airtable-import-record-id:
         description: 'Airtable Import Record ID'
-        required: true
+        required: false
         type: string
 jobs:
   main:
@@ -16,5 +16,7 @@ jobs:
         with:
           airtable-api-key: ${{ secrets.EXPENSE_SOURCES_AIRTABLE_PAT }}
           airtable-base-id: ${{ secrets.EXPENSE_SOURCES_BASE_ID }}
+          emburse-sftp-username: ${{ secrets.EMBURSE_SFTP_USERNAME }}
+          emburse-sftp-key: ${{ secrets.EMBURSE_SFTP_KEY }}
           airtable-import-record-id:
             ${{ github.event.client_payload.airtable-import-record-id || inputs.airtable-import-record-id }}

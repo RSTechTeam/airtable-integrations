@@ -7,9 +7,15 @@ inputs:
   airtable-base-id:
     description: 'The ID of the Airtable Base used in the target program'
     required: true
+  emburse-sftp-username:
+    description: 'The username for accessing the Emburse SFTP server'
+    required: false
+  emburse-sftp-key:
+    description: 'The private key for accessing the Emburse SFTP server'
+    required: false
   airtable-import-record-id:
     description: 'The ID of the Airtable Record whose CSVs should be parsed and integrated'
-    required: true
+    required: false
 runs:
   using: 'node24'
   main: 'index.js'
