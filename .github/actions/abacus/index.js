@@ -48713,7 +48713,7 @@ await (0,_common_action_js__WEBPACK_IMPORTED_MODULE_7__/* .run */ .K)(async () =
     });
     const files =
         await sftp.list(
-            '', file => getDateString(file.modifyTime) === getDateString());
+            '/', file => getDateString(file.modifyTime) === getDateString());
     const buffers = await Promise.all(files.map(f => sftp.get(f.name)));
     csvs = buffers.map(node_stream__WEBPACK_IMPORTED_MODULE_6__.Readable.from);
   }
