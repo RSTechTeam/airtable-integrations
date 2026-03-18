@@ -6,7 +6,7 @@ import {fileURLToPath} from 'node:url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-import Client from 'ssh2-sftp-client';
+//import Client from 'ssh2-sftp-client';
 import {addSummaryTableHeaders, addSummaryTableRow, log} from '../common/github_actions_core.js';
 import {airtableImportRecordId} from '../common/inputs.js';
 import {airtableRecordUpdate, getMapping, syncChanges} from '../common/sync.js';
