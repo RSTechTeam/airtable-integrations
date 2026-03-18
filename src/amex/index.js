@@ -3,7 +3,7 @@
 import {airtableImportRecordId} from '../common/inputs.js';
 import {airtableRecordUpdate, getMapping, syncChanges} from '../common/sync.js';
 import {Base} from '../common/airtable.js';
-import {parse} from '../common/csv.js';
+import {parseAttachment} from '../common/csv.js';
 import {run} from '../common/action.js';
 
 await run(async () => {
@@ -89,5 +89,6 @@ await run(async () => {
   const importRecord =
       await expenseSources.find('Amex Imports', airtableImportRecordId());
   await Promise.all(
-      importRecord.get('CSV').map(csv => parse(csv, headers, parseConfig)));
+      importRecord.get('CSV').map(
+          csv => parseAttachment(csv, headers, parseConfig)));
 });

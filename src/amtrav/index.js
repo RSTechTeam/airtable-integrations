@@ -5,7 +5,7 @@ import {airtableImportRecordId} from '../common/inputs.js';
 import {airtableRecordUpdate, filterMap, getMapping, syncChanges} from '../common/sync.js';
 import {amtravCardId} from './inputs.js';
 import {Base} from '../common/airtable.js';
-import {parse} from '../common/csv.js';
+import {parseAttachment} from '../common/csv.js';
 import {run} from '../common/action.js';
 
 /**
@@ -36,7 +36,7 @@ await run(async () => {
   const emails = new Map();
   await Promise.all(
       importRecord.get('Trip Spend Report').map(
-          csv => parse(
+          csv => parseAttachment(
               csv,
               [ // Header
                 'Booking #',
@@ -128,7 +128,7 @@ await run(async () => {
   // Parse Credit Card Report CSV with above config.
   await Promise.all(
       importRecord.get('Credit Card Report').map(
-          csv => parse(csv, airtableFields, parseConfig)));
+          csv => parseAttachment(csv, airtableFields, parseConfig)));
 
   // Add summary.
   addSummaryTableHeaders(['Updates', 'Creates']);

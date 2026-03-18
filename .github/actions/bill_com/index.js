@@ -18882,21 +18882,20 @@ var fetch = __nccwpck_require__(5065);
 
 
 /**
- * @param {!Object<string, *>} csv An Airtable Attachment Field.
+ * @param {!Readable} csv
  * @param {string[]} header Expected header.
  * @param {!Object<string, *>} config See https://www.papaparse.com/docs#config.
  *     Header and error are preset, and expects using chunk,
  *     which may return a Promise.
  * @return {!Promise<!Array<*>>}
  */
-async function parse(csv, header, config) {
+function parse(csv, header, config) {
 
-  const response = await (0,fetch/* fetchAttachment */.ce)(csv);
   let firstChunk = true;
   const promises = [];
   return new Promise(
       (resolve, reject) => papaparse.parse(
-          response.body,
+          csv,
           {
             ...config,
             header: true,
@@ -18922,6 +18921,17 @@ async function parse(csv, header, config) {
                 promises.push(config.chunk(results, parser));
               },
           }));
+}
+
+/**
+ * @param {!Object<string, *>} csv An Airtable Attachment Field.
+ * @param {string[]} header Expected header.
+ * @param {!Object<string, *>} config
+ * @return {!Promise<!Array<*>>}
+ */
+async function parseAttachment(csv, header, config) {
+  const response = await (0,fetch/* fetchAttachment */.ce)(csv);
+  return parse(response.body, header, config);
 }
 
 ;// CONCATENATED MODULE: ./src/bill_com/bill_com_integration/bulk_create_bills.js
@@ -19034,7 +19044,8 @@ async function main(billComApi, airtableBase = new airtable/* MsoBase */.F()) {
           // Parse CSV and create Bills.
           try {
             await Promise.all(
-                record.get('CSV').map(csv => parse(csv, header, parseConfig)));
+                record.get('CSV').map(
+                    csv => parseAttachment(csv, header, parseConfig)));
           } catch (e) {
             err = e;
             (0,github_actions_core/* warn */.ZK)(e.message);

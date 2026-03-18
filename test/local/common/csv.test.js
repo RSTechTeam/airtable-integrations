@@ -6,7 +6,7 @@ const TEST_CSV_URL =
 
 const testHeader = ['Header 1', 'Header 2'];
 const parse =
-    (url, header) => csv.parse(
+    (url, header) => csv.parseAttachment(
         {url: url},
         header,
         {

@@ -18954,7 +18954,8 @@ await (0,_common_action_js__WEBPACK_IMPORTED_MODULE_3__/* .run */ .K)(async () =
   const importRecord =
       await expenseSources.find('Amex Imports', (0,_common_inputs_js__WEBPACK_IMPORTED_MODULE_0__/* .airtableImportRecordId */ .pN)());
   await Promise.all(
-      importRecord.get('CSV').map(csv => (0,_common_csv_js__WEBPACK_IMPORTED_MODULE_2__/* .parse */ .Q)(csv, headers, parseConfig)));
+      importRecord.get('CSV').map(
+          csv => (0,_common_csv_js__WEBPACK_IMPORTED_MODULE_2__/* .parseAttachment */ .c)(csv, headers, parseConfig)));
 });
 
 __webpack_handle_async_dependencies__();
@@ -19176,8 +19177,10 @@ class MsoBase extends (/* unused pure expression or super */ null && (Base)) {
 
 // EXPORTS
 __nccwpck_require__.d(__webpack_exports__, {
-  "Q": () => (/* binding */ parse)
+  "c": () => (/* binding */ parseAttachment)
 });
+
+// UNUSED EXPORTS: parse
 
 // EXTERNAL MODULE: ./node_modules/papaparse/papaparse.js
 var papaparse = __nccwpck_require__(1826);
@@ -21373,21 +21376,20 @@ function fetchAttachment(attachment) {
 
 
 /**
- * @param {!Object<string, *>} csv An Airtable Attachment Field.
+ * @param {!Readable} csv
  * @param {string[]} header Expected header.
  * @param {!Object<string, *>} config See https://www.papaparse.com/docs#config.
  *     Header and error are preset, and expects using chunk,
  *     which may return a Promise.
  * @return {!Promise<!Array<*>>}
  */
-async function parse(csv, header, config) {
+function parse(csv, header, config) {
 
-  const response = await fetchAttachment(csv);
   let firstChunk = true;
   const promises = [];
   return new Promise(
       (resolve, reject) => papaparse.parse(
-          response.body,
+          csv,
           {
             ...config,
             header: true,
@@ -21413,6 +21415,17 @@ async function parse(csv, header, config) {
                 promises.push(config.chunk(results, parser));
               },
           }));
+}
+
+/**
+ * @param {!Object<string, *>} csv An Airtable Attachment Field.
+ * @param {string[]} header Expected header.
+ * @param {!Object<string, *>} config
+ * @return {!Promise<!Array<*>>}
+ */
+async function parseAttachment(csv, header, config) {
+  const response = await fetchAttachment(csv);
+  return parse(response.body, header, config);
 }
 
 

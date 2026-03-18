@@ -3,7 +3,7 @@
 import {error, warn} from '../../common/github_actions_core.js';
 import {MsoBase} from '../../common/airtable.js';
 import {MSO_BILL_COM_ID} from '../common/constants.js';
-import {parse} from '../../common/csv.js';
+import {parseAttachment} from '../../common/csv.js';
 
 /** The Bill.com Integration Airtable Base. */
 let billComIntegrationBase;
@@ -107,7 +107,8 @@ export async function main(billComApi, airtableBase = new MsoBase()) {
           // Parse CSV and create Bills.
           try {
             await Promise.all(
-                record.get('CSV').map(csv => parse(csv, header, parseConfig)));
+                record.get('CSV').map(
+                    csv => parseAttachment(csv, header, parseConfig)));
           } catch (e) {
             err = e;
             warn(e.message);

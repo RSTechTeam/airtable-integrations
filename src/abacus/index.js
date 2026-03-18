@@ -6,7 +6,7 @@ import {airtableImportRecordId} from '../common/inputs.js';
 import {airtableRecordUpdate, getMapping, syncChanges} from '../common/sync.js';
 import {Base} from '../common/airtable.js';
 import {emburseSftpKey, emburseSftpUsername} from './inputs.js';
-import {parse} from '../common/csv.js';
+import {parse, parseAttachment} from '../common/csv.js';
 import {Readable} from 'node:stream';
 import {run} from '../common/action.js';
 
@@ -103,7 +103,7 @@ await run(async () => {
   let effectiveParse;
   let csvs;
   if (importRecordId) {
-    effectiveParse = parse;
+    effectiveParse = parseAttachment;
     const importRecord =
         await expenseSources.find('Abacus Imports', importRecordId);
     csvs = importRecord.get('CSVs');
