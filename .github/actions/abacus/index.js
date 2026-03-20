@@ -18998,14 +18998,12 @@ await (0,_common_action_js__WEBPACK_IMPORTED_MODULE_7__/* .run */ .K)(async () =
   const importRecordId = (0,_inputs_js__WEBPACK_IMPORTED_MODULE_4__/* .airtableImportRecordId */ .pN)();
   let effectiveParse;
   let csvs;
-  const importRecord =
-      await expenseSources.find('Abacus Imports', importRecordId);
   if (importRecordId) {
     (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_2__/* .log */ .cM)('c');
-    // effectiveParse = parseAttachment;
-    // const importRecord =
-    //     await expenseSources.find('Abacus Imports', importRecordId);
-    // csvs = importRecord.get('CSVs');
+    effectiveParse = _common_csv_js__WEBPACK_IMPORTED_MODULE_5__/* .parseAttachment */ .c;
+    const importRecord =
+        await expenseSources.find('Abacus Imports', importRecordId);
+    csvs = importRecord.get('CSVs');
   } else {
     (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_2__/* .log */ .cM)('d');
     effectiveParse = parse;
@@ -19024,8 +19022,7 @@ await (0,_common_action_js__WEBPACK_IMPORTED_MODULE_7__/* .run */ .K)(async () =
 
   // Parse CSVs with above config.
   await Promise.all(
-      importRecord.get('CSVs').map(
-          csv => (0,_common_csv_js__WEBPACK_IMPORTED_MODULE_5__/* .parseAttachment */ .c)(csv, airtableFields, parseConfig)));
+      csvs.map(csv => (0,_common_csv_js__WEBPACK_IMPORTED_MODULE_5__/* .parseAttachment */ .c)(csv, airtableFields, parseConfig)));
 
   // Add summary.
   (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_2__/* .addSummaryTableHeaders */ .M9)(['Updates', 'Creates']);
