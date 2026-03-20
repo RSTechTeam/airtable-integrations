@@ -2,7 +2,7 @@
 
 const __dirname = import.meta.dirname;
 
-import Client from 'ssh2-sftp-client';
+const Client = await import('ssh2-sftp-client');
 // import {addSummaryTableHeaders, addSummaryTableRow, log} from '../common/github_actions_core.js';
 // import {airtableRecordUpdate, getMapping, syncChanges} from '../common/sync.js';
 // import {Base} from '../common/airtable.js';
