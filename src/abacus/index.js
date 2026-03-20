@@ -108,12 +108,14 @@ await run(async () => {
   const importRecordId = airtableImportRecordId();
   let effectiveParse;
   let csvs;
+  const importRecord =
+      await expenseSources.find('Abacus Imports', importRecordId);
   if (importRecordId) {
     log('c');
-    effectiveParse = parseAttachment;
-    const importRecord =
-        await expenseSources.find('Abacus Imports', importRecordId);
-    csvs = importRecord.get('CSVs');
+    // effectiveParse = parseAttachment;
+    // const importRecord =
+    //     await expenseSources.find('Abacus Imports', importRecordId);
+    // csvs = importRecord.get('CSVs');
   } else {
     log('d');
     effectiveParse = parse;
@@ -132,7 +134,8 @@ await run(async () => {
 
   // Parse CSVs with above config.
   await Promise.all(
-      csvs.map(csv => parseAttachment(csv, airtableFields, parseConfig)));
+      importRecord.get('CSVs').map(
+          csv => parseAttachment(csv, airtableFields, parseConfig)));
 
   // Add summary.
   addSummaryTableHeaders(['Updates', 'Creates']);
