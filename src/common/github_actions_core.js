@@ -21,10 +21,11 @@ const summaryTableData = [];
 
 /**
  * @param {string} input
+ * @param {boolean=} required
  * @return {function(): string} required input value
  */
-export function getInput(input) {
-  return lazyCache(() => core.getInput(input, {required: true}));
+export function getInput(input, required = true) {
+  return lazyCache(() => core.getInput(input, {required}));
 }
 
 /**

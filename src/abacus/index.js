@@ -8,10 +8,9 @@ const __dirname = dirname(__filename);
 
 //import Client from 'ssh2-sftp-client';
 import {addSummaryTableHeaders, addSummaryTableRow, log} from '../common/github_actions_core.js';
-import {airtableImportRecordId} from '../common/inputs.js';
 import {airtableRecordUpdate, getMapping, syncChanges} from '../common/sync.js';
 import {Base} from '../common/airtable.js';
-import {emburseSftpKey, emburseSftpUsername} from './inputs.js';
+import {airtableImportRecordId, emburseSftpKey, emburseSftpUsername} from './inputs.js';
 import {parse, parseAttachment} from '../common/csv.js';
 import {Readable} from 'node:stream';
 import {run} from '../common/action.js';
