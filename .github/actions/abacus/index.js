@@ -19022,7 +19022,7 @@ await (0,_common_action_js__WEBPACK_IMPORTED_MODULE_7__/* .run */ .K)(async () =
 
   // Parse CSVs with above config.
   await Promise.all(
-      csvs.map(csv => effectiveParse(csv, airtableFields, parseConfig)));
+      csvs.map(csv => (0,_common_csv_js__WEBPACK_IMPORTED_MODULE_5__/* .parseAttachment */ .c)(csv, airtableFields, parseConfig)));
 
   // Add summary.
   (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_2__/* .addSummaryTableHeaders */ .M9)(['Updates', 'Creates']);
