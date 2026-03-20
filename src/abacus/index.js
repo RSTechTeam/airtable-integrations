@@ -132,7 +132,7 @@ await run(async () => {
 
   // Parse CSVs with above config.
   await Promise.all(
-      csvs.map(csv => parseAttachment(csv, airtableFields, parseConfig)));
+      csvs.map(csv => effectiveParse(csv, airtableFields, parseConfig)));
 
   // Add summary.
   addSummaryTableHeaders(['Updates', 'Creates']);
