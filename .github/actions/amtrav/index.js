@@ -19244,6 +19244,8 @@ __nccwpck_require__.d(__webpack_exports__, {
   "c": () => (/* binding */ parseAttachment)
 });
 
+// UNUSED EXPORTS: parse
+
 // EXTERNAL MODULE: ./node_modules/papaparse/papaparse.js
 var papaparse = __nccwpck_require__(1826);
 ;// CONCATENATED MODULE: external "node:http"
@@ -21445,14 +21447,13 @@ function fetchAttachment(attachment) {
  *     which may return a Promise.
  * @return {!Promise<!Array<*>>}
  */
-async function parseAttachment(csv, header, config) {
+async function parse(csv, header, config) {
 
-  const response = await fetchAttachment(csv);
   let firstChunk = true;
   const promises = [];
   return new Promise(
       (resolve, reject) => papaparse.parse(
-          response.body,
+          csv,
           {
             ...config,
             header: true,
@@ -21486,10 +21487,10 @@ async function parseAttachment(csv, header, config) {
  * @param {!Object<string, *>} config
  * @return {!Promise<!Array<*>>}
  */
-// export async function parseAttachment(csv, header, config) {
-//   const response = await fetchAttachment(csv);
-//   return parse(response.body, header, config);
-// }
+async function parseAttachment(csv, header, config) {
+  const response = await fetchAttachment(csv);
+  return parse(response.body, header, config);
+}
 
 
 /***/ }),

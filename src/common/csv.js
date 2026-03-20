@@ -11,14 +11,13 @@ import {fetchAttachment} from './fetch.js';
  *     which may return a Promise.
  * @return {!Promise<!Array<*>>}
  */
-export async function parseAttachment(csv, header, config) {
+export async function parse(csv, header, config) {
 
-  const response = await fetchAttachment(csv);
   let firstChunk = true;
   const promises = [];
   return new Promise(
       (resolve, reject) => Papa.parse(
-          response.body,
+          csv,
           {
             ...config,
             header: true,
@@ -52,7 +51,7 @@ export async function parseAttachment(csv, header, config) {
  * @param {!Object<string, *>} config
  * @return {!Promise<!Array<*>>}
  */
-// export async function parseAttachment(csv, header, config) {
-//   const response = await fetchAttachment(csv);
-//   return parse(response.body, header, config);
-// }
+export async function parseAttachment(csv, header, config) {
+  const response = await fetchAttachment(csv);
+  return parse(response.body, header, config);
+}

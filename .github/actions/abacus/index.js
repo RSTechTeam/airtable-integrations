@@ -19006,7 +19006,7 @@ await (0,_common_action_js__WEBPACK_IMPORTED_MODULE_7__/* .run */ .K)(async () =
     csvs = importRecord.get('CSVs');
   } else {
     (0,_common_github_actions_core_js__WEBPACK_IMPORTED_MODULE_2__/* .log */ .cM)('d');
-    effectiveParse = parse;
+    effectiveParse = _common_csv_js__WEBPACK_IMPORTED_MODULE_5__/* .parse */ .Q;
     const sftp = new Client();
     await sftp.connect({
       host: 'sftp.spend.emburse.com',
@@ -19293,6 +19293,7 @@ class MsoBase extends (/* unused pure expression or super */ null && (Base)) {
 
 // EXPORTS
 __nccwpck_require__.d(__webpack_exports__, {
+  "Q": () => (/* binding */ parse),
   "c": () => (/* binding */ parseAttachment)
 });
 
@@ -21497,14 +21498,13 @@ function fetchAttachment(attachment) {
  *     which may return a Promise.
  * @return {!Promise<!Array<*>>}
  */
-async function parseAttachment(csv, header, config) {
+async function parse(csv, header, config) {
 
-  const response = await fetchAttachment(csv);
   let firstChunk = true;
   const promises = [];
   return new Promise(
       (resolve, reject) => papaparse.parse(
-          response.body,
+          csv,
           {
             ...config,
             header: true,
@@ -21538,10 +21538,10 @@ async function parseAttachment(csv, header, config) {
  * @param {!Object<string, *>} config
  * @return {!Promise<!Array<*>>}
  */
-// export async function parseAttachment(csv, header, config) {
-//   const response = await fetchAttachment(csv);
-//   return parse(response.body, header, config);
-// }
+async function parseAttachment(csv, header, config) {
+  const response = await fetchAttachment(csv);
+  return parse(response.body, header, config);
+}
 
 
 /***/ }),

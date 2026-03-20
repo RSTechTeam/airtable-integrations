@@ -11,7 +11,7 @@ import {addSummaryTableHeaders, addSummaryTableRow, log} from '../common/github_
 import {airtableRecordUpdate, getMapping, syncChanges} from '../common/sync.js';
 import {Base} from '../common/airtable.js';
 import {airtableImportRecordId, emburseSftpKey, emburseSftpUsername} from './inputs.js';
-import {parseAttachment} from '../common/csv.js';
+import {parse, parseAttachment} from '../common/csv.js';
 import {Readable} from 'node:stream';
 import {run} from '../common/action.js';
 
