@@ -3744,7 +3744,7 @@ var _Object$setPrototypeO;
 function _defineProperty(obj, key, value) { key = _toPropertyKey(key); if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
 function _toPropertyKey(arg) { var key = _toPrimitive(arg, "string"); return typeof key === "symbol" ? key : String(key); }
 function _toPrimitive(input, hint) { if (typeof input !== "object" || input === null) return input; var prim = input[Symbol.toPrimitive]; if (prim !== undefined) { var res = prim.call(input, hint || "default"); if (typeof res !== "object") return res; throw new TypeError("@@toPrimitive must return a primitive value."); } return (hint === "string" ? String : Number)(input); }
-var finished = __nccwpck_require__(5981);
+var finished = __nccwpck_require__(9411);
 var kLastResolve = Symbol('lastResolve');
 var kLastReject = Symbol('lastReject');
 var kError = Symbol('error');
@@ -4212,7 +4212,7 @@ module.exports = {
 
 /***/ }),
 
-/***/ 5981:
+/***/ 9411:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 // Ported from https://github.com/mafintosh/end-of-stream with
@@ -4396,7 +4396,7 @@ function destroyer(stream, reading, writing, callback) {
   stream.on('close', function () {
     closed = true;
   });
-  if (eos === undefined) eos = __nccwpck_require__(5981);
+  if (eos === undefined) eos = __nccwpck_require__(9411);
   eos(stream, {
     readable: reading,
     writable: writing
@@ -4507,7 +4507,7 @@ if (process.env.READABLE_STREAM === 'disable' && Stream) {
   exports.Duplex = __nccwpck_require__(8035);
   exports.Transform = __nccwpck_require__(7240);
   exports.PassThrough = __nccwpck_require__(4543);
-  exports.finished = __nccwpck_require__(5981);
+  exports.finished = __nccwpck_require__(9411);
   exports.pipeline = __nccwpck_require__(9122);
 }
 
@@ -4635,7 +4635,7 @@ module.exports = {
 const { Client } = __nccwpck_require__(62);
 const fs = __nccwpck_require__(7561);
 const concat = __nccwpck_require__(1012);
-const { join, parse } = __nccwpck_require__(9411);
+const { join, parse } = __nccwpck_require__(8330);
 const {
   globalListener,
   addTempListeners,
@@ -6127,7 +6127,7 @@ module.exports = SftpClient;
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 const { statSync, constants, accessSync } = __nccwpck_require__(7561);
-const { dirname } = __nccwpck_require__(9411);
+const { dirname } = __nccwpck_require__(8330);
 const { errorCode } = __nccwpck_require__(3505);
 
 function eventHandled(client) {
@@ -29780,7 +29780,7 @@ module.exports = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:fs");
 
 /***/ }),
 
-/***/ 9411:
+/***/ 8330:
 /***/ ((module) => {
 
 module.exports = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:path");
@@ -29870,21 +29870,10 @@ module.exports = {"i8":"1.17.0"};
 var __webpack_exports__ = {};
 // This entry need to be wrapped in an IIFE because it need to be isolated against other modules in the chunk.
 (() => {
-
-// EXTERNAL MODULE: external "node:path"
-var external_node_path_ = __nccwpck_require__(9411);
-;// CONCATENATED MODULE: external "node:url"
-const external_node_url_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:url");
-// EXTERNAL MODULE: ./node_modules/ssh2-sftp-client/src/index.js
-var src = __nccwpck_require__(4287);
-;// CONCATENATED MODULE: ./src/abacus/index.js
+/* harmony import */ var ssh2_sftp_client__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(4287);
 /** @fileoverview Imports an Abacus CSV update into Airtable. */
 
-
-
-
-const abacus_filename = (0,external_node_url_namespaceObject.fileURLToPath)("file:///Users/justisallen/Documents/GitHub/airtable-integrations/src/abacus/index.js");
-const abacus_dirname = (0,external_node_path_.dirname)(abacus_filename);
+const __dirname = (/* unused pure expression or super */ null && (/* unsupported import.meta.dirname */ undefined));
 
 
 // import {addSummaryTableHeaders, addSummaryTableRow, log} from '../common/github_actions_core.js';
