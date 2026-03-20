@@ -21447,7 +21447,7 @@ function fetchAttachment(attachment) {
  *     which may return a Promise.
  * @return {!Promise<!Array<*>>}
  */
-function parse(csv, header, config) {
+async function parse(csv, header, config) {
 
   let firstChunk = true;
   const promises = [];

@@ -18889,7 +18889,7 @@ var fetch = __nccwpck_require__(5065);
  *     which may return a Promise.
  * @return {!Promise<!Array<*>>}
  */
-function parse(csv, header, config) {
+async function parse(csv, header, config) {
 
   let firstChunk = true;
   const promises = [];

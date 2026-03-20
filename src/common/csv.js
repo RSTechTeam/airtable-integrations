@@ -11,7 +11,7 @@ import {fetchAttachment} from './fetch.js';
  *     which may return a Promise.
  * @return {!Promise<!Array<*>>}
  */
-export function parse(csv, header, config) {
+export async function parse(csv, header, config) {
 
   let firstChunk = true;
   const promises = [];
