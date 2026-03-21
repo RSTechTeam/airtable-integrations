@@ -1,8 +1,9 @@
 /** @fileoverview Imports an Abacus CSV update into Airtable. */
 
-const __dirname = import.meta.dirname;
+// const __dirname = import.meta.dirname;
 
-const Client = await import('ssh2-sftp-client');
+// const Client = await import('ssh2-sftp-client');
+import {Client} from 'ssh2';
 import {addSummaryTableHeaders, addSummaryTableRow, log} from '../common/github_actions_core.js';
 // import {airtableRecordUpdate, getMapping, syncChanges} from '../common/sync.js';
 // import {Base} from '../common/airtable.js';
