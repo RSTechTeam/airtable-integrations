@@ -128661,17 +128661,8 @@ function run(main) {
 /** @fileoverview Imports an Abacus CSV update into Airtable. */
 
 
-/**
- * @param {?string} timestamp
- * @return {string} timestamp's Date string,
- *    or today's Date string if no timestamp given
- */
-function getDateString(timestamp) {
-  return new Date(timestamp).toDateString();
-}
-log('a');
 await run(async () => {
-  log('b');
+
   /** Abacus Data Airtable Table name. */
   const ABACUS_TABLE = 'Abacus Data';
 
@@ -128696,7 +128687,7 @@ await run(async () => {
   const expenseSources = new Base();
   const expenseRecords =
       getMapping(await expenseSources.select(ABACUS_TABLE), 'Expense ID');
-  log('c');
+
   // Create parse config.
   const airtableFields = Array.from(mapping.values());
   let updateCount = 0;
@@ -128750,21 +128741,17 @@ await run(async () => {
   };
 
   // Get CSVs.
-  log('b');
   const importRecordId = airtableImportRecordId();
   let effectiveParse;
   let csvs;
   if (importRecordId) {
-    log('c');
     effectiveParse = parseAttachment;
     const importRecord =
         await expenseSources.find('Abacus Imports', importRecordId);
     csvs = importRecord.get('CSVs');
   } else {
-    log('d');
     effectiveParse = parse;
     const sftp = new Client();
-    log('e');
     await sftp.connect({
       host: 'sftp.spend.emburse.com',
       username: emburseSftpUsername(),
@@ -128772,19 +128759,10 @@ await run(async () => {
     });
     const now = new Date();
     const oneDayAgo = now.setHours(now.getHours() - 24);
-    log(getDateString(oneDayAgo));
-    log('f');
     const files = await sftp.list('/', file => file.modifyTime > oneDayAgo);
-    log('g');
-    log(files.length);
-    log(files);
     const buffers = await Promise.all(files.map(f => sftp.get(f.name)));
-    log('h');
-    log(buffers);
     csvs = buffers.map(Readable$1.from);
-    log('i');
     await sftp.end();
-    log('j');
   }
 
   // Parse CSVs with above config.
@@ -128794,7 +128772,6 @@ await run(async () => {
   // Add summary.
   addSummaryTableHeaders(['Updates', 'Creates']);
   addSummaryTableRow([updateCount, createCount]);
-  log('k');
 });
 
 let s = 0;

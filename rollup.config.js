@@ -6,11 +6,7 @@ import replace from '@rollup/plugin-replace';
 import {nodeResolve} from '@rollup/plugin-node-resolve';
 
 export default {
-  output: {
-    format: 'es',
-    esModule: true,
-    inlineDynamicImports: true,
-  },
+  output: {format: 'es', esModule: true, inlineDynamicImports: true},
   plugins: [
     nodeResolve({preferBuiltins: true}),
     json(),
