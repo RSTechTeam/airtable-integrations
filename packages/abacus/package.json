@@ -5,6 +5,9 @@
   "description": "",
   "main": "../../src/abacus/index.js",
   "scripts": {
-    "ncc-build": "cd .. && npm run ncc-build -- abacus"
+    "build": "cd .. && npm run build -- abacus"
+  },
+  "dependencies": {
+    "ssh2-sftp-client": "^12.1.0"
   }
 }

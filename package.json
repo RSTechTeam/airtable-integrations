@@ -8,7 +8,7 @@
   ],
   "scripts": {
     "prepare": "husky install",
-    "ncc-build": "func() { rollup -c rollup.config.js -i src/\"$1\"/index.js -o .github/actions/\"$1\"/index.js; }; func",
+    "build": "func() { rollup -c rollup.config.js -i src/\"$1\"/index.js -o .github/actions/\"$1\"/index.js; }; func",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js"
   },
   "repository": {
@@ -26,8 +26,7 @@
     "node-fetch": "^3.2.6",
     "p-limit": "^4.0.0",
     "p-retry": "^6.2.1",
-    "papaparse": "^5.4.1",
-    "ssh2-sftp-client": "^12.1.0"
+    "papaparse": "^5.4.1"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^29.0.2",
