@@ -128660,6 +128660,15 @@ function run(main) {
 
 /** @fileoverview Imports an Abacus CSV update into Airtable. */
 
+
+/**
+ * @param {?string} timestamp
+ * @return {string} timestamp's Date string,
+ *    or today's Date string if no timestamp given
+ */
+function getDateString(timestamp) {
+  return new Date(timestamp).toDateString();
+}
 log('a');
 await run(async () => {
   log('b');
@@ -128761,12 +128770,11 @@ await run(async () => {
       username: emburseSftpUsername(),
       privateKey: emburseSftpKey(),
     });
+    const now = new Date();
+    const oneDayAgo = now.setHours(now.getHours() - 24);
+    log(getDateString(oneDayAgo));
     log('f');
-    const cwd = await sftp.cwd();
-    const stat = await sftp.stat(cwd);
-    log(stat.modifyTime);
-    const files =
-        await sftp.list(cwd, file => file.modifyTime === stat.modifyTime);
+    const files = await sftp.list('/', file => file.modifyTime > oneDayAgo);
     log('g');
     log(files.length);
     log(files);

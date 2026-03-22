@@ -121,12 +121,11 @@ await run(async () => {
       username: emburseSftpUsername(),
       privateKey: emburseSftpKey(),
     });
+    const now = new Date();
+    const oneDayAgo = now.setHours(now.getHours() - 24);
+    log(getDateString(oneDayAgo));
     log('f');
-    const cwd = await sftp.cwd();
-    const stat = await sftp.stat(cwd);
-    log(stat.modifyTime);
-    const files =
-        await sftp.list(cwd, file => file.modifyTime === stat.modifyTime);
+    const files = await sftp.list('/', file => file.modifyTime > oneDayAgo);
     log('g');
     log(files.length);
     log(files);
