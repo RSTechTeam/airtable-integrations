@@ -2,12 +2,12 @@
 
 import commonjs from '@rollup/plugin-commonjs';
 import json from '@rollup/plugin-json';
-//import nodeGlobals from 'rollup-plugin-node-globals';
+import replace from '@rollup/plugin-replace';
 import {nodeResolve} from '@rollup/plugin-node-resolve';
-import {fileURLToPath} from 'node:url';
+//import {fileURLToPath} from 'node:url';
 
 export default {
-  external: [fileURLToPath(new URL('src/some-file.js', import.meta.url))],
+  //external: [fileURLToPath(new URL('src/some-file.js', import.meta.url))],
   output: {
     format: 'es',
     esModule: true,
@@ -16,8 +16,11 @@ export default {
   },
   plugins: [
     nodeResolve({preferBuiltins: true}),
-    commonjs(),
     json(),
-    //nodeGlobals(),
+    commonjs(),
+    replace({
+      preventAssignment: true,
+      __dirname: JSON.stringify(import.meta.dirname),
+    }),
   ],
 };
