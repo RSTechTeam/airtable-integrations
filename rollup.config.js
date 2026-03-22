@@ -5,6 +5,7 @@ import json from '@rollup/plugin-json';
 import {nodeResolve} from '@rollup/plugin-node-resolve';
 
 export default {
+  external: [import.meta.dirname],
   output: {
     format: 'es',
     esModule: true,
