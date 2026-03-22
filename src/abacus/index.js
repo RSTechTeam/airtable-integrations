@@ -122,10 +122,11 @@ await run(async () => {
       privateKey: emburseSftpKey(),
     });
     log('f');
-    log(await sftp.cwd());
+    const cwd = await sftp.cwd();
+    const stat = await sftp.stat(cwd);
+    log(stat.modifyTime);
     const files =
-        await sftp.list(
-            '/', file => getDateString(file.modifyTime) === getDateString());
+        await sftp.list(cwd, file => file.modifyTime === stat.modifyTime);
     log('g');
     log(files.length);
     log(files);

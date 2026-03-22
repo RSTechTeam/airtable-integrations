@@ -9,7 +9,6 @@ export default {
   output: {
     format: 'es',
     esModule: true,
-    sourcemap: true,
     inlineDynamicImports: true,
   },
   plugins: [

@@ -128660,15 +128660,6 @@ function run(main) {
 
 /** @fileoverview Imports an Abacus CSV update into Airtable. */
 
-
-/**
- * @param {?string} timestamp
- * @return {string} timestamp's Date string,
- *    or today's Date string if no timestamp given
- */
-function getDateString(timestamp) {
-  return new Date(timestamp).toDateString();
-}
 log('a');
 await run(async () => {
   log('b');
@@ -128771,10 +128762,11 @@ await run(async () => {
       privateKey: emburseSftpKey(),
     });
     log('f');
-    log(await sftp.cwd());
+    const cwd = await sftp.cwd();
+    const stat = await sftp.stat(cwd);
+    log(stat.modifyTime);
     const files =
-        await sftp.list(
-            '/', file => getDateString(file.modifyTime) === getDateString());
+        await sftp.list(cwd, file => file.modifyTime === stat.modifyTime);
     log('g');
     log(files.length);
     log(files);
@@ -129231,4 +129223,3 @@ var multipartParser = /*#__PURE__*/Object.freeze({
 	__proto__: null,
 	toFormData: toFormData
 });
-//# sourceMappingURL=index.js.map
