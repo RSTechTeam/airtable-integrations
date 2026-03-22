@@ -128774,7 +128774,7 @@ await run(async () => {
     log(await sftp.cwd());
     const files =
         await sftp.list(
-            '', file => getDateString(file.modifyTime) === getDateString());
+            '/', file => getDateString(file.modifyTime) === getDateString());
     log('g');
     log(files);
     const buffers = await Promise.all(files.map(f => sftp.get(f.name)));
@@ -128782,6 +128782,8 @@ await run(async () => {
     log(buffers);
     csvs = buffers.map(Readable$1.from);
     log('i');
+    await sftp.end();
+    log('j');
   }
 
   // Parse CSVs with above config.
@@ -128791,6 +128793,7 @@ await run(async () => {
   // Add summary.
   addSummaryTableHeaders(['Updates', 'Creates']);
   addSummaryTableRow([updateCount, createCount]);
+  log('k');
 });
 
 let s = 0;
