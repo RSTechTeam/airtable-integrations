@@ -122,11 +122,17 @@ await run(async () => {
       privateKey: emburseSftpKey(),
     });
     log('f');
+    log(await sftp.cwd());
     const files =
         await sftp.list(
             '', file => getDateString(file.modifyTime) === getDateString());
+    log('g');
+    log(files);
     const buffers = await Promise.all(files.map(f => sftp.get(f.name)));
+    log('h');
+    log(buffers);
     csvs = buffers.map(Readable.from);
+    log('i');
   }
 
   // Parse CSVs with above config.
