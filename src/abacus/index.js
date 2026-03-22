@@ -1,6 +1,6 @@
 /** @fileoverview Imports an Abacus CSV update into Airtable. */
 
-const __dirname = import.meta.dirname;
+// const __dirname = import.meta.dirname;
 
 // const Client = await import('ssh2-sftp-client');
 import Client from 'ssh2-sftp-client';
