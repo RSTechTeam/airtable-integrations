@@ -128764,11 +128764,13 @@ await run(async () => {
     log('d');
     effectiveParse = parse;
     const sftp = new Client();
+    log('e');
     await sftp.connect({
       host: 'sftp.spend.emburse.com',
       username: emburseSftpUsername(),
       privateKey: emburseSftpKey(),
     });
+    log('f');
     const files =
         await sftp.list(
             '', file => getDateString(file.modifyTime) === getDateString());
