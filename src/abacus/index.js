@@ -127,6 +127,7 @@ await run(async () => {
         await sftp.list(
             '/', file => getDateString(file.modifyTime) === getDateString());
     log('g');
+    log(files.length);
     log(files);
     const buffers = await Promise.all(files.map(f => sftp.get(f.name)));
     log('h');
