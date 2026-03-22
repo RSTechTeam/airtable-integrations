@@ -1,5 +1,7 @@
 name: Abacus Workflow
 on:
+  schedule:
+    - cron: '0 0 * * *'
   repository_dispatch:
     types: [abacus_csv]
   workflow_dispatch:
