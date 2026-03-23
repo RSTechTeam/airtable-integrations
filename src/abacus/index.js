@@ -1,7 +1,7 @@
 /** @fileoverview Imports an Abacus CSV update into Airtable. */
 
 import Client from 'ssh2-sftp-client';
-import {addSummaryTableHeaders, addSummaryTableRow, log} from '../common/github_actions_core.js';
+import {addSummaryTableHeaders, addSummaryTableRow} from '../common/github_actions_core.js';
 import {airtableRecordUpdate, getMapping, syncChanges} from '../common/sync.js';
 import {Base} from '../common/airtable.js';
 import {airtableImportRecordId, emburseSftpKey, emburseSftpUsername} from './inputs.js';
@@ -83,12 +83,8 @@ await run(async () => {
                 expenseRecords);
 
         // Track change counts.
-        log('a');
-        log(updateCount);
-        log(updates.size);
         updateCount += updates.size;
         createCount += creates.size;
-        log(updateCount);
 
         // Launch upserts.
         return Promise.all([
@@ -131,7 +127,6 @@ await run(async () => {
       csvs.map(csv => effectiveParse(csv, airtableFields, parseConfig)));
 
   // Add summary.
-  log(updateCount);
   addSummaryTableHeaders(['Updates', 'Creates']);
   addSummaryTableRow([updateCount.toString(), createCount.toString()]);
 });

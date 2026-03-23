@@ -128726,12 +128726,8 @@ await run(async () => {
                 expenseRecords);
 
         // Track change counts.
-        log('a');
-        log(updateCount);
-        log(updates.size);
         updateCount += updates.size;
         createCount += creates.size;
-        log(updateCount);
 
         // Launch upserts.
         return Promise.all([
@@ -128774,7 +128770,6 @@ await run(async () => {
       csvs.map(csv => effectiveParse(csv, airtableFields, parseConfig)));
 
   // Add summary.
-  log(updateCount);
   addSummaryTableHeaders(['Updates', 'Creates']);
   addSummaryTableRow([updateCount.toString(), createCount.toString()]);
 });
