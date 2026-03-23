@@ -99003,6 +99003,45 @@ function fetchAttachment(attachment) {
 
 
 /**
+ * @param {function(!Array<!Object< string, string>>): !Map<*, *>} getSource
+ * @param {!Base} base
+ * @param {string} table
+ * @param {string} idField
+ * @return {!Object<string, *>} The functions for the config chunk
+ *    and metric summary.
+ */
+async function getSync(getSource, base, table, idField) {
+  const mapping = getMapping(await base.select(table), idField);
+  let updateCount = 0;
+  let createCount = 0;
+  return {
+    chunk:
+      (results, parser) => {
+
+        // Get changes.
+        const {updates, creates} =
+            syncChanges(getSource(results.data), mapping);
+
+        // Track change counts.
+        updateCount += updates.size;
+        createCount += creates.size;
+
+        // Launch upserts.
+        return Promise.all([
+          base.update(table, Array.from(updates, airtableRecordUpdate)),
+          base.create(
+              table, Array.from(creates, ([, create]) => ({fields: create}))),
+        ]);
+      },
+    summarize:
+      () => {
+        addSummaryTableHeaders(['Updates', 'Creates']);
+        addSummaryTableRow([updateCount.toString(), createCount.toString()]);
+      },
+  }
+}
+
+/**
  * @param {!Readable} csv
  * @param {string[]} header Expected header.
  * @param {!Object<string, *>} config See https://www.papaparse.com/docs#config.
@@ -99088,9 +99127,6 @@ function trimAndType(value, header) {
 
 await run(async () => {
 
-  /** AmTrav Data Airtable Table name. */
-  const AMTRAV_TABLE = 'AmTrav Data';
-
   // Find Import Record.
   const expenseSources = new Base();
   const importRecord =
@@ -99119,11 +99155,6 @@ await run(async () => {
                       row => emails.set(row['Booking #'], row['Email'])),
               })));
 
-  // For existing AmTrav Airtable Records,
-  // map AmTrav Transaction ID to Airtable Record ID.
-  const expenseRecords =
-      getMapping(await expenseSources.select(AMTRAV_TABLE), 'Transaction ID');
-
   // AmTrav Credit Card Report to Airtable Field mapping.
   const mapping = new Map([
     ['Card', 'Card'],
@@ -99141,62 +99172,39 @@ await run(async () => {
   ]);
 
   // Create Credit Card Report parse config.
+  const {chunk, summarize} =
+      await getSync(
+          data => new Map(
+              filterMap(
+                  data,
+                  row => row['Card'] === amtravCardId(),
+                  row => [
+                    // Transaction ID
+                    row['Invoice #'] +
+                        `:${row['Ticket #'] ? row['Ticket #'] : ''}:` +
+                        row['Amount'],
+                    {
+                      ...Object.fromEntries(
+                          usedFields.map(f => [f, row[f]])),
+                      'Email': emails.get(row['Booking #']),
+                    },
+                  ])),
+          expenseSources, 'AmTrav Data', 'Transaction ID');
   const airtableFields = Array.from(mapping.values());
   const usedFields =
       airtableFields.filter(
           field => !['Card', 'Travel Date'].includes(field));
-  let updateCount = 0;
-  let createCount = 0;
   const parseConfig = {
     transformHeader: (header, index) => airtableFields[index],
     transform: trimAndType,
-    chunk:
-      (results, parser) => {
-
-        const {updates, creates} =
-            syncChanges(
-                // Source
-                new Map(
-                    filterMap(
-                        results.data,
-                        row => row['Card'] === amtravCardId(),
-                        row => [
-                          // Transaction ID
-                          row['Invoice #'] +
-                              `:${row['Ticket #'] ? row['Ticket #'] : ''}:` +
-                              row['Amount'],
-                          {
-                            ...Object.fromEntries(
-                                usedFields.map(f => [f, row[f]])),
-                            'Email': emails.get(row['Booking #']),
-                          },
-                        ])),
-                // Mapping
-                expenseRecords);
-
-        // Track change counts.
-        updateCount += updates.size;
-        createCount += creates.size;
-
-        // Launch upserts.
-        return Promise.all([
-          expenseSources.update(
-              AMTRAV_TABLE, Array.from(updates, airtableRecordUpdate)),
-          expenseSources.create(
-              AMTRAV_TABLE,
-              Array.from(creates, ([, create]) => ({fields: create}))),
-        ]);
-      },
+    chunk,
   };
 
   // Parse Credit Card Report CSV with above config.
   await Promise.all(
       importRecord.get('Credit Card Report').map(
           csv => parseAttachment(csv, airtableFields, parseConfig)));
-
-  // Add summary.
-  addSummaryTableHeaders(['Updates', 'Creates']);
-  addSummaryTableRow([updateCount, createCount]);
+  summarize();
 });
 
 let s = 0;

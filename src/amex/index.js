@@ -1,15 +1,11 @@
 /** @fileoverview Imports an Amex CSV update into Airtable. */
 
 import {airtableImportRecordId} from '../common/inputs.js';
-import {airtableRecordUpdate, getMapping, syncChanges} from '../common/sync.js';
 import {Base} from '../common/airtable.js';
-import {parseAttachment} from '../common/csv.js';
+import {getSync, parseAttachment} from '../common/csv.js';
 import {run} from '../common/action.js';
 
 await run(async () => {
-
-  /** Amex Data Airtable Table name. */
-  const AMEX_TABLE = 'Amex Data';
 
   /** Amex CSV transformed headers. */
   const headers = [
@@ -24,15 +20,24 @@ await run(async () => {
     'Country',
     'Reference',
     'Category',
-  ];
-
-  // For existing Amex Airtable Records,
-  // map Amex Reference to Airtable Record ID.
-  const expenseSources = new Base();
-  const expenseRecords =
-      getMapping(await expenseSources.select(AMEX_TABLE), 'Reference');
+  ];  
 
   // Create Parse Config.
+  const expenseSources = new Base();
+  const {chunk, summarize} =
+      await getSync(
+          data => {
+            // Split City/State.
+            for (const row of results.data) {
+              const cityState =
+                  row['City/State'].match(/(?<city>.+)\n(?<state>.+)/)?.groups;
+              row['City'] = cityState?.city;
+              row['State'] = cityState?.state;
+              delete row['City/State'];
+            }
+            return new Map(data.map(row => [row['Reference'], row]));
+          },
+          expenseSources, 'Amex Data', 'Reference');
   const parseConfig = {
     transformHeader:
       (header, index) => header === 'Description' ? 'Merchant' : header,
@@ -52,37 +57,10 @@ await run(async () => {
 
         // Split City/State later (in chunk).
         default:
-          return value
+          return value;
         }
       },
-    chunk:
-      (results, parser) => {
-
-        // Split City/State.
-        for (const row of results.data) {
-          const cityState =
-              row['City/State'].match(/(?<city>.+)\n(?<state>.+)/)?.groups;
-          row['City'] = cityState?.city;
-          row['State'] = cityState?.state;
-          delete row['City/State'];
-        }
-
-        const {updates, creates} =
-            syncChanges(
-                // Source
-                new Map(results.data.map(row => [row['Reference'], row])),
-                // Mapping
-                expenseRecords);
-
-        // Launch upserts.
-        return Promise.all([
-          expenseSources.update(
-              AMEX_TABLE, Array.from(updates, airtableRecordUpdate)),
-          expenseSources.create(
-              AMEX_TABLE,
-              Array.from(creates, ([, create]) => ({fields: create}))),
-        ]);
-      },
+    chunk,
   };
 
   // Parse CSV with above config.
@@ -91,4 +69,5 @@ await run(async () => {
   await Promise.all(
       importRecord.get('CSV').map(
           csv => parseAttachment(csv, headers, parseConfig)));
+  summarize();
 });

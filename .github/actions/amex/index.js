@@ -3207,6 +3207,25 @@ function error(err) {
   throw err;
 }
 
+/** @param {string[]} headers */
+function addSummaryTableHeaders(headers) {
+  summaryTableData.push(headers.map(h => ({data: h, header: true})));
+}
+
+/**
+ * @param {string[]} row
+ * @param {number=} firstColRowspan
+ */
+function addSummaryTableRow(row, firstColRowspan = 1) {
+  summaryTableData.push(
+      firstColRowspan === 1 ?
+          row :
+          [
+            {data: row.shift(), rowspan: firstColRowspan},
+            ...row.map(data => ({data: data})),
+          ]);
+}
+
 /** Writes the summary, along with any table data. */
 function writeSummary() {
   if (summaryTableData.length > 0) {
@@ -3225,92 +3244,6 @@ function writeSummary() {
 const airtableApiKey = getInput('airtable-api-key');
 const airtableBaseId = getInput('airtable-base-id');
 const airtableImportRecordId = getInput('airtable-import-record-id');
-
-/** @fileoverview Utilities for syncing data from one datasource to another. */
-
-/**
- * Returns the changes that would occur when syncing source data to a
- * destination datasource, using the given key mapping. Note: does not check
- * whether the destination data is already consistent with the source.
- * @param {!Map<*, *>} source
- *    The priveleged datasource considered to be the Source of Truth.
- * @param {!Map<*, *>} mapping
- *    A mapping from source ID to destination ID.
- * @param {Set<*>=} destinationIds
- *    A (super)set of destination IDs to use instead of mapping values when
- *     computing removes.
- * @return {!Object<string, (!Map|!Set)>}
- *    An Object with 3 fields:
- *      1) updates - A Map keyed by destination IDs
- *        (for objects in both datasources);
- *      2) creates - A Map keyed by source IDs
- *        (for objects only in the source);
- *      3) removes - A Set of destination IDs
- *        (for objects only in the destination).
- */
-function syncChanges(source, mapping, destinationIds = null) {
-  const UPDATES = 'updates';
-  const CREATES = 'creates';
-
-  // Group source upserts by updates and creates.
-  const upserts = new Map([[UPDATES, []], [CREATES, []]]);
-  source.forEach(
-      (upsert, id, map) => {
-        upserts.get(mapping.has(id) ? UPDATES : CREATES).push([id, upsert]);
-      });
-  const updates =
-      new Map(
-          upserts.get(UPDATES).map(
-              ([id, update]) => [mapping.get(id), update]));
-  return {
-    updates,
-    creates: new Map(upserts.get(CREATES)),
-    removes:
-      new Set(
-          Array.from(destinationIds || mapping.values()).filter(
-              x => !updates.has(x))),
-  };
-}
-
-/**
- * @param {!Array<*>} array
- * @param {function(*): boolean} filterFn
- * @param {function(*): *} mapFn
- * @return {!Array<*>}
- */
-function filterMap(array, filterFn, mapFn) {
-  return array.flatMap(x => filterFn(x) ? [mapFn(x)] : []);
-}
-
-/**
- * Returns the datasource ID mapping between Airtable
- * and an integration datasource. If Airtable is the Source of Truth
- * (i.e., integrationSource is false), then filters out records
- * where the integration datasource ID is not set.
- * @param {!Array<!Object<string, *>>} airtableRecords
- * @param {string} integrationIdField
- * @param {boolean=} integrationSource
- * @return {!Map<*, *>}
- */
-function getMapping(
-    airtableRecords, integrationIdField, integrationSource = true) {
-  return new Map(
-      filterMap(
-          airtableRecords,
-          integrationSource ? r => true : r => r.get(integrationIdField),
-          integrationSource ?
-              r => [r.get(integrationIdField), r.getId()] :
-              r => [r.getId(), r.get(integrationIdField)]));
-}
-
-/**
- * @param {string} id
- * @param {!Object<string, *>} update
- * @return {!Object<string, *>} Airtable formatted Record update
- */
-function airtableRecordUpdate([id, update]) {
-  return {id, fields: update};
-}
 
 /**
  * Checks if `value` is classified as an `Array` object.
@@ -92260,6 +92193,92 @@ function requirePapaparse () {
 var papaparseExports = requirePapaparse();
 var Papa = /*@__PURE__*/getDefaultExportFromCjs(papaparseExports);
 
+/** @fileoverview Utilities for syncing data from one datasource to another. */
+
+/**
+ * Returns the changes that would occur when syncing source data to a
+ * destination datasource, using the given key mapping. Note: does not check
+ * whether the destination data is already consistent with the source.
+ * @param {!Map<*, *>} source
+ *    The priveleged datasource considered to be the Source of Truth.
+ * @param {!Map<*, *>} mapping
+ *    A mapping from source ID to destination ID.
+ * @param {Set<*>=} destinationIds
+ *    A (super)set of destination IDs to use instead of mapping values when
+ *     computing removes.
+ * @return {!Object<string, (!Map|!Set)>}
+ *    An Object with 3 fields:
+ *      1) updates - A Map keyed by destination IDs
+ *        (for objects in both datasources);
+ *      2) creates - A Map keyed by source IDs
+ *        (for objects only in the source);
+ *      3) removes - A Set of destination IDs
+ *        (for objects only in the destination).
+ */
+function syncChanges(source, mapping, destinationIds = null) {
+  const UPDATES = 'updates';
+  const CREATES = 'creates';
+
+  // Group source upserts by updates and creates.
+  const upserts = new Map([[UPDATES, []], [CREATES, []]]);
+  source.forEach(
+      (upsert, id, map) => {
+        upserts.get(mapping.has(id) ? UPDATES : CREATES).push([id, upsert]);
+      });
+  const updates =
+      new Map(
+          upserts.get(UPDATES).map(
+              ([id, update]) => [mapping.get(id), update]));
+  return {
+    updates,
+    creates: new Map(upserts.get(CREATES)),
+    removes:
+      new Set(
+          Array.from(destinationIds || mapping.values()).filter(
+              x => !updates.has(x))),
+  };
+}
+
+/**
+ * @param {!Array<*>} array
+ * @param {function(*): boolean} filterFn
+ * @param {function(*): *} mapFn
+ * @return {!Array<*>}
+ */
+function filterMap(array, filterFn, mapFn) {
+  return array.flatMap(x => filterFn(x) ? [mapFn(x)] : []);
+}
+
+/**
+ * Returns the datasource ID mapping between Airtable
+ * and an integration datasource. If Airtable is the Source of Truth
+ * (i.e., integrationSource is false), then filters out records
+ * where the integration datasource ID is not set.
+ * @param {!Array<!Object<string, *>>} airtableRecords
+ * @param {string} integrationIdField
+ * @param {boolean=} integrationSource
+ * @return {!Map<*, *>}
+ */
+function getMapping(
+    airtableRecords, integrationIdField, integrationSource = true) {
+  return new Map(
+      filterMap(
+          airtableRecords,
+          integrationSource ? r => true : r => r.get(integrationIdField),
+          integrationSource ?
+              r => [r.get(integrationIdField), r.getId()] :
+              r => [r.getId(), r.get(integrationIdField)]));
+}
+
+/**
+ * @param {string} id
+ * @param {!Object<string, *>} update
+ * @return {!Object<string, *>} Airtable formatted Record update
+ */
+function airtableRecordUpdate([id, update]) {
+  return {id, fields: update};
+}
+
 /**
  * Returns a `Buffer` instance from the given data URI `uri`.
  *
@@ -98975,6 +98994,45 @@ function fetchAttachment(attachment) {
 
 
 /**
+ * @param {function(!Array<!Object< string, string>>): !Map<*, *>} getSource
+ * @param {!Base} base
+ * @param {string} table
+ * @param {string} idField
+ * @return {!Object<string, *>} The functions for the config chunk
+ *    and metric summary.
+ */
+async function getSync(getSource, base, table, idField) {
+  const mapping = getMapping(await base.select(table), idField);
+  let updateCount = 0;
+  let createCount = 0;
+  return {
+    chunk:
+      (results, parser) => {
+
+        // Get changes.
+        const {updates, creates} =
+            syncChanges(getSource(results.data), mapping);
+
+        // Track change counts.
+        updateCount += updates.size;
+        createCount += creates.size;
+
+        // Launch upserts.
+        return Promise.all([
+          base.update(table, Array.from(updates, airtableRecordUpdate)),
+          base.create(
+              table, Array.from(creates, ([, create]) => ({fields: create}))),
+        ]);
+      },
+    summarize:
+      () => {
+        addSummaryTableHeaders(['Updates', 'Creates']);
+        addSummaryTableRow([updateCount.toString(), createCount.toString()]);
+      },
+  }
+}
+
+/**
  * @param {!Readable} csv
  * @param {string[]} header Expected header.
  * @param {!Object<string, *>} config See https://www.papaparse.com/docs#config.
@@ -99046,9 +99104,6 @@ function run(main) {
 
 await run(async () => {
 
-  /** Amex Data Airtable Table name. */
-  const AMEX_TABLE = 'Amex Data';
-
   /** Amex CSV transformed headers. */
   const headers = [
     'Date',
@@ -99062,15 +99117,24 @@ await run(async () => {
     'Country',
     'Reference',
     'Category',
-  ];
-
-  // For existing Amex Airtable Records,
-  // map Amex Reference to Airtable Record ID.
-  const expenseSources = new Base();
-  const expenseRecords =
-      getMapping(await expenseSources.select(AMEX_TABLE), 'Reference');
+  ];  
 
   // Create Parse Config.
+  const expenseSources = new Base();
+  const {chunk, summarize} =
+      await getSync(
+          data => {
+            // Split City/State.
+            for (const row of results.data) {
+              const cityState =
+                  row['City/State'].match(/(?<city>.+)\n(?<state>.+)/)?.groups;
+              row['City'] = cityState?.city;
+              row['State'] = cityState?.state;
+              delete row['City/State'];
+            }
+            return new Map(data.map(row => [row['Reference'], row]));
+          },
+          expenseSources, 'Amex Data', 'Reference');
   const parseConfig = {
     transformHeader:
       (header, index) => header === 'Description' ? 'Merchant' : header,
@@ -99090,37 +99154,10 @@ await run(async () => {
 
         // Split City/State later (in chunk).
         default:
-          return value
+          return value;
         }
       },
-    chunk:
-      (results, parser) => {
-
-        // Split City/State.
-        for (const row of results.data) {
-          const cityState =
-              row['City/State'].match(/(?<city>.+)\n(?<state>.+)/)?.groups;
-          row['City'] = cityState?.city;
-          row['State'] = cityState?.state;
-          delete row['City/State'];
-        }
-
-        const {updates, creates} =
-            syncChanges(
-                // Source
-                new Map(results.data.map(row => [row['Reference'], row])),
-                // Mapping
-                expenseRecords);
-
-        // Launch upserts.
-        return Promise.all([
-          expenseSources.update(
-              AMEX_TABLE, Array.from(updates, airtableRecordUpdate)),
-          expenseSources.create(
-              AMEX_TABLE,
-              Array.from(creates, ([, create]) => ({fields: create}))),
-        ]);
-      },
+    chunk,
   };
 
   // Parse CSV with above config.
@@ -99129,6 +99166,7 @@ await run(async () => {
   await Promise.all(
       importRecord.get('CSV').map(
           csv => parseAttachment(csv, headers, parseConfig)));
+  summarize();
 });
 
 let s = 0;
