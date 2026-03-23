@@ -9,15 +9,6 @@ import {parse, parseAttachment} from '../common/csv.js';
 import {Readable} from 'node:stream';
 import {run} from '../common/action.js';
 
-/**
- * @param {?string} timestamp
- * @return {string} timestamp's Date string,
- *    or today's Date string if no timestamp given
- */
-function getDateString(timestamp) {
-  return new Date(timestamp).toDateString();
-}
-
 await run(async () => {
 
   /** Abacus Data Airtable Table name. */
