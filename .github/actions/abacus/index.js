@@ -128779,6 +128779,7 @@ await run(async () => {
   // Parse CSVs with above config.
   await Promise.all(
       csvs.map(csv => effectiveParse(csv, airtableFields, parseConfig)));
+  summarize();
 });
 
 let s = 0;
