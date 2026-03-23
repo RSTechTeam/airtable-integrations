@@ -131,6 +131,7 @@ await run(async () => {
       csvs.map(csv => effectiveParse(csv, airtableFields, parseConfig)));
 
   // Add summary.
+  log(updateCount);
   addSummaryTableHeaders(['Updates', 'Creates']);
-  addSummaryTableRow([updateCount, createCount]);
+  addSummaryTableRow([updateCount.toString(), createCount.toString()]);
 });
