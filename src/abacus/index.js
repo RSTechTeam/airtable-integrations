@@ -1,18 +1,13 @@
 /** @fileoverview Imports an Abacus CSV update into Airtable. */
 
 import Client from 'ssh2-sftp-client';
-import {addSummaryTableHeaders, addSummaryTableRow} from '../common/github_actions_core.js';
-import {airtableRecordUpdate, getMapping, syncChanges} from '../common/sync.js';
 import {Base} from '../common/airtable.js';
 import {airtableImportRecordId, emburseSftpKey, emburseSftpUsername} from './inputs.js';
-import {parse, parseAttachment} from '../common/csv.js';
+import {getSync, parse, parseAttachment} from '../common/csv.js';
 import {Readable} from 'node:stream';
 import {run} from '../common/action.js';
 
 await run(async () => {
-
-  /** Abacus Data Airtable Table name. */
-  const ABACUS_TABLE = 'Abacus Data';
 
   /** Abacus to Airtable Field mapping. */
   const mapping = new Map([
@@ -30,16 +25,19 @@ await run(async () => {
     ['Debit Date', 'Debit Date'],
   ]);
 
-  // For existing Abacus Airtable Records,
-  // map Abacus Expense ID to Airtable Record ID.
-  const expenseSources = new Base();
-  const expenseRecords =
-      getMapping(await expenseSources.select(ABACUS_TABLE), 'Expense ID');
-
   // Create parse config.
+  const expenseSources = new Base();
+  const {chunk, summarize} =
+      await getSync(
+          data => {
+            for (const row of data) {
+              row['Paid'] =
+                  row['Type'] === 'Card Transaction' || row['Debit Date'] > '';
+            }
+            return new Map(data.map(row => [row['Expense ID'], row]));
+          },
+          expenseSources, 'Abacus Data', 'Expense ID');
   const airtableFields = Array.from(mapping.values());
-  let updateCount = 0;
-  let createCount = 0;
   const parseConfig = {
     transformHeader: (header, index) => airtableFields[index],
     transform:
@@ -52,40 +50,12 @@ await run(async () => {
         case 'Type':
           return value === 'Manual' ? 'Reimbursement' : 'Card Transaction';
 
-        // Paid references Type and Debit Date, so handle later (in chunk).
+        // Paid references Type and Debit Date, so handle in chunk.
         default:
           return value === '' ? undefined : value;
         }
       },
-    chunk:
-      (results, parser) => {
-
-        // Handle Paid, completing Abacus CSV row alignment with Airtable.
-        for (const row of results.data) {
-          row['Paid'] =
-              row['Type'] === 'Card Transaction' || row['Debit Date'] > '';
-        }
-
-        const {updates, creates} =
-            syncChanges(
-                // Source
-                new Map(results.data.map(row => [row['Expense ID'], row])),
-                // Mapping
-                expenseRecords);
-
-        // Track change counts.
-        updateCount += updates.size;
-        createCount += creates.size;
-
-        // Launch upserts.
-        return Promise.all([
-          expenseSources.update(
-              ABACUS_TABLE, Array.from(updates, airtableRecordUpdate)),
-          expenseSources.create(
-              ABACUS_TABLE,
-              Array.from(creates, ([, create]) => ({fields: create}))),
-        ]);
-      },
+    chunk,
   };
 
   // Get CSVs.
@@ -116,8 +86,4 @@ await run(async () => {
   // Parse CSVs with above config.
   await Promise.all(
       csvs.map(csv => effectiveParse(csv, airtableFields, parseConfig)));
-
-  // Add summary.
-  addSummaryTableHeaders(['Updates', 'Creates']);
-  addSummaryTableRow([updateCount.toString(), createCount.toString()]);
 });

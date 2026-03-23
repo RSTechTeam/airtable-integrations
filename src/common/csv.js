@@ -1,7 +1,48 @@
 /** @fileoverview Utilities for parsing CSV files. */
 
 import Papa from 'papaparse';
+import {addSummaryTableHeaders, addSummaryTableRow} from './github_actions_core.js';
+import {airtableRecordUpdate, getMapping, syncChanges} from './sync.js';
 import {fetchAttachment} from './fetch.js';
+
+/**
+ * @param {function(!Array<!Object< string, string>>): !Map<*, *>} getSource
+ * @param {!Base} base
+ * @param {string} table
+ * @param {string} idField
+ * @return {!Object<string, *>} The functions for the config chunk
+ *    and metric summary.
+ */
+export async function getSync(getSource, base, table, idField) {
+  const mapping = getMapping(await base.select(table), idField);
+  let updateCount = 0;
+  let createCount = 0;
+  return {
+    chunk:
+      (results, parser) => {
+
+        // Get changes.
+        const {updates, creates} =
+            syncChanges(getSource(results.data), mapping);
+
+        // Track change counts.
+        updateCount += updates.size;
+        createCount += creates.size;
+
+        // Launch upserts.
+        return Promise.all([
+          base.update(table, Array.from(updates, airtableRecordUpdate)),
+          base.create(
+              table, Array.from(creates, ([, create]) => ({fields: create}))),
+        ]);
+      },
+    summarize:
+      () => {
+        addSummaryTableHeaders(['Updates', 'Creates']);
+        addSummaryTableRow([updateCount.toString(), createCount.toString()]);
+      },
+  }
+}
 
 /**
  * @param {!Readable} csv
