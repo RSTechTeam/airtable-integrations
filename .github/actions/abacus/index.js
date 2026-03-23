@@ -128726,8 +128726,12 @@ await run(async () => {
                 expenseRecords);
 
         // Track change counts.
+        log('a');
+        log(updateCount);
+        log(updates.size);
         updateCount += updates.size;
         createCount += creates.size;
+        log(updateCount);
 
         // Launch upserts.
         return Promise.all([
