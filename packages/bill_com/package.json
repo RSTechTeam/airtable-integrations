@@ -8,6 +8,6 @@
     "build": "cd .. && npm run build -- bill_com"
   },
   "dependencies": {
-    "formdata-node": "^4.3.3"
+    "formdata-node": "^6.0.3"
   }
 }
