@@ -7,7 +7,7 @@
     "./packages/*"
   ],
   "scripts": {
-    "prepare": "husky install",
+    "prepare": "husky",
     "build": "func() { rollup -c rollup.config.js -i src/\"$1\"/index.js -o .github/actions/\"$1\"/index.js; }; func",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js"
   },
