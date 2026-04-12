@@ -22,7 +22,11 @@ test('getSync', async () => {
           data => new Map(data.map(row => [row[ID_FIELD], row])),
           base, TABLE, ID_FIELD);
   await chunk(
-      ['Oh', 'Hi', 'World'].map((t, i) => ({[ID_FIELD]: i, [TEXT_FIELD]: t})),
+      {
+        data:
+          ['Oh', 'Hi', 'World'].map(
+              (t, i) => ({[ID_FIELD]: i, [TEXT_FIELD]: t})),
+      },
       null);
 
   // Check results.
