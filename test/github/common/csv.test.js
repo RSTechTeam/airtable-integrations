@@ -18,7 +18,7 @@ test('getSync', async () => {
 
   // Run test.
   const {chunk} =
-      csv.getSync(
+      await csv.getSync(
           data => new Map(data.map(row => [row[ID_FIELD], row])),
           base, TABLE, ID_FIELD);
   await chunk(
