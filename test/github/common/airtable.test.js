@@ -1,8 +1,8 @@
 import {airtableBase} from '../../test_utils.js';
 
+const TABLE = 'Airtable Test';
 const base = airtableBase();
-const table = 'Table 1';
-const select = (view) => base.select(table, view);
+const select = (view) => base.select(TABLE, view);
 const selectField = async (view, field) => {
   const records = await select(view);
   return records.map((r) => r.get(field));
@@ -40,7 +40,7 @@ const update = (tbl, text1, text2, text3) => {
     {id: recordIds.get(3), fields: {Text: text3}},
   ]);
 };
-const resetTexts = () => update(table, 'Hello', 'World', '!');
+const resetTexts = () => update(TABLE, 'Hello', 'World', '!');
 const expectTextsToEqual =
     (expected) => expect(selectField('', 'Text')).resolves.toEqual(expected);
 const expectTextsToContain =
@@ -54,7 +54,7 @@ const resetAndExpectControlTexts = async () => {
 describe('update', () => {
 
   test('given empty, returns empty', () => {
-    return expect(base.update(table, [])).resolves.toEqual([]);
+    return expect(base.update(TABLE, [])).resolves.toEqual([]);
   });
 
   test('given no table (with non-empty updates), throws', () => {
@@ -64,7 +64,7 @@ describe('update', () => {
   test('updates records', async () => {
     await expectControlTexts();
     
-    await update(table, 'Goodbye', 'Earth', '?');
+    await update(TABLE, 'Goodbye', 'Earth', '?');
     await expectTextsToContain(['Goodbye', 'Earth', '?']);
 
     await resetAndExpectControlTexts();
@@ -81,7 +81,7 @@ describe('selectAndUpdate', () => {
 
   const selectAndUpdate = (view) => {
     return base.selectAndUpdate(
-        table, view, (record) => record.get('ID') === 2 ? null : {Text: 'Hi'});
+        TABLE, view, (record) => record.get('ID') === 2 ? null : {Text: 'Hi'});
   };
 
   test('given no view, defaults to whole table', async () => {
@@ -105,7 +105,7 @@ describe('create', () => {
   afterEach(() => expect(selectId('')).resolves.toHaveLength(3));
 
   test('given empty, return empty', () => {
-    return expect(base.create(table, [])).resolves.toEqual([]);
+    return expect(base.create(TABLE, [])).resolves.toEqual([]);
   });
 
   const create = (tbl) => {
@@ -117,11 +117,11 @@ describe('create', () => {
   });
 
   test('creates records', async () => {
-    const created = await create(table);
+    const created = await create(TABLE);
     const ids = await selectId('');
     expect(ids).toHaveLength(5);
     expect(ids).toEqual(expect.arrayContaining([1, 2, 3, 4, 5]));
-    await base.base_(table).destroy(created[0].map((r) => r.id));
+    await base.base_(TABLE).destroy(created[0].map((r) => r.id));
   });
 });
 
@@ -130,9 +130,9 @@ describe('find', () => {
   const find = (tbl, id) => base.find(tbl, recordIds.get(id));
 
   test('given no table, throws', () => expect(find('', 1)).rejects.toThrow());
-  test('given no id, throws', () => expect(find(table, '')).rejects.toThrow());
+  test('given no id, throws', () => expect(find(TABLE, '')).rejects.toThrow());
   test('finds record', async () => {
-    const record = await find(table, 1);
+    const record = await find(TABLE, 1);
     return expect(record.get('ID')).toEqual(1);
   });
 });

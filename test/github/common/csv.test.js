@@ -1,7 +1,7 @@
 import {airtableBase} from '../../test_utils.js';
 import * as csv from '../../../src/common/csv.js';
 
-const TABLE = 'Table 1';
+const TABLE = 'CSV Sync Test';
 const ID_FIELD = 'ID';
 const TEXT_FIELD = 'Text';
 
