@@ -17,7 +17,7 @@ describe('lazyCache', () => {
 
     it = utils.lazyCache(producer);
     expect(val).toBe(0);
-    expect(producer).not.toBeCalled();
+    expect(producer).not.toHaveBeenCalled();
 
     expectPostCallInvariant();
   });
@@ -39,7 +39,7 @@ describe('retry', () => {
   test('no retry on success', async () => {
     const resolve = jest.fn(() => Promise.resolve('test'));
     await utils.retry(resolve);
-    expect(resolve).toBeCalledTimes(1);
+    expect(resolve).toHaveBeenCalledTimes(1);
   });
 });
 
