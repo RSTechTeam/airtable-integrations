@@ -6,6 +6,7 @@ test('errorParts creates error parts Object', () => {
 });
 
 const URL = 'https://github.com';
+const expectSuccess = response => expect(response.ok).toBe(true);
 
 describe('fetch', () => {
   const testFetch =
@@ -13,9 +14,9 @@ describe('fetch', () => {
 
   test('throws if error', () => expect(testFetch(true)).rejects.toThrow());
 
-  test('success', () => testFetch(false));
+  test('success', async () => expectSuccess(await testFetch(false)));
 });
 
-test('fetchAttachment fetches without error', () => {
-  return fetch.fetchAttachment({url: URL});
+test('fetchAttachment fetches without error', async () => {
+  expectSuccess(await fetch.fetchAttachment({url: URL}));
 });
