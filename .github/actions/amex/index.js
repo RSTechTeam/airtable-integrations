@@ -2707,315 +2707,19 @@ function requireCore () {
 
 var coreExports = /*@__PURE__*/ requireCore();
 
-var retry$3 = {};
-
-var retry_operation;
-var hasRequiredRetry_operation;
-
-function requireRetry_operation () {
-	if (hasRequiredRetry_operation) return retry_operation;
-	hasRequiredRetry_operation = 1;
-	function RetryOperation(timeouts, options) {
-	  // Compatibility for the old (timeouts, retryForever) signature
-	  if (typeof options === 'boolean') {
-	    options = { forever: options };
-	  }
-
-	  this._originalTimeouts = JSON.parse(JSON.stringify(timeouts));
-	  this._timeouts = timeouts;
-	  this._options = options || {};
-	  this._maxRetryTime = options && options.maxRetryTime || Infinity;
-	  this._fn = null;
-	  this._errors = [];
-	  this._attempts = 1;
-	  this._operationTimeout = null;
-	  this._operationTimeoutCb = null;
-	  this._timeout = null;
-	  this._operationStart = null;
-	  this._timer = null;
-
-	  if (this._options.forever) {
-	    this._cachedTimeouts = this._timeouts.slice(0);
-	  }
-	}
-	retry_operation = RetryOperation;
-
-	RetryOperation.prototype.reset = function() {
-	  this._attempts = 1;
-	  this._timeouts = this._originalTimeouts.slice(0);
-	};
-
-	RetryOperation.prototype.stop = function() {
-	  if (this._timeout) {
-	    clearTimeout(this._timeout);
-	  }
-	  if (this._timer) {
-	    clearTimeout(this._timer);
-	  }
-
-	  this._timeouts       = [];
-	  this._cachedTimeouts = null;
-	};
-
-	RetryOperation.prototype.retry = function(err) {
-	  if (this._timeout) {
-	    clearTimeout(this._timeout);
-	  }
-
-	  if (!err) {
-	    return false;
-	  }
-	  var currentTime = new Date().getTime();
-	  if (err && currentTime - this._operationStart >= this._maxRetryTime) {
-	    this._errors.push(err);
-	    this._errors.unshift(new Error('RetryOperation timeout occurred'));
-	    return false;
-	  }
-
-	  this._errors.push(err);
-
-	  var timeout = this._timeouts.shift();
-	  if (timeout === undefined) {
-	    if (this._cachedTimeouts) {
-	      // retry forever, only keep last error
-	      this._errors.splice(0, this._errors.length - 1);
-	      timeout = this._cachedTimeouts.slice(-1);
-	    } else {
-	      return false;
-	    }
-	  }
-
-	  var self = this;
-	  this._timer = setTimeout(function() {
-	    self._attempts++;
-
-	    if (self._operationTimeoutCb) {
-	      self._timeout = setTimeout(function() {
-	        self._operationTimeoutCb(self._attempts);
-	      }, self._operationTimeout);
-
-	      if (self._options.unref) {
-	          self._timeout.unref();
-	      }
-	    }
-
-	    self._fn(self._attempts);
-	  }, timeout);
-
-	  if (this._options.unref) {
-	      this._timer.unref();
-	  }
-
-	  return true;
-	};
-
-	RetryOperation.prototype.attempt = function(fn, timeoutOps) {
-	  this._fn = fn;
-
-	  if (timeoutOps) {
-	    if (timeoutOps.timeout) {
-	      this._operationTimeout = timeoutOps.timeout;
-	    }
-	    if (timeoutOps.cb) {
-	      this._operationTimeoutCb = timeoutOps.cb;
-	    }
-	  }
-
-	  var self = this;
-	  if (this._operationTimeoutCb) {
-	    this._timeout = setTimeout(function() {
-	      self._operationTimeoutCb();
-	    }, self._operationTimeout);
-	  }
-
-	  this._operationStart = new Date().getTime();
-
-	  this._fn(this._attempts);
-	};
-
-	RetryOperation.prototype.try = function(fn) {
-	  console.log('Using RetryOperation.try() is deprecated');
-	  this.attempt(fn);
-	};
-
-	RetryOperation.prototype.start = function(fn) {
-	  console.log('Using RetryOperation.start() is deprecated');
-	  this.attempt(fn);
-	};
-
-	RetryOperation.prototype.start = RetryOperation.prototype.try;
-
-	RetryOperation.prototype.errors = function() {
-	  return this._errors;
-	};
-
-	RetryOperation.prototype.attempts = function() {
-	  return this._attempts;
-	};
-
-	RetryOperation.prototype.mainError = function() {
-	  if (this._errors.length === 0) {
-	    return null;
-	  }
-
-	  var counts = {};
-	  var mainError = null;
-	  var mainErrorCount = 0;
-
-	  for (var i = 0; i < this._errors.length; i++) {
-	    var error = this._errors[i];
-	    var message = error.message;
-	    var count = (counts[message] || 0) + 1;
-
-	    counts[message] = count;
-
-	    if (count >= mainErrorCount) {
-	      mainError = error;
-	      mainErrorCount = count;
-	    }
-	  }
-
-	  return mainError;
-	};
-	return retry_operation;
-}
-
-var hasRequiredRetry$1;
-
-function requireRetry$1 () {
-	if (hasRequiredRetry$1) return retry$3;
-	hasRequiredRetry$1 = 1;
-	(function (exports$1) {
-		var RetryOperation = /*@__PURE__*/ requireRetry_operation();
-
-		exports$1.operation = function(options) {
-		  var timeouts = exports$1.timeouts(options);
-		  return new RetryOperation(timeouts, {
-		      forever: options && (options.forever || options.retries === Infinity),
-		      unref: options && options.unref,
-		      maxRetryTime: options && options.maxRetryTime
-		  });
-		};
-
-		exports$1.timeouts = function(options) {
-		  if (options instanceof Array) {
-		    return [].concat(options);
-		  }
-
-		  var opts = {
-		    retries: 10,
-		    factor: 2,
-		    minTimeout: 1 * 1000,
-		    maxTimeout: Infinity,
-		    randomize: false
-		  };
-		  for (var key in options) {
-		    opts[key] = options[key];
-		  }
-
-		  if (opts.minTimeout > opts.maxTimeout) {
-		    throw new Error('minTimeout is greater than maxTimeout');
-		  }
-
-		  var timeouts = [];
-		  for (var i = 0; i < opts.retries; i++) {
-		    timeouts.push(this.createTimeout(i, opts));
-		  }
-
-		  if (options && options.forever && !timeouts.length) {
-		    timeouts.push(this.createTimeout(i, opts));
-		  }
-
-		  // sort the array numerically ascending
-		  timeouts.sort(function(a,b) {
-		    return a - b;
-		  });
-
-		  return timeouts;
-		};
-
-		exports$1.createTimeout = function(attempt, opts) {
-		  var random = (opts.randomize)
-		    ? (Math.random() + 1)
-		    : 1;
-
-		  var timeout = Math.round(random * Math.max(opts.minTimeout, 1) * Math.pow(opts.factor, attempt));
-		  timeout = Math.min(timeout, opts.maxTimeout);
-
-		  return timeout;
-		};
-
-		exports$1.wrap = function(obj, options, methods) {
-		  if (options instanceof Array) {
-		    methods = options;
-		    options = null;
-		  }
-
-		  if (!methods) {
-		    methods = [];
-		    for (var key in obj) {
-		      if (typeof obj[key] === 'function') {
-		        methods.push(key);
-		      }
-		    }
-		  }
-
-		  for (var i = 0; i < methods.length; i++) {
-		    var method   = methods[i];
-		    var original = obj[method];
-
-		    obj[method] = function retryWrapper(original) {
-		      var op       = exports$1.operation(options);
-		      var args     = Array.prototype.slice.call(arguments, 1);
-		      var callback = args.pop();
-
-		      args.push(function(err) {
-		        if (op.retry(err)) {
-		          return;
-		        }
-		        if (err) {
-		          arguments[0] = op.mainError();
-		        }
-		        callback.apply(this, arguments);
-		      });
-
-		      op.attempt(function() {
-		        original.apply(obj, args);
-		      });
-		    }.bind(obj, original);
-		    obj[method].options = options;
-		  }
-		}; 
-	} (retry$3));
-	return retry$3;
-}
-
-var retry$2;
-var hasRequiredRetry;
-
-function requireRetry () {
-	if (hasRequiredRetry) return retry$2;
-	hasRequiredRetry = 1;
-	retry$2 = /*@__PURE__*/ requireRetry$1();
-	return retry$2;
-}
-
-var retryExports = /*@__PURE__*/ requireRetry();
-var retry$1 = /*@__PURE__*/getDefaultExportFromCjs(retryExports);
-
 const objectToString = Object.prototype.toString;
 
 const isError = value => objectToString.call(value) === '[object Error]';
 
 const errorMessages = new Set([
 	'network error', // Chrome
-	'Failed to fetch', // Chrome
 	'NetworkError when attempting to fetch resource.', // Firefox
 	'The Internet connection appears to be offline.', // Safari 16
-	'Load failed', // Safari 17+
 	'Network request failed', // `cross-fetch`
 	'fetch failed', // Undici (Node.js)
 	'terminated', // Undici (Node.js)
+	' A network error occurred.', // Bun (WebKit)
+	'Network connection lost', // Cloudflare Workers (fetch)
 ]);
 
 function isNetworkError(error) {
@@ -3028,13 +2732,69 @@ function isNetworkError(error) {
 		return false;
 	}
 
-	// We do an extra check for Safari 17+ as it has a very generic error message.
-	// Network errors in Safari have no stack.
-	if (error.message === 'Load failed') {
-		return error.stack === undefined;
+	const {message, stack} = error;
+
+	// Safari 17+ has generic message but no stack for network errors
+	if (message === 'Load failed') {
+		return stack === undefined
+			// Sentry adds its own stack trace to the fetch error, so also check for that
+			|| '__sentry_captured__' in error;
 	}
 
-	return errorMessages.has(error.message);
+	// Deno network errors start with specific text
+	if (message.startsWith('error sending request for url')) {
+		return true;
+	}
+
+	// Chrome: exact "Failed to fetch" or with hostname: "Failed to fetch (example.com)"
+	if (message === 'Failed to fetch' || (message.startsWith('Failed to fetch (') && message.endsWith(')'))) {
+		return true;
+	}
+
+	// Standard network error messages
+	return errorMessages.has(message);
+}
+
+function validateRetries(retries) {
+	if (typeof retries === 'number') {
+		if (retries < 0) {
+			throw new TypeError('Expected `retries` to be a non-negative number.');
+		}
+
+		if (Number.isNaN(retries)) {
+			throw new TypeError('Expected `retries` to be a valid number or Infinity, got NaN.');
+		}
+	} else if (retries !== undefined) {
+		throw new TypeError('Expected `retries` to be a number or Infinity.');
+	}
+}
+
+function validateNumberOption(name, value, {min = 0, allowInfinity = false} = {}) {
+	if (value === undefined) {
+		return;
+	}
+
+	if (typeof value !== 'number' || Number.isNaN(value)) {
+		throw new TypeError(`Expected \`${name}\` to be a number${allowInfinity ? ' or Infinity' : ''}.`);
+	}
+
+	if (!allowInfinity && !Number.isFinite(value)) {
+		throw new TypeError(`Expected \`${name}\` to be a finite number.`);
+	}
+
+	if (value < min) {
+		throw new TypeError(`Expected \`${name}\` to be \u2265 ${min}.`);
+	}
+}
+
+function validateFunctionOption(name, value) {
+	if (value === undefined) {
+		return;
+	}
+
+	if (typeof value !== 'function') {
+		throw new TypeError(`Expected \`${name}\` to be a function.`);
+	}
 }
 
 let AbortError$2 = class AbortError extends Error {
@@ -3054,77 +2814,205 @@ let AbortError$2 = class AbortError extends Error {
 	}
 };
 
-const decorateErrorWithCounts = (error, attemptNumber, options) => {
-	// Minus 1 from attemptNumber because the first attempt does not count as a retry
-	const retriesLeft = options.retries - (attemptNumber - 1);
+function calculateDelay(retriesConsumed, options) {
+	const attempt = Math.max(1, retriesConsumed + 1);
+	const random = options.randomize ? (Math.random() + 1) : 1;
 
-	error.attemptNumber = attemptNumber;
-	error.retriesLeft = retriesLeft;
-	return error;
-};
+	let timeout = Math.round(random * options.minTimeout * (options.factor ** (attempt - 1)));
+	timeout = Math.min(timeout, options.maxTimeout);
 
-async function pRetry(input, options) {
-	return new Promise((resolve, reject) => {
-		options = {...options};
-		options.onFailedAttempt ??= () => {};
-		options.shouldRetry ??= () => true;
-		options.retries ??= 10;
+	return timeout;
+}
 
-		const operation = retry$1.operation(options);
+function calculateRemainingTime(start, max) {
+	if (!Number.isFinite(max)) {
+		return max;
+	}
 
-		const abortHandler = () => {
-			operation.stop();
-			reject(options.signal?.reason);
+	return max - (performance.now() - start);
+}
+
+async function delayForRetry(delay, options) {
+	if (delay <= 0) {
+		return;
+	}
+
+	await new Promise((resolve, reject) => {
+		const onAbort = () => {
+			clearTimeout(timeoutToken);
+			options.signal?.removeEventListener('abort', onAbort);
+			reject(options.signal.reason);
 		};
 
-		if (options.signal && !options.signal.aborted) {
-			options.signal.addEventListener('abort', abortHandler, {once: true});
+		const timeoutToken = setTimeout(() => {
+			options.signal?.removeEventListener('abort', onAbort);
+			resolve();
+		}, delay);
+
+		if (options.unref) {
+			timeoutToken.unref?.();
 		}
 
-		const cleanUp = () => {
-			options.signal?.removeEventListener('abort', abortHandler);
-			operation.stop();
-		};
-
-		operation.attempt(async attemptNumber => {
-			try {
-				const result = await input(attemptNumber);
-				cleanUp();
-				resolve(result);
-			} catch (error) {
-				try {
-					if (!(error instanceof Error)) {
-						throw new TypeError(`Non-error was thrown: "${error}". You should only throw errors.`);
-					}
-
-					if (error instanceof AbortError$2) {
-						throw error.originalError;
-					}
-
-					if (error instanceof TypeError && !isNetworkError(error)) {
-						throw error;
-					}
-
-					decorateErrorWithCounts(error, attemptNumber, options);
-
-					if (!(await options.shouldRetry(error))) {
-						operation.stop();
-						reject(error);
-					}
-
-					await options.onFailedAttempt(error);
-
-					if (!operation.retry(error)) {
-						throw operation.mainError();
-					}
-				} catch (finalError) {
-					decorateErrorWithCounts(finalError, attemptNumber, options);
-					cleanUp();
-					reject(finalError);
-				}
-			}
-		});
+		options.signal?.addEventListener('abort', onAbort, {once: true});
 	});
+}
+
+async function onAttemptFailure({error, attemptNumber, retriesConsumed, startTime, options}) {
+	const normalizedError = error instanceof Error
+		? error
+		: new TypeError(`Non-error was thrown: "${error}". You should only throw errors.`);
+
+	if (normalizedError instanceof AbortError$2) {
+		throw normalizedError.originalError;
+	}
+
+	const retriesLeft = Number.isFinite(options.retries)
+		? Math.max(0, options.retries - retriesConsumed)
+		: options.retries;
+
+	const maxRetryTime = options.maxRetryTime ?? Number.POSITIVE_INFINITY;
+	const delayTime = calculateDelay(retriesConsumed, options);
+	const remainingTimeBeforeCallbacks = calculateRemainingTime(startTime, maxRetryTime);
+
+	if (remainingTimeBeforeCallbacks <= 0) {
+		const context = Object.freeze({
+			error: normalizedError,
+			attemptNumber,
+			retriesLeft,
+			retriesConsumed,
+			retryDelay: 0,
+		});
+
+		await options.onFailedAttempt(context);
+
+		throw normalizedError;
+	}
+
+	const consumeRetryContext = Object.freeze({
+		error: normalizedError,
+		attemptNumber,
+		retriesLeft,
+		retriesConsumed,
+		retryDelay: retriesLeft > 0 ? delayTime : 0,
+	});
+
+	const consumeRetry = await options.shouldConsumeRetry(consumeRetryContext);
+	const effectiveDelay = consumeRetry && retriesLeft > 0 ? delayTime : 0;
+	const context = Object.freeze({
+		error: normalizedError,
+		attemptNumber,
+		retriesLeft,
+		retriesConsumed,
+		retryDelay: effectiveDelay,
+	});
+
+	await options.onFailedAttempt(context);
+
+	if (calculateRemainingTime(startTime, maxRetryTime) <= 0) {
+		throw normalizedError;
+	}
+
+	const remainingTime = calculateRemainingTime(startTime, maxRetryTime);
+
+	if (remainingTime <= 0 || retriesLeft <= 0) {
+		throw normalizedError;
+	}
+
+	if (normalizedError instanceof TypeError && !isNetworkError(normalizedError)) {
+		throw normalizedError;
+	}
+
+	if (!await options.shouldRetry(context)) {
+		throw normalizedError;
+	}
+
+	const remainingTimeAfterShouldRetry = calculateRemainingTime(startTime, maxRetryTime);
+
+	if (remainingTimeAfterShouldRetry <= 0) {
+		throw normalizedError;
+	}
+
+	if (!consumeRetry) {
+		options.signal?.throwIfAborted();
+		return false;
+	}
+
+	const finalDelay = Math.min(effectiveDelay, remainingTimeAfterShouldRetry);
+
+	options.signal?.throwIfAborted();
+
+	await delayForRetry(finalDelay, options);
+
+	options.signal?.throwIfAborted();
+
+	return true;
+}
+
+async function pRetry(input, options = {}) {
+	options = {...options};
+
+	validateRetries(options.retries);
+
+	if (Object.hasOwn(options, 'forever')) {
+		throw new Error('The `forever` option is no longer supported. For many use-cases, you can set `retries: Infinity` instead.');
+	}
+
+	options.retries ??= 10;
+	options.factor ??= 2;
+	options.minTimeout ??= 1000;
+	options.maxTimeout ??= Number.POSITIVE_INFINITY;
+	options.maxRetryTime ??= Number.POSITIVE_INFINITY;
+	options.randomize ??= false;
+	options.onFailedAttempt ??= () => {};
+	options.shouldRetry ??= () => true;
+	options.shouldConsumeRetry ??= () => true;
+
+	// Validate numeric options and normalize edge cases
+	validateFunctionOption('onFailedAttempt', options.onFailedAttempt);
+	validateFunctionOption('shouldRetry', options.shouldRetry);
+	validateFunctionOption('shouldConsumeRetry', options.shouldConsumeRetry);
+	validateNumberOption('factor', options.factor, {min: 0, allowInfinity: false});
+	validateNumberOption('minTimeout', options.minTimeout, {min: 0, allowInfinity: false});
+	validateNumberOption('maxTimeout', options.maxTimeout, {min: 0, allowInfinity: true});
+	validateNumberOption('maxRetryTime', options.maxRetryTime, {min: 0, allowInfinity: true});
+
+	// Treat non-positive factor as 1 to avoid zero backoff or negative behavior
+	if (!(options.factor > 0)) {
+		options.factor = 1;
+	}
+
+	options.signal?.throwIfAborted();
+
+	let attemptNumber = 0;
+	let retriesConsumed = 0;
+	const startTime = performance.now();
+
+	while (Number.isFinite(options.retries) ? retriesConsumed <= options.retries : true) {
+		attemptNumber++;
+
+		try {
+			options.signal?.throwIfAborted();
+
+			const result = await input(attemptNumber);
+
+			options.signal?.throwIfAborted();
+
+			return result;
+		} catch (error) {
+			if (await onAttemptFailure({
+				error,
+				attemptNumber,
+				retriesConsumed,
+				startTime,
+				options,
+			})) {
+				retriesConsumed++;
+			}
+		}
+	}
+
+	// Should not reach here, but in case it does, throw an error
+	throw new Error('Retry attempts exhausted without throwing an error.');
 }
 
 /** @fileoverview Shared code for Bill.com x Airtable Repository. */
@@ -90260,7 +90148,7 @@ var papaparse$1 = {exports: {}};
 
 /* @license
 Papa Parse
-v5.4.1
+v5.5.3
 https://github.com/mholt/PapaParse
 License: MIT
 */
@@ -90632,8 +90520,10 @@ function requirePapaparse () {
 						_escapedQuote = _config.escapeChar + _quoteChar;
 					}
 
-					if (typeof _config.escapeFormulae === 'boolean' || _config.escapeFormulae instanceof RegExp) {
-						_escapeFormulae = _config.escapeFormulae instanceof RegExp ? _config.escapeFormulae : /^[=+\-@\t\r].*$/;
+					if (_config.escapeFormulae instanceof RegExp) {
+						_escapeFormulae = _config.escapeFormulae;
+					} else if (typeof _config.escapeFormulae === 'boolean' && _config.escapeFormulae) {
+						_escapeFormulae =  /^[=+\-@\t\r].*$/;
 					}
 				}
 
@@ -90739,6 +90629,7 @@ function requirePapaparse () {
 				}
 			}
 
+
 			/** ChunkStreamer is the base prototype for various streamer implementations. */
 			function ChunkStreamer(config)
 			{
@@ -90763,6 +90654,16 @@ function requirePapaparse () {
 				this.parseChunk = function(chunk, isFakeChunk)
 				{
 					// First chunk pre-processing
+					const skipFirstNLines = parseInt(this._config.skipFirstNLines) || 0;
+					if (this.isFirstChunk && skipFirstNLines > 0) {
+						let _newline = this._config.newline;
+						if (!_newline) {
+							const quoteChar = this._config.quoteChar || '"';
+							_newline = this._handle.guessLineEndings(chunk, quoteChar);
+						}
+						const splitChunk = chunk.split(_newline);
+						chunk = [...splitChunk.slice(skipFirstNLines)].join(_newline);
+					}
 					if (this.isFirstChunk && isFunction(this._config.beforeFirstChunk))
 					{
 						var modifiedChunk = this._config.beforeFirstChunk(chunk);
@@ -90775,7 +90676,6 @@ function requirePapaparse () {
 					// Rejoin the line we likely just split in two by chunking the file
 					var aggregate = this._partialLine + chunk;
 					this._partialLine = '';
-
 					var results = this._handle.parse(aggregate, this._baseIndex, !this._finished);
 
 					if (this._handle.paused() || this._handle.aborted()) {
@@ -91330,7 +91230,7 @@ function requirePapaparse () {
 				{
 					var quoteChar = _config.quoteChar || '"';
 					if (!_config.newline)
-						_config.newline = guessLineEndings(input, quoteChar);
+						_config.newline = this.guessLineEndings(input, quoteChar);
 
 					_delimiterError = false;
 					if (!_config.delimiter)
@@ -91402,6 +91302,32 @@ function requirePapaparse () {
 					if (isFunction(_config.complete))
 						_config.complete(_results);
 					_input = '';
+				};
+
+				this.guessLineEndings = function(input, quoteChar)
+				{
+					input = input.substring(0, 1024 * 1024);	// max length 1 MB
+					// Replace all the text inside quotes
+					var re = new RegExp(escapeRegExp(quoteChar) + '([^]*?)' + escapeRegExp(quoteChar), 'gm');
+					input = input.replace(re, '');
+
+					var r = input.split('\r');
+
+					var n = input.split('\n');
+
+					var nAppearsFirst = (n.length > 1 && n[0].length < r[0].length);
+
+					if (r.length === 1 || nAppearsFirst)
+						return '\n';
+
+					var numWithN = 0;
+					for (var i = 0; i < r.length; i++)
+					{
+						if (r[i][0] === '\n')
+							numWithN++;
+					}
+
+					return numWithN >= r.length / 2 ? '\r\n' : '\r';
 				};
 
 				function testEmptyLine(s) {
@@ -91610,32 +91536,6 @@ function requirePapaparse () {
 					};
 				}
 
-				function guessLineEndings(input, quoteChar)
-				{
-					input = input.substring(0, 1024 * 1024);	// max length 1 MB
-					// Replace all the text inside quotes
-					var re = new RegExp(escapeRegExp(quoteChar) + '([^]*?)' + escapeRegExp(quoteChar), 'gm');
-					input = input.replace(re, '');
-
-					var r = input.split('\r');
-
-					var n = input.split('\n');
-
-					var nAppearsFirst = (n.length > 1 && n[0].length < r[0].length);
-
-					if (r.length === 1 || nAppearsFirst)
-						return '\n';
-
-					var numWithN = 0;
-					for (var i = 0; i < r.length; i++)
-					{
-						if (r[i][0] === '\n')
-							numWithN++;
-					}
-
-					return numWithN >= r.length / 2 ? '\r\n' : '\r';
-				}
-
 				function addError(type, code, msg, row)
 				{
 					var error = {
@@ -91668,6 +91568,9 @@ function requirePapaparse () {
 				var preview = config.preview;
 				var fastMode = config.fastMode;
 				var quoteChar;
+				var renamedHeaders = null;
+				var headerParsed = false;
+
 				if (config.quoteChar === undefined || config.quoteChar === null) {
 					quoteChar = '"';
 				} else {
@@ -91721,40 +91624,6 @@ function requirePapaparse () {
 					if (!input)
 						return returnable();
 
-					// Rename headers if there are duplicates
-					if (config.header && !baseIndex)
-					{
-						var firstLine = input.split(newline)[0];
-						var headers = firstLine.split(delim);
-						var separator = '_';
-						var headerMap = [];
-						var headerCount = {};
-						var duplicateHeaders = false;
-
-						for (var j in headers) {
-							var header = headers[j];
-							if (isFunction(config.transformHeader))
-								header = config.transformHeader(header, j);
-							var headerName = header;
-
-							var count = headerCount[header] || 0;
-							if (count > 0) {
-								duplicateHeaders = true;
-								headerName = header + separator + count;
-							}
-							headerCount[header] = count + 1;
-							// In case it already exists, we add more separtors
-							while (headerMap.includes(headerName)) {
-								headerName = headerName + separator + count;
-							}
-							headerMap.push(headerName);
-						}
-						if (duplicateHeaders) {
-							var editedInput = input.split(newline);
-							editedInput[0] = headerMap.join(delim);
-							input = editedInput.join(newline);
-						}
-					}
 					if (fastMode || (fastMode !== false && input.indexOf(quoteChar) === -1))
 					{
 						var rows = input.split(newline);
@@ -91762,6 +91631,7 @@ function requirePapaparse () {
 						{
 							row = rows[i];
 							cursor += row.length;
+
 							if (i !== rows.length - 1)
 								cursor += newline.length;
 							else if (ignoreLastRow)
@@ -91956,7 +91826,6 @@ function requirePapaparse () {
 						break;
 					}
 
-
 					return finish();
 
 
@@ -92016,6 +91885,48 @@ function requirePapaparse () {
 					/** Returns an object with the results, errors, and meta. */
 					function returnable(stopped)
 					{
+						if (config.header && !baseIndex && data.length && !headerParsed)
+						{
+							const result = data[0];
+							const headerCount = Object.create(null); // To track the count of each base header
+							const usedHeaders = new Set(result); // To track used headers and avoid duplicates
+							let duplicateHeaders = false;
+
+							for (let i = 0; i < result.length; i++) {
+								let header = result[i];
+								if (isFunction(config.transformHeader))
+									header = config.transformHeader(header, i);
+
+								if (!headerCount[header]) {
+									headerCount[header] = 1;
+									result[i] = header;
+								} else {
+									let newHeader;
+									let suffixCount = headerCount[header];
+
+									// Find a unique new header
+									do {
+										newHeader = `${header}_${suffixCount}`;
+										suffixCount++;
+									} while (usedHeaders.has(newHeader));
+
+									usedHeaders.add(newHeader); // Mark this new Header as used
+									result[i] = newHeader;
+									headerCount[header]++;
+									duplicateHeaders = true;
+									if (renamedHeaders === null) {
+										renamedHeaders = {};
+									}
+									renamedHeaders[newHeader] = header;
+								}
+
+								usedHeaders.add(header); // Ensure the original header is marked as used
+							}
+							if (duplicateHeaders) {
+								console.warn('Duplicate headers found and renamed.');
+							}
+							headerParsed = true;
+						}
 						return {
 							data: data,
 							errors: errors,
@@ -92024,7 +91935,8 @@ function requirePapaparse () {
 								linebreak: newline,
 								aborted: aborted,
 								truncated: !!stopped,
-								cursor: lastCursor + (baseIndex || 0)
+								cursor: lastCursor + (baseIndex || 0),
+								renamedHeaders: renamedHeaders
 							}
 						};
 					}
@@ -92167,7 +92079,6 @@ function requirePapaparse () {
 			{
 				return function() { f.apply(self, arguments); };
 			}
-
 			function isFunction(func)
 			{
 				return typeof func === 'function';
@@ -93553,6 +93464,25 @@ class Response extends Body {
 		return response;
 	}
 
+	static json(data = undefined, init = {}) {
+		const body = JSON.stringify(data);
+
+		if (body === undefined) {
+			throw new TypeError('data is not JSON serializable');
+		}
+
+		const headers = new Headers(init && init.headers);
+
+		if (!headers.has('content-type')) {
+			headers.set('content-type', 'application/json');
+		}
+
+		return new Response(body, {
+			...init,
+			headers
+		});
+	}
+
 	get [Symbol.toStringTag]() {
 		return 'Response';
 	}
@@ -94197,10 +94127,6 @@ const getNodeRequestOptions = request => {
 	let {agent} = request;
 	if (typeof agent === 'function') {
 		agent = agent(parsedURL);
-	}
-
-	if (!headers.has('Connection') && !agent) {
-		headers.set('Connection', 'close');
 	}
 
 	// HTTP-network fetch step 4.2
