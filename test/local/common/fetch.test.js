@@ -9,10 +9,14 @@ const URL = 'https://github.com';
 const expectSuccess = response => expect(response.ok).toBe(true);
 
 describe('fetch', () => {
+  const errorParts = fetch.errorParts('code', 'context', 'message');
   const testFetch =
-      hasError => fetch.fetch(response => ({hasError, errorParts: {}}), URL);
+      hasError => fetch.fetch(response => ({hasError, errorParts}), URL);
 
-  test('throws if error', () => expect(testFetch(true)).rejects.toThrow());
+  test('throws if error', () => {
+    return expect(testFetch(true)).rejects.toThrow(
+        'Error code (from context): message');
+  });
 
   test('success', async () => expectSuccess(await testFetch(false)));
 });
