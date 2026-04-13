@@ -8,6 +8,6 @@
     "build": "cd .. && npm run build -- abacus"
   },
   "dependencies": {
-    "ssh2-sftp-client": "^12.1.0"
+    "ssh2-sftp-client": "^12.1.1"
   }
 }
