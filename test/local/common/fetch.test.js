@@ -1,5 +1,4 @@
 import * as fetch from '../../../src/common/fetch.js';
-import {jest} from '@jest/globals';
 
 test('errorParts creates error parts Object', () => {
   expect(fetch.errorParts('code', 'context', 'message')).toEqual(
