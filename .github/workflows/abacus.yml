@@ -10,6 +10,7 @@ on:
         description: 'Airtable Import Record ID'
         required: false
         type: string
+permissions: {}
 jobs:
   main:
     runs-on: ubuntu-latest
