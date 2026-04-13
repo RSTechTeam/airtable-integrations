@@ -16,4 +16,5 @@ export default {
       __dirname: JSON.stringify(import.meta.dirname),
     }),
   ],
+  treeshake: 'smallest',
 };
