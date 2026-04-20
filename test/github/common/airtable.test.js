@@ -1,4 +1,7 @@
 import {airtableBase} from '../../test_utils.js';
+import {jest} from '@jest/globals';
+
+jest.setTimeout(10**4);
 
 const TABLE = 'Airtable Test';
 const base = airtableBase();
