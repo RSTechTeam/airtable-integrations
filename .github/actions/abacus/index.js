@@ -128642,6 +128642,7 @@ await run(async () => {
     ['Category', 'Category'],
     ['Amount', 'Amount'],
     ['Projects', 'Project'],
+    ['Trip', 'Trip'],
     ['Approved Date', 'Approved'],
     ['Source', 'Type'], // Also Paid, with Debit Date
     ['Debit Date', 'Debit Date'],
