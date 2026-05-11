@@ -100486,6 +100486,7 @@ async function main$4(api, airtableBase = new MsoBase()) {
             const item =
                 await billComIntegrationBase.find(
                     'Check Request Line Items', itemId);
+            const projectId = item.get('Project')[0];
             const date = item.get('Item Expense Date');
             const description = item.get('Description');
             const lineItem = {
@@ -100494,9 +100495,7 @@ async function main$4(api, airtableBase = new MsoBase()) {
               chartOfAccountId:
                 await getBillComId(
                     'Chart of Accounts', item.get('Category')[0]),
-              customerId:
-                await getBillComId(
-                    'Internal Customers', item.get('Project')[0]),
+              customerId: await getBillComId('Internal Customers', projectId),
               description:
                 date ?
                     `${date}\n${item.get('Merchant Name')}\n` +
@@ -100509,7 +100508,7 @@ async function main$4(api, airtableBase = new MsoBase()) {
 
             const project =
                 await billComIntegrationBase.find(
-                    'Internal Customers', item.get('Project')[0]);
+                    'Internal Customers', projectId);
             if (mso.get('Use Customers?')) {
               lineItem.customerId = project.get(MSO_BILL_COM_ID);
             } else {
