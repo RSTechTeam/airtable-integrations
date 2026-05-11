@@ -100498,7 +100498,7 @@ async function main$4(api, airtableBase = new MsoBase()) {
                 await getBillComId(
                     'Internal Customers', item.get('Project')[0]),
               description:
-                date == undefined ?
+                date === undefined ?
                     description :
                     `${date}\n${item.get('Merchant Name')}\n` +
                         `${item.get('Merchant Address')}\n` +
@@ -100537,7 +100537,7 @@ async function main$4(api, airtableBase = new MsoBase()) {
               `Submitted by ${requester}` +
                   ` (${newCheckRequest.get('Requester Email')}).` +
                   (newCheckRequest.get('ePay') ? '\nRequested ePayment.' : '') +
-                  (notes == undefined ? '' : `\n\nNotes:\n${notes}`),
+                  (notes === undefined ? '' : `\n\nNotes:\n${notes}`),
             billLineItems: billComLineItems,
           };
 
