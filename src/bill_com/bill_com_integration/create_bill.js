@@ -64,7 +64,7 @@ async function getVendorId(checkRequest) {
   const newVendor =
       await billComIntegrationBase.find(NEW_VENDORS_TABLE, newVendorId);
   let vendorId = newVendor.get(MSO_BILL_COM_ID);
-  if (vendorId != null) return vendorId;
+  if (vendorId) return vendorId;
 
   // Create new Vendor and ID.
   const zipCode = newVendor.get('Zip Code');
@@ -134,13 +134,13 @@ export async function main(api, airtableBase = new MsoBase()) {
                 await getBillComId(
                     'Internal Customers', item.get('Project')[0]),
               description:
-                date === undefined ?
-                    description :
+                date ?
                     `${date}\n${item.get('Merchant Name')}\n` +
                         `${item.get('Merchant Address')}\n` +
                         `${item.get('Merchant City')} | ` +
                         `${item.get('Merchant State')} | ` +
-                        `${item.get('Merchant Zip Code')}\n${description}`,
+                        `${item.get('Merchant Zip Code')}\n${description}` :
+                    description,
             };
 
             const project =
@@ -173,7 +173,7 @@ export async function main(api, airtableBase = new MsoBase()) {
               `Submitted by ${requester}` +
                   ` (${newCheckRequest.get('Requester Email')}).` +
                   (newCheckRequest.get('ePay') ? '\nRequested ePayment.' : '') +
-                  (notes === undefined ? '' : `\n\nNotes:\n${notes}`),
+                  (notes ? `\n\nNotes:\n${notes}` : ''),
             billLineItems: billComLineItems,
           };
 
