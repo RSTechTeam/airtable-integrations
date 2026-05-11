@@ -100536,7 +100536,7 @@ async function main$4(api, airtableBase = new MsoBase()) {
             description:
               `Submitted by ${requester}` +
                   ` (${newCheckRequest.get('Requester Email')}).` +
-                  (newCheckRequest.get('ePay') ? '' : '\nRequested ePayment.') +
+                  (newCheckRequest.get('ePay') ? '\nRequested ePayment.' : '') +
                   (notes == undefined ? '' : `\n\nNotes:\n${notes}`),
             billLineItems: billComLineItems,
           };
