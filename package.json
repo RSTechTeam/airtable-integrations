@@ -35,7 +35,7 @@
     "@rollup/plugin-replace": "^6.0.3",
     "husky": "^9.1.7",
     "jest": "^30.4.2",
-    "rollup": "^4.60.3"
+    "rollup": "^4.60.4"
   },
   "jest": {
     "transform": {}
