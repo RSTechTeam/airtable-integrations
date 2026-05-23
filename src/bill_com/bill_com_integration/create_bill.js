@@ -95,6 +95,25 @@ async function getVendorId(checkRequest) {
 }
 
 /**
+ * @param {!Record<!TField>} checkRequest
+ * @return {string}
+ */
+function defaultInvoiceNumber(checkRequest) {
+
+  // Invoice number can currently be max 21 characters. For default:
+  const requester = checkRequest.get('Requester Name');
+
+  // Take 15 UTF8 characters from requester name,
+  const requesterPrefix =
+      new TextDecoder().decode(
+          new TextEncoder().encode(requester).subarray(0, 15));
+
+  // and 3 from unique part of Airtable Record ID,
+  // with 3 to pretty divide these parts.
+  return `${requesterPrefix} - ${checkRequest.getId().substring(3, 6)}`;
+}
+
+/**
  * @param {!Api} api
  * @param {!MsoBase=} airtableBase
  * @return {!Promise<undefined>}
@@ -152,22 +171,16 @@ export async function main(api, airtableBase = new MsoBase()) {
           }
 
           // Compile Bill.com Bill based on Check Request.
-          const requester = newCheckRequest.get('Requester Name');
           const notes = newCheckRequest.get('Notes');
           const bill = {
             vendorId: await getVendorId(newCheckRequest),
             invoiceNumber:
               newCheckRequest.get('Vendor Invoice ID') ||
-                  // Invoice number can currently be max 21 characters.
-                  // For default ID, take 15 from requester name
-                  // and 3 from unique part of Airtable Record ID,
-                  // with 3 to pretty divide these parts.
-                  `${requester.substring(0, 15)}` +
-                      ` - ${newCheckRequest.getId().substring(3, 6)}`,
+                  defaultInvoiceNumber(newCheckRequest),
             invoiceDate: newCheckRequest.get('Invoice Date'),
             dueDate: newCheckRequest.get('Due Date'),
             description:
-              `Submitted by ${requester}` +
+              `Submitted by ${newCheckRequest.get('Requester Name')}` +
                   ` (${newCheckRequest.get('Requester Email')}).` +
                   (newCheckRequest.get('ePay') ? '\nRequested ePayment.' : '') +
                   (notes ? `\n\nNotes:\n${notes}` : ''),
