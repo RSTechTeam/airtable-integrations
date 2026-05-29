@@ -128706,7 +128706,7 @@ await run(async () => {
       privateKey: emburseSftpKey(),
     });
     const now = new Date();
-    const oneDayAgo = now.setHours(now.getHours() - 24);
+    const oneDayAgo = now.setDate(now.getDate() - 1);
     const files = await sftp.list('/', file => file.modifyTime > oneDayAgo);
     const buffers = await Promise.all(files.map(f => sftp.get(f.name)));
     csvs = buffers.map(Readable$1.from);
