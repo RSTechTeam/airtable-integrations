@@ -15,6 +15,8 @@ await run(async () => {
     ['Expenser Name', 'Expenser Name'],
     ['Submitted Date', 'Submitted Date'],
     ['Transaction Date', 'Transaction Date'],
+    ['Debit Date', 'Debit Date'], // Merged to Paid (Date) with Posted Date
+    ['Posted Date', 'Posted Date'],
     ['Merchant', 'Merchant (Name)'],
     ['Note', 'Notes'],
     ['Category', 'Category'],
@@ -22,8 +24,7 @@ await run(async () => {
     ['Projects', 'Project'],
     ['Trip', 'Trip'],
     ['Approved Date', 'Approved'],
-    ['Source', 'Type'], // Also Paid, with Debit Date
-    ['Debit Date', 'Debit Date'],
+    ['Source', 'Type'],
   ]);
 
   // Create parse config.
@@ -32,8 +33,14 @@ await run(async () => {
       await getSync(
           data => {
             for (const row of data) {
-              row['Paid'] =
-                  row['Type'] === 'Card Transaction' || row['Debit Date'] > '';
+              row['Paid Date'] = row['Debit Date'] || row['Posted Date'];
+              row['Paid'] = !!row['Paid Date'];
+              if (row['Paid Date']) {
+                const date = new Date(row['Paid Date']);
+                row['Booking Date'] = date.setMonth(date.getMonth() + 1, 0);
+              }
+              delete row['Debit Date'];
+              delete row['Posted Date'];
             }
             return new Map(data.map(row => [row['Expense ID'], row]));
           },
@@ -47,13 +54,13 @@ await run(async () => {
         case 'Amount':
           return Number(value);
         case 'Approved':
-          return value > '';
+          return !!value;
         case 'Type':
           return value === 'Manual' ? 'Reimbursement' : 'Card Transaction';
 
-        // Paid references Type and Debit Date, so handle in chunk.
+        // Paid (Date) references Debit & Posted Dates, so handle in chunk.
         default:
-          return value === '' ? undefined : value;
+          return value || undefined;
         }
       },
     chunk,
