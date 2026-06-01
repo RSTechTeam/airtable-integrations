@@ -3,6 +3,7 @@
 import {addSummaryTableHeaders, addSummaryTableRow} from '../../common/github_actions_core.js';
 import {Base} from '../../common/airtable.js';
 import {billComTransformUrl} from '../common/inputs.js';
+import {filter} from '../common/api.js';
 import {getYyyyMmDd} from '../../common/utils.js';
 import {log} from '../../common/github_actions_core.js';
 import * as sync from '../../common/sync.js';
@@ -125,6 +126,9 @@ export async function main(api, billComIntegrationBase = new Base()) {
     const mso = orgCode.startsWith('C') ? 'RS' : orgCode;
     await billComApi.login(orgCode);
     const sessionId = billComApi.getSessionId();
+    const billPays =
+        await billComApi.list('BillPay', [filter('paymentStatus', '=', '2')]);
+    const paidDates = new Map(billPays.map(bp => [bp.billId, bp.processDate]));
     const vendors =
         await getEntityData(
             'Vendor',
@@ -156,6 +160,7 @@ export async function main(api, billComIntegrationBase = new Base()) {
     const primaryBillComId = billComIdFieldName('Line Item');
     for (const bill of bills) {
 
+      const paidDate = paidDates.get(bill.id);
       const submitterMatch = matchDescription(bill, /Submitted by (.+) \(/);
       const vendor = vendors.get(bill.vendorId) || {};
       for (const item of bill.billLineItems) {
@@ -172,6 +177,7 @@ export async function main(api, billComIntegrationBase = new Base()) {
               'Creation Date': getYyyyMmDd(item.createdTime),
               'Invoice Date': bill.invoiceDate,
               'Expense Date': itemVendor.date || bill.invoiceDate,
+              'Paid Date': paidDate,
               [billComIdFieldName('Vendor')]: bill.vendorId,
               'Vendor Name': itemVendor.name,
               'Vendor Address': itemVendor.address,

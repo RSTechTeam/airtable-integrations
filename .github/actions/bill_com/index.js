@@ -101026,6 +101026,9 @@ async function main$2(api, billComIntegrationBase = new Base()) {
     const mso = orgCode.startsWith('C') ? 'RS' : orgCode;
     await billComApi.login(orgCode);
     const sessionId = billComApi.getSessionId();
+    const billPays =
+        await billComApi.list('BillPay', [filter('paymentStatus', '=', '2')]);
+    const paidDates = new Map(billPays.map(bp => [bp.billId, bp.processDate]));
     const vendors =
         await getEntityData(
             'Vendor',
@@ -101057,6 +101060,7 @@ async function main$2(api, billComIntegrationBase = new Base()) {
     const primaryBillComId = billComIdFieldName('Line Item');
     for (const bill of bills) {
 
+      const paidDate = paidDates.get(bill.id);
       const submitterMatch = matchDescription(bill, /Submitted by (.+) \(/);
       const vendor = vendors.get(bill.vendorId) || {};
       for (const item of bill.billLineItems) {
@@ -101073,6 +101077,7 @@ async function main$2(api, billComIntegrationBase = new Base()) {
               'Creation Date': getYyyyMmDd(item.createdTime),
               'Invoice Date': bill.invoiceDate,
               'Expense Date': itemVendor.date || bill.invoiceDate,
+              'Paid Date': paidDate,
               [billComIdFieldName('Vendor')]: bill.vendorId,
               'Vendor Name': itemVendor.name,
               'Vendor Address': itemVendor.address,
