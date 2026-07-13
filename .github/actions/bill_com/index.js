@@ -100870,8 +100870,6 @@ async function main$3(billComApi, airtableBase = new MsoBase()) {
           'State': o.addressState,
           'Zip Code': parseInt(o.addressZip),
           'Email': o.email,
-          'Paid via BILL': !!o.lastPaymentDate,
-          'Pay By': o.payBy,
         }));
     await syncer.syncNameKey('ChartOfAccount', 'Chart of Accounts', 'name');
     await syncer.syncNameKey('ActgClass', 'Classes', 'name');
