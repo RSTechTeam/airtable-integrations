@@ -101174,7 +101174,7 @@ async function main$1(billComApi, airtableBase = new MsoBase()) {
     await billComApi.login(msoCode);
     const parentCustomerId = mso.get('Internal Customer ID');
     const airtableCustomers =
-        await airtableBase.select(AIRTABLE_CUSTOMERS_TABLE);
+        await airtableBase.select(AIRTABLE_CUSTOMERS_TABLE, 'Valid');
 
     const {updates, creates, removes} =
         syncChanges(
