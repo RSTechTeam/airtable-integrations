@@ -25,9 +25,12 @@ await run(async () => {
           'Reference');
 
   // How each CSV is parsed. The keys are papaparse's config API
-  // (https://www.papaparse.com/docs#config): trim whitespace from every
-  // header and every cell, and hand each batch of rows to the Airtable sync.
+  // (https://www.papaparse.com/docs#config): skip blank lines (bank exports
+  // end with a trailing newline, which would otherwise reach normalizeRow as
+  // a phantom empty row), trim whitespace from every header and every cell,
+  // and hand each batch of rows to the Airtable sync.
   const papaparseConfig = {
+    skipEmptyLines: 'greedy',
     transformHeader: header => header.trim(),
     transform: value => typeof value === 'string' ? value.trim() : value,
     chunk: sync.chunk,
