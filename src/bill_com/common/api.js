@@ -231,7 +231,7 @@ export class Api {
         {
           entity: 'Bill',
           objectId: billId,
-          approvers: [...approvers, ...getApproverIds(mso, 'Final')],
+          approvers: [...approvers, ...(getApproverIds(mso, 'Final') || [])],
         });
     return billId;
   }
