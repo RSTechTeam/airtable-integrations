@@ -20,6 +20,7 @@ const runImport = async (csvText) => {
   const synced = new Map();
   const format = detectFormatFromCsv(csvText);
   await csv.parse(csvText, format.header, {
+    skipEmptyLines: 'greedy',
     transformHeader: (h) => h.trim(),
     transform: (v) => typeof v === 'string' ? v.trim() : v,
     chunk: (results) => {
@@ -206,5 +207,15 @@ describe('import pipeline (end to end)', () => {
 
   test('rejects a CSV whose header matches neither format', async () => {
     await expect(runImport('Wrong,Header\nx,y')).rejects.toThrow();
+  });
+
+  test('tolerates trailing newlines and blank lines', async () => {
+    const synced = await runImport(toCsv(VISA_FORMAT.header, [
+      [
+        '2026-07-22', 'DEBIT', 'Some Airline',
+        '11111111111111111111111; 22222; ; DOE/JANE; SFO TO DTW ;', '-120',
+      ],
+    ]) + '\n\n');
+    expect([...synced.keys()]).toEqual(['11111111111111111111111']);
   });
 });
