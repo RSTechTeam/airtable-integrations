@@ -1,73 +1,52 @@
-/** @fileoverview Imports an Amex CSV update into Airtable. */
+/** @fileoverview Imports an Amex or Visa CSV update into Airtable. */
 
 import {airtableImportRecordId} from '../common/inputs.js';
 import {Base} from '../common/airtable.js';
-import {getSync, parseAttachment} from '../common/csv.js';
+import {fetchAttachment} from '../common/fetch.js';
+import {getSync, parse} from '../common/csv.js';
 import {run} from '../common/action.js';
+import {detectFormatFromCsv, transactionsByReference} from './formats.js';
 
+// Flow: fetch the CSV attachment(s) on the Airtable import record
+//   -> detect each CSV's statement format from its header (see formats.js;
+//      unrecognized headers throw before anything is parsed)
+//   -> papaparse streams rows in batches (sync.chunk runs once per batch)
+//   -> each batch: normalize rows into Transactions and upsert them into
+//      Amex Data keyed by Reference (existing records update, new ones
+//      create)
+//   -> sync.summarize() writes Update/Create counts to the job summary.
 await run(async () => {
-
-  /** Amex CSV transformed headers. */
-  const headers = [
-    'Date',
-    'Merchant', // From Description
-    'Amount',
-    'Extended Details',
-    'Appears On Your Statement As',
-    'Address',
-    'City/State',
-    'Zip Code',
-    'Country',
-    'Reference',
-    'Category',
-  ];  
-
-  // Create Parse Config.
-  const expenseSources = new Base();
-  const {chunk, summarize} =
+  // The "Expense Sources" Airtable base; which base, and as whom, comes from
+  // the workflow's action inputs (see inputs.js and visa.yml).
+  const expenseSourcesBase = new Base();
+  const sync =
       await getSync(
-          data => {
-            // Split City/State.
-            for (const row of results.data) {
-              const cityState =
-                  row['City/State'].match(/(?<city>.+)\n(?<state>.+)/)?.groups;
-              row['City'] = cityState?.city;
-              row['State'] = cityState?.state;
-              delete row['City/State'];
-            }
-            return new Map(data.map(row => [row['Reference'], row]));
-          },
-          expenseSources, 'Amex Data', 'Reference');
-  const parseConfig = {
-    transformHeader:
-      (header, index) => header === 'Description' ? 'Merchant' : header,
-    transform:
-      (value, header) => {
-        switch (header) {
-        case 'Appears On Your Statement As':
-          // Delete column.
-          return undefined;
-        case 'Amount':
-          return Number(value);
-        case 'Reference':
-          return value.replaceAll("'", '');
-        case 'Merchant':
-          const match = value.match(/(.+?)\s\s+/);
-          return match ? match[1] : value;
+          transactionsByReference, expenseSourcesBase, 'Amex Data',
+          'Reference');
 
-        // Split City/State later (in chunk).
-        default:
-          return value;
-        }
-      },
-    chunk,
+  // How each CSV is parsed. The keys are papaparse's config API
+  // (https://www.papaparse.com/docs#config): trim whitespace from every
+  // header and every cell, and hand each batch of rows to the Airtable sync.
+  const papaparseConfig = {
+    transformHeader: header => header.trim(),
+    transform: value => typeof value === 'string' ? value.trim() : value,
+    chunk: sync.chunk,
   };
 
-  // Parse CSV with above config.
+  /**
+   * The Amex Imports row that triggered this run; its CSV field holds the
+   * attached statement export(s) to import.
+   * @type {!import('airtable').Record<!import('airtable').FieldSet>}
+   */
   const importRecord =
-      await expenseSources.find('Amex Imports', airtableImportRecordId());
+      await expenseSourcesBase.find('Amex Imports', airtableImportRecordId());
   await Promise.all(
       importRecord.get('CSV').map(
-          csv => parseAttachment(csv, headers, parseConfig)));
-  summarize();
+          async attachment => {
+            const response = await fetchAttachment(attachment);
+            const csvText = await response.text();
+            const format = detectFormatFromCsv(csvText);
+            return parse(csvText, format.header, papaparseConfig);
+          }));
+  sync.summarize();
 });
