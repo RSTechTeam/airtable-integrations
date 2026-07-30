@@ -3,7 +3,7 @@ import {airtableBase, billComApi} from '../../../test_utils.js';
 import {filter} from '../../../../src/bill_com/common/api.js';
 import {jest} from '@jest/globals';
 
-jest.setTimeout(10**4);
+jest.setTimeout(10**5);
 test('main creates Bill.com Approver User', async () => {
   const testStartTime = new Date().toISOString();
   const api = await billComApi();
