@@ -75,6 +75,24 @@ describe('AMEX_FORMAT.normalizeRow', () => {
     expect(out.City).toBeUndefined();
     expect(out.State).toBeUndefined();
   });
+
+  test('strips $ and thousands commas from Amount (live export)', () => {
+    expect(AMEX_FORMAT.normalizeRow(row({'Amount': '$1,050.45'})).Amount)
+        .toBe(1050.45);
+    expect(AMEX_FORMAT.normalizeRow(row({'Amount': '-$25.00'})).Amount)
+        .toBe(-25);
+  });
+
+  test('unswaps live-export layout: zip in City/State, state in Zip Code',
+      () => {
+        const out = AMEX_FORMAT.normalizeRow(row({
+          'City/State': 'SAN FRANCISCO\n94103',
+          'Zip Code': 'CA',
+        }));
+        expect(out.City).toEqual('SAN FRANCISCO');
+        expect(out.State).toEqual('CA');
+        expect(out['Zip Code']).toEqual('94103');
+      });
 });
 
 describe('VISA_FORMAT.normalizeRow', () => {
@@ -93,10 +111,17 @@ describe('VISA_FORMAT.normalizeRow', () => {
     expect(VISA_FORMAT.normalizeRow(row())).toEqual({
       'Date': '2026-07-22',
       'Merchant': 'Some Airline',
-      'Amount': -120,
+      'Amount': 120,
       'Extended Details': 'DOE/JANE 2026-07-22 SAN FRANCISCO TO DETROIT',
       'Reference': '11111111111111111111111',
     });
+  });
+
+  test('negates Amount: export debits are negative, the table stores ' +
+      'charges positive', () => {
+    expect(VISA_FORMAT.normalizeRow(row({'Amount': '-120'})).Amount).toBe(120);
+    expect(VISA_FORMAT.normalizeRow(row({'Amount': '45.50'})).Amount)
+        .toBe(-45.5);
   });
 
   test('uses the first Memo segment as the Reference key', () => {
@@ -184,6 +209,28 @@ describe('import pipeline (end to end)', () => {
     expect(row).not.toHaveProperty('City/State');
   });
 
+  // Shaped like a real 2026 export: $ amounts, multiline Extended Details,
+  // "CITY\nZIP" under City/State with the state under Zip Code, and a
+  // trailing apostrophe on the Reference.
+  test('normalizes a live-layout Amex CSV', async () => {
+    const synced = await runImport(toCsv(AMEX_FORMAT.header, [
+      [
+        '09/20/2024', 'AIRBNB * ABCD1234 SAN FRANCISCO       CA', '$1,050.45',
+        'ABCDEFGH    1234567890\nAIRBNB * ABCD1234\nSAN FRANCISCO\nCA',
+        'AIRBNB * ABCD1234 SAN FRANCISCO       CA', '1234 TEST ST',
+        'SAN FRANCISCO\n94103', 'CA', 'UNITED STATES', "389024539482049232'",
+        'Travel-Travel Agencies',
+      ],
+    ]));
+
+    expect([...synced.keys()]).toEqual(['389024539482049232']);
+    const row = synced.get('389024539482049232');
+    expect(row.Amount).toBe(1050.45);
+    expect(row.City).toEqual('SAN FRANCISCO');
+    expect(row.State).toEqual('CA');
+    expect(row['Zip Code']).toEqual('94103');
+  });
+
   test('normalizes a Visa CSV into the same common shape', async () => {
     const synced = await runImport(toCsv(VISA_FORMAT.header, [
       [
@@ -199,7 +246,7 @@ describe('import pipeline (end to end)', () => {
     // Same common-shape fields the Amex path produces.
     expect(row.Date).toEqual('2026-07-22');
     expect(row.Merchant).toEqual('Some Airline');
-    expect(row.Amount).toBe(-120);
+    expect(row.Amount).toBe(120);
     expect(row.Reference).toEqual('11111111111111111111111');
     expect(row['Extended Details'])
         .toEqual('DOE/JANE 2026-07-22 SAN FRANCISCO TO DETROIT');

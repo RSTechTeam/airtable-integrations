@@ -125824,10 +125824,15 @@ function run(main) {
  */
 
 /**
- * The legacy Amex export. Original Amex import logic, unchanged in behavior:
- * Merchant from Description (text before the first double space), Amount as a
- * Number, Reference stripped of quotes, City/State split, and the
+ * The legacy Amex export. Merchant from Description (text before the first
+ * double space), Amount as a Number (stripped of $ and thousands commas),
+ * Reference stripped of quotes, City/State split, and the
  * "Appears On Your Statement As" column dropped.
+ *
+ * Current live exports keep the historical header but shift the location
+ * data: City/State holds "CITY\nZIP" and the Zip Code column holds the
+ * state. Older files had "CITY\nSTATE" with the zip under Zip Code. Both
+ * layouts are accepted; a numeric second line tells them apart.
  * @type {!StatementFormat}
  */
 const AMEX_FORMAT = {
@@ -125847,16 +125852,17 @@ const AMEX_FORMAT = {
   normalizeRow(row) {
     const merchant = row['Description'].match(/(.+?)\s\s+/);
     const cityState =
-        row['City/State'].match(/(?<city>.+)\n(?<state>.+)/)?.groups;
+        row['City/State'].match(/(?<city>.+)\n(?<second>.+)/)?.groups;
+    const zipInCityState = /^\d/.test(cityState?.second ?? '');
     return {
       'Date': row['Date'],
       'Merchant': merchant ? merchant[1] : row['Description'],
-      'Amount': Number(row['Amount']),
+      'Amount': Number(row['Amount'].replace(/[$,]/g, '')),
       'Extended Details': row['Extended Details'],
       'Address': row['Address'],
       'City': cityState?.city,
-      'State': cityState?.state,
-      'Zip Code': row['Zip Code'],
+      'State': zipInCityState ? row['Zip Code'] : cityState?.second,
+      'Zip Code': zipInCityState ? cityState.second : row['Zip Code'],
       'Country': row['Country'],
       'Reference': row['Reference'].replaceAll("'", ''),
       'Category': row['Category'],
@@ -125865,8 +125871,10 @@ const AMEX_FORMAT = {
 };
 
 /**
- * The new Visa export. Its Memo column is a semicolon-delimited multi-value
- * field, e.g.:
+ * The new Visa export. It shows debits as negative amounts, the opposite of
+ * the Amex Data table's positive-charge convention, so Amount is negated
+ * (finance request, 2026-07-30). Its Memo column is a semicolon-delimited
+ * multi-value field, e.g.:
  *   `11111111111111111111111; 22222; ; DOE/JANE; SFO TO DTW ;`
  * which finance splits into: reference number; merchant #; ?; description.
  *
@@ -125885,7 +125893,7 @@ const VISA_FORMAT = {
     return {
       'Date': row['Date'],
       'Merchant': row['Name'],
-      'Amount': Number(row['Amount']),
+      'Amount': -Number(row['Amount']),
       'Extended Details': segments.slice(3).filter(Boolean).join(' '),
       'Reference': segments[0],
     };
