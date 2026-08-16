@@ -301,6 +301,7 @@ export async function main(billComApi, airtableBase = new MsoBase()) {
           'State': o.addressState,
           'Zip Code': parseInt(o.addressZip),
           'Email': o.email,
+          'ePayable': o.eBillEligible,
         }));
     await syncer.syncNameKey('ChartOfAccount', 'Chart of Accounts', 'name');
     await syncer.syncNameKey('ActgClass', 'Classes', 'name');
