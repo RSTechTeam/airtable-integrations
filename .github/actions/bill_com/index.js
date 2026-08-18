@@ -127647,6 +127647,7 @@ class Syncer {
 async function main$3(billComApi, airtableBase = new MsoBase()) {
   addSummaryTableHeaders(['MSO', 'Entity', 'Updates', 'Creates', 'Removes']);
   const syncer = new Syncer(billComApi, airtableBase);
+  const ePayBy = ['1', '2', '5', '11'];
   for await (const mso of airtableBase.iterateMsos()) {
     const msoCode = mso.get('Code');
     await billComApi.login(msoCode);
@@ -127660,7 +127661,7 @@ async function main$3(billComApi, airtableBase = new MsoBase()) {
           'State': o.addressState,
           'Zip Code': parseInt(o.addressZip),
           'Email': o.email,
-          'ePayable': o.eBillEligible,
+          'ePayable': ePayBy.includes(o.payBy),
         }));
     await syncer.syncNameKey('ChartOfAccount', 'Chart of Accounts', 'name');
     await syncer.syncNameKey('ActgClass', 'Classes', 'name');
