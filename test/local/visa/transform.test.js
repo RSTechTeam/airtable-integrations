@@ -4,6 +4,7 @@ import {
   VISA_FORMAT,
   detectFormat,
   detectFormatFromCsv,
+  importRecordFields,
   transactionsByReference,
 } from '../../../src/visa/formats.js';
 
@@ -16,7 +17,7 @@ const toCsv = (header, rows) =>
 // Mirrors the action's per-attachment flow with no network: detect the
 // format from the CSV text, then parse with that format's header, capturing
 // what transactionsByReference would sync.
-const runImport = async (csvText) => {
+const runImport = async (csvText, extraFields = {}) => {
   const synced = new Map();
   const format = detectFormatFromCsv(csvText);
   await csv.parse(csvText, format.header, {
@@ -24,7 +25,8 @@ const runImport = async (csvText) => {
     transformHeader: (h) => h.trim(),
     transform: (v) => typeof v === 'string' ? v.trim() : v,
     chunk: (results) => {
-      for (const [ref, row] of transactionsByReference(results.data)) {
+      for (const [ref, row] of
+          transactionsByReference(results.data, extraFields)) {
         synced.set(ref, row);
       }
     },
@@ -166,6 +168,78 @@ describe('transactionsByReference', () => {
     expect(synced.size).toBe(1);
     expect(synced.get('123').Merchant).toEqual('Second Merchant');
   });
+
+  test('stamps the extra fields onto every transaction', () => {
+    const synced = transactionsByReference(
+        [rawRow('123; ; ; one;'), rawRow('456; ; ; two;')],
+        {'Credit Card': 'Visa Corporate'});
+    expect([...synced.values()].map(t => t['Credit Card']))
+        .toEqual(['Visa Corporate', 'Visa Corporate']);
+  });
+
+  test('stamps the extra fields onto Amex-format rows too', () => {
+    const synced = transactionsByReference(
+        [{
+          'Date': '07/15/2026',
+          'Description': 'STARBUCKS STORE  0123',
+          'Amount': '12.50',
+          'Extended Details': 'Coffee run',
+          'Appears On Your Statement As': 'AplPay STARBUCKS',
+          'Address': '123 MAIN ST',
+          'City/State': 'SEATTLE\nWA',
+          'Zip Code': '98101',
+          'Country': 'UNITED STATES',
+          'Reference': "'320261234567890'",
+          'Category': 'Restaurant-Restaurant',
+        }],
+        {'Credit Card': 'Amex Platinum'});
+    expect(synced.get('320261234567890')['Credit Card'])
+        .toEqual('Amex Platinum');
+  });
+
+  // The production path until Credit Card exists there: no extra fields, so
+  // the key is never sent and an update cannot blank the destination.
+  test('adds no key when given no extra fields', () => {
+    const synced = transactionsByReference([rawRow('123; ; ; one;')]);
+    expect(synced.get('123')).not.toHaveProperty('Credit Card');
+  });
+
+  test('adds no key when given an empty extra fields object', () => {
+    const synced = transactionsByReference([rawRow('123; ; ; one;')], {});
+    expect(synced.get('123')).not.toHaveProperty('Credit Card');
+  });
+
+  // Pins the spread order: the import record describes the whole import, so
+  // it wins over a same-named CSV column.
+  test('lets the extra fields win over a CSV-derived field', () => {
+    const synced = transactionsByReference(
+        [rawRow('123; ; ; one;', 'From CSV')], {'Merchant': 'From Import'});
+    expect(synced.get('123').Merchant).toEqual('From Import');
+  });
+});
+
+describe('importRecordFields', () => {
+  const importRecord = (fields = {}) => ({get: (field) => fields[field]});
+
+  test('returns the Credit Card the import record carries', () => {
+    expect(importRecordFields(importRecord({'Credit Card': 'Amex Platinum'})))
+        .toEqual({'Credit Card': 'Amex Platinum'});
+  });
+
+  // A base whose Amex Imports table does not have the field yet: get returns
+  // undefined, and the import must sync exactly as it did before.
+  test('returns nothing when the field does not exist', () => {
+    expect(importRecordFields(importRecord())).toEqual({});
+  });
+
+  test('returns nothing when the field is left blank', () => {
+    expect(importRecordFields(importRecord({'Credit Card': ''}))).toEqual({});
+  });
+
+  test('ignores unrelated fields on the import record', () => {
+    expect(importRecordFields(importRecord({'CSV': [{url: 'x'}]})))
+        .toEqual({});
+  });
 });
 
 describe('detectFormat', () => {
@@ -251,6 +325,31 @@ describe('import pipeline (end to end)', () => {
     expect(row['Extended Details'])
         .toEqual('DOE/JANE 2026-07-22 SAN FRANCISCO TO DETROIT');
   });
+
+  // Mirrors what index.js does: importRecordFields feeds transactionsByReference.
+  test('stamps the import record Credit Card onto every synced row',
+      async () => {
+        const synced = await runImport(
+            toCsv(VISA_FORMAT.header, [
+              [
+                '2026-07-22', 'DEBIT', 'Some Airline', '111; ; ; one;', '-120',
+              ],
+              [
+                '2026-07-23', 'DEBIT', 'Some Hotel', '222; ; ; two;', '-80',
+              ],
+            ]),
+            importRecordFields(
+                {get: (field) =>
+                    field === 'Credit Card' ? 'Visa Corporate' : undefined}));
+
+        expect([...synced.keys()]).toEqual(['111', '222']);
+        for (const row of synced.values()) {
+          expect(row['Credit Card']).toEqual('Visa Corporate');
+        }
+        // The CSV-derived fields are untouched.
+        expect(synced.get('222').Merchant).toEqual('Some Hotel');
+        expect(synced.get('222').Amount).toBe(80);
+      });
 
   test('rejects a CSV whose header matches neither format', async () => {
     await expect(runImport('Wrong,Header\nx,y')).rejects.toThrow();

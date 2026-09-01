@@ -1,0 +1,22 @@
+# Runs the Visa importer against the *test* Expense Sources base, so a change
+# can be tried on real data before it reaches production imports. Manual
+# dispatch only: unlike visa.yml there is no repository_dispatch trigger, so
+# Airtable automation can never route a production import here.
+name: Visa Test Workflow
+on:
+  workflow_dispatch:
+    inputs:
+      airtable-import-record-id:
+        description: 'Airtable Import Record ID'
+        required: true
+        type: string
+permissions: {}
+jobs:
+  main:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: RSTechTeam/airtable-integrations/.github/actions/visa@main
+        with:
+          airtable-api-key: ${{ secrets.EXPENSE_SOURCES_AIRTABLE_PAT_TEST }}
+          airtable-base-id: ${{ secrets.EXPENSE_SOURCES_BASE_ID_TEST }}
+          airtable-import-record-id: ${{ inputs.airtable-import-record-id }}
