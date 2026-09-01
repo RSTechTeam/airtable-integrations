@@ -116684,11 +116684,18 @@ class Base {
    * @param {!Object[]} updates
    * @param {string} updates[].id
    * @param {!Object<string, *>} updates[].fields
+   * @param {!Object<string, *>=} writeOptions Airtable write options, e.g.
+   *     {typecast: true}. Empty by default, which is the API's own default.
    * @return {!Promise<!Array<*>>}
    */
-  update(table, updates) {
+  update(table, updates, writeOptions = {}) {
     return catchError(
-        () => batch(this.base_(table).update, updates), 'updating', table);
+        () => {
+          const airtableTable = this.base_(table);
+          return batch(
+              records => airtableTable.update(records, writeOptions), updates);
+        },
+        'updating', table);
   }
 
   /**
@@ -116721,11 +116728,18 @@ class Base {
    * @param {string} table
    * @param {!Object[]} creates
    * @param {!Object<string, *>} creates[].fields
+   * @param {!Object<string, *>=} writeOptions Airtable write options, e.g.
+   *     {typecast: true}. Empty by default, which is the API's own default.
    * @return {!Promise<!Array<*>>}
    */
-  create(table, creates) {
+  create(table, creates, writeOptions = {}) {
     return catchError(
-        () => batch(this.base_(table).create, creates), 'creating', table);
+        () => {
+          const airtableTable = this.base_(table);
+          return batch(
+              records => airtableTable.create(records, writeOptions), creates);
+        },
+        'creating', table);
   }
 
   /**

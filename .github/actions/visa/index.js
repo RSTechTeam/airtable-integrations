@@ -116346,11 +116346,18 @@ class Base {
    * @param {!Object[]} updates
    * @param {string} updates[].id
    * @param {!Object<string, *>} updates[].fields
+   * @param {!Object<string, *>=} writeOptions Airtable write options, e.g.
+   *     {typecast: true}. Empty by default, which is the API's own default.
    * @return {!Promise<!Array<*>>}
    */
-  update(table, updates) {
+  update(table, updates, writeOptions = {}) {
     return catchError(
-        () => batch(this.base_(table).update, updates), 'updating', table);
+        () => {
+          const airtableTable = this.base_(table);
+          return batch(
+              records => airtableTable.update(records, writeOptions), updates);
+        },
+        'updating', table);
   }
 
   /**
@@ -116383,11 +116390,18 @@ class Base {
    * @param {string} table
    * @param {!Object[]} creates
    * @param {!Object<string, *>} creates[].fields
+   * @param {!Object<string, *>=} writeOptions Airtable write options, e.g.
+   *     {typecast: true}. Empty by default, which is the API's own default.
    * @return {!Promise<!Array<*>>}
    */
-  create(table, creates) {
+  create(table, creates, writeOptions = {}) {
     return catchError(
-        () => batch(this.base_(table).create, creates), 'creating', table);
+        () => {
+          const airtableTable = this.base_(table);
+          return batch(
+              records => airtableTable.create(records, writeOptions), creates);
+        },
+        'creating', table);
   }
 
   /**
@@ -123654,7 +123668,7 @@ var papaparse$1 = {exports: {}};
 
 /* @license
 Papa Parse
-v5.5.4
+v5.7.0
 https://github.com/mholt/PapaParse
 License: MIT
 */
@@ -123734,101 +123748,6 @@ function requirePapaparse () {
 				Papa.DuplexStreamStreamer = DuplexStreamStreamer;
 			}
 
-			if (global.jQuery)
-			{
-				var $ = global.jQuery;
-				$.fn.parse = function(options)
-				{
-					var config = options.config || {};
-					var queue = [];
-
-					this.each(function(idx)
-					{
-						var supported = $(this).prop('tagName').toUpperCase() === 'INPUT'
-										&& $(this).attr('type').toLowerCase() === 'file'
-										&& global.FileReader;
-
-						if (!supported || !this.files || this.files.length === 0)
-							return true;	// continue to next input element
-
-						for (var i = 0; i < this.files.length; i++)
-						{
-							queue.push({
-								file: this.files[i],
-								inputElem: this,
-								instanceConfig: $.extend({}, config)
-							});
-						}
-					});
-
-					parseNextFile();	// begin parsing
-					return this;		// maintains chainability
-
-
-					function parseNextFile()
-					{
-						if (queue.length === 0)
-						{
-							if (isFunction(options.complete))
-								options.complete();
-							return;
-						}
-
-						var f = queue[0];
-
-						if (isFunction(options.before))
-						{
-							var returned = options.before(f.file, f.inputElem);
-
-							if (typeof returned === 'object')
-							{
-								if (returned.action === 'abort')
-								{
-									error('AbortError', f.file, f.inputElem, returned.reason);
-									return;	// Aborts all queued files immediately
-								}
-								else if (returned.action === 'skip')
-								{
-									fileComplete();	// parse the next file in the queue, if any
-									return;
-								}
-								else if (typeof returned.config === 'object')
-									f.instanceConfig = $.extend(f.instanceConfig, returned.config);
-							}
-							else if (returned === 'skip')
-							{
-								fileComplete();	// parse the next file in the queue, if any
-								return;
-							}
-						}
-
-						// Wrap up the user's complete callback, if any, so that ours also gets executed
-						var userCompleteFunc = f.instanceConfig.complete;
-						f.instanceConfig.complete = function(results)
-						{
-							if (isFunction(userCompleteFunc))
-								userCompleteFunc(results, f.file, f.inputElem);
-							fileComplete();
-						};
-
-						Papa.parse(f.file, f.instanceConfig);
-					}
-
-					function error(name, file, elem, reason)
-					{
-						if (isFunction(options.error))
-							options.error({name: name}, file, elem, reason);
-					}
-
-					function fileComplete()
-					{
-						queue.splice(0, 1);
-						parseNextFile();
-					}
-				};
-			}
-
-
 			if (IS_PAPA_WORKER)
 			{
 				global.onmessage = workerThreadReceivedMessage;
@@ -123854,6 +123773,16 @@ function requirePapaparse () {
 				_config.dynamicTyping = dynamicTyping;
 
 				_config.transform = isFunction(_config.transform) ? _config.transform : false;
+
+				if (_config.downloadTimeout !== undefined)
+				{
+					var downloadTimeout = parseInt(_config.downloadTimeout);
+					if (isNaN(downloadTimeout))
+					{
+						throw new Error('Config downloadTimeout value (' + _config.downloadTimeout + ') not parsable by parseInt(val).');
+					}
+					_config.downloadTimeout = downloadTimeout;
+				}
 
 				if (_config.worker && Papa.WORKERS_SUPPORTED)
 				{
@@ -124102,7 +124031,12 @@ function requirePapaparse () {
 						return '';
 
 					if (str.constructor === Date)
-						return JSON.stringify(str).slice(1, 25);
+					{
+						// Return empty string for invalid dates
+						if (isNaN(str.getTime()))
+							return '';
+						return str.toISOString();
+					}
 
 					var needsQuotes = false;
 
@@ -124319,7 +124253,14 @@ function requirePapaparse () {
 						xhr.onerror = bindFunction(this._chunkError, this);
 					}
 
+					xhr.ontimeout = bindFunction(this._chunkTimeout, this);
+
 					xhr.open(this._config.downloadRequestBody ? 'POST' : 'GET', this._input, !IS_WORKER);
+					// Timeout is only supported for asynchronous requests
+					if (this._config.downloadTimeout && !IS_WORKER)
+					{
+						xhr.timeout = this._config.downloadTimeout;
+					}
 					// Headers can only be set when once the request state is OPENED
 					if (this._config.downloadRequestHeaders)
 					{
@@ -124369,6 +124310,11 @@ function requirePapaparse () {
 				{
 					var errorText = xhr.statusText || errorMessage;
 					this._sendError(new Error(errorText));
+				};
+
+				this._chunkTimeout = function()
+				{
+					this._chunkError('Request timed out after ' + this._config.downloadTimeout + 'ms');
 				};
 
 				function getFileSize(xhr)
@@ -124759,6 +124705,8 @@ function requirePapaparse () {
 					}
 
 					var parserConfig = copy(_config);
+					// Tell the parser the header instead of reguessing on each chunk
+					parserConfig.header = needsHeaderRow();
 					if (_config.preview && _config.header)
 						parserConfig.preview++;	// to compensate for header row
 
@@ -124882,12 +124830,8 @@ function requirePapaparse () {
 					if (!_results)
 						return;
 
-					function addHeader(header, i)
+					function addHeader(header)
 					{
-						header = stripBom(header);
-						if (isFunction(_config.transformHeader))
-							header = _config.transformHeader(header, i);
-
 						_fields.push(header);
 					}
 
@@ -125028,8 +124972,11 @@ function requirePapaparse () {
 						if (preview.data.length > 0)
 							avgFieldCount /= (preview.data.length - emptyLinesCount);
 
-						if ((typeof bestDelta === 'undefined' || delta <= bestDelta)
-							&& (typeof maxFieldCount === 'undefined' || avgFieldCount > maxFieldCount) && avgFieldCount > 1.99) {
+						// Lowest delta (most consistent field count across rows) wins; average
+						// field count only breaks ties between equally consistent delimiters.
+						if (avgFieldCount > 1.99 && (typeof bestDelta === 'undefined'
+							|| delta < bestDelta
+							|| (delta === bestDelta && avgFieldCount > maxFieldCount))) {
 							bestDelta = delta;
 							bestDelim = delim;
 							maxFieldCount = avgFieldCount;
@@ -125695,10 +125642,13 @@ function airtableRecordUpdate([id, update]) {
  * @param {!Base} base
  * @param {string} table
  * @param {string} idField
+ * @param {!Object<string, *>=} writeOptions Airtable write options applied to
+ *     every upsert, e.g. {typecast: true}. Empty by default.
  * @return {!Object<string, *>} The functions for the config chunk
  *    and metric summary.
  */
-async function getSync(getSource, base, table, idField) {
+async function getSync(
+    getSource, base, table, idField, writeOptions = {}) {
   const mapping = getMapping(await base.select(table), idField);
   let updateCount = 0;
   let createCount = 0;
@@ -125716,9 +125666,11 @@ async function getSync(getSource, base, table, idField) {
 
         // Launch upserts.
         return Promise.all([
-          base.update(table, Array.from(updates, airtableRecordUpdate)),
+          base.update(
+              table, Array.from(updates, airtableRecordUpdate), writeOptions),
           base.create(
-              table, Array.from(creates, ([, create]) => ({fields: create}))),
+              table, Array.from(creates, ([, create]) => ({fields: create})),
+              writeOptions),
         ]);
       },
     summarize:
@@ -125788,7 +125740,8 @@ function run(main) {
 /**
  * @fileoverview The CSV statement formats this importer accepts — the legacy
  * Amex export and the new Visa export — and the transform that normalizes
- * either into Transactions for the Amex Data table.
+ * either into Transactions for the Amex Data table. Also the few fields that
+ * come from the Amex Imports record itself rather than from its CSV.
  *
  * Pure data transforms only: no I/O and no action inputs, so tests can import
  * this module freely (index.js is the entry point with side effects).
@@ -125811,6 +125764,7 @@ function run(main) {
  *   'Zip Code': (string|undefined),
  *   Country: (string|undefined),
  *   Category: (string|undefined),
+ *   'Credit Card': (string|undefined),
  * }} Transaction
  */
 
@@ -125931,20 +125885,50 @@ function detectFormatFromCsv(csvText) {
 }
 
 /**
+ * Amex Imports fields that describe the whole import and so belong on each of
+ * its transactions. Adding another shared field is a one-line change here,
+ * given the same field name exists on Amex Data.
+ * @type {string[]}
+ */
+const IMPORT_RECORD_FIELDS = ['Credit Card'];
+
+/**
  * Normalizes a batch of parsed CSV rows (in either accepted format) into
  * Transactions keyed by Reference, dropping rows without one. Passed to
  * csv.getSync, which diffs each batch against the Airtable table by this key.
+ *
+ * extraFields is stamped onto every Transaction in the batch — it carries the
+ * values that describe the whole import rather than one row (see
+ * importRecordFields). It is spread last, so the import record wins over any
+ * same-named CSV column; no accepted format defines one today.
  * @param {!Array<!Object<string, string>>} rows
+ * @param {!Object<string, *>=} extraFields
  * @return {!Map<string, !Transaction>}
  */
-function transactionsByReference(rows) {
+function transactionsByReference(rows, extraFields = {}) {
   if (rows.length === 0) return new Map();
   const format = detectFormat(Object.keys(rows[0]));
   return new Map(
       rows
-          .map(row => format.normalizeRow(row))
+          .map(row => ({...format.normalizeRow(row), ...extraFields}))
           .filter(transaction => transaction['Reference'])
           .map(transaction => [transaction['Reference'], transaction]));
+}
+
+/**
+ * The Amex Imports fields copied onto every Transaction of that import. Only
+ * values actually set are returned, so a base whose Amex Imports table lacks
+ * these fields (or leaves them blank) syncs exactly as it did before they
+ * existed, and never blanks the destination on update.
+ * @param {{get: function(string): *}} importRecord An Airtable record, or
+ *     anything else answering get(fieldName).
+ * @return {!Object<string, *>}
+ */
+function importRecordFields(importRecord) {
+  return Object.fromEntries(
+      IMPORT_RECORD_FIELDS
+          .map(field => [field, importRecord.get(field)])
+          .filter(([, value]) => value));
 }
 
 /** @fileoverview Imports an Amex or Visa CSV update into Airtable. */
@@ -125954,18 +125938,39 @@ function transactionsByReference(rows) {
 //   -> detect each CSV's statement format from its header (see formats.js;
 //      unrecognized headers throw before anything is parsed)
 //   -> papaparse streams rows in batches (sync.chunk runs once per batch)
-//   -> each batch: normalize rows into Transactions and upsert them into
-//      Amex Data keyed by Reference (existing records update, new ones
-//      create)
+//   -> each batch: normalize rows into Transactions, stamp on the import
+//      record's own fields (Credit Card), and upsert them into Amex Data
+//      keyed by Reference (existing records update, new ones create)
 //   -> sync.summarize() writes Update/Create counts to the job summary.
 await run(async () => {
   // The "Expense Sources" Airtable base; which base, and as whom, comes from
   // the workflow's action inputs (see inputs.js and visa.yml).
   const expenseSourcesBase = new Base();
+
+  /**
+   * The Amex Imports row that triggered this run; its CSV field holds the
+   * attached statement export(s) to import, and its own fields describe the
+   * import as a whole.
+   * @type {!import('airtable').Record<!import('airtable').FieldSet>}
+   */
+  const importRecord =
+      await expenseSourcesBase.find('Amex Imports', airtableImportRecordId());
+
+  // Fields copied from the import record onto every transaction it produces.
+  const extraFields = importRecordFields(importRecord);
+
+  // Credit Card is a single select on both tables, and Airtable has no way to
+  // share one option list between them. typecast makes it create any option
+  // it does not already have, so the lists converge without manual upkeep.
+  // It applies to the whole record write, not just that field, so only ask
+  // for it when there is actually a value to write: with none, these upserts
+  // are byte-for-byte what they were before this field existed.
+  const writeOptions =
+      Object.keys(extraFields).length > 0 ? {typecast: true} : {};
   const sync =
       await getSync(
-          transactionsByReference, expenseSourcesBase, 'Amex Data',
-          'Reference');
+          rows => transactionsByReference(rows, extraFields),
+          expenseSourcesBase, 'Amex Data', 'Reference', writeOptions);
 
   // How each CSV is parsed. The keys are papaparse's config API
   // (https://www.papaparse.com/docs#config): skip blank lines (bank exports
@@ -125979,13 +125984,6 @@ await run(async () => {
     chunk: sync.chunk,
   };
 
-  /**
-   * The Amex Imports row that triggered this run; its CSV field holds the
-   * attached statement export(s) to import.
-   * @type {!import('airtable').Record<!import('airtable').FieldSet>}
-   */
-  const importRecord =
-      await expenseSourcesBase.find('Amex Imports', airtableImportRecordId());
   await Promise.all(
       importRecord.get('CSV').map(
           async attachment => {
