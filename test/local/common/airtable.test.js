@@ -51,3 +51,49 @@ describe.each([['update'], ['create']])('Base.%s writeOptions', (method) => {
     expect(calls).toEqual([]);
   });
 });
+
+// The Airtable client turns a 422 into an error carrying the API's error
+// type, which is how a missing field is told apart from anything else.
+const airtableError = (error, statusCode = 422) =>
+    Object.assign(new Error(error), {error: error, statusCode: statusCode});
+
+const probedBase = (firstPage) => {
+  const queries = [];
+  const base = new Base('appTest', 'keyTest');
+  base.base_ = () => ({
+    select: (params) => {
+      queries.push(params);
+      return {firstPage: firstPage};
+    },
+  });
+  return {base, queries};
+};
+
+describe('Base.hasField', () => {
+  test('is true when Airtable accepts the field', async () => {
+    const {base} = probedBase(() => Promise.resolve([]));
+    await expect(base.hasField('Amex Data', 'Credit Card')).resolves.toBe(true);
+  });
+
+  test('is false when the table does not have the field', async () => {
+    const {base} =
+        probedBase(() => Promise.reject(airtableError('UNKNOWN_FIELD_NAME')));
+    await expect(base.hasField('Amex Data', 'Credit Card'))
+        .resolves.toBe(false);
+  });
+
+  // Only a missing field is an answer; anything else has to fail the run
+  // rather than be read as "no such field" and silently drop data.
+  test('rethrows any other error', async () => {
+    const {base} =
+        probedBase(() => Promise.reject(airtableError('NOT_AUTHORIZED', 403)));
+    await expect(base.hasField('Amex Data', 'Credit Card')).rejects
+        .toThrow('Error selecting records in Airtable Table Amex Data');
+  });
+
+  test('asks for just that field, and at most one record', async () => {
+    const {base, queries} = probedBase(() => Promise.resolve([]));
+    await base.hasField('Amex Data', 'Credit Card');
+    expect(queries[0]).toEqual({fields: ['Credit Card'], maxRecords: 1});
+  });
+});

@@ -130,6 +130,26 @@ export class Base {
   }
 
   /**
+   * Whether table has field. Asks Airtable for that one field: naming a field
+   * the table does not have is the only thing that makes this a 422, so a
+   * caller can skip such a field rather than fail the whole sync.
+   * @param {string} table
+   * @param {string} field
+   * @return {!Promise<boolean>}
+   */
+  async hasField(table, field) {
+    try {
+      await retry(
+          () => this.base_(table)
+              .select({fields: [field], maxRecords: 1}).firstPage());
+      return true;
+    } catch (err) {
+      if (err.error === 'UNKNOWN_FIELD_NAME') return false;
+      throwError('selecting', table, err);
+    }
+  }
+
+  /**
    * @param {string} table
    * @param {string} id
    * @return {!Promise<!Record<!TField>>}

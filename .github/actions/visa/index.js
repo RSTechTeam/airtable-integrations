@@ -116405,6 +116405,26 @@ class Base {
   }
 
   /**
+   * Whether table has field. Asks Airtable for that one field: naming a field
+   * the table does not have is the only thing that makes this a 422, so a
+   * caller can skip such a field rather than fail the whole sync.
+   * @param {string} table
+   * @param {string} field
+   * @return {!Promise<boolean>}
+   */
+  async hasField(table, field) {
+    try {
+      await retry(
+          () => this.base_(table)
+              .select({fields: [field], maxRecords: 1}).firstPage());
+      return true;
+    } catch (err) {
+      if (err.error === 'UNKNOWN_FIELD_NAME') return false;
+      throwError('selecting', table, err);
+    }
+  }
+
+  /**
    * @param {string} table
    * @param {string} id
    * @return {!Promise<!Record<!TField>>}
@@ -125939,8 +125959,9 @@ function importRecordFields(importRecord) {
 //      unrecognized headers throw before anything is parsed)
 //   -> papaparse streams rows in batches (sync.chunk runs once per batch)
 //   -> each batch: normalize rows into Transactions, stamp on the import
-//      record's own fields (Credit Card), and upsert them into Amex Data
-//      keyed by Reference (existing records update, new ones create)
+//      record's own fields (Credit Card, where Amex Data has them), and
+//      upsert them into Amex Data keyed by Reference (existing records
+//      update, new ones create)
 //   -> sync.summarize() writes Update/Create counts to the job summary.
 await run(async () => {
   // The "Expense Sources" Airtable base; which base, and as whom, comes from
@@ -125956,8 +125977,21 @@ await run(async () => {
   const importRecord =
       await expenseSourcesBase.find('Amex Imports', airtableImportRecordId());
 
-  // Fields copied from the import record onto every transaction it produces.
-  const extraFields = importRecordFields(importRecord);
+  // Fields copied from the import record onto every transaction it produces,
+  // less any that Amex Data does not have. Writing an unknown field name
+  // fails the whole batch, so a base that has the field on Amex Imports but
+  // not yet on Amex Data would import nothing at all; skipping it instead
+  // means everything else still syncs, in whichever order the two tables get
+  // the field.
+  const extraFields = {};
+  for (const [field, value] of
+      Object.entries(importRecordFields(importRecord))) {
+    if (await expenseSourcesBase.hasField('Amex Data', field)) {
+      extraFields[field] = value;
+    } else {
+      warn(`Amex Data has no ${field} field; importing without it.`);
+    }
+  }
 
   // Credit Card is a single select on both tables, and Airtable has no way to
   // share one option list between them. typecast makes it create any option
