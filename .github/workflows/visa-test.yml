@@ -2,6 +2,15 @@
 # can be tried on real data before it reaches production imports. Manual
 # dispatch only: unlike visa.yml there is no repository_dispatch trigger, so
 # Airtable automation can never route a production import here.
+#
+# This one checks out the repo and runs the action from the checked-out copy,
+# rather than pinning it to @main the way visa.yml does. Dispatching a branch
+# therefore tests that branch's importer:
+#
+#   gh workflow run visa-test.yml --ref <branch> \
+#       -f airtable-import-record-id=<recId in the test base>
+#
+# The branch has to be in this repo, not a fork, since forks get no secrets.
 name: Visa Test Workflow
 on:
   workflow_dispatch:
@@ -13,9 +22,12 @@ on:
 permissions: {}
 jobs:
   main:
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     steps:
-      - uses: RSTechTeam/airtable-integrations/.github/actions/visa@main
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/visa
         with:
           airtable-api-key: ${{ secrets.EXPENSE_SOURCES_AIRTABLE_PAT_TEST }}
           airtable-base-id: ${{ secrets.EXPENSE_SOURCES_BASE_ID_TEST }}
