@@ -116441,18 +116441,11 @@ class Base {
    * @param {!Object[]} updates
    * @param {string} updates[].id
    * @param {!Object<string, *>} updates[].fields
-   * @param {!Object<string, *>=} writeOptions Airtable write options, e.g.
-   *     {typecast: true}. Empty by default, which is the API's own default.
    * @return {!Promise<!Array<*>>}
    */
-  update(table, updates, writeOptions = {}) {
+  update(table, updates) {
     return catchError(
-        () => {
-          const airtableTable = this.base_(table);
-          return batch(
-              records => airtableTable.update(records, writeOptions), updates);
-        },
-        'updating', table);
+        () => batch(this.base_(table).update, updates), 'updating', table);
   }
 
   /**
@@ -116485,38 +116478,11 @@ class Base {
    * @param {string} table
    * @param {!Object[]} creates
    * @param {!Object<string, *>} creates[].fields
-   * @param {!Object<string, *>=} writeOptions Airtable write options, e.g.
-   *     {typecast: true}. Empty by default, which is the API's own default.
    * @return {!Promise<!Array<*>>}
    */
-  create(table, creates, writeOptions = {}) {
+  create(table, creates) {
     return catchError(
-        () => {
-          const airtableTable = this.base_(table);
-          return batch(
-              records => airtableTable.create(records, writeOptions), creates);
-        },
-        'creating', table);
-  }
-
-  /**
-   * Whether table has field. Asks Airtable for that one field: naming a field
-   * the table does not have is the only thing that makes this a 422, so a
-   * caller can skip such a field rather than fail the whole sync.
-   * @param {string} table
-   * @param {string} field
-   * @return {!Promise<boolean>}
-   */
-  async hasField(table, field) {
-    try {
-      await retry(
-          () => this.base_(table)
-              .select({fields: [field], maxRecords: 1}).firstPage());
-      return true;
-    } catch (err) {
-      if (err.error === 'UNKNOWN_FIELD_NAME') return false;
-      throwError('selecting', table, err);
-    }
+        () => batch(this.base_(table).create, creates), 'creating', table);
   }
 
   /**
@@ -116533,7 +116499,7 @@ var papaparse$1 = {exports: {}};
 
 /* @license
 Papa Parse
-v5.7.0
+v5.5.4
 https://github.com/mholt/PapaParse
 License: MIT
 */
@@ -116613,6 +116579,101 @@ function requirePapaparse () {
 				Papa.DuplexStreamStreamer = DuplexStreamStreamer;
 			}
 
+			if (global.jQuery)
+			{
+				var $ = global.jQuery;
+				$.fn.parse = function(options)
+				{
+					var config = options.config || {};
+					var queue = [];
+
+					this.each(function(idx)
+					{
+						var supported = $(this).prop('tagName').toUpperCase() === 'INPUT'
+										&& $(this).attr('type').toLowerCase() === 'file'
+										&& global.FileReader;
+
+						if (!supported || !this.files || this.files.length === 0)
+							return true;	// continue to next input element
+
+						for (var i = 0; i < this.files.length; i++)
+						{
+							queue.push({
+								file: this.files[i],
+								inputElem: this,
+								instanceConfig: $.extend({}, config)
+							});
+						}
+					});
+
+					parseNextFile();	// begin parsing
+					return this;		// maintains chainability
+
+
+					function parseNextFile()
+					{
+						if (queue.length === 0)
+						{
+							if (isFunction(options.complete))
+								options.complete();
+							return;
+						}
+
+						var f = queue[0];
+
+						if (isFunction(options.before))
+						{
+							var returned = options.before(f.file, f.inputElem);
+
+							if (typeof returned === 'object')
+							{
+								if (returned.action === 'abort')
+								{
+									error('AbortError', f.file, f.inputElem, returned.reason);
+									return;	// Aborts all queued files immediately
+								}
+								else if (returned.action === 'skip')
+								{
+									fileComplete();	// parse the next file in the queue, if any
+									return;
+								}
+								else if (typeof returned.config === 'object')
+									f.instanceConfig = $.extend(f.instanceConfig, returned.config);
+							}
+							else if (returned === 'skip')
+							{
+								fileComplete();	// parse the next file in the queue, if any
+								return;
+							}
+						}
+
+						// Wrap up the user's complete callback, if any, so that ours also gets executed
+						var userCompleteFunc = f.instanceConfig.complete;
+						f.instanceConfig.complete = function(results)
+						{
+							if (isFunction(userCompleteFunc))
+								userCompleteFunc(results, f.file, f.inputElem);
+							fileComplete();
+						};
+
+						Papa.parse(f.file, f.instanceConfig);
+					}
+
+					function error(name, file, elem, reason)
+					{
+						if (isFunction(options.error))
+							options.error({name: name}, file, elem, reason);
+					}
+
+					function fileComplete()
+					{
+						queue.splice(0, 1);
+						parseNextFile();
+					}
+				};
+			}
+
+
 			if (IS_PAPA_WORKER)
 			{
 				global.onmessage = workerThreadReceivedMessage;
@@ -116638,16 +116699,6 @@ function requirePapaparse () {
 				_config.dynamicTyping = dynamicTyping;
 
 				_config.transform = isFunction(_config.transform) ? _config.transform : false;
-
-				if (_config.downloadTimeout !== undefined)
-				{
-					var downloadTimeout = parseInt(_config.downloadTimeout);
-					if (isNaN(downloadTimeout))
-					{
-						throw new Error('Config downloadTimeout value (' + _config.downloadTimeout + ') not parsable by parseInt(val).');
-					}
-					_config.downloadTimeout = downloadTimeout;
-				}
 
 				if (_config.worker && Papa.WORKERS_SUPPORTED)
 				{
@@ -116896,12 +116947,7 @@ function requirePapaparse () {
 						return '';
 
 					if (str.constructor === Date)
-					{
-						// Return empty string for invalid dates
-						if (isNaN(str.getTime()))
-							return '';
-						return str.toISOString();
-					}
+						return JSON.stringify(str).slice(1, 25);
 
 					var needsQuotes = false;
 
@@ -117118,14 +117164,7 @@ function requirePapaparse () {
 						xhr.onerror = bindFunction(this._chunkError, this);
 					}
 
-					xhr.ontimeout = bindFunction(this._chunkTimeout, this);
-
 					xhr.open(this._config.downloadRequestBody ? 'POST' : 'GET', this._input, !IS_WORKER);
-					// Timeout is only supported for asynchronous requests
-					if (this._config.downloadTimeout && !IS_WORKER)
-					{
-						xhr.timeout = this._config.downloadTimeout;
-					}
 					// Headers can only be set when once the request state is OPENED
 					if (this._config.downloadRequestHeaders)
 					{
@@ -117175,11 +117214,6 @@ function requirePapaparse () {
 				{
 					var errorText = xhr.statusText || errorMessage;
 					this._sendError(new Error(errorText));
-				};
-
-				this._chunkTimeout = function()
-				{
-					this._chunkError('Request timed out after ' + this._config.downloadTimeout + 'ms');
 				};
 
 				function getFileSize(xhr)
@@ -117570,8 +117604,6 @@ function requirePapaparse () {
 					}
 
 					var parserConfig = copy(_config);
-					// Tell the parser the header instead of reguessing on each chunk
-					parserConfig.header = needsHeaderRow();
 					if (_config.preview && _config.header)
 						parserConfig.preview++;	// to compensate for header row
 
@@ -117695,8 +117727,12 @@ function requirePapaparse () {
 					if (!_results)
 						return;
 
-					function addHeader(header)
+					function addHeader(header, i)
 					{
+						header = stripBom(header);
+						if (isFunction(_config.transformHeader))
+							header = _config.transformHeader(header, i);
+
 						_fields.push(header);
 					}
 
@@ -117837,11 +117873,8 @@ function requirePapaparse () {
 						if (preview.data.length > 0)
 							avgFieldCount /= (preview.data.length - emptyLinesCount);
 
-						// Lowest delta (most consistent field count across rows) wins; average
-						// field count only breaks ties between equally consistent delimiters.
-						if (avgFieldCount > 1.99 && (typeof bestDelta === 'undefined'
-							|| delta < bestDelta
-							|| (delta === bestDelta && avgFieldCount > maxFieldCount))) {
+						if ((typeof bestDelta === 'undefined' || delta <= bestDelta)
+							&& (typeof maxFieldCount === 'undefined' || avgFieldCount > maxFieldCount) && avgFieldCount > 1.99) {
 							bestDelta = delta;
 							bestDelim = delim;
 							maxFieldCount = avgFieldCount;
@@ -125671,13 +125704,10 @@ function fetchAttachment(attachment) {
  * @param {!Base} base
  * @param {string} table
  * @param {string} idField
- * @param {!Object<string, *>=} writeOptions Airtable write options applied to
- *     every upsert, e.g. {typecast: true}. Empty by default.
  * @return {!Object<string, *>} The functions for the config chunk
  *    and metric summary.
  */
-async function getSync(
-    getSource, base, table, idField, writeOptions = {}) {
+async function getSync(getSource, base, table, idField) {
   const mapping = getMapping(await base.select(table), idField);
   let updateCount = 0;
   let createCount = 0;
@@ -125695,11 +125725,9 @@ async function getSync(
 
         // Launch upserts.
         return Promise.all([
-          base.update(
-              table, Array.from(updates, airtableRecordUpdate), writeOptions),
+          base.update(table, Array.from(updates, airtableRecordUpdate)),
           base.create(
-              table, Array.from(creates, ([, create]) => ({fields: create})),
-              writeOptions),
+              table, Array.from(creates, ([, create]) => ({fields: create}))),
         ]);
       },
     summarize:
