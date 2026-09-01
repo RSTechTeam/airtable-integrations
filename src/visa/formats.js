@@ -1,7 +1,8 @@
 /**
  * @fileoverview The CSV statement formats this importer accepts — the legacy
  * Amex export and the new Visa export — and the transform that normalizes
- * either into Transactions for the Amex Data table.
+ * either into Transactions for the Amex Data table. Also the few fields that
+ * come from the Amex Imports record itself rather than from its CSV.
  *
  * Pure data transforms only: no I/O and no action inputs, so tests can import
  * this module freely (index.js is the entry point with side effects).
@@ -25,6 +26,7 @@ import Papa from 'papaparse';
  *   'Zip Code': (string|undefined),
  *   Country: (string|undefined),
  *   Category: (string|undefined),
+ *   'Credit Card': (string|undefined),
  * }} Transaction
  */
 
@@ -145,18 +147,48 @@ export function detectFormatFromCsv(csvText) {
 }
 
 /**
+ * Amex Imports fields that describe the whole import and so belong on each of
+ * its transactions. Adding another shared field is a one-line change here,
+ * given the same field name exists on Amex Data.
+ * @type {string[]}
+ */
+const IMPORT_RECORD_FIELDS = ['Credit Card'];
+
+/**
  * Normalizes a batch of parsed CSV rows (in either accepted format) into
  * Transactions keyed by Reference, dropping rows without one. Passed to
  * csv.getSync, which diffs each batch against the Airtable table by this key.
+ *
+ * extraFields is stamped onto every Transaction in the batch — it carries the
+ * values that describe the whole import rather than one row (see
+ * importRecordFields). It is spread last, so the import record wins over any
+ * same-named CSV column; no accepted format defines one today.
  * @param {!Array<!Object<string, string>>} rows
+ * @param {!Object<string, *>=} extraFields
  * @return {!Map<string, !Transaction>}
  */
-export function transactionsByReference(rows) {
+export function transactionsByReference(rows, extraFields = {}) {
   if (rows.length === 0) return new Map();
   const format = detectFormat(Object.keys(rows[0]));
   return new Map(
       rows
-          .map(row => format.normalizeRow(row))
+          .map(row => ({...format.normalizeRow(row), ...extraFields}))
           .filter(transaction => transaction['Reference'])
           .map(transaction => [transaction['Reference'], transaction]));
+}
+
+/**
+ * The Amex Imports fields copied onto every Transaction of that import. Only
+ * values actually set are returned, so a base whose Amex Imports table lacks
+ * these fields (or leaves them blank) syncs exactly as it did before they
+ * existed, and never blanks the destination on update.
+ * @param {{get: function(string): *}} importRecord An Airtable record, or
+ *     anything else answering get(fieldName).
+ * @return {!Object<string, *>}
+ */
+export function importRecordFields(importRecord) {
+  return Object.fromEntries(
+      IMPORT_RECORD_FIELDS
+          .map(field => [field, importRecord.get(field)])
+          .filter(([, value]) => value));
 }
