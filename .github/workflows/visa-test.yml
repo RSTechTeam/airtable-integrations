@@ -1,18 +1,23 @@
 # Runs the Visa importer against the *test* Expense Sources base, so a change
-# can be tried on real data before it reaches production imports. Manual
-# dispatch only: unlike visa.yml there is no repository_dispatch trigger, so
-# Airtable automation can never route a production import here.
+# can be tried on real data before it reaches production imports.
 #
 # This one checks out the repo and runs the action from the checked-out copy,
-# rather than pinning it to @main the way visa.yml does. Dispatching a branch
-# therefore tests that branch's importer:
+# rather than pinning it to @main the way visa.yml does, so it can run a
+# branch's importer before that branch merges:
 #
 #   gh workflow run visa-test.yml --ref <branch> \
 #       -f airtable-import-record-id=<recId in the test base>
 #
 # The branch has to be in this repo, not a fork, since forks get no secrets.
+#
+# The test base's Airtable automation triggers this via visa_csv_test, which
+# is the only thing distinguishing its request from the production one --
+# repository_dispatch carries no ref, so both bases would otherwise land on
+# visa.yml and its production credentials.
 name: Visa Test Workflow
 on:
+  repository_dispatch:
+    types: [visa_csv_test]
   workflow_dispatch:
     inputs:
       airtable-import-record-id:
@@ -26,9 +31,15 @@ jobs:
       contents: read
     runs-on: ubuntu-latest
     steps:
+      # repository_dispatch always runs the workflow file from the default
+      # branch, but nothing stops that file from checking out another ref, so
+      # an automation can still name a branch via client_payload if wanted.
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.client_payload.ref || github.ref }}
       - uses: ./.github/actions/visa
         with:
           airtable-api-key: ${{ secrets.EXPENSE_SOURCES_AIRTABLE_PAT_TEST }}
           airtable-base-id: ${{ secrets.EXPENSE_SOURCES_BASE_ID_TEST }}
-          airtable-import-record-id: ${{ inputs.airtable-import-record-id }}
+          airtable-import-record-id:
+            ${{ github.event.client_payload.airtable-import-record-id || inputs.airtable-import-record-id }}
