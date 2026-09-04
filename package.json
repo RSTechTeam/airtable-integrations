@@ -24,7 +24,7 @@
     "@actions/core": "^3.0.1",
     "airtable": "^0.12.2",
     "node-fetch": "^3.3.2",
-    "p-limit": "^7.3.0",
+    "p-limit": "^7.3.2",
     "p-retry": "^8.0.0",
     "papaparse": "^5.7.0"
   },
