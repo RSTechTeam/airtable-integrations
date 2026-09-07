@@ -10,10 +10,13 @@ import {fetchAttachment} from './fetch.js';
  * @param {!Base} base
  * @param {string} table
  * @param {string} idField
+ * @param {!Object<string, *>=} writeOptions Airtable write options applied to
+ *     every upsert, e.g. {typecast: true}. Empty by default.
  * @return {!Object<string, *>} The functions for the config chunk
  *    and metric summary.
  */
-export async function getSync(getSource, base, table, idField) {
+export async function getSync(
+    getSource, base, table, idField, writeOptions = {}) {
   const mapping = getMapping(await base.select(table), idField);
   let updateCount = 0;
   let createCount = 0;
@@ -31,9 +34,11 @@ export async function getSync(getSource, base, table, idField) {
 
         // Launch upserts.
         return Promise.all([
-          base.update(table, Array.from(updates, airtableRecordUpdate)),
+          base.update(
+              table, Array.from(updates, airtableRecordUpdate), writeOptions),
           base.create(
-              table, Array.from(creates, ([, create]) => ({fields: create}))),
+              table, Array.from(creates, ([, create]) => ({fields: create})),
+              writeOptions),
         ]);
       },
     summarize:

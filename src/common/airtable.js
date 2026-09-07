@@ -71,11 +71,18 @@ export class Base {
    * @param {!Object[]} updates
    * @param {string} updates[].id
    * @param {!Object<string, *>} updates[].fields
+   * @param {!Object<string, *>=} writeOptions Airtable write options, e.g.
+   *     {typecast: true}. Empty by default, which is the API's own default.
    * @return {!Promise<!Array<*>>}
    */
-  update(table, updates) {
+  update(table, updates, writeOptions = {}) {
     return catchError(
-        () => batch(this.base_(table).update, updates), 'updating', table);
+        () => {
+          const airtableTable = this.base_(table);
+          return batch(
+              records => airtableTable.update(records, writeOptions), updates);
+        },
+        'updating', table);
   }
 
   /**
@@ -108,11 +115,38 @@ export class Base {
    * @param {string} table
    * @param {!Object[]} creates
    * @param {!Object<string, *>} creates[].fields
+   * @param {!Object<string, *>=} writeOptions Airtable write options, e.g.
+   *     {typecast: true}. Empty by default, which is the API's own default.
    * @return {!Promise<!Array<*>>}
    */
-  create(table, creates) {
+  create(table, creates, writeOptions = {}) {
     return catchError(
-        () => batch(this.base_(table).create, creates), 'creating', table);
+        () => {
+          const airtableTable = this.base_(table);
+          return batch(
+              records => airtableTable.create(records, writeOptions), creates);
+        },
+        'creating', table);
+  }
+
+  /**
+   * Whether table has field. Asks Airtable for that one field: naming a field
+   * the table does not have is the only thing that makes this a 422, so a
+   * caller can skip such a field rather than fail the whole sync.
+   * @param {string} table
+   * @param {string} field
+   * @return {!Promise<boolean>}
+   */
+  async hasField(table, field) {
+    try {
+      await retry(
+          () => this.base_(table)
+              .select({fields: [field], maxRecords: 1}).firstPage());
+      return true;
+    } catch (err) {
+      if (err.error === 'UNKNOWN_FIELD_NAME') return false;
+      throwError('selecting', table, err);
+    }
   }
 
   /**
