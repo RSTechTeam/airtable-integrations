@@ -73,26 +73,21 @@ await run(async () => {
   // Create Credit Card Report parse config.
   const { chunk, summarize } =
     await getSync(
-      data => {
-        const result = new Map(
-          filterMap(
-            data,
-            row => row['Card']?.trim() != '' && amtravCardIds.has(row['Card']),
-            row => [
-              // Transaction ID
-              row['Invoice #'] +
-              `:${row['Ticket #'] ? row['Ticket #'] : ''}:` +
-              row['Amount'],
-              {
-                ...Object.fromEntries(
-                  usedFields.map(f => [f, row[f]])),
-                'Email': emails.get(row['Booking #']),
-              },
-            ])); core.info(
-              `AmTrav: ${data.length} rows in chunk, ` +
-              `${result.size} after card filter`);
-        return result;
-      },
+      data => new Map(
+        filterMap(
+          data,
+          row => row['Card']?.trim() != '' && amtravCardIds.has(row['Card']),
+          row => [
+            // Transaction ID
+            row['Invoice #'] +
+            `:${row['Ticket #'] ? row['Ticket #'] : ''}:` +
+            row['Amount'],
+            {
+              ...Object.fromEntries(
+                usedFields.map(f => [f, row[f]])),
+              'Email': emails.get(row['Booking #']),
+            },
+          ])),
       expenseSources, 'AmTrav Data', 'Transaction ID');
   const airtableFields = Array.from(mapping.values());
   const usedFields =
