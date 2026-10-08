@@ -67,29 +67,32 @@ await run(async () => {
     ['STV Volunteer Canvasses', 'Billing Code'],
   ]);
 
-  //GL 2026-10-08: we allow multiple credit crads
+  //GL 2026-10-08: we allow multiple credit cards
   const amtravCardIds = new Set(amtravCardId().split(',').map(s => s.trim()));
-  console.log(csv[0]);
-  console.log(amtravCardIds.has(csv[0]['Card']);
 
   // Create Credit Card Report parse config.
   const { chunk, summarize } =
     await getSync(
-      data => new Map(
-        filterMap(
-          data,
-          row => row['Card']?.trim() != '' && amtravCardIds.has(row['Card']),
-          row => [
-            // Transaction ID
-            row['Invoice #'] +
-            `:${row['Ticket #'] ? row['Ticket #'] : ''}:` +
-            row['Amount'],
-            {
-              ...Object.fromEntries(
-                usedFields.map(f => [f, row[f]])),
-              'Email': emails.get(row['Booking #']),
-            },
-          ])),
+      data => {
+        const result = new Map(
+          filterMap(
+            data,
+            row => row['Card']?.trim() != '' && amtravCardIds.has(row['Card']),
+            row => [
+              // Transaction ID
+              row['Invoice #'] +
+              `:${row['Ticket #'] ? row['Ticket #'] : ''}:` +
+              row['Amount'],
+              {
+                ...Object.fromEntries(
+                  usedFields.map(f => [f, row[f]])),
+                'Email': emails.get(row['Booking #']),
+              },
+            ])); core.info(
+              `AmTrav: ${data.length} rows in chunk, ` +
+              `${result.size} after card filter`);
+        return result;
+      },
       expenseSources, 'AmTrav Data', 'Transaction ID');
   const airtableFields = Array.from(mapping.values());
   const usedFields =
