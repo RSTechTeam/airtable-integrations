@@ -69,6 +69,8 @@ await run(async () => {
 
   //GL 2026-10-08: we allow multiple credit crads
   const amtravCardIds = new Set(amtravCardId().split(',').map(s => s.trim()));
+  console.log(csv[0]);
+  console.log(amtravCardIds.has(csv[0]['Card']);
 
   // Create Credit Card Report parse config.
   const { chunk, summarize } =
